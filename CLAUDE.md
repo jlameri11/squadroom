@@ -23,23 +23,33 @@ one and is meant to reach hundreds of academies.
   (`academies.primary_colour`, `logo_url`), never a per-tenant build.
 - **Safeguarding defaults are the restrictive ones.** Parent-to-parent DMs
   off, parent phone numbers staff-only. Both are per-academy settings.
-- **Parents never see a signup screen.** A personal link, SMSed to their own
-  number, silently creates and binds a session on first tap. They are fully
-  authenticated - chat included - without ever filling in a form. The link is
-  the login.
-  - **Personal links** (addressed to one phone, via `invites`) may auto-bind
-    with no OTP. On first use they bind to that device and stop working as a
-    free pass; a second device gets an OTP. A forwarded link is then useless.
-  - **Join links and QR codes** (`join_links`) are deliberately public - a
-    coach pastes them into a WhatsApp group. They ALWAYS require an OTP.
-    Never auto-bind these.
-  - Never let a bearer token post messages without binding to an identity.
-    In a product about children, "who sent this" must have a real answer.
-  - Token validation is server-side with the service role. This is the one
-    sanctioned exception to client-first, and it needs its own tests - it is
-    the most likely place in the system to leak.
-- **Announcements and event changes fall back to SMS** for anyone who has not
-  opened the app recently. This is what makes a coach trust it over WhatsApp.
+- **Parents never see a signup screen, and onboarding sends no SMS.**
+  The coach pastes the team link or QR into the group parents already use.
+  A parent taps it, enters name and phone, and lands in a PENDING state.
+  The coach approves, and the session binds to that device permanently.
+  - Coach approval REPLACES the OTP as the identity gate, and is stronger
+    for this product: an OTP proves someone holds a phone number, approval
+    proves they belong in a channel full of children's names. The coach
+    already knows every family.
+  - New-device recovery is the same flow: tap, re-approve. Also free.
+  - Consequence, accepted deliberately: without OTP a phone number is a
+    contact detail, not a verified credential. Fine while a coach vouches
+    for every member. Revisit before opening self-serve signup.
+  - Never let a bearer token post messages before approval binds it to an
+    identity. In a product about children, "who sent this" must have a real
+    answer.
+  - Token validation and session minting are server-side with the service
+    role. This is the one sanctioned exception to client-first, and needs
+    its own tests - it is the most likely place in the system to leak.
+- **SMS is reserved for one case: a match cancelled or moved inside 24
+  hours.** Everything routine - announcements, new messages, RSVP nudges,
+  24h reminders - is in-app and web push. Recurring SMS fallback was costed
+  at roughly $4k/week at 300 academies and cut for that reason.
+  - Because of this, the iOS web-push hole matters more: notifications only
+    work once a parent installs the PWA. That is an argument for bringing
+    the Capacitor phase forward if the NRIFA pilot shows poor reach.
+- **Twilio is not needed to build or pilot.** Add it for late-change alerts,
+  or when onboarding an academy whose owner does not know every family.
 - **Payments use Stripe Connect Express** — money goes from parent straight
   to the academy. Squadroom never holds it. Card data never touches our
   servers. Platform billing (`academies.plan`) is a separate concern from
