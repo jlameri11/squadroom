@@ -20,21 +20,6 @@ create table public.message_reactions (
 );
 alter table public.message_reactions enable row level security;
 
--- Counts are visible to every channel member, names are not. This view runs
--- with owner rights ON PURPOSE: under the caller's own RLS a parent would
--- only ever count their own reaction. The membership check is therefore done
--- here, explicitly, instead of being inherited.
-create view public.message_reaction_counts as
-select
-  r.message_id,
-  r.academy_id,
-  r.emoji,
-  count(*)::integer                  as reaction_count,
-  bool_or(r.profile_id = auth.uid()) as reacted_by_me
-from public.message_reactions r
-where public.is_channel_member(public.message_channel(r.message_id))
-group by r.message_id, r.academy_id, r.emoji;
-
 -- The host-only name list behind a reaction chip.
 create or replace function public.get_reaction_voters(p_message uuid, p_emoji text)
 returns table (profile_id uuid, full_name text, avatar_url text)

@@ -64,16 +64,3 @@ create trigger poll_votes_set_updated_at
   before update on public.poll_votes
   for each row execute function public.set_updated_at();
 
--- Tallies every channel member may see, including on an anonymous poll.
--- Owner-rights for the same reason as message_reaction_counts: the caller's
--- RLS would otherwise reduce every count to their own vote.
-create view public.poll_vote_counts as
-select
-  v.poll_id,
-  v.academy_id,
-  o.option_id,
-  count(*)::integer as votes
-from public.poll_votes v
-cross join lateral unnest(v.option_ids) as o(option_id)
-where public.is_channel_member(public.poll_channel(v.poll_id))
-group by v.poll_id, v.academy_id, o.option_id;

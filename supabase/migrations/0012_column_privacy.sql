@@ -131,3 +131,41 @@ begin
    group by p.id, p.full_name, p.avatar_url, am.role, p.phone;
 end;
 $$;
+
+-- ===========================================================================
+-- 3. Aggregate views
+--
+-- Same family of problem: a count is public, the identities behind it are not.
+-- These live here rather than beside their tables because they call the RLS
+-- helpers from 0011, and a view is parsed the moment it is created.
+-- ===========================================================================
+
+-- Counts are visible to every channel member, names are not. This view runs
+-- with owner rights ON PURPOSE: under the caller's own RLS a parent would
+-- only ever count their own reaction. The membership check is therefore done
+-- here, explicitly, instead of being inherited.
+create view public.message_reaction_counts as
+select
+  r.message_id,
+  r.academy_id,
+  r.emoji,
+  count(*)::integer                  as reaction_count,
+  bool_or(r.profile_id = auth.uid()) as reacted_by_me
+from public.message_reactions r
+where public.is_channel_member(public.message_channel(r.message_id))
+group by r.message_id, r.academy_id, r.emoji;
+
+
+-- Tallies every channel member may see, including on an anonymous poll.
+-- Owner-rights for the same reason as message_reaction_counts: the caller's
+-- RLS would otherwise reduce every count to their own vote.
+create view public.poll_vote_counts as
+select
+  v.poll_id,
+  v.academy_id,
+  o.option_id,
+  count(*)::integer as votes
+from public.poll_votes v
+cross join lateral unnest(v.option_ids) as o(option_id)
+where public.is_channel_member(public.poll_channel(v.poll_id))
+group by v.poll_id, v.academy_id, o.option_id;
