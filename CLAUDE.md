@@ -23,6 +23,23 @@ one and is meant to reach hundreds of academies.
   (`academies.primary_colour`, `logo_url`), never a per-tenant build.
 - **Safeguarding defaults are the restrictive ones.** Parent-to-parent DMs
   off, parent phone numbers staff-only. Both are per-academy settings.
+- **Parents never see a signup screen.** A personal link, SMSed to their own
+  number, silently creates and binds a session on first tap. They are fully
+  authenticated - chat included - without ever filling in a form. The link is
+  the login.
+  - **Personal links** (addressed to one phone, via `invites`) may auto-bind
+    with no OTP. On first use they bind to that device and stop working as a
+    free pass; a second device gets an OTP. A forwarded link is then useless.
+  - **Join links and QR codes** (`join_links`) are deliberately public - a
+    coach pastes them into a WhatsApp group. They ALWAYS require an OTP.
+    Never auto-bind these.
+  - Never let a bearer token post messages without binding to an identity.
+    In a product about children, "who sent this" must have a real answer.
+  - Token validation is server-side with the service role. This is the one
+    sanctioned exception to client-first, and it needs its own tests - it is
+    the most likely place in the system to leak.
+- **Announcements and event changes fall back to SMS** for anyone who has not
+  opened the app recently. This is what makes a coach trust it over WhatsApp.
 - **Payments use Stripe Connect Express** — money goes from parent straight
   to the academy. Squadroom never holds it. Card data never touches our
   servers. Platform billing (`academies.plan`) is a separate concern from
