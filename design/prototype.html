@@ -701,6 +701,18 @@
             </div>
           </div>
 
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Add from contacts</span></div>
+          <div class="card" style="padding:13px;display:grid;gap:10px">
+            <button class="btn" data-sheet="open">Choose from your contacts</button>
+            <div style="font-size:12.5px;color:var(--ink-2);line-height:1.45">
+              You pick exactly who to add. The rest of your address book is never read, never uploaded, never stored.
+            </div>
+            <div class="ioswarn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+              <span>On iPhone this needs the installed app — Safari has no contact picker.</span>
+            </div>
+          </div>
+
           <div class="sect" style="margin-top:18px"><span class="eyebrow">Add by phone</span><span class="typechip">Rarely needed</span></div>
           <div class="card" style="padding:13px;display:grid;gap:9px">
             <div style="font-size:12.5px;color:var(--ink-2)">For the family who never taps the group link. Paste one “Name, Phone” per line — they get one text, then the same approval step.</div>
@@ -901,6 +913,34 @@
         <div class="quickreacts">
           <button data-toast="Reacted 👍">👍</button><button data-toast="Reacted ❤️">❤️</button><button data-toast="Reacted ✅">✅</button>
           <button data-toast="Reacted ❌">❌</button><button data-toast="Reacted ❓">❓</button><button data-toast="Reacted 😂">😂</button>
+        </div>
+      </div>
+
+      <div class="scrim" id="scrim" hidden></div>
+      <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Choose contacts">
+        <div class="sheet-grab" aria-hidden="true"></div>
+        <div class="sheet-head">
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:600">Your contacts</div>
+            <div style="font-size:12px;color:var(--ink-3)">Adding to U8 SPL as parents</div>
+          </div>
+          <button class="iconbtn" style="color:var(--ink-3)" data-sheet="close" aria-label="Close">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="search" style="margin:0 0 10px">Search contacts</div>
+        <div class="sheet-list">
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Aisha Rahman</div><div class="sub tnum">+61 4XX XXX 014</div></div></button>
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Ben Carter</div><div class="sub tnum">+61 4XX XXX 019</div></div></button>
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Dentist — Dr Awad</div><div class="sub tnum">+61 2 XXXX XXXX</div></div></button>
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Elena Petrova</div><div class="sub tnum">+61 4XX XXX 016</div></div></button>
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Josh Meredith</div><div class="sub tnum">+61 4XX XXX 017</div></div></button>
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Mum</div><div class="sub tnum">+61 4XX XXX XXX</div></div></button>
+          <button class="ctc" data-ctc><span class="cbox"></span><div class="body"><div class="nm">Tom Bui</div><div class="sub tnum">+61 4XX XXX 015</div></div></button>
+        </div>
+        <div class="sheet-foot">
+          <div style="font-size:12px;color:var(--ink-3)" id="ctc-note">Nothing leaves your phone until you tap add.</div>
+          <button class="btn" id="ctc-add" disabled data-sheet="confirm">Add none</button>
         </div>
       </div>
 
@@ -1149,6 +1189,29 @@
         background:var(--yes-bg); color:var(--yes)}
   @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
 
+  /* ---- contact picker sheet ---- */
+  .ioswarn{display:flex; gap:7px; align-items:flex-start; font-size:12px; color:var(--maybe);
+           background:var(--maybe-bg); border-radius:8px; padding:8px 10px; line-height:1.4}
+  .ioswarn svg{flex:none; margin-top:1px}
+  .scrim{position:absolute; inset:0; background:#0b1220; opacity:.45; z-index:20}
+  .sheet{position:absolute; left:0; right:0; bottom:0; z-index:21; background:var(--surface);
+         border-radius:18px 18px 0 0; box-shadow:0 -8px 30px #0b122033; padding:8px 14px 14px;
+         display:flex; flex-direction:column; max-height:78%}
+  .sheet-grab{width:38px; height:4px; border-radius:2px; background:var(--line); margin:2px auto 10px}
+  .sheet-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:11px}
+  .sheet-list{flex:1; overflow-y:auto; margin:0 -14px; padding:0 14px}
+  .ctc{display:flex; gap:11px; align-items:center; width:100%; text-align:left; padding:9px 2px}
+  .ctc + .ctc{border-top:1px solid var(--line-2)}
+  .ctc .body{flex:1; min-width:0}
+  .ctc .nm{font-weight:600; font-size:14px}
+  .ctc .sub{font-size:12.5px; color:var(--ink-3)}
+  .cbox{width:21px; height:21px; border-radius:6px; border:1.8px solid var(--line); flex:none; position:relative}
+  .ctc[aria-pressed="true"] .cbox{background:var(--brand); border-color:var(--brand)}
+  .ctc[aria-pressed="true"] .cbox:after{content:""; position:absolute; left:6px; top:2px; width:6px; height:11px;
+    border:solid #fff; border-width:0 2.2px 2.2px 0; transform:rotate(43deg)}
+  .sheet-foot{display:grid; gap:9px; padding-top:11px; border-top:1px solid var(--line); margin-top:4px}
+  .sheet-foot .btn[disabled]{opacity:.45}
+
   /* ---- approval queue ---- */
   .tap.ok{color:var(--yes); border-color:var(--yes)}
   .tap.no{color:var(--ink-3)}
@@ -1314,6 +1377,57 @@
       if (SR.toast) SR.toast(ok ? name + ' is in — they are signed in already'
                                 : name + ' declined. They are told nothing.');
     });
+  });
+
+  /* ---- contact picker ----------------------------------------------
+     Modelled on the real Contact Picker API, which is user-mediated: the
+     browser returns only the entries the person selected. The address book
+     is never handed over wholesale, and nothing is sent anywhere until they
+     confirm. Same contract the Capacitor plugin will honour. */
+  var sheet = document.getElementById('sheet');
+  var scrim = document.getElementById('scrim');
+  var addBtn = document.getElementById('ctc-add');
+
+  function selected(){
+    return Array.prototype.slice.call(document.querySelectorAll('.ctc[aria-pressed="true"]'));
+  }
+  function syncAdd(){
+    var n = selected().length;
+    addBtn.textContent = n === 0 ? 'Add none' : 'Add ' + n + ' to U8 SPL';
+    addBtn.disabled = n === 0;
+    document.getElementById('ctc-note').textContent = n === 0
+      ? 'Nothing leaves your phone until you tap add.'
+      : n + ' selected. The rest of your contacts stay on the phone.';
+  }
+  function openSheet(open){
+    sheet.hidden = !open;
+    scrim.hidden = !open;
+    if (open) syncAdd();
+  }
+
+  document.querySelectorAll('.ctc').forEach(function(c){
+    c.setAttribute('aria-pressed', 'false');
+    c.addEventListener('click', function(){
+      c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
+      syncAdd();
+    });
+  });
+
+  document.querySelectorAll('[data-sheet]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var a = b.dataset.sheet;
+      if (a === 'open')  return openSheet(true);
+      if (a === 'close') return openSheet(false);
+      if (a === 'confirm'){
+        var names = selected().map(function(c){ return c.querySelector('.nm').textContent; });
+        openSheet(false);
+        if (SR.toast) SR.toast(names.length + ' added to U8 SPL — they get one text, then the coach approves');
+      }
+    });
+  });
+  if (scrim) scrim.addEventListener('click', function(){ openSheet(false); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !sheet.hidden) openSheet(false);
   });
 
   phone.dataset.dev = 'std';

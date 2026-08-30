@@ -41,6 +41,18 @@ one and is meant to reach hundreds of academies.
   - Token validation and session minting are server-side with the service
     role. This is the one sanctioned exception to client-first, and needs
     its own tests - it is the most likely place in the system to leak.
+- **Contacts are picked, never synced.** There is no bulk address-book
+  upload and there must never be one. A coach's phone holds people with no
+  relationship to the academy; putting them on our servers is a Privacy Act
+  problem and exactly the kind of thing that ends a product built around
+  other people's children. The OS picker returns only what the coach chose,
+  and nothing is sent until they confirm on a review screen.
+  - `lib/adapters/contacts.ts` — web uses the Contact Picker API, which is
+    **Chrome-on-Android only**. Safari has no equivalent. `isSupported()`
+    must be checked before the button is rendered; iPhone falls back to
+    pasting numbers until the Capacitor plugin lands in phase 8.
+  - `normalisePhone` returns '' rather than guessing. A half-parsed number
+    silently invites a stranger into a channel full of children.
 - **SMS is reserved for one case: a match cancelled or moved inside 24
   hours.** Everything routine - announcements, new messages, RSVP nudges,
   24h reminders - is in-app and web push. Recurring SMS fallback was costed
