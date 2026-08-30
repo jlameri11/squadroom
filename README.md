@@ -73,6 +73,13 @@ academy B's messages. It is idempotent; run it after every migration.
     tombstone. A soft-delete flag alone would leave the body readable
     straight from the API, whatever the UI drew.
 
+## Roadmap
+
+Phase 0 (foundations) is complete. Then: auth and the invite chain, admin
+console, chat, events and RSVPs, polls and directory, PWA and push, then
+**payments** (Stripe Connect Express — fees go from parent straight to the
+academy, never through Squadroom), then the Capacitor native wrap.
+
 ## Layout
 
 ```
