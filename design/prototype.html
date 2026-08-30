@@ -1,0 +1,1149 @@
+<title>Squadroom Prototype</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap">
+<style>
+  :root{
+    --brand:#17466E; --brand-soft:#17466E1a; --brand-ink:#ffffff;
+    --paper:#EEF1F5; --surface:#ffffff; --surface-2:#E7EBF1; --surface-3:#F5F7FA;
+    --ink:#0E1726; --ink-2:#4C5A6D; --ink-3:#8391A3;
+    --line:#D9E0E9; --line-2:#EAEEF3;
+    --accent:#DD5620;
+    --yes:#1C7A4C; --yes-bg:#1C7A4C18;
+    --maybe:#9C6B06; --maybe-bg:#9C6B0618;
+    --no:#8E3020; --no-bg:#8E302018;
+    --bubble-in:#ffffff; --bubble-out:#DCE7F2;
+    --shadow:0 1px 2px #0e17260f, 0 8px 24px #0e172614;
+    --radius:14px;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --brand-soft:#ffffff14; --brand-ink:#ffffff;
+      --paper:#080D16; --surface:#121B29; --surface-2:#1B2637; --surface-3:#0E1723;
+      --ink:#E8EDF4; --ink-2:#A6B2C4; --ink-3:#75839A;
+      --line:#243044; --line-2:#1A2434;
+      --accent:#FF7A45;
+      --yes:#4FB587; --yes-bg:#4FB58722;
+      --maybe:#D0A03C; --maybe-bg:#D0A03C22;
+      --no:#D9755F; --no-bg:#D9755F22;
+      --bubble-in:#1B2637; --bubble-out:#23405C;
+      --shadow:0 1px 2px #0006, 0 10px 30px #0008;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --brand-soft:#ffffff14; --brand-ink:#ffffff;
+    --paper:#080D16; --surface:#121B29; --surface-2:#1B2637; --surface-3:#0E1723;
+    --ink:#E8EDF4; --ink-2:#A6B2C4; --ink-3:#75839A;
+    --line:#243044; --line-2:#1A2434;
+    --accent:#FF7A45;
+    --yes:#4FB587; --yes-bg:#4FB58722;
+    --maybe:#D0A03C; --maybe-bg:#D0A03C22;
+    --no:#D9755F; --no-bg:#D9755F22;
+    --bubble-in:#1B2637; --bubble-out:#23405C;
+    --shadow:0 1px 2px #0006, 0 10px 30px #0008;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .eyebrow{
+    font-family:"Barlow Condensed","IBM Plex Sans",sans-serif;
+    text-transform:uppercase; letter-spacing:.09em; font-weight:600;
+    font-size:13px; color:var(--ink-3);
+  }
+  h1,h2,h3{font-family:"Barlow Condensed","IBM Plex Sans",sans-serif; text-wrap:balance; margin:0; letter-spacing:.01em}
+  .tnum{font-variant-numeric:tabular-nums}
+  button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+  /* ---------- page shell ---------- */
+  .wrap{max-width:1180px; margin:0 auto; padding:28px 20px 64px; display:grid; gap:28px; grid-template-columns:minmax(0,1fr) 404px; align-items:start}
+  @media (max-width:940px){ .wrap{grid-template-columns:minmax(0,1fr)} .rail{order:-1} }
+
+  .masthead{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:6px}
+  .masthead h1{font-size:40px; font-weight:700; line-height:1}
+  .masthead .sub{color:var(--ink-2); font-size:15px}
+  .lede{color:var(--ink-2); max-width:62ch; margin:10px 0 0}
+
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow)}
+  .panel + .panel{margin-top:16px}
+  .panel h2{font-size:22px; font-weight:600; margin-bottom:4px}
+  .panel h3{font-size:17px; font-weight:600}
+
+  .ctl{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .seg{display:inline-flex; background:var(--surface-2); border-radius:10px; padding:3px; gap:2px}
+  .seg button{padding:7px 13px; border-radius:8px; font-size:13px; font-weight:600; color:var(--ink-2); white-space:nowrap}
+  .seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 1px 2px #0e172618}
+  .swatches{display:flex; gap:7px}
+  .swatch{width:26px; height:26px; border-radius:7px; border:2px solid transparent; box-shadow:inset 0 0 0 1px #00000018}
+  .swatch[aria-pressed="true"]{border-color:var(--ink); }
+
+  .notes{display:grid; gap:11px; margin-top:14px}
+  .note{display:grid; grid-template-columns:auto minmax(0,1fr); gap:11px; align-items:start; font-size:14px; color:var(--ink-2)}
+  .note b{color:var(--ink); font-weight:600}
+  .tag{font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.07em; font-size:12px; font-weight:600;
+       background:var(--surface-2); color:var(--ink-2); padding:3px 8px; border-radius:6px; white-space:nowrap}
+  code{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.88em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+
+  /* ---------- phone ---------- */
+  .rail{position:sticky; top:24px}
+  .phone{
+    width:100%; max-width:404px; margin:0 auto; height:812px;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:34px; box-shadow:var(--shadow); overflow:hidden;
+    display:flex; flex-direction:column; position:relative;
+  }
+  .statusbar{display:flex; justify-content:space-between; align-items:center; padding:11px 22px 5px; font-size:12px; font-weight:600; color:var(--brand-ink); background:var(--brand)}
+  .appbar{background:var(--brand); color:var(--brand-ink); padding:6px 16px 13px; display:flex; align-items:center; gap:11px}
+  .appbar .crest{width:34px; height:34px; border-radius:9px; background:#ffffff26; display:grid; place-items:center; font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:15px; letter-spacing:.02em; flex:none}
+  .appbar .ttl{font-family:"Barlow Condensed",sans-serif; font-weight:600; font-size:21px; line-height:1.1}
+  .appbar .meta{font-size:12px; opacity:.78; line-height:1.2}
+  .appbar .grow{flex:1; min-width:0}
+  .iconbtn{width:32px; height:32px; border-radius:9px; display:grid; place-items:center; color:var(--brand-ink); opacity:.9}
+  .iconbtn:hover{background:#ffffff1f}
+
+  .screen{flex:1; overflow-y:auto; overscroll-behavior:contain; background:var(--surface-3)}
+  .screen[hidden]{display:none}
+  .pad{padding:14px}
+
+  .navbar{display:flex; border-top:1px solid var(--line); background:var(--surface); padding:6px 4px 9px}
+  .navbar button{flex:1; display:grid; justify-items:center; gap:3px; padding:5px 2px; border-radius:10px; color:var(--ink-3); font-size:10.5px; font-weight:600; letter-spacing:.02em}
+  .navbar button[aria-pressed="true"]{color:var(--brand)}
+  :root[data-theme="dark"] .navbar button[aria-pressed="true"],
+  :root:not([data-theme="light"]) .navbar button[aria-pressed="true"]{color:var(--ink)}
+  .navbar svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+  .navbar .dot{position:absolute; transform:translate(11px,-3px); width:7px; height:7px; border-radius:50%; background:var(--accent)}
+
+  /* ---------- shared bits ---------- */
+  .sect{display:flex; align-items:center; justify-content:space-between; margin:2px 2px 9px}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 2px #0e17260d}
+  .stack{display:grid; gap:9px}
+  .badge{font-family:"Barlow Condensed",sans-serif; font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding:2px 6px; border-radius:5px}
+  .badge.coach{background:var(--brand-soft); color:var(--brand)}
+  :root[data-theme="dark"] .badge.coach, :root:not([data-theme="light"]) .badge.coach{color:#9DC4E8}
+  .badge.parent{background:var(--surface-2); color:var(--ink-3)}
+  .unread{background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; min-width:20px; height:20px; padding:0 6px; border-radius:10px; display:grid; place-items:center; font-variant-numeric:tabular-nums}
+
+  /* upcoming */
+  .ev{padding:11px 12px; display:grid; gap:9px}
+  .ev-top{display:flex; gap:11px; align-items:flex-start}
+  .datechip{flex:none; width:46px; text-align:center; border-radius:9px; background:var(--surface-2); padding:5px 0}
+  .datechip .d{font-family:"Barlow Condensed",sans-serif; font-size:21px; font-weight:700; line-height:1}
+  .datechip .m{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600}
+  .ev-ttl{font-weight:600; font-size:14.5px; line-height:1.25}
+  .ev-sub{font-size:12.5px; color:var(--ink-2); margin-top:2px}
+  .typechip{font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.07em; font-size:11px; font-weight:600; padding:2px 6px; border-radius:5px; background:var(--surface-2); color:var(--ink-2)}
+  .typechip.match{background:var(--brand); color:var(--brand-ink)}
+
+  .rsvp{display:flex; gap:6px}
+  .rsvp button{flex:1; padding:7px 4px; border-radius:9px; border:1px solid var(--line); font-size:12.5px; font-weight:600; color:var(--ink-2); background:var(--surface)}
+  .rsvp button:hover{border-color:var(--ink-3)}
+  .rsvp button[aria-pressed="true"][data-v="yes"]{background:var(--yes-bg); border-color:var(--yes); color:var(--yes)}
+  .rsvp button[aria-pressed="true"][data-v="maybe"]{background:var(--maybe-bg); border-color:var(--maybe); color:var(--maybe)}
+  .rsvp button[aria-pressed="true"][data-v="no"]{background:var(--no-bg); border-color:var(--no); color:var(--no)}
+  .kidrow{display:flex; align-items:center; gap:8px}
+  .kidrow .who{font-size:12.5px; font-weight:600; width:52px; flex:none; color:var(--ink-2)}
+
+  /* channel list */
+  .chan{display:flex; gap:11px; align-items:center; padding:11px 12px; width:100%; text-align:left}
+  .chan + .chan{border-top:1px solid var(--line-2)}
+  .av{width:40px; height:40px; border-radius:11px; flex:none; display:grid; place-items:center; font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:15px; background:var(--brand); color:var(--brand-ink)}
+  .av.alt{background:var(--surface-2); color:var(--ink-2)}
+  .chan .body{flex:1; min-width:0}
+  .chan .nm{font-weight:600; font-size:14.5px; display:flex; align-items:center; gap:6px}
+  .chan .pv{font-size:12.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .chan .rt{text-align:right; display:grid; gap:5px; justify-items:end; flex:none}
+  .chan .tm{font-size:11px; color:var(--ink-3)}
+  .muted-i{width:14px;height:14px;stroke:var(--ink-3);fill:none;stroke-width:2}
+
+  /* chat */
+  .pinbar{background:var(--surface); border-bottom:1px solid var(--line); padding:8px 12px; display:grid; gap:7px}
+  .pinrow{display:flex; gap:8px; align-items:center; font-size:12.5px; min-width:0}
+  .pinrow .lbl{font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.06em; font-size:11px; font-weight:600; color:var(--ink-3); flex:none}
+  .pinrow .txt{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-2)}
+  .thread{padding:12px 12px 16px; display:grid; gap:11px}
+  .daysep{display:flex; align-items:center; gap:10px; color:var(--ink-3); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin:3px 0}
+  .daysep:before,.daysep:after{content:""; flex:1; height:1px; background:var(--line)}
+  .msg{display:grid; gap:4px; max-width:84%}
+  .msg.out{margin-left:auto; justify-items:end}
+  .who{font-size:12px; font-weight:600; color:var(--ink-2); display:flex; align-items:center; gap:6px}
+  .bub{background:var(--bubble-in); border:1px solid var(--line); padding:9px 12px; border-radius:14px 14px 14px 4px; font-size:15px; line-height:1.45}
+  .msg.out .bub{background:var(--bubble-out); border-color:transparent; border-radius:14px 14px 4px 14px}
+  .stamp{font-size:10.5px; color:var(--ink-3)}
+  .quoted{border-left:3px solid var(--brand); padding:3px 0 3px 8px; margin-bottom:6px; font-size:12.5px; color:var(--ink-2); background:#00000008; border-radius:0 6px 6px 0}
+  .maplink{color:var(--brand); text-decoration:underline; text-underline-offset:2px}
+  :root[data-theme="dark"] .maplink, :root:not([data-theme="light"]) .maplink{color:#8FBEE8}
+  .anno{border:1px solid var(--brand); background:var(--brand-soft); border-radius:12px; padding:10px 12px}
+  .anno .hd{display:flex; align-items:center; gap:6px; margin-bottom:5px}
+  .reacts{display:flex; gap:5px; flex-wrap:wrap; margin-top:2px}
+  .react{border:1px solid var(--line); background:var(--surface); border-radius:20px; padding:2px 8px; font-size:12.5px; display:flex; align-items:center; gap:4px}
+  .react[aria-pressed="true"]{border-color:var(--brand); background:var(--brand-soft)}
+  .react .n{font-weight:600; color:var(--ink-2); font-variant-numeric:tabular-nums}
+  .addreact{border:1px dashed var(--line); border-radius:20px; padding:2px 8px; font-size:12.5px; color:var(--ink-3)}
+
+  /* in-chat cards */
+  .incard{background:var(--surface); border:1px solid var(--line); border-radius:13px; overflow:hidden; width:100%}
+  .incard .hd{padding:9px 12px; border-bottom:1px solid var(--line-2); display:flex; align-items:center; gap:7px}
+  .incard .bd{padding:11px 12px; display:grid; gap:10px}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:13px}
+  .kv dt{color:var(--ink-3)}
+  .kv dd{margin:0; font-weight:500}
+  .kit{display:inline-flex; align-items:center; gap:6px}
+  .kitdot{width:11px; height:11px; border-radius:3px; border:1px solid #00000022}
+  .opt{display:grid; gap:5px}
+  .optrow{position:relative; border:1px solid var(--line); border-radius:9px; padding:7px 10px; font-size:13.5px; display:flex; justify-content:space-between; gap:10px; overflow:hidden; width:100%; text-align:left}
+  .optrow .bar{position:absolute; inset:0 auto 0 0; background:var(--brand-soft); z-index:0}
+  .optrow span{position:relative; z-index:1}
+  .optrow[aria-pressed="true"]{border-color:var(--brand); font-weight:600}
+  .pct{font-variant-numeric:tabular-nums; color:var(--ink-2); font-weight:600}
+
+  /* composer */
+  .composer{border-top:1px solid var(--line); background:var(--surface); padding:9px 11px; display:flex; gap:8px; align-items:center}
+  .fakeinput{flex:1; background:var(--surface-2); border-radius:20px; padding:9px 13px; color:var(--ink-3); font-size:14px}
+  .send{width:36px; height:36px; border-radius:50%; background:var(--brand); color:var(--brand-ink); display:grid; place-items:center; flex:none}
+  .locked{border-top:1px solid var(--line); background:var(--surface); padding:10px 12px; display:grid; gap:8px}
+  .locked .txt{font-size:12.5px; color:var(--ink-2); display:flex; align-items:center; gap:7px}
+  .quickreacts{display:flex; gap:6px}
+  .quickreacts button{flex:1; border:1px solid var(--line); border-radius:10px; padding:6px 0; font-size:17px; background:var(--surface)}
+  .quickreacts button:hover{background:var(--surface-2)}
+
+  /* lists / admin */
+  .row{display:flex; gap:11px; align-items:center; padding:10px 12px; width:100%; text-align:left}
+  .row + .row{border-top:1px solid var(--line-2)}
+  .row .body{flex:1; min-width:0}
+  .row .nm{font-weight:600; font-size:14px}
+  .row .sub{font-size:12.5px; color:var(--ink-3)}
+  .pill{font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap}
+  .pill.ok{background:var(--yes-bg); color:var(--yes)}
+  .pill.wait{background:var(--maybe-bg); color:var(--maybe)}
+  .pill.off{background:var(--surface-2); color:var(--ink-3)}
+  .tap{width:32px; height:32px; border-radius:9px; border:1px solid var(--line); display:grid; place-items:center; flex:none; color:var(--ink-2)}
+  .tap svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+  .search{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:9px 12px; color:var(--ink-3); font-size:13.5px; margin-bottom:11px}
+  .chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:3px; margin-bottom:11px}
+  .chips button{border:1px solid var(--line); background:var(--surface); border-radius:20px; padding:5px 12px; font-size:12.5px; font-weight:500; white-space:nowrap; color:var(--ink-2)}
+  .chips button[aria-pressed="true"]{background:var(--brand); border-color:var(--brand); color:var(--brand-ink)}
+  .btn{background:var(--brand); color:var(--brand-ink); border-radius:10px; padding:10px 14px; font-weight:600; font-size:13.5px; text-align:center}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--ink)}
+  .qr{width:96px; height:96px; border-radius:10px; background:
+      repeating-conic-gradient(var(--ink) 0% 25%, transparent 0% 50%) 0 0/16px 16px; opacity:.85; flex:none}
+  .empty{padding:24px 16px; text-align:center; color:var(--ink-3); font-size:13.5px}
+  .toast{position:absolute; left:50%; bottom:78px; transform:translateX(-50%) translateY(8px); background:var(--ink); color:var(--paper);
+         padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .18s, transform .18s; white-space:nowrap; max-width:88%}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+  @media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+</style>
+
+<div class="wrap">
+  <main>
+    <div class="masthead">
+      <h1>Squadroom</h1>
+      <span class="sub">Interface prototype &middot; v0</span>
+    </div>
+    <p class="lede">A working click-through of the six core screens, wired to the real permission model. Switch between <b>Coach</b> and <b>Parent</b> to see how the same channel changes: who can post, who sees the RSVP roster, who sees the names behind a reaction.</p>
+
+    <div class="panel" style="margin-top:20px">
+      <h2>Try it</h2>
+      <div class="notes">
+        <div class="note"><span class="tag">Role</span><div>Flip to <b>Parent</b> in the U8s channel — the composer becomes a reaction bar, the Admin tab disappears, and the poll stops showing who voted.</div></div>
+        <div class="note"><span class="tag">Mode</span><div>As Coach, use the posting-mode control in the channel header. It's <code>channels.posting_mode</code>, enforced in RLS, not just hidden here.</div></div>
+        <div class="note"><span class="tag">Brand</span><div>The colour swatches are <code>academies.primary_colour</code> — one deploy, every academy its own skin.</div></div>
+      </div>
+      <div class="ctl" style="margin-top:16px">
+        <div class="seg" role="group" aria-label="View as">
+          <button data-role="coach" aria-pressed="true">View as Coach</button>
+          <button data-role="parent" aria-pressed="false">View as Parent</button>
+        </div>
+        <div class="swatches" role="group" aria-label="Academy colour">
+          <button class="swatch" data-brand="#17466E" style="background:#17466E" aria-pressed="true" title="NRIFA navy"></button>
+          <button class="swatch" data-brand="#136B4F" style="background:#136B4F" aria-pressed="false" title="Pitch green"></button>
+          <button class="swatch" data-brand="#7A2233" style="background:#7A2233" aria-pressed="false" title="Claret"></button>
+          <button class="swatch" data-brand="#33407A" style="background:#33407A" aria-pressed="false" title="Indigo"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Phone size</h2>
+      <p style="color:var(--ink-2); margin:6px 0 12px; font-size:14px">The frame is a real device size, not a decoration — check the U8s channel at <b>SE</b> before you sign off on anything.</p>
+      <div class="seg" role="group" aria-label="Device size">
+        <button data-dev="se" aria-pressed="false">SE &middot; 375</button>
+        <button data-dev="std" aria-pressed="true">iPhone 15 &middot; 393</button>
+        <button data-dev="max" aria-pressed="false">Max &middot; 430</button>
+        <button data-dev="fit" aria-pressed="false">Fit window</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>What each screen proves</h2>
+      <div class="notes">
+        <div class="note"><span class="tag">Home</span><div><b>Upcoming before chatter.</b> Next 7 days across all your teams with RSVP inline — a parent answers for both kids without opening anything.</div></div>
+        <div class="note"><span class="tag">Chat</span><div><b>Structure WhatsApp can't do.</b> Pinned bar carries the next event and the latest announcement. Events and polls render as cards. Addresses become map links.</div></div>
+        <div class="note"><span class="tag">Event</span><div><b>Asymmetric visibility.</b> Coaches get the attendance roster; parents see only their own answer.</div></div>
+        <div class="note"><span class="tag">Team</span><div><b>The only WhatsApp integration in v1</b> — tap-to-call and <code>wa.me</code> deep links, gated by the academy's directory setting.</div></div>
+        <div class="note"><span class="tag">Admin</span><div><b>Migration in one paste.</b> Bulk "Name, Phone" lines, live invite status, and a per-team QR that a coach drops into the old WhatsApp group.</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Not built here</h2>
+      <p style="color:var(--ink-2); margin:6px 0 0; font-size:14px">This is a static prototype — no Supabase, no auth, no realtime. It exists to settle layout, hierarchy and the permission rules before I write the UI against the schema. Data is illustrative: NRIFA, three teams, a September round.</p>
+    </div>
+  </main>
+
+  <div class="rail">
+    <div class="phone">
+      <div class="statusbar"><span class="tnum">9:41</span><span>NRIFA</span><span class="tnum">100%</span></div>
+      <div class="appbar">
+        <div class="crest" id="crest">NR</div>
+        <div class="grow" id="bar-generic">
+          <div class="ttl" id="bar-title">Home</div>
+          <div class="meta" id="bar-meta">NRIFA &middot; Sunday 30 August</div>
+        </div>
+        <button class="iconbtn" id="bar-action" aria-label="Search">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        </button>
+      </div>
+
+      <!-- ============ HOME ============ -->
+      <section class="screen" id="s-home">
+        <div class="pad">
+          <div class="sect"><span class="eyebrow">Upcoming &middot; next 7 days</span><span style="font-size:12px;color:var(--ink-3)">3 events</span></div>
+          <div class="stack">
+
+            <article class="card ev">
+              <div class="ev-top">
+                <div class="datechip"><div class="d tnum">1</div><div class="m">Tue</div></div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px"><span class="typechip">Training</span><span class="badge parent">U8 SPL</span></div>
+                  <div class="ev-ttl">Tuesday training</div>
+                  <div class="ev-sub tnum">5:00–6:00pm &middot; Christie Park, Field 2</div>
+                </div>
+              </div>
+              <div class="coach-only">
+                <div class="ev-sub" style="display:flex;justify-content:space-between"><span><b style="color:var(--yes)">11 in</b> &middot; 1 out &middot; 2 no reply</span><span style="color:var(--brand)">View roster</span></div>
+              </div>
+              <div class="parent-only stack">
+                <div class="kidrow"><span class="who">Leo</span>
+                  <div class="rsvp" data-rsvp="leo-tue">
+                    <button data-v="yes" aria-pressed="true">Going</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">Out</button>
+                  </div></div>
+                <div class="kidrow"><span class="who">Mila</span>
+                  <div class="rsvp" data-rsvp="mila-tue">
+                    <button data-v="yes" aria-pressed="false">Going</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">Out</button>
+                  </div></div>
+              </div>
+            </article>
+
+            <article class="card ev">
+              <div class="ev-top">
+                <div class="datechip"><div class="d tnum">5</div><div class="m">Sat</div></div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px"><span class="typechip match">Match</span><span class="badge parent">Round 12</span></div>
+                  <div class="ev-ttl">U8 SPL vs Gladesville Ravens</div>
+                  <div class="ev-sub tnum">9:00am &middot; ELS Hall Park, Field 3</div>
+                  <div class="ev-sub kit" style="margin-top:4px">Kit <span class="kitdot" style="background:var(--brand)"></span> Navy &middot; be there 8:30</div>
+                </div>
+              </div>
+              <div class="coach-only">
+                <div class="ev-sub" style="display:flex;justify-content:space-between"><span><b style="color:var(--yes)">9 in</b> &middot; 2 out &middot; 3 no reply</span><span style="color:var(--brand)">View roster</span></div>
+              </div>
+              <div class="parent-only stack">
+                <div class="kidrow"><span class="who">Leo</span>
+                  <div class="rsvp" data-rsvp="leo-sat">
+                    <button data-v="yes" aria-pressed="false">Going</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">Out</button>
+                  </div></div>
+                <div class="kidrow"><span class="who">Mila</span>
+                  <div class="rsvp" data-rsvp="mila-sat">
+                    <button data-v="yes" aria-pressed="false">Going</button><button data-v="maybe" aria-pressed="true">Maybe</button><button data-v="no" aria-pressed="false">Out</button>
+                  </div></div>
+              </div>
+            </article>
+
+            <article class="card ev">
+              <div class="ev-top">
+                <div class="datechip"><div class="d tnum">6</div><div class="m">Sun</div></div>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px"><span class="typechip">Social</span><span class="badge parent">Academy</span></div>
+                  <div class="ev-ttl">Season BBQ &amp; presentation</div>
+                  <div class="ev-sub tnum">12:00pm &middot; Magdala Park</div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="sect" style="margin-top:20px"><span class="eyebrow">Channels</span><span class="unread">17</span></div>
+          <div class="card">
+            <button class="chan" data-go="channel">
+              <div class="av">U8</div>
+              <div class="body"><div class="nm">U8s NRIFA SPL Team</div><div class="pv">Coach Joey: Kit is navy this week — 8:30 …</div></div>
+              <div class="rt"><span class="tm">9:12</span><span class="unread">12</span></div>
+            </button>
+            <button class="chan">
+              <div class="av alt">CO</div>
+              <div class="body"><div class="nm">Coaches</div><div class="pv">Marcus: Can anyone cover Thursday?</div></div>
+              <div class="rt"><span class="tm">8:40</span><span class="unread">5</span></div>
+            </button>
+            <button class="chan">
+              <div class="av alt">U1</div>
+              <div class="body"><div class="nm">U10s Age Group
+                <svg class="muted-i" viewBox="0 0 24 24"><path d="M3 3l18 18M11 5 6 9H3v6h3l5 4V5z"/></svg></div>
+                <div class="pv">Priya Nair: Thanks everyone 🙌</div></div>
+              <div class="rt"><span class="tm">Sat</span></div>
+            </button>
+            <button class="chan">
+              <div class="av alt">NR</div>
+              <div class="body"><div class="nm">NRIFA Announcements</div><div class="pv">Rego for summer program is open</div></div>
+              <div class="rt"><span class="tm">Fri</span></div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CHAT LIST ============ -->
+      <section class="screen" id="s-chats" hidden>
+        <div class="pad">
+          <div class="search">Search messages and people</div>
+          <div class="sect"><span class="eyebrow">Your channels</span></div>
+          <div class="card">
+            <button class="chan" data-go="channel">
+              <div class="av">U8</div>
+              <div class="body"><div class="nm">U8s NRIFA SPL Team</div><div class="pv">Coach Joey: Kit is navy this week — 8:30 …</div></div>
+              <div class="rt"><span class="tm">9:12</span><span class="unread">12</span></div>
+            </button>
+            <button class="chan">
+              <div class="av alt">CO</div>
+              <div class="body"><div class="nm">Coaches</div><div class="pv">Marcus: Can anyone cover Thursday?</div></div>
+              <div class="rt"><span class="tm">8:40</span><span class="unread">5</span></div>
+            </button>
+            <button class="chan">
+              <div class="av alt">U1</div>
+              <div class="body"><div class="nm">U10s Age Group</div><div class="pv">Priya Nair: Thanks everyone 🙌</div></div>
+              <div class="rt"><span class="tm">Sat</span></div>
+            </button>
+            <button class="chan">
+              <div class="av alt">NR</div>
+              <div class="body"><div class="nm">NRIFA Announcements</div><div class="pv">Rego for summer program is open</div></div>
+              <div class="rt"><span class="tm">Fri</span></div>
+            </button>
+          </div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Direct</span></div>
+          <div class="card">
+            <button class="chan">
+              <div class="av alt">SW</div>
+              <div class="body"><div class="nm">Sam Whitfield <span class="badge parent">Parent</span></div><div class="pv">Leo will be 10 min late on Tuesday</div></div>
+              <div class="rt"><span class="tm">Sat</span><span class="unread">2</span></div>
+            </button>
+          </div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Archived &middot; 2025 season</span></div>
+          <div class="card">
+            <button class="chan">
+              <div class="av alt">U7</div>
+              <div class="body"><div class="nm">U7s 2025 Team</div><div class="pv">Read-only &middot; season ended 14 Sep 2025</div></div>
+              <div class="rt"><span class="tm">2025</span></div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CHANNEL ============ -->
+      <section class="screen" id="s-channel" hidden style="background:var(--surface-3)">
+        <div class="pinbar">
+          <div class="pinrow"><span class="lbl">Next</span><span class="txt">Sat 5 Sep, 9:00am &middot; vs Gladesville Ravens</span></div>
+          <div class="pinrow"><span class="lbl">Pinned</span><span class="txt">Kit is navy this week. Be there 8:30 sharp.</span></div>
+          <div class="coach-only" style="display:flex;gap:6px;align-items:center;padding-top:2px">
+            <span class="lbl" style="font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:600;color:var(--ink-3)">Posting</span>
+            <div class="seg" style="flex:1" role="group" aria-label="Posting mode">
+              <button data-mode="open" aria-pressed="true" style="flex:1;font-size:11.5px;padding:5px 6px">Open</button>
+              <button data-mode="hosts_only" aria-pressed="false" style="flex:1;font-size:11.5px;padding:5px 6px">Hosts only</button>
+              <button data-mode="replies_only" aria-pressed="false" style="flex:1;font-size:11.5px;padding:5px 6px">Replies</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="thread">
+          <div class="daysep">Friday 28 August</div>
+
+          <div class="msg out">
+            <div class="who">You <span class="badge coach">Coach</span></div>
+            <div class="anno">
+              <div class="hd"><span class="badge coach">Announcement</span></div>
+              <div style="font-size:15px;line-height:1.45">Kit is <b>navy</b> this week. Be there <b>8:30</b> sharp — Ravens have beaten us twice, let's start properly.</div>
+            </div>
+            <div class="reacts">
+              <button class="react" data-who="Priya Nair, Dan Kowalski, Aisha Rahman +9"><span>👍</span><span class="n">12</span></button>
+              <button class="react" data-who="Sam Whitfield, Tom Bui"><span>✅</span><span class="n">2</span></button>
+            </div>
+            <div class="stamp tnum">9:12</div>
+          </div>
+
+          <div class="msg">
+            <div class="who">Sam Whitfield <span class="badge parent">Parent</span></div>
+            <div class="bub">Is that ELS Hall Park or Christie? I've got <span class="maplink">14 Kent Rd, North Ryde</span> in my calendar from last time.</div>
+            <div class="stamp tnum">9:20</div>
+          </div>
+
+          <div class="msg out">
+            <div class="who">You <span class="badge coach">Coach</span></div>
+            <div class="bub">
+              <div class="quoted">Sam Whitfield: Is that ELS Hall Park or Christie?</div>
+              ELS Hall this week. Pinning the fixture so it's not buried 👇
+            </div>
+            <div class="stamp tnum">9:22</div>
+          </div>
+
+          <div class="msg out" style="max-width:92%">
+            <div class="incard">
+              <div class="hd"><span class="typechip match">Match</span><span style="font-weight:600;font-size:13.5px">Round 12</span></div>
+              <div class="bd">
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:600;line-height:1.15">U8 SPL vs Gladesville Ravens</div>
+                <dl class="kv">
+                  <dt>When</dt><dd class="tnum">Sat 5 Sep, 9:00am</dd>
+                  <dt>Where</dt><dd><span class="maplink">ELS Hall Park, Field 3</span></dd>
+                  <dt>Kit</dt><dd class="kit"><span class="kitdot" style="background:var(--brand)"></span> Navy / navy / navy</dd>
+                </dl>
+                <div class="parent-only stack">
+                  <div class="kidrow"><span class="who">Leo</span>
+                    <div class="rsvp" data-rsvp="leo-sat2"><button data-v="yes" aria-pressed="false">Going</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">Out</button></div></div>
+                  <div class="kidrow"><span class="who">Mila</span>
+                    <div class="rsvp" data-rsvp="mila-sat2"><button data-v="yes" aria-pressed="false">Going</button><button data-v="maybe" aria-pressed="true">Maybe</button><button data-v="no" aria-pressed="false">Out</button></div></div>
+                </div>
+                <div class="coach-only" style="display:flex;gap:8px">
+                  <button class="btn" style="flex:1" data-go="event">Who's coming &middot; 9/14</button>
+                  <button class="btn ghost" data-toast="Added to your calendar (.ics)">Add to calendar</button>
+                </div>
+              </div>
+            </div>
+            <div class="reacts"><button class="react" data-who="Aisha Rahman, Tom Bui, Dan Kowalski +5"><span>👍</span><span class="n">8</span></button></div>
+            <div class="stamp tnum">9:23</div>
+          </div>
+
+          <div class="daysep">Today</div>
+
+          <div class="msg out" style="max-width:92%">
+            <div class="incard">
+              <div class="hd"><span class="typechip">Availability poll</span><span style="margin-left:auto;font-size:12px;color:var(--ink-3)">Closes Wed 6pm</span></div>
+              <div class="bd">
+                <div style="font-weight:600;font-size:14.5px;line-height:1.3">Gala Day — Sun 20 Sep, Valentine Park. Who's available?</div>
+                <div class="parent-only stack">
+                  <div class="kidrow"><span class="who">Leo</span>
+                    <div class="rsvp" data-rsvp="leo-gala"><button data-v="yes" aria-pressed="false">Yes</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">No</button></div></div>
+                  <div class="kidrow"><span class="who">Mila</span>
+                    <div class="rsvp" data-rsvp="mila-gala"><button data-v="yes" aria-pressed="false">Yes</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">No</button></div></div>
+                  <div style="font-size:12px;color:var(--ink-3)">Add a note (e.g. “leaving at half time”)</div>
+                </div>
+                <div class="coach-only stack">
+                  <div class="opt">
+                    <div class="optrow"><div class="bar" style="width:64%"></div><span>Yes</span><span class="pct">9</span></div>
+                    <div class="optrow"><div class="bar" style="width:14%"></div><span>Maybe</span><span class="pct">2</span></div>
+                    <div class="optrow"><div class="bar" style="width:7%"></div><span>No</span><span class="pct">1</span></div>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn ghost" style="flex:1" data-toast="Reminder sent to 2 families">Remind 2 non-responders</button>
+                    <button class="btn" data-toast="Event created with 9 RSVPs pre-filled">Make event</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stamp tnum">9:41</div>
+          </div>
+
+          <div class="msg">
+            <div class="who">Priya Nair <span class="badge parent">Parent</span></div>
+            <div class="bub">Arjun's got a birthday party but he'll be there for the morning games 👍</div>
+            <div class="reacts"><button class="react" data-who="You (Coach Joey)"><span>❤️</span><span class="n">1</span></button></div>
+            <div class="stamp tnum">9:44</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ EVENT ============ -->
+      <section class="screen" id="s-event" hidden>
+        <div class="pad">
+          <div class="card" style="padding:14px;display:grid;gap:11px">
+            <div style="display:flex;gap:6px;align-items:center"><span class="typechip match">Match</span><span class="badge parent">U8 SPL &middot; Round 12</span></div>
+            <h3 style="font-size:23px;font-weight:600;line-height:1.1">U8 SPL vs Gladesville Ravens</h3>
+            <dl class="kv" style="font-size:13.5px">
+              <dt>When</dt><dd class="tnum">Saturday 5 September, 9:00am – 10:00am</dd>
+              <dt>Arrive</dt><dd class="tnum">8:30am</dd>
+              <dt>Where</dt><dd><span class="maplink">ELS Hall Park, Field 3, Kent Rd North Ryde</span></dd>
+              <dt>Kit</dt><dd class="kit"><span class="kitdot" style="background:var(--brand)"></span> Navy / navy / navy</dd>
+            </dl>
+            <div style="display:flex;gap:8px">
+              <button class="btn ghost" style="flex:1" data-toast="Opening in Maps">Directions</button>
+              <button class="btn ghost" style="flex:1" data-toast="Added to your calendar (.ics)">Add to calendar</button>
+            </div>
+          </div>
+
+          <div class="parent-only">
+            <div class="sect" style="margin-top:18px"><span class="eyebrow">Your RSVP</span></div>
+            <div class="card" style="padding:12px">
+              <div class="stack">
+                <div class="kidrow"><span class="who">Leo</span>
+                  <div class="rsvp" data-rsvp="leo-ev"><button data-v="yes" aria-pressed="true">Going</button><button data-v="maybe" aria-pressed="false">Maybe</button><button data-v="no" aria-pressed="false">Out</button></div></div>
+                <div class="kidrow"><span class="who">Mila</span>
+                  <div class="rsvp" data-rsvp="mila-ev"><button data-v="yes" aria-pressed="false">Going</button><button data-v="maybe" aria-pressed="true">Maybe</button><button data-v="no" aria-pressed="false">Out</button></div></div>
+              </div>
+            </div>
+            <div class="empty">Only coaches can see the full attendance list.</div>
+          </div>
+
+          <div class="coach-only">
+            <div class="sect" style="margin-top:18px"><span class="eyebrow">Who's coming</span><span style="font-size:12px;color:var(--ink-3)"><b style="color:var(--yes)">9 in</b> &middot; 2 out &middot; 3 no reply</span></div>
+            <div class="card">
+              <div class="row"><div class="av alt" style="width:32px;height:32px;font-size:12px">LW</div><div class="body"><div class="nm">Leo Whitfield</div><div class="sub">Sam Whitfield</div></div><span class="pill ok">Going</span></div>
+              <div class="row"><div class="av alt" style="width:32px;height:32px;font-size:12px">AN</div><div class="body"><div class="nm">Arjun Nair</div><div class="sub">Priya Nair &middot; “here for morning games”</div></div><span class="pill ok">Going</span></div>
+              <div class="row"><div class="av alt" style="width:32px;height:32px;font-size:12px">MK</div><div class="body"><div class="nm">Mila Kowalski</div><div class="sub">Dan Kowalski</div></div><span class="pill wait">Maybe</span></div>
+              <div class="row"><div class="av alt" style="width:32px;height:32px;font-size:12px">HR</div><div class="body"><div class="nm">Hana Rahman</div><div class="sub">Aisha Rahman</div></div><span class="pill off">No reply</span></div>
+              <div class="row"><div class="av alt" style="width:32px;height:32px;font-size:12px">TB</div><div class="body"><div class="nm">Theo Bui</div><div class="sub">Tom Bui</div></div><span class="pill off">No reply</span></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:11px">
+              <button class="btn ghost" style="flex:1" data-toast="Nudged 3 families">Nudge 3 no-replies</button>
+              <button class="btn" style="flex:1" data-toast="Posted to U8s NRIFA SPL Team">Post to channel</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ DIRECTORY ============ -->
+      <section class="screen" id="s-team" hidden>
+        <div class="pad">
+          <div class="search">Search 47 members</div>
+          <div class="chips">
+            <button aria-pressed="true">All teams</button><button aria-pressed="false">U8 SPL</button><button aria-pressed="false">U10</button><button aria-pressed="false">U12</button><button aria-pressed="false">Coaches</button>
+          </div>
+          <div class="sect"><span class="eyebrow">Staff</span></div>
+          <div class="card">
+            <div class="row"><div class="av" style="width:36px;height:36px;font-size:13px">JL</div>
+              <div class="body"><div class="nm">Joey Lameri <span class="badge coach">Coach</span></div><div class="sub tnum">U8 SPL, U12 &middot; +61 4XX XXX XXX</div></div>
+              <button class="tap" data-toast="Calling…" aria-label="Call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
+              <button class="tap" data-toast="Opening wa.me link" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 20.5l1.8-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg></button>
+            </div>
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">MO</div>
+              <div class="body"><div class="nm">Marcus Obi <span class="badge coach">Coach</span></div><div class="sub tnum">U10 &middot; +61 4XX XXX XXX</div></div>
+              <button class="tap" data-toast="Calling…" aria-label="Call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
+              <button class="tap" data-toast="Opening wa.me link" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 20.5l1.8-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg></button>
+            </div>
+          </div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">U8 SPL &middot; families</span></div>
+          <div class="card" id="fam-list">
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">SW</div>
+              <div class="body"><div class="nm">Sam Whitfield <span class="badge parent">Parent</span></div><div class="sub">Leo Whitfield <span class="coach-only tnum">&middot; +61 4XX XXX XXX</span></div></div>
+              <button class="tap coach-only" data-toast="Calling…" aria-label="Call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
+            </div>
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">PN</div>
+              <div class="body"><div class="nm">Priya Nair <span class="badge parent">Parent</span></div><div class="sub">Arjun Nair <span class="coach-only tnum">&middot; +61 4XX XXX XXX</span></div></div>
+              <button class="tap coach-only" data-toast="Calling…" aria-label="Call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
+            </div>
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">DK</div>
+              <div class="body"><div class="nm">Dan Kowalski <span class="badge parent">Parent</span></div><div class="sub">Mila Kowalski <span class="coach-only tnum">&middot; +61 4XX XXX XXX</span></div></div>
+              <button class="tap coach-only" data-toast="Calling…" aria-label="Call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></button>
+            </div>
+          </div>
+          <div class="parent-only empty">Parent phone numbers are hidden — this academy's directory is set to <b>staff only</b>.</div>
+        </div>
+      </section>
+
+      <!-- ============ ADMIN ============ -->
+      <section class="screen" id="s-admin" hidden>
+        <div class="pad">
+          <div class="sect"><span class="eyebrow">Teams &middot; 2026 season</span><span style="font-size:12px;color:var(--brand)">New team</span></div>
+          <div class="card">
+            <div class="row"><div class="av" style="width:36px;height:36px;font-size:13px">U8</div><div class="body"><div class="nm">U8 SPL</div><div class="sub">14 players &middot; 1 coach &middot; 2 channels</div></div><span class="pill ok">Active</span></div>
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">U1</div><div class="body"><div class="nm">U10</div><div class="sub">16 players &middot; 2 coaches &middot; 1 channel</div></div><span class="pill ok">Active</span></div>
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">U1</div><div class="body"><div class="nm">U12</div><div class="sub">15 players &middot; 1 coach &middot; 1 channel</div></div><span class="pill ok">Active</span></div>
+            <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">U7</div><div class="body"><div class="nm">U7s 2025</div><div class="sub">Channels read-only</div></div><span class="pill off">Ended</span></div>
+          </div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Bring in a team</span></div>
+          <div class="card" style="padding:13px;display:grid;gap:11px">
+            <div style="display:flex;gap:12px;align-items:center">
+              <div class="qr" aria-hidden="true"></div>
+              <div style="min-width:0">
+                <div style="font-weight:600;font-size:14px">U8 SPL join link</div>
+                <div style="font-size:12.5px;color:var(--ink-3);margin-top:2px">Joins as <b>Parent</b> &middot; 6 of 20 used<br>Expires 29 Sep 2026</div>
+                <div style="font-size:12px;color:var(--brand);margin-top:6px;word-break:break-all">squadroom.app/join/8f2c…</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn" style="flex:1" data-toast="Link copied — paste it into the WhatsApp group">Copy link</button>
+              <button class="btn ghost" data-toast="Link revoked. Existing members keep access.">Revoke</button>
+            </div>
+          </div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Add by phone</span></div>
+          <div class="card" style="padding:13px;display:grid;gap:9px">
+            <div style="font-size:12.5px;color:var(--ink-2)">Paste one “Name, Phone” per line</div>
+            <div style="background:var(--surface-2);border-radius:9px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.7;color:var(--ink-2)">
+              Sam Whitfield, 0412 345 678<br>Priya Nair, 0423 987 654<br>Dan Kowalski, +61 401 222 333
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="typechip">Role: Parent</span><span class="typechip">Team: U8 SPL</span>
+            </div>
+            <button class="btn" data-toast="3 invites sent by SMS">Send 3 invites</button>
+          </div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Invite status</span></div>
+          <div class="card">
+            <div class="row"><div class="body"><div class="nm">Aisha Rahman</div><div class="sub">Parent &middot; U8 SPL &middot; invited by Coach Joey</div></div><span class="pill ok">Accepted</span></div>
+            <div class="row"><div class="body"><div class="nm">Tom Bui</div><div class="sub">Parent &middot; U8 SPL &middot; invited by Coach Joey</div></div><span class="pill wait">Sent 2d ago</span></div>
+            <div class="row"><div class="body"><div class="nm">Marcus Obi</div><div class="sub">Coach &middot; U10 &middot; invited by you</div></div><span class="pill ok">Accepted</span></div>
+            <div class="row"><div class="body"><div class="nm">+61 4XX XXX 991</div><div class="sub">Parent &middot; U10 &middot; via join link</div></div><span class="pill wait">Pending</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS (per person) ============ -->
+      <section class="screen" id="s-settings" hidden>
+        <div class="pad">
+          <div class="setnote" id="set-who">Settings are per person. Coach Joey and Sam Whitfield each keep their own.</div>
+
+          <div class="sect" style="margin-top:14px"><span class="eyebrow">Text size</span></div>
+          <div class="card" style="padding:12px;display:grid;gap:10px">
+            <div class="seg" role="group" aria-label="Text size" style="width:100%">
+              <button data-ts="sm" style="flex:1">Small</button>
+              <button data-ts="md" aria-pressed="true" style="flex:1">Regular</button>
+              <button data-ts="lg" style="flex:1">Large</button>
+              <button data-ts="xl" style="flex:1">Largest</button>
+            </div>
+            <div style="font-size:12.5px;color:var(--ink-3)">Grandparents and parents reading in a car park are the reason this exists.</div>
+          </div>
+
+          <div class="sect" style="margin-top:16px"><span class="eyebrow">Appearance</span></div>
+          <div class="card" style="padding:12px;display:grid;gap:10px">
+            <div class="seg" role="group" aria-label="Theme" style="width:100%">
+              <button data-theme-set="system" aria-pressed="true" style="flex:1">System</button>
+              <button data-theme-set="light" style="flex:1">Light</button>
+              <button data-theme-set="dark" style="flex:1">Dark</button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Compact list spacing</div><div class="setsub">Fit more channels on screen</div></div>
+              <button class="sw" data-sw="compact" aria-pressed="false" aria-label="Compact list spacing"><span></span></button>
+            </div>
+          </div>
+
+          <div class="sect" style="margin-top:16px"><span class="eyebrow">Home screen</span></div>
+          <div class="card" style="padding:12px;display:grid;gap:10px">
+            <div class="seg" role="group" aria-label="Home order" style="width:100%">
+              <button data-home="events" aria-pressed="true" style="flex:1">Events first</button>
+              <button data-home="chats" style="flex:1">Chats first</button>
+            </div>
+            <div style="font-size:12.5px;color:var(--ink-3)" id="home-hint">Coaches usually want the roster first; parents usually want the fixture.</div>
+          </div>
+
+          <div class="sect" style="margin-top:16px"><span class="eyebrow">Notifications</span></div>
+          <div class="card" style="padding:12px;display:grid;gap:12px">
+            <div class="setrow">
+              <div><div class="setlbl">New messages</div><div class="setsub">Unmuted channels only</div></div>
+              <button class="sw" data-sw="msgs" aria-pressed="true" aria-label="New messages"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Announcements</div><div class="setsub">Always on for coach announcements</div></div>
+              <button class="sw" data-sw="anno" aria-pressed="true" aria-label="Announcements"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Event reminder — 24 hours</div><div class="setsub">The night before</div></div>
+              <button class="sw" data-sw="r24" aria-pressed="true" aria-label="24 hour reminder"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Event reminder — 2 hours</div><div class="setsub">Leaving-the-house nudge</div></div>
+              <button class="sw" data-sw="r2" aria-pressed="true" aria-label="2 hour reminder"><span></span></button>
+            </div>
+            <div class="setrow coach-only">
+              <div><div class="setlbl">RSVP changes</div><div class="setsub">When a family updates an answer</div></div>
+              <button class="sw" data-sw="rsvp" aria-pressed="true" aria-label="RSVP changes"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Quiet hours</div><div class="setsub">9:00pm – 7:00am, reminders still come through</div></div>
+              <button class="sw" data-sw="quiet" aria-pressed="true" aria-label="Quiet hours"><span></span></button>
+            </div>
+          </div>
+
+          <div class="sect" style="margin-top:16px"><span class="eyebrow">Muted channels</span></div>
+          <div class="card">
+            <div class="row"><div class="body"><div class="nm">U10s Age Group</div><div class="sub">Muted &middot; still counts unread</div></div><button class="pill off" data-toast="Unmuted U10s Age Group">Unmute</button></div>
+          </div>
+
+          <div class="setnote" style="margin-top:16px">These live in <b>user_settings</b>, keyed to the person, not the academy — so a coach who works at two academies carries one set of preferences across both.</div>
+        </div>
+      </section>
+
+      <!-- composer / bottom -->
+      <div class="composer" id="composer" hidden>
+        <button class="iconbtn" style="color:var(--ink-3)" aria-label="Attach image">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <div class="fakeinput" id="composer-ph">Message U8s NRIFA SPL Team</div>
+        <button class="send" aria-label="Send"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+
+      <div class="locked" id="locked" hidden>
+        <div class="txt">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <span id="locked-txt">Only Coach Joey can post here. You can still react.</span>
+        </div>
+        <div class="quickreacts">
+          <button data-toast="Reacted 👍">👍</button><button data-toast="Reacted ❤️">❤️</button><button data-toast="Reacted ✅">✅</button>
+          <button data-toast="Reacted ❌">❌</button><button data-toast="Reacted ❓">❓</button><button data-toast="Reacted 😂">😂</button>
+        </div>
+      </div>
+
+      <nav class="navbar" id="nav">
+        <button data-tab="home" aria-pressed="true">
+          <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>Home</span></button>
+        <button data-tab="chats" aria-pressed="false" style="position:relative">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 20.5l1.8-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg><span class="dot"></span><span>Chat</span></button>
+        <button data-tab="event" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Calendar</span></button>
+        <button data-tab="team" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6.4 6.4 0 0 0-2-4.6"/></svg><span>Team</span></button>
+        <button data-tab="admin" aria-pressed="false" class="coach-only">
+          <svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5.5c0 4.4-3.2 7.4-8 8.5-4.8-1.1-8-4.1-8-8.5V7z"/><path d="m9.5 12.2 1.8 1.8 3.4-3.6"/></svg><span>Admin</span></button>
+      </nav>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .phone[data-role="coach"] .parent-only{display:none !important}
+  .phone[data-role="parent"] .coach-only{display:none !important}
+</style>
+
+<script>
+(function(){
+  var phone   = document.querySelector('.phone');
+  var toastEl = document.getElementById('toast');
+  var barTitle= document.getElementById('bar-title');
+  var barMeta = document.getElementById('bar-meta');
+  var barAct  = document.getElementById('bar-action');
+  var composer= document.getElementById('composer');
+  var locked  = document.getElementById('locked');
+  var role = 'coach', mode = 'open', tab = 'home';
+
+  var META = {
+    home:    ['Home',                  'NRIFA · Sunday 30 August'],
+    chats:   ['Chats',                 '4 channels · 17 unread'],
+    channel: ['U8s NRIFA SPL Team',    '1 host · 13 members'],
+    event:   ['Round 12',              'Sat 5 Sep · ELS Hall Park'],
+    team:    ['Directory',             '47 members · 4 teams'],
+    admin:   ['Admin',                 'NRIFA · 3 active teams'],
+    settings:['Display & alerts',   'Only you see these']
+  };
+  var BACK = { channel:'chats', event:'home', settings:'home' };
+
+  var ICON_SEARCH = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>';
+  var ICON_BACK   = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+  var ICON_GEAR   = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 15H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 5.5V5a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.3a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.3.9z"/></svg>';
+
+  var timer;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(timer);
+    timer = setTimeout(function(){ toastEl.classList.remove('on'); }, 1900);
+  }
+
+  function show(next){
+    tab = next;
+    ['home','chats','channel','event','team','admin','settings'].forEach(function(id){
+      var el = document.getElementById('s-' + id);
+      if (el) el.hidden = (id !== next);
+    });
+    barTitle.textContent = META[next][0];
+    barMeta.textContent  = (next === 'channel') ? META[next][1] + ' · ' + modeLabel() : META[next][1];
+    barAct.innerHTML = BACK[next] ? ICON_BACK : (next === 'home' ? ICON_GEAR : ICON_SEARCH);
+    barAct.setAttribute('aria-label', BACK[next] ? 'Back' : (next === 'home' ? 'Display settings' : 'Search'));
+
+    document.querySelectorAll('#nav button').forEach(function(b){
+      var t = b.dataset.tab;
+      b.setAttribute('aria-pressed', String(t === next || (next === 'channel' && t === 'chats')));
+    });
+    syncComposer();
+    var scr = document.getElementById('s-' + next);
+    if (scr) scr.scrollTop = 0;
+  }
+
+  function modeLabel(){
+    return mode === 'open' ? 'anyone can post'
+         : mode === 'hosts_only' ? 'hosts only'
+         : 'replies only';
+  }
+
+  function syncComposer(){
+    var inChannel = (tab === 'channel');
+    var canPost = (role === 'coach') || (mode === 'open') || (mode === 'replies_only');
+    composer.hidden = !(inChannel && canPost);
+    locked.hidden   = !(inChannel && !canPost);
+    if (inChannel){
+      document.getElementById('composer-ph').textContent =
+        (role === 'parent' && mode === 'replies_only')
+          ? 'Reply to a message from Coach Joey'
+          : 'Message U8s NRIFA SPL Team';
+      barMeta.textContent = META.channel[1] + ' · ' + modeLabel();
+    }
+  }
+
+  /* role */
+  document.querySelectorAll('[data-role]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      role = btn.dataset.role;
+      phone.dataset.role = role;
+      document.querySelectorAll('[data-role]').forEach(function(b){
+        b.setAttribute('aria-pressed', String(b.dataset.role === role));
+      });
+      if (role === 'parent' && tab === 'admin') show('home');
+      syncComposer();
+      toast(role === 'coach' ? 'Viewing as Coach Joey (host)' : 'Viewing as Sam Whitfield (parent of Leo)');
+    });
+  });
+
+  /* brand colour */
+  document.querySelectorAll('[data-brand]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var c = btn.dataset.brand;
+      document.documentElement.style.setProperty('--brand', c);
+      document.documentElement.style.setProperty('--brand-soft', c + '1f');
+      document.querySelectorAll('[data-brand]').forEach(function(b){
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+    });
+  });
+
+  /* posting mode */
+  document.querySelectorAll('[data-mode]').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      mode = btn.dataset.mode;
+      document.querySelectorAll('[data-mode]').forEach(function(b){
+        b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+      });
+      syncComposer();
+      toast(mode === 'open'       ? 'Anyone in the channel can post'
+          : mode === 'hosts_only' ? 'Broadcast — parents can react only'
+          :                         'Parents can reply in threads only');
+    });
+  });
+
+  /* nav + links */
+  document.querySelectorAll('#nav button').forEach(function(b){
+    b.addEventListener('click', function(){ show(b.dataset.tab); });
+  });
+  document.querySelectorAll('[data-go]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); show(b.dataset.go); });
+  });
+  barAct.addEventListener('click', function(){
+    if (BACK[tab]) show(BACK[tab]);
+    else if (tab === 'home') show('settings');
+    else toast('Search is stubbed in this prototype');
+  });
+
+  /* RSVP */
+  document.querySelectorAll('.rsvp').forEach(function(group){
+    group.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        group.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed','false'); });
+        btn.setAttribute('aria-pressed','true');
+        var who = group.dataset.rsvp.split('-')[0];
+        toast(who.charAt(0).toUpperCase() + who.slice(1) + ' — ' + btn.textContent.toLowerCase() + '. Coach notified.');
+      });
+    });
+  });
+
+  /* reactions: hosts see names, parents see counts */
+  document.querySelectorAll('.react').forEach(function(chip){
+    chip.addEventListener('click', function(e){
+      e.stopPropagation();
+      var n = chip.querySelector('.n').textContent;
+      if (role === 'coach') toast(chip.dataset.who);
+      else toast(n + (n === '1' ? ' person reacted' : ' people reacted'));
+    });
+  });
+
+  /* poll options */
+  document.querySelectorAll('.optrow').forEach(function(row){
+    if (row.tagName !== 'BUTTON') return;
+    row.addEventListener('click', function(){ toast('Vote recorded'); });
+  });
+
+  /* generic toasts */
+  document.querySelectorAll('[data-toast]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); toast(b.dataset.toast); });
+  });
+
+  /* channel rows without an explicit target */
+  document.querySelectorAll('.chan').forEach(function(c){
+    if (!c.dataset.go) c.addEventListener('click', function(){ toast('Only the U8s channel is built out here'); });
+  });
+
+  window.SR = { show: show, toast: toast, getRole: function(){ return role; } };
+  phone.dataset.role = role;
+  show('home');
+})();
+</script>
+
+<style>
+  /* ---- device sizes ---- */
+  .phone[data-dev="se"]  {max-width:375px; height:667px}
+  .phone[data-dev="std"] {max-width:404px; height:812px}
+  .phone[data-dev="max"] {max-width:430px; height:900px}
+  .phone[data-dev="fit"] {max-width:100%;  height:min(900px, calc(100vh - 48px))}
+  @media (max-width:940px){ .phone[data-dev="fit"]{height:min(760px, calc(100vh - 120px))} }
+
+  /* ---- per-person text size ---- */
+  .phone[data-ts="sm"] .screen, .phone[data-ts="sm"] .fakeinput, .phone[data-ts="sm"] .locked .txt {zoom:.93}
+  .phone[data-ts="lg"] .screen, .phone[data-ts="lg"] .fakeinput, .phone[data-ts="lg"] .locked .txt {zoom:1.11}
+  .phone[data-ts="xl"] .screen, .phone[data-ts="xl"] .fakeinput, .phone[data-ts="xl"] .locked .txt {zoom:1.24}
+
+  /* ---- compact spacing ---- */
+  .phone[data-compact="1"] .row,
+  .phone[data-compact="1"] .chan {padding-top:7px; padding-bottom:7px}
+  .phone[data-compact="1"] .ev  {gap:7px; padding:9px 11px}
+  .phone[data-compact="1"] .thread {gap:8px}
+
+  /* ---- settings screen ---- */
+  .setnote{font-size:12.5px; color:var(--ink-2); background:var(--surface-2); border-radius:10px; padding:10px 12px; line-height:1.45}
+  .setrow{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .setlbl{font-size:14px; font-weight:600}
+  .setsub{font-size:12.5px; color:var(--ink-3); margin-top:1px}
+  .sw{width:44px; height:26px; border-radius:14px; background:var(--surface-2); border:1px solid var(--line); position:relative; flex:none; transition:background .15s, border-color .15s}
+  .sw span{position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:var(--surface); box-shadow:0 1px 2px #00000040; transition:transform .15s}
+  .sw[aria-pressed="true"]{background:var(--brand); border-color:var(--brand)}
+  .sw[aria-pressed="true"] span{transform:translateX(18px)}
+  #s-settings .seg button{flex:1; font-size:12.5px; padding:8px 4px}
+  @media (prefers-reduced-motion:reduce){ .sw, .sw span{transition:none} }
+</style>
+
+<script>
+(function(){
+  var phone = document.querySelector('.phone');
+  var SR = window.SR || {};
+
+  /* Each person keeps their own display settings. The parent deliberately
+     starts on Large text — that is the whole point of the feature. */
+  function base(over){
+    var s = { ts:'md', theme:'system', compact:false, home:'events',
+              sw:{ msgs:true, anno:true, r24:true, r2:true, rsvp:true, quiet:true } };
+    for (var k in (over || {})) s[k] = over[k];
+    return s;
+  }
+  var store = { coach: base(), parent: base({ ts:'lg' }) };
+  var prevRole = 'coach';
+
+  /* Home section order. Capture the original arrangement once. */
+  var pad = document.querySelector('#s-home .pad');
+  var padKids = pad ? Array.prototype.slice.call(pad.children) : [];
+
+  function applyHome(v){
+    if (!pad || padKids.length < 4) return;
+    var order = (v === 'chats')
+      ? [padKids[2], padKids[3], padKids[0], padKids[1]]
+      : padKids;
+    order.forEach(function(el){ pad.appendChild(el); });
+  }
+
+  function press(sel, attr, val){
+    document.querySelectorAll(sel).forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset[attr] === val));
+    });
+  }
+
+  function apply(s, role){
+    phone.dataset.ts = s.ts;
+    phone.dataset.compact = s.compact ? '1' : '0';
+    if (s.theme === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', s.theme);
+
+    press('[data-ts]', 'ts', s.ts);
+    press('[data-theme-set]', 'themeSet', s.theme);
+    press('[data-home]', 'home', s.home);
+    document.querySelectorAll('[data-sw]').forEach(function(b){
+      b.setAttribute('aria-pressed', String(!!s.sw[b.dataset.sw]));
+    });
+    applyHome(s.home);
+
+    var who = document.getElementById('set-who');
+    if (who) who.innerHTML = (role === 'coach')
+      ? '<b>Coach Joey’s</b> settings. Every person sets their own — changing these never touches anyone else’s app.'
+      : '<b>Sam Whitfield’s</b> settings. Sam reads this on a phone in a car park, so Large is the default that matters.';
+  }
+
+  function snapshot(){
+    var s = base();
+    s.ts = phone.dataset.ts || 'md';
+    s.compact = phone.dataset.compact === '1';
+    s.theme = document.documentElement.getAttribute('data-theme') || 'system';
+    var h = document.querySelector('[data-home][aria-pressed="true"]');
+    s.home = h ? h.dataset.home : 'events';
+    document.querySelectorAll('[data-sw]').forEach(function(b){
+      s.sw[b.dataset.sw] = b.getAttribute('aria-pressed') === 'true';
+    });
+    return s;
+  }
+
+  document.querySelectorAll('[data-ts]').forEach(function(b){
+    b.addEventListener('click', function(){
+      phone.dataset.ts = b.dataset.ts;
+      press('[data-ts]', 'ts', b.dataset.ts);
+    });
+  });
+
+  document.querySelectorAll('[data-theme-set]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var v = b.dataset.themeSet;
+      if (v === 'system') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', v);
+      press('[data-theme-set]', 'themeSet', v);
+    });
+  });
+
+  document.querySelectorAll('[data-home]').forEach(function(b){
+    b.addEventListener('click', function(){
+      press('[data-home]', 'home', b.dataset.home);
+      applyHome(b.dataset.home);
+      if (SR.toast) SR.toast(b.dataset.home === 'chats' ? 'Chats moved to the top' : 'Events moved to the top');
+    });
+  });
+
+  document.querySelectorAll('[data-sw]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var on = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(on));
+      if (b.dataset.sw === 'compact') phone.dataset.compact = on ? '1' : '0';
+    });
+  });
+
+  document.querySelectorAll('[data-dev]').forEach(function(b){
+    b.addEventListener('click', function(){
+      phone.dataset.dev = b.dataset.dev;
+      press('[data-dev]', 'dev', b.dataset.dev);
+    });
+  });
+
+  /* Swap the whole settings set when the viewer changes role. Runs after the
+     main script's own role handler, so SR.getRole() is already the new one. */
+  document.querySelectorAll('[data-role]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var next = SR.getRole ? SR.getRole() : b.dataset.role;
+      if (next === prevRole) return;
+      store[prevRole] = snapshot();
+      prevRole = next;
+      apply(store[next], next);
+    });
+  });
+
+  phone.dataset.dev = 'std';
+  apply(store.coach, 'coach');
+})();
+</script>
