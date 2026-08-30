@@ -255,7 +255,10 @@
         <div class="note"><span class="tag">Mode</span><div>As Coach, use the posting-mode control in the channel header. It's <code>channels.posting_mode</code>, enforced in RLS, not just hidden here.</div></div>
         <div class="note"><span class="tag">Brand</span><div>The colour swatches are <code>academies.primary_colour</code> — one deploy, every academy its own skin.</div></div>
       </div>
-      <div class="ctl" style="margin-top:16px">
+      <div class="ctl" style="margin-top:16px;margin-bottom:12px">
+        <button class="btn" data-go="onboard">Walk through a parent joining &rarr;</button>
+      </div>
+      <div class="ctl">
         <div class="seg" role="group" aria-label="View as">
           <button data-role="coach" aria-pressed="true">View as Coach</button>
           <button data-role="parent" aria-pressed="false">View as Parent</button>
@@ -287,6 +290,7 @@
         <div class="note"><span class="tag">Chat</span><div><b>Structure WhatsApp can't do.</b> Pinned bar carries the next event and the latest announcement. Events and polls render as cards. Addresses become map links.</div></div>
         <div class="note"><span class="tag">Event</span><div><b>Asymmetric visibility.</b> Coaches get the attendance roster; parents see only their own answer.</div></div>
         <div class="note"><span class="tag">Team</span><div><b>The only WhatsApp integration in v1</b> — tap-to-call and <code>wa.me</code> deep links, gated by the academy's directory setting.</div></div>
+        <div class="note"><span class="tag">Joining</span><div><b>Nobody signs up.</b> A parent taps the coach's link in the WhatsApp group, types their name, and the coach approves. No password, no texted code, no SMS sent.</div></div>
         <div class="note"><span class="tag">Admin</span><div><b>Migration in one paste.</b> Bulk "Name, Phone" lines, live invite status, and a per-team QR that a coach drops into the old WhatsApp group.</div></div>
       </div>
     </div>
@@ -656,7 +660,24 @@
       <!-- ============ ADMIN ============ -->
       <section class="screen" id="s-admin" hidden>
         <div class="pad">
-          <div class="sect"><span class="eyebrow">Teams &middot; 2026 season</span><span style="font-size:12px;color:var(--brand)">New team</span></div>
+          <div class="sect"><span class="eyebrow">Join requests</span><span class="unread" id="jr-count">2</span></div>
+          <div class="card" id="join-queue">
+            <div class="row jr">
+              <div class="av alt" style="width:36px;height:36px;font-size:13px">SW</div>
+              <div class="body"><div class="nm">Sam Whitfield</div><div class="sub">U8 SPL &middot; parent of Leo, Zoe &middot; via team link</div></div>
+              <button class="tap ok" data-jr="approve" aria-label="Approve"><svg viewBox="0 0 24 24"><path d="m4 12.5 5.2 5.2L20 7"/></svg></button>
+              <button class="tap no" data-jr="decline" aria-label="Decline"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="row jr">
+              <div class="av alt" style="width:36px;height:36px;font-size:13px">NH</div>
+              <div class="body"><div class="nm">Nadia Haddad</div><div class="sub">U10 &middot; parent of Yousef &middot; via team link</div></div>
+              <button class="tap ok" data-jr="approve" aria-label="Approve"><svg viewBox="0 0 24 24"><path d="m4 12.5 5.2 5.2L20 7"/></svg></button>
+              <button class="tap no" data-jr="decline" aria-label="Decline"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+          </div>
+          <div class="empty" id="jr-empty" hidden>No one waiting. New requests land here the moment someone taps your team link.</div>
+
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Teams &middot; 2026 season</span><span style="font-size:12px;color:var(--brand)">New team</span></div>
           <div class="card">
             <div class="row"><div class="av" style="width:36px;height:36px;font-size:13px">U8</div><div class="body"><div class="nm">U8 SPL</div><div class="sub">14 players &middot; 1 coach &middot; 2 channels</div></div><span class="pill ok">Active</span></div>
             <div class="row"><div class="av alt" style="width:36px;height:36px;font-size:13px">U1</div><div class="body"><div class="nm">U10</div><div class="sub">16 players &middot; 2 coaches &middot; 1 channel</div></div><span class="pill ok">Active</span></div>
@@ -680,9 +701,9 @@
             </div>
           </div>
 
-          <div class="sect" style="margin-top:18px"><span class="eyebrow">Add by phone</span></div>
+          <div class="sect" style="margin-top:18px"><span class="eyebrow">Add by phone</span><span class="typechip">Rarely needed</span></div>
           <div class="card" style="padding:13px;display:grid;gap:9px">
-            <div style="font-size:12.5px;color:var(--ink-2)">Paste one “Name, Phone” per line</div>
+            <div style="font-size:12.5px;color:var(--ink-2)">For the family who never taps the group link. Paste one “Name, Phone” per line — they get one text, then the same approval step.</div>
             <div style="background:var(--surface-2);border-radius:9px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.7;color:var(--ink-2)">
               Sam Whitfield, 0412 345 678<br>Priya Nair, 0423 987 654<br>Dan Kowalski, +61 401 222 333
             </div>
@@ -763,6 +784,10 @@
               <button class="sw" data-sw="rsvp" aria-pressed="true" aria-label="RSVP changes"><span></span></button>
             </div>
             <div class="setrow">
+              <div><div class="setlbl">Late changes by text</div><div class="setsub">Only if a match moves or is called off inside 24h</div></div>
+              <button class="sw" data-sw="sms" aria-pressed="true" aria-label="Late changes by text"><span></span></button>
+            </div>
+            <div class="setrow">
               <div><div class="setlbl">Quiet hours</div><div class="setsub">9:00pm – 7:00am, reminders still come through</div></div>
               <button class="sw" data-sw="quiet" aria-pressed="true" aria-label="Quiet hours"><span></span></button>
             </div>
@@ -774,6 +799,88 @@
           </div>
 
           <div class="setnote" style="margin-top:16px">These live in <b>user_settings</b>, keyed to the person, not the academy — so a coach who works at two academies carries one set of preferences across both.</div>
+        </div>
+      </section>
+
+      <!-- ============ ONBOARDING (no signup) ============ -->
+      <section class="screen" id="s-onboard" hidden>
+        <div class="pad">
+          <div class="setnote">No account. No password. No code to type. Four taps from a WhatsApp group to a working app.</div>
+
+          <div class="steps" id="ob-dots" aria-hidden="true">
+            <span class="dot-step on"></span><span class="dot-step"></span><span class="dot-step"></span><span class="dot-step"></span>
+          </div>
+
+          <!-- step 1 -->
+          <div class="ob" data-step="1">
+            <div class="eyebrow" style="margin-bottom:8px">Step 1 &middot; In the group they already use</div>
+            <div class="card" style="padding:12px;display:grid;gap:10px">
+              <div class="wa">
+                <div class="wa-name">Coach Joey &middot; U8s Parents (WhatsApp)</div>
+                <div class="wa-bub">
+                  Morning all — we're moving off WhatsApp to Squadroom so the fixtures stop getting buried. Tap this and you're in:
+                  <div class="wa-link">squadroom.app/join/8f2c…</div>
+                </div>
+              </div>
+              <div style="font-size:12.5px;color:var(--ink-3)">The link goes where the parents already are. Nothing is sent by SMS.</div>
+            </div>
+            <button class="btn" style="width:100%;margin-top:11px" data-ob="2">Tap the link</button>
+          </div>
+
+          <!-- step 2 -->
+          <div class="ob" data-step="2" hidden>
+            <div class="eyebrow" style="margin-bottom:8px">Step 2 &middot; Who are you?</div>
+            <div class="card" style="padding:14px;display:grid;gap:12px">
+              <div>
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:600">Join U8 SPL</div>
+                <div style="font-size:13px;color:var(--ink-2);margin-top:2px">NRIFA &middot; invited by Coach Joey</div>
+              </div>
+              <div>
+                <div class="flabel">Your name</div>
+                <div class="finput">Sam Whitfield</div>
+              </div>
+              <div>
+                <div class="flabel">Mobile</div>
+                <div class="finput">0412 345 678</div>
+              </div>
+              <div>
+                <div class="flabel">Your children in this team</div>
+                <div class="finput">Leo Whitfield, Zoe Whitfield</div>
+              </div>
+              <button class="btn" data-ob="3">Request to join</button>
+              <div style="font-size:12px;color:var(--ink-3);text-align:center">No password. No verification code.</div>
+            </div>
+          </div>
+
+          <!-- step 3 -->
+          <div class="ob" data-step="3" hidden>
+            <div class="eyebrow" style="margin-bottom:8px">Step 3 &middot; The coach vouches for you</div>
+            <div class="card" style="padding:20px 14px;display:grid;gap:12px;text-align:center">
+              <div class="pulse" aria-hidden="true"></div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:600">Waiting for Coach Joey</div>
+              <div style="font-size:13.5px;color:var(--ink-2);line-height:1.5">
+                He'll see “Sam Whitfield wants to join U8 SPL” and tap approve. You can close this — we'll let you know.
+              </div>
+              <div class="setnote" style="text-align:left">A coach knows every family in their team. That makes approval a <b>stronger</b> check than a texted code, which only proves someone owns a phone.</div>
+              <button class="btn" data-ob="4">Coach approves</button>
+            </div>
+          </div>
+
+          <!-- step 4 -->
+          <div class="ob" data-step="4" hidden>
+            <div class="eyebrow" style="margin-bottom:8px">Step 4 &middot; In, permanently</div>
+            <div class="card" style="padding:20px 14px;display:grid;gap:12px;text-align:center">
+              <div class="tick" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5.2 5.2L20 7"/></svg>
+              </div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:23px;font-weight:600">You're in the U8s</div>
+              <div style="font-size:13.5px;color:var(--ink-2);line-height:1.5">
+                Chat, fixtures and RSVPs for Leo and Zoe. This device stays signed in — Sam never types a password, and never sees a login screen again.
+              </div>
+            </div>
+            <div class="setnote" style="margin-top:11px">The link is now bound to this phone. A forwarded copy of it is useless: a second device has to be approved again.</div>
+            <button class="btn ghost" style="width:100%;margin-top:11px" data-ob="1">Replay from the start</button>
+          </div>
         </div>
       </section>
 
@@ -838,9 +945,10 @@
     event:   ['Round 12',              'Sat 5 Sep · ELS Hall Park'],
     team:    ['Directory',             '47 members · 4 teams'],
     admin:   ['Admin',                 'NRIFA · 3 active teams'],
-    settings:['Display & alerts',   'Only you see these']
+    settings:['Display & alerts',   'Only you see these'],
+    onboard: ['Joining a team',      'What a parent actually sees']
   };
-  var BACK = { channel:'chats', event:'home', settings:'home' };
+  var BACK = { channel:'chats', event:'home', settings:'home', onboard:'home' };
 
   var ICON_SEARCH = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>';
   var ICON_BACK   = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -856,7 +964,7 @@
 
   function show(next){
     tab = next;
-    ['home','chats','channel','event','team','admin','settings'].forEach(function(id){
+    ['home','chats','channel','event','team','admin','settings','onboard'].forEach(function(id){
       var el = document.getElementById('s-' + id);
       if (el) el.hidden = (id !== next);
     });
@@ -1023,6 +1131,29 @@
   .sw[aria-pressed="true"] span{transform:translateX(18px)}
   #s-settings .seg button{flex:1; font-size:12.5px; padding:8px 4px}
   @media (prefers-reduced-motion:reduce){ .sw, .sw span{transition:none} }
+  /* ---- onboarding walkthrough ---- */
+  .steps{display:flex; gap:6px; justify-content:center; margin:12px 0 16px}
+  .dot-step{width:7px; height:7px; border-radius:50%; background:var(--line); transition:background .2s, width .2s}
+  .dot-step.on{background:var(--brand); width:20px; border-radius:4px}
+  .wa{background:var(--surface-2); border-radius:11px; padding:10px 11px}
+  .wa-name{font-size:11.5px; font-weight:600; color:var(--ink-3); margin-bottom:6px}
+  .wa-bub{background:var(--surface); border-radius:10px; padding:9px 11px; font-size:14px; line-height:1.45}
+  .wa-link{color:var(--brand); text-decoration:underline; text-underline-offset:2px; margin-top:6px; font-size:13.5px; word-break:break-all}
+  :root[data-theme="dark"] .wa-link, :root:not([data-theme="light"]) .wa-link{color:#8FBEE8}
+  .flabel{font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin-bottom:5px}
+  .finput{background:var(--surface-2); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-size:14.5px}
+  .pulse{width:44px; height:44px; border-radius:50%; margin:2px auto 0; background:var(--brand-soft);
+         border:2px solid var(--brand); animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(.85); opacity:.55} 50%{transform:scale(1); opacity:1}}
+  .tick{width:52px; height:52px; border-radius:50%; margin:2px auto 0; display:grid; place-items:center;
+        background:var(--yes-bg); color:var(--yes)}
+  @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
+
+  /* ---- approval queue ---- */
+  .tap.ok{color:var(--yes); border-color:var(--yes)}
+  .tap.no{color:var(--ink-3)}
+  .row.jr{transition:opacity .2s}
+  .row.jr.gone{opacity:0}
 </style>
 
 <script>
@@ -1034,7 +1165,7 @@
      starts on Large text — that is the whole point of the feature. */
   function base(over){
     var s = { ts:'md', theme:'system', compact:false, home:'events',
-              sw:{ msgs:true, anno:true, r24:true, r2:true, rsvp:true, quiet:true } };
+              sw:{ msgs:true, anno:true, r24:true, r2:true, rsvp:true, quiet:true, sms:true } };
     for (var k in (over || {})) s[k] = over[k];
     return s;
   }
@@ -1143,7 +1274,50 @@
     });
   });
 
+  /* ---- onboarding walkthrough ---- */
+  function obStep(n){
+    document.querySelectorAll('.ob').forEach(function(el){
+      el.hidden = (el.dataset.step !== String(n));
+    });
+    document.querySelectorAll('#ob-dots .dot-step').forEach(function(d, i){
+      d.classList.toggle('on', i < n);
+    });
+    var scr = document.getElementById('s-onboard');
+    if (scr) scr.scrollTop = 0;
+  }
+  document.querySelectorAll('[data-ob]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var n = Number(b.dataset.ob);
+      obStep(n);
+      if (n === 3 && SR.toast) SR.toast('Request sent to Coach Joey');
+      if (n === 4 && SR.toast) SR.toast('Approved — signed in on this device');
+    });
+  });
+
+  /* ---- coach-side approval queue ---- */
+  function refreshQueue(){
+    var left = document.querySelectorAll('#join-queue .row.jr:not(.gone)').length;
+    var badge = document.getElementById('jr-count');
+    var empty = document.getElementById('jr-empty');
+    var card  = document.getElementById('join-queue');
+    if (badge) { badge.textContent = left; badge.hidden = (left === 0); }
+    if (empty) empty.hidden = (left > 0);
+    if (card)  card.hidden = (left === 0);
+  }
+  document.querySelectorAll('[data-jr]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var row = b.closest('.row.jr');
+      var name = row.querySelector('.nm').textContent;
+      var ok = b.dataset.jr === 'approve';
+      row.classList.add('gone');
+      setTimeout(function(){ row.hidden = true; refreshQueue(); }, 200);
+      if (SR.toast) SR.toast(ok ? name + ' is in — they are signed in already'
+                                : name + ' declined. They are told nothing.');
+    });
+  });
+
   phone.dataset.dev = 'std';
   apply(store.coach, 'coach');
+  obStep(1);
 })();
 </script>
