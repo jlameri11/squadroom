@@ -30,6 +30,26 @@ one and is meant to reach hundreds of academies.
   - So: build an importer, not an integration. Do NOT scrape the public Match
     Centre - fragile and almost certainly against their terms.
   - Column mapping must be built against a real export file, never guessed.
+  - Do NOT try to replace Dribl for association competition. Football NSW
+    mandates registration there for eligibility, insurance and age
+    verification - that is governance, not software, and the failure mode is
+    a child being ineligible on a Saturday.
+- **Self-run competitions are entirely ours, and that is the second product.**
+  Tournaments, gala days, trials and camps are in nobody's mandate. NRIFA
+  already runs a full one in Excel: 21 teams, 3 groups, 63 games across 4
+  fields, ladders on 3/1/0 with GD then GF, cross-group finals seeding.
+  Tournament Mode replaces that spreadsheet.
+  - The 21 team names are other academies. Running a tournament in Squadroom
+    puts ~20 academies' coaches and parents in the product in one day, which
+    is the acquisition channel - visiting coaches get real access to their
+    own team's fixtures and results.
+  - Schema gap to close before there is data: `competition_teams` points at
+    OUR teams, but a tournament is mostly teams that are not ours. Entries
+    need to accept an external named club too.
+  - The hard parts are not the UI: round-robin generation constrained by
+    fields and slots, clash avoidance, byes for odd groups, who may enter a
+    score, and head-to-head tie-breaks (the spreadsheet punts those to a
+    human on the day).
 - **NRIFA brand**, taken from the crest SVG, not eyeballed:
   navy `#202842`, mid navy `#3D4A6D`, gold `#EFBD5B`, white.
   Crest lives at `public/brand/nrifa-crest.svg`.
@@ -96,8 +116,10 @@ one and is meant to reach hundreds of academies.
 4. Events, RSVPs, event cards in chat, reminders
 5. Polls (simple + availability), directory
 6. PWA + push + super-admin console
-7. Payments — Stripe Connect Express, tournament fees
-8. Capacitor native wrap
+7. Tournament Mode — self-run competitions, ladders, run sheets, visiting clubs
+8. Payments — Stripe Connect Express; tournament entry fees are its first
+   real use case, which is why it follows tournaments rather than leading
+9. Capacitor native wrap
 
 ## Working notes
 
