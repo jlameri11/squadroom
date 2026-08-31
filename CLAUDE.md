@@ -21,6 +21,14 @@ one and is meant to reach hundreds of academies.
   data. A Supabase project's region cannot be changed after creation.
 - **One deployment serves every academy.** Branding is data
   (`academies.primary_colour`, `logo_url`), never a per-tenant build.
+- **A competition is the container above events**, not a parent event.
+  `competitions` (SPL Season 3, Spring Gala Day) + `competition_teams`
+  (which of our teams is in which division) + `events.competition_id`.
+  A container has no kick-off time, no venue and nobody RSVPs to it, so
+  making one row serve both meanings would put a nullable starts_at on every
+  fixture. The same shape covers a months-long season and a one-day gala.
+  - Division names ("U8s Championship", "Premier") belong to the organiser,
+    not to us. Free text on purpose - do not build a divisions table.
 - **Safeguarding defaults are the restrictive ones.** Parent-to-parent DMs
   off, parent phone numbers staff-only. Both are per-academy settings.
 - **Parents never see a signup screen, and onboarding sends no SMS.**

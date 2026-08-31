@@ -735,6 +735,212 @@
         </div>
       </section>
 
+      <!-- ============ CALENDAR ============ -->
+      <section class="screen" id="s-calendar" hidden>
+        <div class="pad">
+          <div class="seg" role="group" aria-label="View" style="width:100%;margin-bottom:14px">
+            <button data-cal="list" aria-pressed="true" style="flex:1">Upcoming</button>
+            <button data-cal="month" aria-pressed="false" style="flex:1">Month</button>
+          </div>
+
+          <!-- month grid -->
+          <div id="cal-month" hidden>
+            <div class="card" style="padding:13px">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:600;margin-bottom:10px">September 2026</div>
+              <div class="mgrid">
+                <div class="mh">M</div><div class="mh">T</div><div class="mh">W</div><div class="mh">T</div><div class="mh">F</div><div class="mh">S</div><div class="mh">S</div>
+              </div>
+              <div class="mgrid" id="mdays"></div>
+              <div style="display:flex;gap:14px;margin-top:12px;font-size:11.5px;color:var(--ink-3)">
+                <span class="lg"><i style="background:var(--brand)"></i>Match</span>
+                <span class="lg"><i style="background:var(--ink-3)"></i>Training</span>
+                <span class="lg"><i style="background:var(--maybe)"></i>Social</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- grouped list -->
+          <div id="cal-list">
+            <div class="compo">
+              <div class="compo-head">
+                <div>
+                  <div class="compo-name">SPL Season 3</div>
+                  <div class="compo-sub">Football NSW &middot; Apr – Sep 2026 &middot; 3 divisions</div>
+                </div>
+                <span class="typechip match">Season</span>
+              </div>
+              <div class="card">
+                <button class="chan" data-go="event">
+                  <div class="datechip"><div class="d tnum">5</div><div class="m">Sat</div></div>
+                  <div class="body">
+                    <div class="nm">vs Gladesville Ravens</div>
+                    <div class="pv">9:00am &middot; ELS Hall Park &middot; Round 12</div>
+                  </div>
+                  <div class="rt"><span class="divchip">U8s Championship</span></div>
+                </button>
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">5</div><div class="m">Sat</div></div>
+                  <div class="body">
+                    <div class="nm">vs Epping Eagles</div>
+                    <div class="pv">11:00am &middot; ELS Hall Park &middot; Round 12</div>
+                  </div>
+                  <div class="rt"><span class="divchip">U10s</span></div>
+                </button>
+                <div class="row" style="padding:9px 12px">
+                  <div class="body"><div class="sub">Premier &middot; U12 &middot; no fixture this round</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="compo">
+              <div class="compo-head">
+                <div>
+                  <div class="compo-name">Spring Gala Day</div>
+                  <div class="compo-sub">Sun 20 Sep &middot; Valentine Park &middot; 2 age groups</div>
+                </div>
+                <span class="typechip">Gala day</span>
+              </div>
+              <div class="card">
+                <div class="empty" style="padding:16px 14px">Schedule not published yet. Add the games as the organiser sends them.</div>
+              </div>
+            </div>
+
+            <div class="compo">
+              <div class="compo-head">
+                <div><div class="compo-name">Training &amp; other</div>
+                <div class="compo-sub">Not part of a competition</div></div>
+              </div>
+              <div class="card">
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">1</div><div class="m">Tue</div></div>
+                  <div class="body"><div class="nm">Tuesday training</div><div class="pv">5:00pm &middot; Christie Park</div></div>
+                  <div class="rt"><span class="divchip alt">U8 SPL</span></div>
+                </button>
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">3</div><div class="m">Thu</div></div>
+                  <div class="body"><div class="nm">Thursday training</div><div class="pv">5:00pm &middot; Christie Park</div></div>
+                  <div class="rt"><span class="divchip alt">U8 SPL</span></div>
+                </button>
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">6</div><div class="m">Sun</div></div>
+                  <div class="body"><div class="nm">Season BBQ &amp; presentation</div><div class="pv">12:00pm &middot; Magdala Park</div></div>
+                  <div class="rt"><span class="divchip alt">Academy</span></div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn coach-only" style="width:100%;margin-top:16px" data-go="newevent">+ New event</button>
+          <div class="parent-only empty">Only coaches and admins can add events.</div>
+        </div>
+      </section>
+
+      <!-- ============ NEW EVENT ============ -->
+      <section class="screen" id="s-newevent" hidden>
+        <div class="pad">
+          <div class="fgroup">
+            <div class="flabel">Type</div>
+            <div class="seg" role="group" aria-label="Event type" style="width:100%">
+              <button data-etype="match" aria-pressed="true" style="flex:1">Match</button>
+              <button data-etype="training" style="flex:1">Training</button>
+              <button data-etype="social" style="flex:1">Social</button>
+            </div>
+          </div>
+
+          <div class="fgroup">
+            <div class="flabel">Part of</div>
+            <div class="chips" style="margin-bottom:0">
+              <button data-comp="ca01" aria-pressed="true">SPL Season 3</button>
+              <button data-comp="ca02">Spring Gala Day</button>
+              <button data-comp="none">One-off</button>
+              <button data-comp="new" class="dashed">+ New competition</button>
+            </div>
+            <div class="fhint" id="comp-hint">Fixtures under a competition group together in everyone's calendar.</div>
+          </div>
+
+          <div class="fgroup" id="team-group">
+            <div class="flabel">Team</div>
+            <div class="chips" style="margin-bottom:0">
+              <button data-team="u8" aria-pressed="true">U8 SPL</button>
+              <button data-team="u10">U10</button>
+              <button data-team="u12">U12</button>
+            </div>
+            <div class="fhint">Division <b id="div-label">U8s Championship</b> — from this team's entry in SPL Season 3.</div>
+          </div>
+
+          <div class="fgroup"><div class="flabel">Opponent</div><div class="finput">Gladesville Ravens</div></div>
+          <div class="frow">
+            <div class="fgroup" style="flex:1"><div class="flabel">Round</div><div class="finput">13</div></div>
+            <div class="fgroup" style="flex:1"><div class="flabel">Kit</div><div class="finput kit"><span class="kitdot" style="background:var(--brand)"></span> Navy</div></div>
+          </div>
+          <div class="frow">
+            <div class="fgroup" style="flex:1"><div class="flabel">Date</div><div class="finput tnum">Sat 12 Sep</div></div>
+            <div class="fgroup" style="flex:1"><div class="flabel">Kick-off</div><div class="finput tnum">9:00am</div></div>
+          </div>
+          <div class="fgroup"><div class="flabel">Arrive by</div><div class="finput tnum">8:30am</div></div>
+          <div class="fgroup"><div class="flabel">Venue</div><div class="finput">ELS Hall Park, Field 3</div></div>
+
+          <div class="card" style="padding:12px;display:grid;gap:12px;margin-top:4px">
+            <div class="setrow">
+              <div><div class="setlbl">Post to the team channel</div><div class="setsub">Renders as a card with RSVP buttons</div></div>
+              <button class="sw" data-sw="post" aria-pressed="true" aria-label="Post to channel"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Ask for RSVPs</div><div class="setsub">Per player, so a parent answers for each kid</div></div>
+              <button class="sw" data-sw="rsvp2" aria-pressed="true" aria-label="Ask for RSVPs"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><div class="setlbl">Reminders</div><div class="setsub">24 hours and 2 hours before</div></div>
+              <button class="sw" data-sw="rem" aria-pressed="true" aria-label="Reminders"><span></span></button>
+            </div>
+          </div>
+
+          <button class="btn" style="width:100%;margin-top:14px" data-toast="Event created and posted to U8s NRIFA SPL Team">Create event</button>
+          <div class="fhint" style="text-align:center;margin-top:8px">14 families will be notified.</div>
+        </div>
+      </section>
+
+      <!-- ============ NEW COMPETITION ============ -->
+      <section class="screen" id="s-newcomp" hidden>
+        <div class="pad">
+          <div class="setnote">A competition is the container — a season, a cup, a gala day. Fixtures hang off it, and your teams are entered into its divisions.</div>
+
+          <div class="fgroup" style="margin-top:14px"><div class="flabel">Name</div><div class="finput">SPL Season 4</div></div>
+
+          <div class="fgroup">
+            <div class="flabel">Type</div>
+            <div class="chips" style="margin-bottom:0">
+              <button data-ctype="season" aria-pressed="true">Season</button>
+              <button data-ctype="tournament">Tournament</button>
+              <button data-ctype="gala">Gala day</button>
+              <button data-ctype="friendly">Friendlies</button>
+            </div>
+          </div>
+
+          <div class="fgroup"><div class="flabel">Organiser</div><div class="finput">Football NSW</div></div>
+          <div class="frow">
+            <div class="fgroup" style="flex:1"><div class="flabel">Starts</div><div class="finput tnum">4 Apr 2027</div></div>
+            <div class="fgroup" style="flex:1"><div class="flabel">Ends</div><div class="finput tnum">11 Sep 2027</div></div>
+          </div>
+
+          <div class="sect" style="margin-top:6px"><span class="eyebrow">Our teams &amp; their divisions</span></div>
+          <div class="card">
+            <div class="row"><div class="av" style="width:34px;height:34px;font-size:12px">U8</div>
+              <div class="body"><div class="nm">U8 SPL</div><div class="sub">Division</div></div>
+              <div class="finput" style="width:132px;padding:6px 10px;font-size:13px">U8s Championship</div></div>
+            <div class="row"><div class="av alt" style="width:34px;height:34px;font-size:12px">U1</div>
+              <div class="body"><div class="nm">U10</div><div class="sub">Division</div></div>
+              <div class="finput" style="width:132px;padding:6px 10px;font-size:13px">U10s</div></div>
+            <div class="row"><div class="av alt" style="width:34px;height:34px;font-size:12px">U1</div>
+              <div class="body"><div class="nm">U12</div><div class="sub">Division</div></div>
+              <div class="finput" style="width:132px;padding:6px 10px;font-size:13px">Premier</div></div>
+          </div>
+          <div class="fhint">Division names come from the organiser, not from us — “U8s Championship” is Football NSW's grade, so it's free text.</div>
+
+          <button class="btn" style="width:100%;margin-top:14px" data-toast="SPL Season 4 created with 3 divisions">Create competition</button>
+        </div>
+      </section>
+
       <!-- ============ SETTINGS (per person) ============ -->
       <section class="screen" id="s-settings" hidden>
         <div class="pad">
@@ -949,7 +1155,7 @@
           <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>Home</span></button>
         <button data-tab="chats" aria-pressed="false" style="position:relative">
           <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.6 7.3L3 20.5l1.8-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg><span class="dot"></span><span>Chat</span></button>
-        <button data-tab="event" aria-pressed="false">
+        <button data-tab="calendar" aria-pressed="false">
           <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Calendar</span></button>
         <button data-tab="team" aria-pressed="false">
           <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6.4 6.4 0 0 0-2-4.6"/></svg><span>Team</span></button>
@@ -986,12 +1192,16 @@
     team:    ['Directory',             '47 members · 4 teams'],
     admin:   ['Admin',                 'NRIFA · 3 active teams'],
     settings:['Display & alerts',   'Only you see these'],
-    onboard: ['Joining a team',      'What a parent actually sees']
+    onboard: ['Joining a team',      'What a parent actually sees'],
+    calendar:['Fixtures',            'NRIFA · September 2026'],
+    newevent:['New event',           'Fixture, training or social'],
+    newcomp: ['New competition',     'A season, cup or gala day']
   };
-  var BACK = { channel:'chats', event:'home', settings:'home', onboard:'home' };
+  var BACK = { channel:'chats', event:'calendar', settings:'home', onboard:'home', newevent:'calendar', newcomp:'newevent' };
 
   var ICON_SEARCH = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>';
   var ICON_BACK   = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+  var ICON_PLUS   = '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   var ICON_GEAR   = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 15H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 5.5V5a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.3a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.3.9z"/></svg>';
 
   var timer;
@@ -1004,18 +1214,19 @@
 
   function show(next){
     tab = next;
-    ['home','chats','channel','event','team','admin','settings','onboard'].forEach(function(id){
+    ['home','chats','channel','event','team','admin','settings','onboard','calendar','newevent','newcomp'].forEach(function(id){
       var el = document.getElementById('s-' + id);
       if (el) el.hidden = (id !== next);
     });
     barTitle.textContent = META[next][0];
     barMeta.textContent  = (next === 'channel') ? META[next][1] + ' · ' + modeLabel() : META[next][1];
-    barAct.innerHTML = BACK[next] ? ICON_BACK : (next === 'home' ? ICON_GEAR : ICON_SEARCH);
-    barAct.setAttribute('aria-label', BACK[next] ? 'Back' : (next === 'home' ? 'Display settings' : 'Search'));
+    barAct.innerHTML = BACK[next] ? ICON_BACK : (next === 'home' ? ICON_GEAR : next === 'calendar' ? ICON_PLUS : ICON_SEARCH);
+    barAct.setAttribute('aria-label', BACK[next] ? 'Back' : (next === 'home' ? 'Display settings' : next === 'calendar' ? 'New event' : 'Search'));
 
     document.querySelectorAll('#nav button').forEach(function(b){
       var t = b.dataset.tab;
-      b.setAttribute('aria-pressed', String(t === next || (next === 'channel' && t === 'chats')));
+      b.setAttribute('aria-pressed', String(t === next || (next === 'channel' && t === 'chats')
+        || (t === 'calendar' && (next === 'event' || next === 'newevent' || next === 'newcomp'))));
     });
     syncComposer();
     var scr = document.getElementById('s-' + next);
@@ -1093,6 +1304,7 @@
   barAct.addEventListener('click', function(){
     if (BACK[tab]) show(BACK[tab]);
     else if (tab === 'home') show('settings');
+    else if (tab === 'calendar') show('newevent');
     else toast('Search is stubbed in this prototype');
   });
 
@@ -1189,6 +1401,30 @@
         background:var(--yes-bg); color:var(--yes)}
   @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
 
+  /* ---- competitions & forms ---- */
+  .compo{margin-bottom:20px}
+  .compo-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin:0 2px 9px}
+  .compo-name{font-family:"Barlow Condensed",sans-serif; font-size:19px; font-weight:600; line-height:1.1}
+  .compo-sub{font-size:12px; color:var(--ink-3); margin-top:2px}
+  .divchip{font-size:11px; font-weight:600; padding:3px 7px; border-radius:5px; background:var(--brand-soft); color:var(--brand); white-space:nowrap}
+  :root[data-theme="dark"] .divchip, :root:not([data-theme="light"]) .divchip{color:#9DC4E8; background:#ffffff14}
+  .divchip.alt{background:var(--surface-2); color:var(--ink-3)}
+  .fgroup{margin-bottom:14px}
+  .frow{display:flex; gap:10px}
+  .fhint{font-size:12px; color:var(--ink-3); margin-top:6px; line-height:1.45}
+  .chips button.dashed{border-style:dashed; color:var(--ink-3)}
+
+  /* ---- month grid ---- */
+  .mgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+  .mh{text-align:center; font-size:10.5px; font-weight:600; color:var(--ink-3); padding-bottom:6px}
+  .mcell{aspect-ratio:1; display:grid; place-items:center; align-content:center; gap:3px; border-radius:8px; font-size:13px; font-variant-numeric:tabular-nums}
+  .mcell.today{background:var(--brand); color:var(--brand-ink); font-weight:700}
+  .mcell.has{background:var(--surface-2)}
+  .mdots{display:flex; gap:2px; height:4px}
+  .mdots i{width:4px; height:4px; border-radius:50%; display:block}
+  .lg{display:flex; align-items:center; gap:5px}
+  .lg i{width:7px; height:7px; border-radius:50%; display:block}
+
   /* ---- contact picker sheet ---- */
   .ioswarn{display:flex; gap:7px; align-items:flex-start; font-size:12px; color:var(--maybe);
            background:var(--maybe-bg); border-radius:8px; padding:8px 10px; line-height:1.4}
@@ -1228,7 +1464,8 @@
      starts on Large text — that is the whole point of the feature. */
   function base(over){
     var s = { ts:'md', theme:'system', compact:false, home:'events',
-              sw:{ msgs:true, anno:true, r24:true, r2:true, rsvp:true, quiet:true, sms:true } };
+              sw:{ msgs:true, anno:true, r24:true, r2:true, rsvp:true, quiet:true, sms:true,
+                   post:true, rsvp2:true, rem:true } };
     for (var k in (over || {})) s[k] = over[k];
     return s;
   }
@@ -1429,6 +1666,83 @@
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && !sheet.hidden) openSheet(false);
   });
+
+  /* ---- calendar: list vs month ---- */
+  document.querySelectorAll('[data-cal]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var v = b.dataset.cal;
+      press('[data-cal]', 'cal', v);
+      document.getElementById('cal-list').hidden  = (v !== 'list');
+      document.getElementById('cal-month').hidden = (v !== 'month');
+    });
+  });
+
+  /* September 2026 starts on a Tuesday, so the grid is offset by one. */
+  (function buildMonth(){
+    var host = document.getElementById('mdays');
+    if (!host) return;
+    var EVENTS = { 1:['t'], 3:['t'], 5:['m','m'], 6:['s'], 12:['m'], 20:['m'] };
+    var COLOUR = { m:'var(--brand)', t:'var(--ink-3)', s:'var(--maybe)' };
+    var html = '<div class="mcell"></div>';           // Monday 31 Aug, blank
+    for (var d = 1; d <= 30; d++){
+      var ev = EVENTS[d];
+      var dots = (ev || []).map(function(k){ return '<i style="background:' + COLOUR[k] + '"></i>'; }).join('');
+      html += '<div class="mcell' + (ev ? ' has' : '') + '">' +
+                '<span>' + d + '</span>' +
+                '<span class="mdots">' + dots + '</span>' +
+              '</div>';
+    }
+    host.innerHTML = html;
+  })();
+
+  /* ---- new event: competition drives whether a division applies ---- */
+  var DIVISIONS = {
+    ca01: { u8:'U8s Championship', u10:'U10s', u12:'Premier' },
+    ca02: { u8:'U8s', u10:'U10s', u12:null }
+  };
+  var comp = 'ca01', team = 'u8';
+
+  function syncDivision(){
+    var hint = document.getElementById('comp-hint');
+    var label = document.getElementById('div-label');
+    var group = document.getElementById('team-group');
+    if (!hint || !label || !group) return;
+
+    if (comp === 'none'){
+      hint.textContent = 'A one-off — training, a friendly, a BBQ. It sits under “Training & other”.';
+      group.querySelector('.fhint').innerHTML = 'No division: this event is not part of a competition.';
+      return;
+    }
+    var map = DIVISIONS[comp] || {};
+    var div = map[team];
+    hint.textContent = 'Fixtures under a competition group together in everyone\'s calendar.';
+    group.querySelector('.fhint').innerHTML = div
+      ? 'Division <b>' + div + '</b> — from this team\'s entry in ' + (comp === 'ca01' ? 'SPL Season 3' : 'Spring Gala Day') + '.'
+      : '<b>This team is not entered</b> in that competition. Enter them first, or pick another team.';
+  }
+
+  document.querySelectorAll('[data-comp]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (b.dataset.comp === 'new'){ if (SR.show) SR.show('newcomp'); return; }
+      comp = b.dataset.comp;
+      press('[data-comp]', 'comp', comp);
+      syncDivision();
+    });
+  });
+  document.querySelectorAll('[data-team]').forEach(function(b){
+    b.addEventListener('click', function(){
+      team = b.dataset.team;
+      press('[data-team]', 'team', team);
+      syncDivision();
+    });
+  });
+  document.querySelectorAll('[data-etype]').forEach(function(b){
+    b.addEventListener('click', function(){ press('[data-etype]', 'etype', b.dataset.etype); });
+  });
+  document.querySelectorAll('[data-ctype]').forEach(function(b){
+    b.addEventListener('click', function(){ press('[data-ctype]', 'ctype', b.dataset.ctype); });
+  });
+  syncDivision();
 
   phone.dataset.dev = 'std';
   apply(store.coach, 'coach');
