@@ -1,0 +1,124 @@
+/**
+ * test-chat.mjs — the chat rules, as real users.
+ *
+ * Posting modes are enforced by RLS, so this drives the same API the browser
+ * does rather than trusting the UI to disable a button.
+ */
+import { createClient } from '@supabase/supabase-js'
+const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
+const anon =createClient(URL, PUB,{auth:{persistSession:false}})
+const ok=m=>console.log(`  \x1b[32m✓\x1b[0m ${m}`), bad=m=>{console.log(`  \x1b[31m✗\x1b[0m ${m}`);process.exitCode=1}
+const head=m=>console.log(`\n${m}`)
+
+const NRIFA='00000000-0000-0000-0000-0000000a0001'
+async function sess(email){
+  const { data:l } = await admin.auth.admin.generateLink({type:'magiclink', email})
+  const { data:s } = await anon.auth.verifyOtp({token_hash:l.properties.hashed_token, type:'email'})
+  const client = createClient(URL, PUB, {
+    auth:{persistSession:false},
+    global:{headers:{Authorization:`Bearer ${s.session.access_token}`}},
+  })
+  // An Authorization header covers REST. The realtime socket is a separate
+  // connection with its own auth, and without this it connects as anon -
+  // RLS then filters every change away and the subscription silently
+  // receives nothing. The browser client does this itself on sign-in.
+  client.realtime.setAuth(s.session.access_token)
+  return { client, id: s.user.id }
+}
+
+const coach  = await sess('joeylameri@outlook.com')
+const parent = await sess('p61400000011@squadroom.invalid')   // Sam Whitfield
+
+const { data: u8 } = await admin.from('channels').select('id')
+  .eq('team_id','00000000-0000-0000-0000-0000000d0008').eq('type','team').single()
+await admin.from('channels').update({ posting_mode:'open' }).eq('id', u8.id)
+await admin.from('messages').delete().like('body', 'TEST::%')
+
+head('1. The channel list')
+const { data: chans, error: ce } = await parent.client.rpc('my_channels', { p_academy: NRIFA })
+ce ? bad(ce.message) : ok(`parent sees ${chans.length} channels with unread counts`)
+const mine = chans.find(c => c.channel_id === u8.id)
+mine ? ok(`"${mine.name}" — ${mine.unread_count} unread, last: ${mine.last_message_body?.slice(0,30) ?? 'none'}`) : bad('U8 channel missing')
+
+head('2. Open mode: a parent can post')
+const { data: sent, error: se } = await parent.client.from('messages')
+  .insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: parent.id, body: 'TEST::parent in open mode' })
+  .select('id').single()
+se ? bad(se.message) : ok('posted')
+
+head('3. Announcements are host-only, even in open mode')
+const { error: ae } = await parent.client.from('messages')
+  .insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: parent.id, body:'TEST::fake', is_announcement: true })
+ae ? ok('parent refused an announcement') : bad('parent posted an announcement')
+
+head('4. Hosts only: parent blocked, reactions still work')
+await coach.client.from('channels').update({ posting_mode:'hosts_only' }).eq('id', u8.id)
+const { error: he } = await parent.client.from('messages')
+  .insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: parent.id, body:'TEST::blocked' })
+he ? ok('parent refused a message') : bad('parent posted in hosts_only')
+
+await admin.from('message_reactions').delete().eq('message_id', sent.id).eq('profile_id', parent.id)
+const { error: re } = await parent.client.from('message_reactions')
+  .insert({ academy_id: NRIFA, message_id: sent.id, profile_id: parent.id, emoji:'🔥' })
+re ? bad(`reaction blocked: ${re.message}`) : ok('parent can still react — the one thing broadcast mode must allow')
+
+const { data: rc } = await parent.client.rpc('reaction_counts', { p_message_ids: [sent.id] })
+rc?.[0]?.reaction_count === 1 && rc[0].reacted_by_me ? ok('counts visible, marked as mine') : bad(`counts: ${JSON.stringify(rc)}`)
+
+head('5. Replies only: no new threads, replies fine')
+await coach.client.from('channels').update({ posting_mode:'replies_only' }).eq('id', u8.id)
+const { error: ne } = await parent.client.from('messages')
+  .insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: parent.id, body:'TEST::new thread' })
+ne ? ok('new thread refused') : bad('parent started a thread')
+const { error: rr } = await parent.client.from('messages')
+  .insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: parent.id, body:'TEST::a reply', reply_to_id: sent.id })
+rr ? bad(`reply refused: ${rr.message}`) : ok('reply allowed')
+
+head('6. Reading, and read state')
+await coach.client.from('channels').update({ posting_mode:'open' }).eq('id', u8.id)
+const { data: msgs } = await parent.client.rpc('channel_messages', { p_channel: u8.id, p_limit: 50 })
+msgs?.length > 0 ? ok(`${msgs.length} messages, newest first, with sender names`) : bad('no messages')
+const withRole = msgs.find(m => m.sender_role)
+withRole ? ok(`roles included (e.g. ${withRole.sender_name}: ${withRole.sender_role})`) : bad('no roles')
+
+await parent.client.rpc('mark_channel_read', { p_channel: u8.id })
+const { data: after } = await parent.client.rpc('my_channels', { p_academy: NRIFA })
+after.find(c => c.channel_id === u8.id).unread_count === 0 ? ok('marking read clears the badge') : bad('badge still set')
+
+head('7. A deleted message leaves a tombstone, not its text')
+await coach.client.from('messages').update({ deleted_at: new Date().toISOString(), deleted_by: coach.id }).eq('id', sent.id)
+const { data: afterDel } = await parent.client.rpc('channel_messages', { p_channel: u8.id, p_limit: 50 })
+const gone = afterDel.find(m => m.id === sent.id)
+gone && gone.body === null && gone.deleted_at ? ok('body withheld, deletion visible') : bad(`tombstone wrong: ${JSON.stringify(gone)}`)
+
+head('8. Realtime actually delivers to another person')
+// The publication being empty is invisible from the sending side: the insert
+// succeeds and the subscription reports SUBSCRIBED. Only a second listener
+// proves it.
+const delivered = await new Promise(async (resolve) => {
+  const timer = setTimeout(() => resolve(null), 8000)
+  const sub = parent.client
+    .channel(`test:${u8.id}`)
+    .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${u8.id}` },
+        (payload) => { clearTimeout(timer); resolve(payload.new) })
+    .subscribe(async (status) => {
+      if (status !== 'SUBSCRIBED') return
+      await coach.client.from('messages').insert({
+        academy_id: NRIFA, channel_id: u8.id, sender_id: coach.id,
+        body: 'TEST::realtime ping',
+      })
+    })
+})
+delivered?.body === 'TEST::realtime ping'
+  ? ok('a message sent by the coach reached the parent live')
+  : bad('nothing arrived within 8s — the table is not in supabase_realtime')
+
+await admin.from('messages').delete().like('body','TEST::%')
+await admin.from('message_reactions').delete().eq('profile_id', parent.id).eq('emoji','🔥')
+await admin.from('channels').update({ posting_mode:'open' }).eq('id', u8.id)
+console.log(process.exitCode ? '\n\x1b[31mCHAT RULES BROKEN\x1b[0m\n' : '\n\x1b[32mCHAT RULES HOLD\x1b[0m\n')
+// The realtime socket keeps the event loop alive, so exit deliberately
+// rather than leaving the runner hanging on a healthy connection.
+process.exit(process.exitCode ?? 0)

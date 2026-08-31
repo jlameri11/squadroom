@@ -47,6 +47,9 @@ export default async function Home() {
       </ul>
 
       <div className="mt-6 flex flex-col gap-2 text-sm">
+        <Link href="/chat" className="underline underline-offset-4">
+          Chat
+        </Link>
         <Link href="/admin/requests" className="underline underline-offset-4">
           Join requests
         </Link>

@@ -2097,6 +2097,25 @@ export type Database = {
           token: string
         }[]
       }
+      channel_messages: {
+        Args: { p_before?: string; p_channel: string; p_limit?: number }
+        Returns: {
+          attachments: Json
+          body: string
+          created_at: string
+          deleted_at: string
+          edited_at: string
+          id: string
+          is_announcement: boolean
+          pinned_at: string
+          reply_to_body: string
+          reply_to_id: string
+          reply_to_name: string
+          sender_id: string
+          sender_name: string
+          sender_role: Database["public"]["Enums"]["academy_role"]
+        }[]
+      }
       check_join_rate: {
         Args: { p_ip_hash: string; p_link: string }
         Returns: boolean
@@ -2148,6 +2167,7 @@ export type Database = {
           profile_id: string
         }[]
       }
+      mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       member_directory: {
         Args: { p_academy: string }
         Returns: {
@@ -2160,6 +2180,23 @@ export type Database = {
         }[]
       }
       mirror_fixture: { Args: { p_fixture: string }; Returns: undefined }
+      my_channels: {
+        Args: { p_academy: string }
+        Returns: {
+          channel_id: string
+          last_message_at: string
+          last_message_body: string
+          last_sender_name: string
+          muted: boolean
+          my_role: Database["public"]["Enums"]["channel_member_role"]
+          name: string
+          posting_mode: Database["public"]["Enums"]["posting_mode"]
+          status: Database["public"]["Enums"]["channel_status"]
+          team_id: string
+          type: Database["public"]["Enums"]["channel_type"]
+          unread_count: number
+        }[]
+      }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
       peek_competition_invite: {
         Args: { p_token: string }
