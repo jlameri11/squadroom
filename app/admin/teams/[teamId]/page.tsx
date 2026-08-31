@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase/server'
 import { JoinLinkPanel } from './join-link-panel'
 import { BulkInvite } from './bulk-invite'
+import { SeasonControl } from './season-control'
 
 /**
  * One team: how people get in, and who is already here.
@@ -108,6 +109,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
           ))}
         </div>
       </section>
+
+      <SeasonControl teamId={team.id} status={team.status} />
     </main>
   )
 }

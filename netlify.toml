@@ -1,0 +1,26 @@
+# Netlify hosts three things that cannot live inside a Capacitor bundle:
+# the web app, the /join/<token> links that have to resolve in a browser
+# from WhatsApp, and the privileged API routes that hold the service-role
+# key. The iOS app will be an additional client, not a replacement.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next 16 needs 20+. Pinned so a Netlify default bump cannot break a deploy
+  # at the worst possible moment.
+  NODE_VERSION = "22"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # A join token sits in the URL path. Without this it would leak to any
+    # third party the page happens to reference.
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(self)"
