@@ -53,6 +53,29 @@ one and is meant to reach hundreds of academies.
 - **NRIFA brand**, taken from the crest SVG, not eyeballed:
   navy `#202842`, mid navy `#3D4A6D`, gold `#EFBD5B`, white.
   Crest lives at `public/brand/nrifa-crest.svg`.
+- **A competition SPANS tenants; an academy does not own it.** SPL Season 3
+  is run by a league, entered by many clubs, each bringing their own coaches
+  and parents. `competitions.organiser_id` is the running organisation;
+  `competition_clubs` are the entered organisations; `competition_entries`
+  are teams in a division, and `team_id` is NULLABLE so a club that has not
+  signed up is just a name on the draw.
+  - **The rule that must never be blurred: being in a competition together
+    lets you see the DRAW, not each other's PEOPLE.** No policy on messages,
+    members, players, channels or the directory mentions competitions, and
+    none ever should. Proven by the cross-club isolation test.
+  - `fixtures` belong to the competition, so a moved game moves once for
+    everyone. A trigger mirrors each fixture into an ordinary `events` row
+    per involved club, so RSVPs, reminders and channel cards work unchanged.
+  - `events.competition_id` is the ONE relationship that crosses the tenant
+    boundary, and so it is the one plain (non-composite) foreign key in the
+    schema. The composite pattern asserts same-tenant, which is false here.
+  - Ladders are computed, not stored: 3/1/0, GD then GF. Head-to-head is
+    deliberately NOT applied - it needs a mini-league between tied teams, and
+    guessing is worse than showing them level for the organiser to rule on,
+    which is what the spreadsheet does today.
+- **`academies` means ORGANISATION.** Academy, one-team club, school or
+  league, separated by `type`. The name was kept because renaming would touch
+  every policy, helper and FK for no behavioural gain.
 - **A competition is the container above events**, not a parent event.
   `competitions` (SPL Season 3, Spring Gala Day) + `competition_teams`
   (which of our teams is in which division) + `events.competition_id`.
