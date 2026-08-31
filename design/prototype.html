@@ -895,7 +895,7 @@
             </div>
           </div>
 
-          <button class="btn" style="width:100%;margin-top:14px" data-toast="Event created and posted to U8s NRIFA SPL Team">Create event</button>
+          <button class="btn" style="width:100%;margin-top:14px" data-create="event">Create event</button>
           <div class="fhint" style="text-align:center;margin-top:8px">14 families will be notified.</div>
         </div>
       </section>
@@ -937,7 +937,7 @@
           </div>
           <div class="fhint">Division names come from the organiser, not from us — “U8s Championship” is Football NSW's grade, so it's free text.</div>
 
-          <button class="btn" style="width:100%;margin-top:14px" data-toast="SPL Season 4 created with 3 divisions">Create competition</button>
+          <button class="btn" style="width:100%;margin-top:14px" data-create="comp">Create competition</button>
         </div>
       </section>
 
@@ -1107,8 +1107,8 @@
         <button class="iconbtn" style="color:var(--ink-3)" aria-label="Attach image">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         </button>
-        <div class="fakeinput" id="composer-ph">Message U8s NRIFA SPL Team</div>
-        <button class="send" aria-label="Send"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+        <input class="fakeinput realinput" id="composer-input" type="text" autocomplete="off" placeholder="Message U8s NRIFA SPL Team">
+        <button class="send" id="send-btn" aria-label="Send"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
       </div>
 
       <div class="locked" id="locked" hidden>
@@ -1117,8 +1117,8 @@
           <span id="locked-txt">Only Coach Joey can post here. You can still react.</span>
         </div>
         <div class="quickreacts">
-          <button data-toast="Reacted 👍">👍</button><button data-toast="Reacted ❤️">❤️</button><button data-toast="Reacted ✅">✅</button>
-          <button data-toast="Reacted ❌">❌</button><button data-toast="Reacted ❓">❓</button><button data-toast="Reacted 😂">😂</button>
+          <button data-quick="👍">👍</button><button data-quick="❤️">❤️</button><button data-quick="✅">✅</button>
+          <button data-quick="❌">❌</button><button data-quick="❓">❓</button><button data-quick="😂">😂</button>
         </div>
       </div>
 
@@ -1245,8 +1245,8 @@
     composer.hidden = !(inChannel && canPost);
     locked.hidden   = !(inChannel && !canPost);
     if (inChannel){
-      document.getElementById('composer-ph').textContent =
-        (role === 'parent' && mode === 'replies_only')
+      var ci = document.getElementById('composer-input');
+      if (ci) ci.placeholder = (role === 'parent' && mode === 'replies_only')
           ? 'Reply to a message from Coach Joey'
           : 'Message U8s NRIFA SPL Team';
       barMeta.textContent = META.channel[1] + ' · ' + modeLabel();
@@ -1343,7 +1343,7 @@
   });
 
   /* channel rows without an explicit target */
-  document.querySelectorAll('.chan').forEach(function(c){
+  document.querySelectorAll('#s-home .chan, #s-chats .chan').forEach(function(c){
     if (!c.dataset.go) c.addEventListener('click', function(){ toast('Only the U8s channel is built out here'); });
   });
 
@@ -1400,6 +1400,14 @@
   .tick{width:52px; height:52px; border-radius:50%; margin:2px auto 0; display:grid; place-items:center;
         background:var(--yes-bg); color:var(--yes)}
   @media (prefers-reduced-motion:reduce){ .pulse{animation:none} }
+
+  /* ---- live composer ---- */
+  .realinput{border:0; outline:none; font-family:inherit; width:100%}
+  .realinput::placeholder{color:var(--ink-3)}
+  .msg.new{animation:pop .18s ease-out}
+  @keyframes pop{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){ .msg.new{animation:none} }
+  .addreact{cursor:pointer}
 
   /* ---- competitions & forms ---- */
   .compo{margin-bottom:20px}
@@ -1743,6 +1751,266 @@
     b.addEventListener('click', function(){ press('[data-ctype]', 'ctype', b.dataset.ctype); });
   });
   syncDivision();
+
+  /* ==================================================================
+     Dummy state. No backend — everything below just mutates the DOM so
+     the thing can actually be operated: send a message, react to one,
+     create a fixture, approve a family.
+     ================================================================== */
+
+  var thread = document.querySelector('#s-channel .thread');
+
+  function nowLabel(){
+    var d = new Date();
+    var h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
+    var ap = h >= 12 ? 'pm' : 'am';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + m + ap;
+  }
+  function scrollThread(){
+    var scr = document.getElementById('s-channel');
+    if (scr) scr.scrollTop = scr.scrollHeight;
+  }
+  function esc(t){
+    var d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  /* ---- reactions: click to add or remove your own ---- */
+  function bindReaction(chip){
+    if (chip.dataset.bound) return;
+    chip.dataset.bound = '1';
+    chip.addEventListener('click', function(e){
+      e.stopPropagation();
+      var countEl = chip.querySelector('.n');
+      var emoji = chip.querySelector('span').textContent.trim();
+      var mine = chip.getAttribute('aria-pressed') === 'true';
+      var n = Number(countEl.textContent) + (mine ? -1 : 1);
+
+      if (n <= 0){ chip.remove(); if (SR.toast) SR.toast('Reaction removed'); return; }
+      countEl.textContent = n;
+      chip.setAttribute('aria-pressed', String(!mine));
+
+      if (mine) { if (SR.toast) SR.toast('Reaction removed'); return; }
+      // Hosts see who; everyone else only ever sees the number.
+      if (SR.toast) SR.toast(SR.getRole && SR.getRole() === 'coach'
+        ? 'You reacted ' + emoji + ' — ' + n + ' total'
+        : n + (n === 1 ? ' person has' : ' people have') + ' reacted');
+    });
+  }
+  document.querySelectorAll('.react').forEach(bindReaction);
+
+  function reactTo(msgEl, emoji){
+    if (!msgEl) return;
+    var bar = msgEl.querySelector('.reacts');
+    if (!bar){
+      bar = document.createElement('div');
+      bar.className = 'reacts';
+      var stamp = msgEl.querySelector('.stamp');
+      msgEl.insertBefore(bar, stamp || null);
+    }
+    var found = null;
+    bar.querySelectorAll('.react').forEach(function(c){
+      if (c.querySelector('span').textContent.trim() === emoji) found = c;
+    });
+    if (found){ found.click(); return; }
+
+    var chip = document.createElement('button');
+    chip.className = 'react';
+    chip.setAttribute('aria-pressed', 'true');
+    chip.dataset.who = 'You';
+    chip.innerHTML = '<span>' + emoji + '</span><span class="n">1</span>';
+    bindReaction(chip);
+    bar.appendChild(chip);
+  }
+
+  document.querySelectorAll('[data-quick]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var msgs = thread.querySelectorAll('.msg');
+      reactTo(msgs[msgs.length - 1], b.dataset.quick);
+      if (SR.toast) SR.toast('Reacted ' + b.dataset.quick);
+    });
+  });
+
+  /* ---- sending a message ---- */
+  function appendMessage(text){
+    var coach = SR.getRole && SR.getRole() === 'coach';
+    var el = document.createElement('div');
+    el.className = 'msg out new';
+    el.innerHTML =
+      '<div class="who">You <span class="badge ' + (coach ? 'coach">Coach' : 'parent">Parent') + '</span></div>' +
+      '<div class="bub">' + esc(text) + '</div>' +
+      '<div class="stamp tnum">' + nowLabel() + '</div>';
+    thread.appendChild(el);
+    scrollThread();
+  }
+
+  var input = document.getElementById('composer-input');
+  var sendBtn = document.getElementById('send-btn');
+  function send(){
+    if (!input) return;
+    var text = input.value.trim();
+    if (!text) return;
+    appendMessage(text);
+    input.value = '';
+  }
+  if (sendBtn) sendBtn.addEventListener('click', send);
+  if (input) input.addEventListener('keydown', function(e){ if (e.key === 'Enter') send(); });
+
+  /* ---- opening a channel clears its unread badge ---- */
+  document.querySelectorAll('.chan').forEach(function(c){
+    c.addEventListener('click', function(){
+      var b = c.querySelector('.unread');
+      if (b) b.remove();
+      var total = 0;
+      document.querySelectorAll('#s-home .card .unread, #s-chats .unread').forEach(function(u){
+        total += Number(u.textContent) || 0;
+      });
+      document.querySelectorAll('#s-home .sect .unread').forEach(function(u){
+        if (total > 0) { u.textContent = total; } else { u.remove(); }
+      });
+      var dot = document.querySelector('#nav .dot');
+      if (dot && total === 0) dot.remove();
+    });
+  });
+
+  /* ---- poll voting ---- */
+  document.querySelectorAll('.optrow').forEach(function(row){
+    row.addEventListener('click', function(){
+      var pct = row.querySelector('.pct');
+      if (!pct) return;
+      pct.textContent = Number(pct.textContent) + 1;
+      var bar = row.querySelector('.bar');
+      if (bar) bar.style.width = Math.min(100, parseFloat(bar.style.width) + 7) + '%';
+      if (SR.toast) SR.toast('Vote recorded');
+    });
+  });
+
+  /* ---- creating an event: lands in Fixtures and posts to the channel ---- */
+  var COMP_NAMES = { ca01:'SPL Season 3', ca02:'Spring Gala Day', none:'Training & other' };
+  var TEAM_NAMES = { u8:'U8 SPL', u10:'U10', u12:'U12' };
+
+  function compGroupByName(name){
+    var found = null;
+    document.querySelectorAll('#cal-list .compo').forEach(function(g){
+      var n = g.querySelector('.compo-name');
+      if (n && n.textContent.trim() === name) found = g;
+    });
+    return found;
+  }
+
+  document.querySelectorAll('[data-create="event"]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var type = (document.querySelector('[data-etype][aria-pressed="true"]') || {}).dataset;
+      type = type ? type.etype : 'match';
+      var compName = COMP_NAMES[comp] || 'Training & other';
+      var div = (DIVISIONS[comp] || {})[team];
+
+      if (comp !== 'none' && !div){
+        if (SR.toast) SR.toast(TEAM_NAMES[team] + ' is not entered in ' + compName);
+        return;
+      }
+
+      var group = compGroupByName(compName);
+      if (group){
+        var card = group.querySelector('.card');
+        var empty = card.querySelector('.empty');
+        if (empty) empty.remove();
+        var row = document.createElement('button');
+        row.className = 'chan';
+        row.innerHTML =
+          '<div class="datechip"><div class="d tnum">12</div><div class="m">Sat</div></div>' +
+          '<div class="body"><div class="nm">' +
+            (type === 'match' ? 'vs Gladesville Ravens' : type === 'training' ? 'Training' : 'Social') +
+          '</div><div class="pv">9:00am &middot; ELS Hall Park' + (type === 'match' ? ' &middot; Round 13' : '') + '</div></div>' +
+          '<div class="rt"><span class="divchip' + (div ? '' : ' alt') + '">' + (div || TEAM_NAMES[team]) + '</span></div>';
+        card.appendChild(row);
+      }
+
+      // Posting it to the channel is one tap from the event, by design.
+      var posted = document.querySelector('[data-sw="post"]');
+      if (posted && posted.getAttribute('aria-pressed') === 'true'){
+        var el = document.createElement('div');
+        el.className = 'msg out new';
+        el.style.maxWidth = '92%';
+        el.innerHTML =
+          '<div class="incard"><div class="hd"><span class="typechip match">Match</span>' +
+          '<span style="font-weight:600;font-size:13.5px">Round 13</span></div>' +
+          '<div class="bd"><div style="font-family:\'Barlow Condensed\',sans-serif;font-size:19px;font-weight:600;line-height:1.15">' +
+          TEAM_NAMES[team] + ' vs Gladesville Ravens</div>' +
+          '<dl class="kv"><dt>When</dt><dd class="tnum">Sat 12 Sep, 9:00am</dd>' +
+          '<dt>Where</dt><dd><span class="maplink">ELS Hall Park, Field 3</span></dd></dl>' +
+          '<div class="rsvp" data-rsvp="new-fixture"><button data-v="yes">Going</button>' +
+          '<button data-v="maybe">Maybe</button><button data-v="no">Out</button></div></div></div>' +
+          '<div class="stamp tnum">' + nowLabel() + '</div>';
+        thread.appendChild(el);
+        el.querySelectorAll('.rsvp button').forEach(function(b){
+          b.setAttribute('aria-pressed', 'false');
+          b.addEventListener('click', function(){
+            el.querySelectorAll('.rsvp button').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+            b.setAttribute('aria-pressed', 'true');
+            if (SR.toast) SR.toast('RSVP saved');
+          });
+        });
+      }
+
+      if (SR.show) SR.show('calendar');
+      if (SR.toast) SR.toast('Event created' + (posted && posted.getAttribute('aria-pressed') === 'true'
+        ? ' and posted to the team channel' : ''));
+    });
+  });
+
+  /* ---- creating a competition adds a real group to Fixtures ---- */
+  document.querySelectorAll('[data-create="comp"]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var list = document.getElementById('cal-list');
+      var g = document.createElement('div');
+      g.className = 'compo';
+      g.innerHTML =
+        '<div class="compo-head"><div><div class="compo-name">SPL Season 4</div>' +
+        '<div class="compo-sub">Football NSW &middot; Apr – Sep 2027 &middot; 3 divisions</div></div>' +
+        '<span class="typechip match">Season</span></div>' +
+        '<div class="card"><div class="empty" style="padding:16px 14px">No fixtures yet. Add them as the draw is published.</div></div>';
+      list.insertBefore(g, list.firstChild);
+
+      var chips = document.querySelector('[data-comp="none"]');
+      if (chips && !document.querySelector('[data-comp="ca03"]')){
+        var b = document.createElement('button');
+        b.dataset.comp = 'ca03';
+        b.textContent = 'SPL Season 4';
+        chips.parentNode.insertBefore(b, chips);
+        DIVISIONS.ca03 = { u8:'U8s Championship', u10:'U10s', u12:'Premier' };
+        COMP_NAMES.ca03 = 'SPL Season 4';
+        b.addEventListener('click', function(){
+          comp = 'ca03'; press('[data-comp]', 'comp', 'ca03'); syncDivision();
+        });
+      }
+      if (SR.show) SR.show('calendar');
+      if (SR.toast) SR.toast('SPL Season 4 created with 3 divisions');
+    });
+  });
+
+  /* ---- approving a join request puts them in the directory ---- */
+  document.querySelectorAll('[data-jr]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (b.dataset.jr !== 'approve') return;
+      var row = b.closest('.row.jr');
+      var name = row.querySelector('.nm').textContent;
+      var sub = row.querySelector('.sub').textContent;
+      var list = document.getElementById('fam-list');
+      if (!list) return;
+      var initials = name.split(' ').map(function(w){ return w[0]; }).join('').slice(0, 2).toUpperCase();
+      var kids = (sub.split('parent of ')[1] || '').split(' · ')[0];
+      var el = document.createElement('div');
+      el.className = 'row';
+      el.innerHTML =
+        '<div class="av alt" style="width:36px;height:36px;font-size:13px">' + initials + '</div>' +
+        '<div class="body"><div class="nm">' + esc(name) + ' <span class="badge parent">Parent</span></div>' +
+        '<div class="sub">' + esc(kids) + ' <span class="coach-only tnum">&middot; +61 4XX XXX XXX</span></div></div>';
+      list.appendChild(el);
+    });
+  });
 
   phone.dataset.dev = 'std';
   apply(store.coach, 'coach');
