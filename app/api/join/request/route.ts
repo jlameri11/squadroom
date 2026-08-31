@@ -1,6 +1,18 @@
+import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSecret, hashSecret, toE164 } from '@/lib/join'
+
+/**
+ * Hashed, never stored raw. This is a spam control, not a record of who
+ * looked at a football club.
+ */
+function clientIpHash(request: Request): string {
+  const fwd = request.headers.get('x-nf-client-connection-ip')
+    ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? 'unknown'
+  return createHash('sha256').update(fwd).digest('hex')
+}
 
 /**
  * A parent taps the coach's link and says who they are.
@@ -52,6 +64,21 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'This invite link is no longer active. Ask your coach for a new one.' },
       { status: 404 }
+    )
+  }
+
+  // Approval already stops spam getting IN. This stops it burying the queue,
+  // which matters just as much: a queue nobody can face is a queue nobody
+  // reads, and the one real request in it gets missed.
+  const { data: throttled } = await admin.rpc('check_join_rate', {
+    p_ip_hash: clientIpHash(request),
+    p_link: link.id,
+  })
+
+  if (throttled) {
+    return NextResponse.json(
+      { error: 'Too many requests just now. Try again shortly.' },
+      { status: 429 }
     )
   }
 

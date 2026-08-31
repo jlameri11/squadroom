@@ -3,7 +3,6 @@
 // Regenerate after every migration:
 //   npm run types
 //
-// Until the Supabase CLI is linked, this comes from the dashboard or MCP.
 // If it drifts from the database, TypeScript will happily agree with the
 // stale version, which is worse than having no types at all.
 
@@ -942,6 +941,35 @@ export type Database = {
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      join_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          link_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          ip_hash: string
+          link_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          ip_hash?: string
+          link_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "join_attempts_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "join_links"
             referencedColumns: ["id"]
           },
         ]
@@ -1970,6 +1998,10 @@ export type Database = {
           p_role?: Database["public"]["Enums"]["channel_member_role"]
         }
         Returns: undefined
+      }
+      check_join_rate: {
+        Args: { p_ip_hash: string; p_link: string }
+        Returns: boolean
       }
       competition_ladder: {
         Args: { p_competition: string; p_division: string }
