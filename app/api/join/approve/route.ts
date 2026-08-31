@@ -105,21 +105,29 @@ export async function POST(request: Request) {
   // "Leo" vs "Leo Whitfield" — the coach can fix it on the roster screen, and
   // a duplicate player is a far smaller problem than silently attaching a
   // parent to someone else's child.
+  // A request through an academy-wide link carries no team, and matching a
+  // child by name across the whole academy would be reckless: two clubs can
+  // easily both have a Leo. Without a team we create the player unattached
+  // and let a coach put them on a roster.
+  const teamId = req.team_id
   for (const childName of req.children_names ?? []) {
-    const { data: player } = await admin
-      .from('players')
-      .select('id')
-      .eq('academy_id', req.academy_id)
-      .eq('team_id', req.team_id)
-      .ilike('full_name', childName)
-      .maybeSingle()
+    let playerId: string | null = null
 
-    let playerId = player?.id ?? null
+    if (teamId) {
+      const { data: player } = await admin
+        .from('players')
+        .select('id')
+        .eq('academy_id', req.academy_id)
+        .eq('team_id', teamId)
+        .ilike('full_name', childName)
+        .maybeSingle()
+      playerId = player?.id ?? null
+    }
 
     if (!playerId) {
       const { data: newPlayer } = await admin
         .from('players')
-        .insert({ academy_id: req.academy_id, team_id: req.team_id, full_name: childName })
+        .insert({ academy_id: req.academy_id, team_id: teamId, full_name: childName })
         .select('id')
         .single()
       playerId = newPlayer?.id ?? null
