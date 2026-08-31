@@ -9,29 +9,45 @@
 begin;
 
 -- ---------------------------------------------------------------------------
--- Auth users. Phone-OTP users have no password and no email.
+-- Auth users.
+--
+-- Two things here are not optional, both learned the hard way:
+--
+-- 1. The token columns must be '' and never NULL. Supabase Auth scans them
+--    into Go strings, so a NULL makes the whole user unloadable - every
+--    admin call against them fails with "Database error loading user", and
+--    the user is effectively invisible to Auth while looking fine in SQL.
+--
+-- 2. Every user needs the synthetic @squadroom.invalid email, because that
+--    is what session minting keys off. Without it, generateLink silently
+--    CREATES A NEW USER rather than matching the existing one - which looks
+--    like an RLS bug, because the new user is a member of nothing.
 -- ---------------------------------------------------------------------------
 insert into auth.users (
   instance_id, id, aud, role, phone, phone_confirmed_at,
+  email, email_confirmed_at,
+  confirmation_token, recovery_token, email_change,
+  email_change_token_new, email_change_token_current,
+  phone_change, phone_change_token, reauthentication_token,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
   is_sso_user, is_anonymous
 )
 values
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000a1','authenticated','authenticated','61400000001',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Joey Lameri"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000a2','authenticated','authenticated','61400000002',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Marcus Obi"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b1','authenticated','authenticated','61400000011',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Sam Whitfield"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b2','authenticated','authenticated','61400000012',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Priya Nair"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b3','authenticated','authenticated','61400000013',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Dan Kowalski"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b4','authenticated','authenticated','61400000014',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Aisha Rahman"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b5','authenticated','authenticated','61400000015',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Tom Bui"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b6','authenticated','authenticated','61400000016',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Elena Petrova"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b7','authenticated','authenticated','61400000017',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Josh Meredith"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b8','authenticated','authenticated','61400000018',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Nadia Haddad"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b9','authenticated','authenticated','61400000019',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Ben Carter"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000ba','authenticated','authenticated','61400000020',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Grace O''Donnell"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000a1','authenticated','authenticated','61400000001',now(),'p61400000001@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Joey Lameri"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000a2','authenticated','authenticated','61400000002',now(),'p61400000002@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Marcus Obi"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b1','authenticated','authenticated','61400000011',now(),'p61400000011@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Sam Whitfield"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b2','authenticated','authenticated','61400000012',now(),'p61400000012@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Priya Nair"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b3','authenticated','authenticated','61400000013',now(),'p61400000013@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Dan Kowalski"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b4','authenticated','authenticated','61400000014',now(),'p61400000014@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Aisha Rahman"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b5','authenticated','authenticated','61400000015',now(),'p61400000015@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Tom Bui"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b6','authenticated','authenticated','61400000016',now(),'p61400000016@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Elena Petrova"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b7','authenticated','authenticated','61400000017',now(),'p61400000017@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Josh Meredith"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b8','authenticated','authenticated','61400000018',now(),'p61400000018@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Nadia Haddad"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000b9','authenticated','authenticated','61400000019',now(),'p61400000019@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Ben Carter"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000ba','authenticated','authenticated','61400000020',now(),'p61400000020@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Grace O''Donnell"}',now(),now(),false,false),
   -- Ravens FC: the other tenant.
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000c1','authenticated','authenticated','61400000091',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Rachel Ng"}',now(),now(),false,false),
-  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000c2','authenticated','authenticated','61400000092',now(),'{"provider":"phone","providers":["phone"]}','{"full_name":"Peter Vasilakis"}',now(),now(),false,false);
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000c1','authenticated','authenticated','61400000091',now(),'p61400000091@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Rachel Ng"}',now(),now(),false,false),
+  ('00000000-0000-0000-0000-000000000000','00000000-0000-0000-0000-0000000000c2','authenticated','authenticated','61400000092',now(),'p61400000092@squadroom.invalid',now(),'','','','','','','','','{"provider":"phone","providers":["phone"]}','{"full_name":"Peter Vasilakis"}',now(),now(),false,false);
 
 -- The platform owner.
 insert into public.platform_admins (profile_id, note)
