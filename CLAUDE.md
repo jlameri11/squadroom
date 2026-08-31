@@ -11,6 +11,14 @@ one and is meant to reach hundreds of academies.
 - **Client-first architecture.** All authorisation lives in the database, not
   in server components or route handlers. This is what keeps a Capacitor
   native build viable later: the same API, subject to the same rules.
+  - **Discipline that makes the Capacitor build cheap: pages stay THIN.** A
+    `page.tsx` fetches and passes props; every piece of UI lives in a
+    client component that takes those props. Capacitor cannot run server
+    components, so anything rendered directly inside one has to be rewritten
+    for native. Keep that surface to a handful of thin wrappers.
+  - The service-role routes can NEVER ship inside a Capacitor bundle - that
+    is a file on someone's phone, and the key bypasses every policy. There
+    will always be a server: Netlify now, or Supabase Edge Functions later.
 - **Shared schema, isolated by RLS.** Never schema-per-tenant. Every table
   carries `academy_id`; child tables use composite foreign keys against
   `(id, academy_id)` so a cross-tenant row cannot be written.
