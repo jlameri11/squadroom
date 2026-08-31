@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 /**
@@ -82,6 +83,13 @@ export default function SignIn() {
         >
           {busy ? 'Sending…' : 'Email me a link'}
         </button>
+
+        <p className="text-center text-sm text-neutral-500">
+          New here?{' '}
+          <Link href="/signup" className="underline underline-offset-4">
+            Set up an academy or club
+          </Link>
+        </p>
         <p className="text-center text-xs text-neutral-500">
           Parents don&apos;t sign in — their coach lets them in.
         </p>

@@ -1,6 +1,7 @@
 // database.types.ts — generated from squadroom-dev. Do not edit by hand.
 //
 // Regenerate after every migration:
+//   npx supabase login          (once)
 //   npm run types
 //
 // If it drifts from the database, TypeScript will happily agree with the
@@ -438,6 +439,96 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      competition_invites: {
+        Row: {
+          club_name: string
+          competition_id: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          entry_id: string | null
+          expires_at: string
+          id: string
+          invited_by: string
+          redeemed_academy: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          status: string
+          token: string
+        }
+        Insert: {
+          club_name: string
+          competition_id: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          entry_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by: string
+          redeemed_academy?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          status?: string
+          token?: string
+        }
+        Update: {
+          club_name?: string
+          competition_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          entry_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          redeemed_academy?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_invites_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_invites_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_invites_redeemed_academy_fkey"
+            columns: ["redeemed_academy"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_invites_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1999,9 +2090,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      bulk_invite_clubs: {
+        Args: { p_clubs: Json; p_competition: string; p_division: string }
+        Returns: {
+          club_name: string
+          token: string
+        }[]
+      }
       check_join_rate: {
         Args: { p_ip_hash: string; p_link: string }
         Returns: boolean
+      }
+      claim_competition_invite: {
+        Args: { p_academy: string; p_team?: string; p_token: string }
+        Returns: string
       }
       competition_ladder: {
         Args: { p_competition: string; p_division: string }
@@ -2057,7 +2159,19 @@ export type Database = {
           teams: string[]
         }[]
       }
+      mirror_fixture: { Args: { p_fixture: string }; Returns: undefined }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
+      peek_competition_invite: {
+        Args: { p_token: string }
+        Returns: {
+          club_name: string
+          competition_name: string
+          division: string
+          organiser_name: string
+          starts_on: string
+          status: string
+        }[]
+      }
       poll_counts: {
         Args: { p_poll: string }
         Returns: {
