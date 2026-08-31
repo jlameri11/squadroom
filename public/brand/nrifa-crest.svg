@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1520" viewBox="0 0 600 760">
+  <title>NRIFA Canva editable crest v2</title>
+  <desc>Rebuilt with direct SVG shapes only. No embedded images, masks, clips, symbols, or CSS classes.</desc>
+
+  <!-- OUTER SHIELD - edit colour in Canva -->
+  <path id="outer-shield-navy" fill="#202842" d="M300 24 C226 78 160 104 60 104 L60 338 C60 518 170 646 300 728 C430 646 540 518 540 338 L540 104 C440 104 374 78 300 24 Z"/>
+
+  <!-- GOLD BORDER - edit colour in Canva -->
+  <path id="gold-border" fill="#efbd5b" d="M300 42 C232 91 165 116 76 116 L76 335 C76 503 178 625 300 704 C422 625 524 503 524 335 L524 116 C435 116 368 91 300 42 Z"/>
+
+  <!-- INNER SHIELD - edit colour in Canva -->
+  <path id="inner-shield-blue" fill="#384563" d="M300 60 C238 104 172 128 91 128 L91 333 C91 486 186 604 300 680 C414 604 509 486 509 333 L509 128 C428 128 362 104 300 60 Z"/>
+
+  <!-- LOWER DARK PANEL - direct path instead of clip/mask -->
+  <path id="lower-panel-dark" fill="#202842" d="M91 352 L509 352 L509 333 C509 486 414 604 300 680 C186 604 91 486 91 333 Z"/>
+
+  <!-- VERTICAL STRIPES - individual editable shapes -->
+  <path id="left-stripe" fill="#3d4a6d" d="M121 358 L177 358 L177 608 C158 588 139 560 121 526 Z"/>
+  <path id="middle-left-stripe" fill="#3d4a6d" d="M234 358 L292 358 L292 674 C271 660 252 644 234 626 Z"/>
+  <path id="middle-right-stripe" fill="#3d4a6d" d="M348 358 L406 358 L406 626 C388 644 369 660 348 674 Z"/>
+  <path id="right-stripe" fill="#3d4a6d" d="M462 358 L492 358 C488 424 477 480 462 526 Z"/>
+
+  <!-- DIVIDER -->
+  <rect id="divider" x="92" y="344" width="416" height="8" fill="#202842"/>
+
+  <!-- TOP STAR -->
+  <path id="top-star" fill="#efbd5b" d="M300 88.28 L305.5 100.87 L318.72 101.22 L307.93 109.34 L311.59 122.14 L300 114.92 L288.41 122.14 L292.07 109.34 L281.28 101.22 L294.5 100.87 Z"/>
+
+  <!-- CENTER STAR -->
+  <path id="centre-star" fill="#efbd5b" d="M300 500.7 L308.02 519.06 L327.3 519.57 L311.57 531.41 L316.91 550.08 L300 539.55 L283.09 550.08 L288.43 531.41 L272.7 519.57 L291.98 519.06 Z"/>
+
+  <!-- TEXT OBJECTS - Canva may preserve as text, but some versions convert SVG text to vector shapes -->
+  <text id="top-text" x="300" y="182" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800">NICK RIZZO INTERNATIONAL</text>
+  <text id="main-text-nrifa" x="300" y="282" text-anchor="middle" fill="#ffffff" font-family="Arial Black, Impact, Arial, sans-serif" font-size="96" font-weight="900" letter-spacing="-2">NRIFA</text>
+  <text id="academy-text" x="300" y="326" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="800" letter-spacing="1">FOOTBALL ACADEMY</text>
+  <text id="est-text" x="214" y="484" text-anchor="middle" fill="#efbd5b" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800">EST.</text>
+  <text id="year-text" x="386" y="484" text-anchor="middle" fill="#efbd5b" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800">2010</text>
+
+  <!-- INNER LINE -->
+  <path id="inner-outline" fill="none" stroke="#202842" stroke-width="5" d="M300 60 C238 104 172 128 91 128 L91 333 C91 486 186 604 300 680 C414 604 509 486 509 333 L509 128 C428 128 362 104 300 60 Z"/>
+</svg>

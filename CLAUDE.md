@@ -21,6 +21,18 @@ one and is meant to reach hundreds of academies.
   data. A Supabase project's region cannot be changed after creation.
 - **One deployment serves every academy.** Branding is data
   (`academies.primary_colour`, `logo_url`), never a per-tenant build.
+- **Dribl is the source of truth for registration and fixtures; Squadroom is
+  the communication layer.** Players must be registered in Dribl to play, so
+  do not rebuild registration and do not ask a coach to type a draw twice.
+  - Dribl has no public API and no ICS feed (checked Aug 2026; calendar sync
+    moved behind a paid tier). The supported path is the club-admin export:
+    Events → filter → Export → Events → download a spreadsheet.
+  - So: build an importer, not an integration. Do NOT scrape the public Match
+    Centre - fragile and almost certainly against their terms.
+  - Column mapping must be built against a real export file, never guessed.
+- **NRIFA brand**, taken from the crest SVG, not eyeballed:
+  navy `#202842`, mid navy `#3D4A6D`, gold `#EFBD5B`, white.
+  Crest lives at `public/brand/nrifa-crest.svg`.
 - **A competition is the container above events**, not a parent event.
   `competitions` (SPL Season 3, Spring Gala Day) + `competition_teams`
   (which of our teams is in which division) + `events.competition_id`.

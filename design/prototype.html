@@ -3,11 +3,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap">
 <style>
   :root{
-    --brand:#17466E; --brand-soft:#17466E1a; --brand-ink:#ffffff;
+    --brand:#202842; --brand-soft:#2028421a; --brand-ink:#ffffff;
     --paper:#EEF1F5; --surface:#ffffff; --surface-2:#E7EBF1; --surface-3:#F5F7FA;
     --ink:#0E1726; --ink-2:#4C5A6D; --ink-3:#8391A3;
     --line:#D9E0E9; --line-2:#EAEEF3;
-    --accent:#DD5620;
+    --accent:#DD5620; --gold:#EFBD5B;
     --yes:#1C7A4C; --yes-bg:#1C7A4C18;
     --maybe:#9C6B06; --maybe-bg:#9C6B0618;
     --no:#8E3020; --no-bg:#8E302018;
@@ -22,7 +22,7 @@
       --paper:#080D16; --surface:#121B29; --surface-2:#1B2637; --surface-3:#0E1723;
       --ink:#E8EDF4; --ink-2:#A6B2C4; --ink-3:#75839A;
       --line:#243044; --line-2:#1A2434;
-      --accent:#FF7A45;
+      --accent:#FF7A45; --gold:#EFBD5B;
       --yes:#4FB587; --yes-bg:#4FB58722;
       --maybe:#D0A03C; --maybe-bg:#D0A03C22;
       --no:#D9755F; --no-bg:#D9755F22;
@@ -36,7 +36,7 @@
     --paper:#080D16; --surface:#121B29; --surface-2:#1B2637; --surface-3:#0E1723;
     --ink:#E8EDF4; --ink-2:#A6B2C4; --ink-3:#75839A;
     --line:#243044; --line-2:#1A2434;
-    --accent:#FF7A45;
+    --accent:#FF7A45; --gold:#EFBD5B;
     --yes:#4FB587; --yes-bg:#4FB58722;
     --maybe:#D0A03C; --maybe-bg:#D0A03C22;
     --no:#D9755F; --no-bg:#D9755F22;
@@ -264,7 +264,7 @@
           <button data-role="parent" aria-pressed="false">View as Parent</button>
         </div>
         <div class="swatches" role="group" aria-label="Academy colour">
-          <button class="swatch" data-brand="#17466E" style="background:#17466E" aria-pressed="true" title="NRIFA navy"></button>
+          <button class="swatch" data-brand="#202842" style="background:#202842" aria-pressed="true" title="NRIFA navy #202842"></button>
           <button class="swatch" data-brand="#136B4F" style="background:#136B4F" aria-pressed="false" title="Pitch green"></button>
           <button class="swatch" data-brand="#7A2233" style="background:#7A2233" aria-pressed="false" title="Claret"></button>
           <button class="swatch" data-brand="#33407A" style="background:#33407A" aria-pressed="false" title="Indigo"></button>
@@ -305,7 +305,7 @@
     <div class="phone">
       <div class="statusbar"><span class="tnum">9:41</span><span>NRIFA</span><span class="tnum">100%</span></div>
       <div class="appbar">
-        <div class="crest" id="crest">NR</div>
+        <div class="crest" id="crest" style="color:#EFBD5B;font-weight:700">NR</div>
         <div class="grow" id="bar-generic">
           <div class="ttl" id="bar-title">Home</div>
           <div class="meta" id="bar-meta">NRIFA &middot; Sunday 30 August</div>
@@ -512,7 +512,7 @@
                 <dl class="kv">
                   <dt>When</dt><dd class="tnum">Sat 5 Sep, 9:00am</dd>
                   <dt>Where</dt><dd><span class="maplink">ELS Hall Park, Field 3</span></dd>
-                  <dt>Kit</dt><dd class="kit"><span class="kitdot" style="background:var(--brand)"></span> Navy / navy / navy</dd>
+                  <dt>Kit</dt><dd class="kit"><span class="kitdot" style="background:#202842"></span> Navy <span class="kitdot" style="background:#EFBD5B;margin-left:4px"></span> gold trim</dd>
                 </dl>
                 <div class="parent-only stack">
                   <div class="kidrow"><span class="who">Leo</span>
@@ -579,7 +579,7 @@
               <dt>When</dt><dd class="tnum">Saturday 5 September, 9:00am – 10:00am</dd>
               <dt>Arrive</dt><dd class="tnum">8:30am</dd>
               <dt>Where</dt><dd><span class="maplink">ELS Hall Park, Field 3, Kent Rd North Ryde</span></dd>
-              <dt>Kit</dt><dd class="kit"><span class="kitdot" style="background:var(--brand)"></span> Navy / navy / navy</dd>
+              <dt>Kit</dt><dd class="kit"><span class="kitdot" style="background:#202842"></span> Navy <span class="kitdot" style="background:#EFBD5B;margin-left:4px"></span> gold trim</dd>
             </dl>
             <div style="display:flex;gap:8px">
               <button class="btn ghost" style="flex:1" data-toast="Opening in Maps">Directions</button>
@@ -1264,7 +1264,7 @@
   var role = 'coach', mode = 'open', tab = 'home';
 
   var META = {
-    home:    ['Home',                  'NRIFA · Sunday 30 August'],
+    home:    ['Home',                  'NRIFA Football Academy · Monday 31 August'],
     chats:   ['Chats',                 '4 channels · 17 unread'],
     channel: ['U8s NRIFA SPL Team',    '1 host · 13 members'],
     event:   ['Round 12',              'Sat 5 Sep · ELS Hall Park'],

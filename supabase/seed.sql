@@ -58,7 +58,7 @@ values ('00000000-0000-0000-0000-0000000000a1', 'Platform owner');
 -- ---------------------------------------------------------------------------
 insert into public.academies (id, name, slug, primary_colour, timezone, created_by)
 values
-  ('00000000-0000-0000-0000-0000000a0001','NRIFA','nrifa','#17466E','Australia/Sydney','00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000a0001','NRIFA Football Academy','nrifa','#202842','Australia/Sydney','00000000-0000-0000-0000-0000000000a1'),
   ('00000000-0000-0000-0000-0000000a0002','Ravens FC','ravens','#7A2233','Australia/Sydney','00000000-0000-0000-0000-0000000000c1');
 
 insert into public.academy_members (academy_id, profile_id, role, invited_by) values
