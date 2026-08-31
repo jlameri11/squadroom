@@ -1,0 +1,52 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { MemberTree } from './member-tree'
+
+/**
+ * Who is in the academy, and who let them in.
+ *
+ * The tree is the reason invited_by is recorded at all: an owner can see that
+ * a coach brought fourteen families, and remove all fifteen in one action if
+ * that coach leaves under a cloud.
+ */
+export default async function MembersPage() {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth.user) redirect('/signin')
+
+  const { data: academies } = await supabase
+    .from('academies')
+    .select('id, name')
+    .order('name')
+
+  const academy = academies?.[0]
+  if (!academy) redirect('/start')
+
+  // Returns nothing unless you are staff — the function checks, not this page.
+  const { data: tree } = await supabase.rpc('academy_invite_tree', {
+    p_academy: academy.id,
+  })
+
+  return (
+    <main className="mx-auto max-w-md p-5">
+      <header className="mb-5">
+        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>
+          Members
+        </h1>
+        <p className="mt-1 text-sm text-neutral-500">{academy.name}</p>
+      </header>
+
+      <MemberTree
+        academyId={academy.id}
+        rows={(tree ?? []).map((r: Record<string, unknown>) => ({
+          profileId: r.profile_id as string,
+          fullName: (r.full_name as string) || 'Unnamed',
+          role: r.role as string,
+          status: r.status as string,
+          inviterName: (r.inviter_name as string | null) ?? null,
+          depth: r.depth as number,
+        }))}
+      />
+    </main>
+  )
+}
