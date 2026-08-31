@@ -18,6 +18,8 @@ export type ChatMessage = {
   created_at: string
   edited_at: string | null
   deleted_at: string | null
+  event_id?: string | null
+  event?: unknown
 }
 
 /**

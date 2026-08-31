@@ -12,7 +12,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
 
   const { data: channel } = await supabase
     .from('channels')
-    .select('id, academy_id, name, type, posting_mode, status, restrictions')
+    .select('id, academy_id, team_id, name, type, posting_mode, status, restrictions')
     .eq('id', channelId)
     .maybeSingle()
 
@@ -49,6 +49,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
     <ChannelView
       channelId={channel.id}
       academyId={channel.academy_id}
+      teamId={channel.team_id}
       name={channel.name ?? 'Direct message'}
       postingMode={channel.posting_mode}
       archived={channel.status === 'archived'}

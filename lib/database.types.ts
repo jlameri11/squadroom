@@ -1332,6 +1332,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           edited_at: string | null
+          event_id: string | null
           id: string
           is_announcement: boolean
           pinned_at: string | null
@@ -1351,6 +1352,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           edited_at?: string | null
+          event_id?: string | null
           id?: string
           is_announcement?: boolean
           pinned_at?: string | null
@@ -1370,6 +1372,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           edited_at?: string | null
+          event_id?: string | null
           id?: string
           is_announcement?: boolean
           pinned_at?: string | null
@@ -1406,6 +1409,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_event_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
           },
           {
             foreignKeyName: "messages_pinned_by_fkey"
@@ -2105,6 +2115,8 @@ export type Database = {
           created_at: string
           deleted_at: string
           edited_at: string
+          event: Json
+          event_id: string
           id: string
           is_announcement: boolean
           pinned_at: string
@@ -2158,6 +2170,15 @@ export type Database = {
         }
         Returns: string
       }
+      event_rsvp_summary: {
+        Args: { p_event: string }
+        Returns: {
+          going: number
+          maybe: number
+          no_reply: number
+          out_count: number
+        }[]
+      }
       expire_stale_join_requests: { Args: never; Returns: number }
       get_reaction_voters: {
         Args: { p_emoji: string; p_message: string }
@@ -2195,6 +2216,15 @@ export type Database = {
           team_id: string
           type: Database["public"]["Enums"]["channel_type"]
           unread_count: number
+        }[]
+      }
+      my_rsvps_for_event: {
+        Args: { p_event: string }
+        Returns: {
+          note: string
+          player_id: string
+          player_name: string
+          status: Database["public"]["Enums"]["rsvp_status"]
         }[]
       }
       normalise_phone: { Args: { p_phone: string }; Returns: string }

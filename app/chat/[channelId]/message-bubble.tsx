@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
+import { MessageAttachments } from './attachments'
+import { EventCard, type CardEvent } from './event-card'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
@@ -94,7 +96,7 @@ export function MessageBubble({
 
         <div
           onDoubleClick={onReply}
-          className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+          className={`${message.event ? 'w-[85%] max-w-[85%] p-0' : 'max-w-[85%] px-3 py-2'} rounded-2xl ${
             message.is_announcement
               ? 'border-2'
               : mine
@@ -104,9 +106,11 @@ export function MessageBubble({
           style={
             message.is_announcement
               ? { borderColor: '#202842', background: '#2028420d', color: '#111' }
-              : mine
-                ? { background: '#202842' }
-                : undefined
+              : message.event
+                ? { background: 'transparent', border: 'none' }
+                : mine
+                  ? { background: '#202842' }
+                  : undefined
           }
         >
           {message.is_announcement && (
@@ -122,12 +126,24 @@ export function MessageBubble({
             </div>
           )}
 
+          {!message.deleted_at && message.event ? (
+            <EventCard
+              event={message.event as CardEvent}
+              academyId={academyId}
+              isCoach={isHost}
+            />
+          ) : null}
+
+          {!message.deleted_at && <MessageAttachments attachments={message.attachments} />}
+
           {message.deleted_at ? (
             <span className={`text-sm italic ${mine && !message.is_announcement ? 'text-white/60' : 'text-neutral-400'}`}>
               Message deleted
             </span>
           ) : (
-            <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">{message.body}</span>
+            message.body && (
+              <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">{message.body}</span>
+            )
           )}
 
           <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-white/60' : 'text-neutral-400'}`}>

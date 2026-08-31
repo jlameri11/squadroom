@@ -8,10 +8,11 @@ import { MessageBubble } from './message-bubble'
 import { Composer } from './composer'
 
 export function ChannelView({
-  channelId, academyId, name, postingMode, archived, isHost, muted, myId, initialMessages,
+  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, myId, initialMessages,
 }: {
   channelId: string
   academyId: string
+  teamId: string | null
   name: string
   postingMode: string
   archived: boolean
@@ -101,6 +102,7 @@ export function ChannelView({
       <Composer
         channelId={channelId}
         academyId={academyId}
+        teamId={teamId}
         myId={myId}
         canPost={canPost}
         isHost={isHost}
