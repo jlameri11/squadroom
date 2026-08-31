@@ -743,6 +743,11 @@
             <button data-cal="month" aria-pressed="false" style="flex:1">Month</button>
           </div>
 
+          <div class="chips" id="cal-group">
+            <button data-group="comp" aria-pressed="true">By competition</button>
+            <button data-group="type" aria-pressed="false">By type</button>
+          </div>
+
           <!-- month grid -->
           <div id="cal-month" hidden>
             <div class="card" style="padding:13px">
@@ -830,6 +835,79 @@
             </div>
           </div>
 
+
+          <!-- grouped by type -->
+          <div id="cal-type" hidden>
+            <div class="compo">
+              <div class="compo-head">
+                <div><div class="compo-name">Matches</div><div class="compo-sub">2 this week</div></div>
+                <span class="typechip match">Match</span>
+              </div>
+              <div class="card">
+                <button class="chan" data-go="event">
+                  <div class="datechip"><div class="d tnum">5</div><div class="m">Sat</div></div>
+                  <div class="body"><div class="nm">vs Gladesville Ravens</div>
+                    <div class="pv">9:00am &middot; ELS Hall Park &middot; SPL Season 3</div></div>
+                  <div class="rt"><span class="divchip">U8s Championship</span></div>
+                </button>
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">5</div><div class="m">Sat</div></div>
+                  <div class="body"><div class="nm">vs Epping Eagles</div>
+                    <div class="pv">11:00am &middot; ELS Hall Park &middot; SPL Season 3</div></div>
+                  <div class="rt"><span class="divchip">U10s</span></div>
+                </button>
+              </div>
+            </div>
+
+            <div class="compo">
+              <div class="compo-head">
+                <div><div class="compo-name">Training</div><div class="compo-sub">Twice a week</div></div>
+                <span class="typechip">Training</span>
+              </div>
+              <div class="card">
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">1</div><div class="m">Tue</div></div>
+                  <div class="body"><div class="nm">Tuesday training</div><div class="pv">5:00–6:00pm &middot; Christie Park</div></div>
+                  <div class="rt"><span class="divchip alt">U8 SPL</span></div>
+                </button>
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">3</div><div class="m">Thu</div></div>
+                  <div class="body"><div class="nm">Thursday training</div><div class="pv">5:00–6:00pm &middot; Christie Park</div></div>
+                  <div class="rt"><span class="divchip alt">U8 SPL</span></div>
+                </button>
+              </div>
+            </div>
+
+            <div class="compo">
+              <div class="compo-head">
+                <div><div class="compo-name">Tournaments</div><div class="compo-sub">A whole day, several games</div></div>
+                <span class="typechip" style="background:var(--maybe-bg);color:var(--maybe)">Tournament</span>
+              </div>
+              <div class="card">
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">20</div><div class="m">Sun</div></div>
+                  <div class="body"><div class="nm">Spring Gala Day</div>
+                    <div class="pv">All day &middot; Valentine Park &middot; arrive 8:15am</div></div>
+                  <div class="rt"><span class="divchip">U8s, U10s</span></div>
+                </button>
+              </div>
+            </div>
+
+            <div class="compo">
+              <div class="compo-head">
+                <div><div class="compo-name">Social</div><div class="compo-sub">End of season</div></div>
+                <span class="typechip">Social</span>
+              </div>
+              <div class="card">
+                <button class="chan">
+                  <div class="datechip"><div class="d tnum">6</div><div class="m">Sun</div></div>
+                  <div class="body"><div class="nm">Season BBQ &amp; presentation</div><div class="pv">12:00pm &middot; Magdala Park</div></div>
+                  <div class="rt"><span class="divchip alt">Academy</span></div>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <button class="btn coach-only" style="width:100%;margin-top:16px" data-go="newevent">+ New event</button>
           <div class="parent-only empty">Only coaches and admins can add events.</div>
         </div>
@@ -843,6 +921,7 @@
             <div class="seg" role="group" aria-label="Event type" style="width:100%">
               <button data-etype="match" aria-pressed="true" style="flex:1">Match</button>
               <button data-etype="training" style="flex:1">Training</button>
+              <button data-etype="tournament" style="flex:1">Tournament</button>
               <button data-etype="social" style="flex:1">Social</button>
             </div>
           </div>
@@ -1676,14 +1755,29 @@
   });
 
   /* ---- calendar: list vs month ---- */
+  var calView = 'list', calGroup = 'comp';
+  function syncCalendar(){
+    var month = calView === 'month';
+    document.getElementById('cal-month').hidden = !month;
+    document.getElementById('cal-group').hidden = month;
+    document.getElementById('cal-list').hidden  = month || calGroup !== 'comp';
+    document.getElementById('cal-type').hidden  = month || calGroup !== 'type';
+  }
   document.querySelectorAll('[data-cal]').forEach(function(b){
     b.addEventListener('click', function(){
-      var v = b.dataset.cal;
-      press('[data-cal]', 'cal', v);
-      document.getElementById('cal-list').hidden  = (v !== 'list');
-      document.getElementById('cal-month').hidden = (v !== 'month');
+      calView = b.dataset.cal;
+      press('[data-cal]', 'cal', calView);
+      syncCalendar();
     });
   });
+  document.querySelectorAll('[data-group]').forEach(function(b){
+    b.addEventListener('click', function(){
+      calGroup = b.dataset.group;
+      press('[data-group]', 'group', calGroup);
+      syncCalendar();
+    });
+  });
+  syncCalendar();
 
   /* September 2026 starts on a Tuesday, so the grid is offset by one. */
   (function buildMonth(){
@@ -1889,6 +1983,7 @@
 
   /* ---- creating an event: lands in Fixtures and posts to the channel ---- */
   var COMP_NAMES = { ca01:'SPL Season 3', ca02:'Spring Gala Day', none:'Training & other' };
+  var TYPE_GROUPS = { match:'Matches', training:'Training', tournament:'Tournaments', social:'Social' };
   var TEAM_NAMES = { u8:'U8 SPL', u10:'U10', u12:'U12' };
 
   function compGroupByName(name){
@@ -1954,6 +2049,25 @@
           });
         });
       }
+
+      // Mirror it into the by-type view so both groupings stay honest.
+      var typeGroupName = TYPE_GROUPS[type] || 'Matches';
+      document.querySelectorAll('#cal-type .compo').forEach(function(g){
+        var n = g.querySelector('.compo-name');
+        if (!n || n.textContent.trim() !== typeGroupName) return;
+        var c2 = g.querySelector('.card');
+        var e2 = c2.querySelector('.empty');
+        if (e2) e2.remove();
+        var r2 = document.createElement('button');
+        r2.className = 'chan';
+        r2.innerHTML =
+          '<div class="datechip"><div class="d tnum">12</div><div class="m">Sat</div></div>' +
+          '<div class="body"><div class="nm">' +
+            (type === 'match' ? 'vs Gladesville Ravens' : typeGroupName) +
+          '</div><div class="pv">9:00am &middot; ELS Hall Park &middot; ' + compName + '</div></div>' +
+          '<div class="rt"><span class="divchip' + (div ? '' : ' alt') + '">' + (div || TEAM_NAMES[team]) + '</span></div>';
+        c2.appendChild(r2);
+      });
 
       if (SR.show) SR.show('calendar');
       if (SR.toast) SR.toast('Event created' + (posted && posted.getAttribute('aria-pressed') === 'true'
