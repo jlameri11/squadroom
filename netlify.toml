@@ -15,12 +15,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    # A join token sits in the URL path. Without this it would leak to any
-    # third party the page happens to reference.
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(self)"
+# Security headers live in next.config.ts, not here. Netlify's [[headers]]
+# only apply to static assets, and every page that matters is rendered by the
+# Next function.
