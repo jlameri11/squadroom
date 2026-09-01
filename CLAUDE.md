@@ -156,6 +156,20 @@ one and is meant to reach hundreds of academies.
 
 - Migrations are SQL files in `supabase/migrations`, never dashboard changes.
 - Run `scripts/test-rls.sql` after every migration. It is idempotent.
+- **RLS costs are per row SCANNED, not per row returned.** Measured on
+  60,000 messages: filtered by channel it is an index scan at ~1ms; an
+  unfiltered `select from messages` is a seq scan at ~836ms, because the
+  policy function runs 60,000 times (`Rows Removed by Filter: 56483`).
+  - The `(select fn(...))` wrapping only caches when the ARGUMENT is
+    constant. `is_channel_member(channel_id)` varies per row, so it cannot
+    be hoisted. That is why every read goes through an RPC that takes the
+    channel id and filters on the index FIRST.
+  - Never write an unfiltered select against messages, events or reactions.
+    It will look fine on seed data and fall over on a real season.
+- Measured headroom at one large club (250 members, 28 channels, 60k
+  messages, 23MB): chat list 1.5-5ms, opening a channel 5.6ms, paging 5.2ms.
+  The database is not the constraint at hundreds of users; Realtime
+  concurrent connections are.
 - Supabase Realtime uses `postgres_changes` behind a single
   `useChannelMessages` hook. It does not scale — it re-evaluates RLS per
   subscriber per change. Swap it for broadcast-from-trigger before onboarding
