@@ -23,6 +23,16 @@ type ScannedEvent = {
 const MAX_EDGE = 2200 // Small print on a fixture list has to survive this.
 const NAVY = '#202842'
 
+// A season draw is rarely one screenshot — it is the four or five it took to
+// scroll through the round. Ten is comfortably more than that, and it is also
+// the point past which someone is no longer adding fixtures.
+const MAX_BATCH = 10
+
+// Each image is its own API call, and ten at once from a phone on suburban
+// wifi is how you get timeouts. Three at a time finishes a full batch in
+// about the same wall-clock time without the failures.
+const CONCURRENCY = 3
+
 /**
  * Downsized, but not as hard as a chat photo. images.ts caps at 1600px
  * because nobody needs more to see a goal; here the whole point is reading
@@ -63,56 +73,106 @@ export function ScanClient({
   const [shareTeam, setShareTeam] = useState<string>('')
   const [dragging, setDragging] = useState(false)
 
-  async function handleFile(file: File) {
+  async function handleFiles(chosen: File[]) {
     setError(null)
     setEvents(null)
-    const supabase = createClient()
 
-    try {
-      setBusy('Getting the screenshot ready…')
-      const blob = await prepareScreenshot(file)
-
-      const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user) throw new Error('You are signed out. Sign in and try again.')
-
-      // {academy_id}/{profile_id}/{file} — the storage policies read both out
-      // of the path, so this shape is not cosmetic.
-      const path = `${academyId}/${auth.user.id}/${crypto.randomUUID()}.jpg`
-
-      setBusy('Uploading…')
-      const { error: uploadError } = await supabase.storage
-        .from('scans')
-        .upload(path, blob, { contentType: blob.type || 'image/jpeg' })
-      if (uploadError) throw new Error(uploadError.message)
-
-      const { data: scan, error: scanError } = await supabase
-        .from('event_scans')
-        .insert({
-          academy_id: academyId,
-          profile_id: auth.user.id,
-          storage_path: path,
-          team_id: shareTeam || null,
-          share: !!shareTeam,
-        })
-        .select('id')
-        .single()
-      if (scanError || !scan) throw new Error(scanError?.message ?? 'Could not start the scan.')
-
-      setBusy('Reading the fixtures…')
-      const response = await fetch('/api/scan', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ scanId: scan.id }),
-      })
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error ?? 'That screenshot could not be read.')
-
-      setEvents(payload.events as ScannedEvent[])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
-    } finally {
-      setBusy(null)
+    const images = chosen.filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) {
+      setError('Those files are not images.')
+      return
     }
+
+    // Said out loud rather than silently taking the first ten. Someone who
+    // selected fourteen screenshots needs to know four of them were dropped.
+    const batch = images.slice(0, MAX_BATCH)
+    const ignored = images.length - batch.length
+
+    const supabase = createClient()
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user) {
+      setError('You are signed out. Sign in and try again.')
+      return
+    }
+
+    let done = 0
+    const collected: ScannedEvent[] = []
+    const failures: string[] = []
+    setBusy(`Reading ${batch.length} ${batch.length === 1 ? 'screenshot' : 'screenshots'}…`)
+
+    async function readOne(file: File) {
+      try {
+        const blob = await prepareScreenshot(file)
+
+        // {academy_id}/{profile_id}/{file} — the storage policies read both
+        // out of the path, so this shape is not cosmetic.
+        const path = `${academyId}/${auth.user!.id}/${crypto.randomUUID()}.jpg`
+        const { error: uploadError } = await supabase.storage
+          .from('scans')
+          .upload(path, blob, { contentType: blob.type || 'image/jpeg' })
+        if (uploadError) throw new Error(uploadError.message)
+
+        const { data: scan, error: scanError } = await supabase
+          .from('event_scans')
+          .insert({
+            academy_id: academyId,
+            profile_id: auth.user!.id,
+            storage_path: path,
+            team_id: shareTeam || null,
+            share: !!shareTeam,
+          })
+          .select('id')
+          .single()
+        // The daily cap lives in a database trigger, so this is where hitting
+        // it surfaces — as a plain sentence, not a Postgres error code.
+        if (scanError || !scan) throw new Error(scanError?.message ?? 'Could not start the scan.')
+
+        const response = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ scanId: scan.id }),
+        })
+        const payload = await response.json()
+        if (!response.ok) throw new Error(payload.error ?? 'That screenshot could not be read.')
+
+        collected.push(...(payload.events as ScannedEvent[]))
+      } catch (err) {
+        failures.push(err instanceof Error ? err.message : 'Something went wrong.')
+      } finally {
+        done++
+        setBusy(`Read ${done} of ${batch.length}…`)
+      }
+    }
+
+    // A small worker pool rather than Promise.all over all ten.
+    const queue = [...batch]
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+        let next = queue.shift()
+        while (next) {
+          await readOne(next)
+          next = queue.shift()
+        }
+      })
+    )
+
+    setBusy(null)
+    collected.sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+    setEvents(collected)
+
+    const notes: string[] = []
+    if (ignored > 0) {
+      notes.push(`Only the first ${MAX_BATCH} were read — ${ignored} left out.`)
+    }
+    if (failures.length > 0) {
+      // One distinct reason is worth showing; five copies of it is not.
+      notes.push(
+        failures.length === batch.length
+          ? failures[0]
+          : `${failures.length} of ${batch.length} could not be read: ${failures[0]}`
+      )
+    }
+    if (notes.length > 0) setError(notes.join(' '))
   }
 
   return (
@@ -122,8 +182,8 @@ export function ScanClient({
           Add games from a screenshot
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Screenshot your draw in Dribl, drop it here, and the games go straight into your
-          calendar.
+          Screenshot your draw in Dribl, drop them here, and the games go straight into your
+          calendar. A whole round usually takes a few screenshots — add them all at once.
         </p>
       </header>
 
@@ -159,8 +219,8 @@ export function ScanClient({
         onDrop={(e) => {
           e.preventDefault()
           setDragging(false)
-          const file = e.dataTransfer.files?.[0]
-          if (file) void handleFile(file)
+          const files = Array.from(e.dataTransfer.files ?? [])
+          if (files.length > 0) void handleFiles(files)
         }}
         className={`mt-4 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center ${
           dragging ? 'border-neutral-400 bg-neutral-50' : 'border-neutral-300'
@@ -169,11 +229,12 @@ export function ScanClient({
         <input
           type="file"
           accept="image/*"
+          multiple
           className="sr-only"
           disabled={!!busy}
           onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) void handleFile(file)
+            const files = Array.from(e.target.files ?? [])
+            if (files.length > 0) void handleFiles(files)
             e.target.value = ''
           }}
         />
@@ -182,9 +243,11 @@ export function ScanClient({
         ) : (
           <>
             <span className="font-medium" style={{ color: NAVY }}>
-              Choose a screenshot
+              Choose screenshots
             </span>
-            <span className="mt-1 text-sm text-neutral-500">or drag one here</span>
+            <span className="mt-1 text-sm text-neutral-500">
+              or drag them here — up to {MAX_BATCH} at a time
+            </span>
           </>
         )}
       </label>

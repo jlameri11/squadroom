@@ -189,6 +189,18 @@ one and is meant to reach hundreds of academies.
     honesty is not honesty.
   - Needs `ANTHROPIC_API_KEY`. Without it the page says the feature is off
     rather than failing halfway through an upload.
+  - **This is the first feature where a user can spend the owner's money.**
+    Ten images per upload, twenty per person per rolling 24 hours, and a
+    $20/month hard cap at Anthropic. The per-person limit is a trigger on
+    `event_scans`, not a check in the route — the client holds a real
+    session and can insert directly, so a limit in a route handler is one a
+    determined person walks around.
+  - The hard cap is the budget protection; the per-person cap exists so the
+    hard cap is never what stops us. When a provider cap trips it fails for
+    everyone at once, including the coach posting Saturday's draw.
+  - About 2 US cents a screenshot (~3,000 image tokens at 2200px, plus
+    instructions and the reply). Downsizing further would save money and
+    cost accuracy, and a fixture read an hour wrong is worse than none.
 - **Payments use Stripe Connect Express** — money goes from parent straight
   to the academy. Squadroom never holds it. Card data never touches our
   servers. Platform billing (`academies.plan`) is a separate concern from
