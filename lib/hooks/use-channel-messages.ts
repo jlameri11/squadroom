@@ -20,6 +20,8 @@ export type ChatMessage = {
   deleted_at: string | null
   event_id?: string | null
   event?: unknown
+  poll_id?: string | null
+  poll?: unknown
 }
 
 /**

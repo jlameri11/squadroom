@@ -55,6 +55,52 @@ export function Composer({
     setFixtures((data ?? []) as Upcoming[])
   }
 
+  const [pollOpen, setPollOpen] = useState(false)
+  const [pollKind, setPollKind] = useState<'availability' | 'simple'>('availability')
+  const [pollQuestion, setPollQuestion] = useState('')
+  const [pollOptions, setPollOptions] = useState('')
+
+  /**
+   * A poll is a row plus a message that points at it, the same shape as an
+   * event card. Two writes rather than one, but the alternative is copying
+   * the question into the message and having two versions of it.
+   */
+  async function createPoll() {
+    const question = pollQuestion.trim()
+    if (!question) return
+
+    const options =
+      pollKind === 'simple'
+        ? pollOptions.split('\n').map((o) => o.trim()).filter(Boolean)
+            .map((label, i) => ({ id: `o${i + 1}`, label }))
+        : []
+
+    if (pollKind === 'simple' && options.length < 2) {
+      return setError('A poll needs at least two options.')
+    }
+
+    const { data: poll, error: pErr } = await supabase
+      .from('polls')
+      .insert({
+        academy_id: academyId, channel_id: channelId, type: pollKind,
+        question, options, created_by: myId,
+      })
+      .select('id')
+      .single()
+
+    if (pErr || !poll) return setError('Could not create that poll.')
+
+    const { error: mErr } = await supabase.from('messages').insert({
+      academy_id: academyId, channel_id: channelId, sender_id: myId, poll_id: poll.id,
+    })
+    if (mErr) return setError('Poll created but not posted.')
+
+    setPollOpen(false)
+    setPollQuestion('')
+    setPollOptions('')
+    setError(null)
+  }
+
   async function shareFixture(eventId: string) {
     setFixtures(null)
     const { error } = await supabase.from('messages').insert({
@@ -245,6 +291,62 @@ export function Composer({
         </div>
       )}
 
+      {pollOpen && (
+        <div className="border-b border-neutral-100 p-3">
+          <div className="mb-2 flex gap-1">
+            {(['availability', 'simple'] as const).map((k) => (
+              <button
+                key={k}
+                onClick={() => setPollKind(k)}
+                className="flex-1 rounded-lg border py-1.5 text-xs font-semibold"
+                style={pollKind === k
+                  ? { borderColor: '#202842', background: '#2028420f', color: '#202842' }
+                  : { borderColor: '#E5E7EB', color: '#6B7280' }}
+              >
+                {k === 'availability' ? 'Who’s available' : 'Question'}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={pollQuestion}
+            onChange={(e) => setPollQuestion(e.target.value)}
+            rows={2}
+            placeholder={pollKind === 'availability'
+              ? 'Gala Day — Sun 20 Sep, Valentine Park. Who’s available?'
+              : 'What should we do for the end of season?'}
+            className="w-full rounded-lg border border-neutral-300 p-2 text-sm"
+          />
+
+          {pollKind === 'simple' ? (
+            <textarea
+              value={pollOptions}
+              onChange={(e) => setPollOptions(e.target.value)}
+              rows={3}
+              placeholder={'One option per line\nBBQ at the park\nBowling\nPresentation night'}
+              className="mt-2 w-full rounded-lg border border-neutral-300 p-2 text-sm"
+            />
+          ) : (
+            <p className="mt-1 text-xs text-neutral-500">
+              Each family answers yes, maybe or no for each of their children.
+            </p>
+          )}
+
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={createPoll}
+              className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white"
+              style={{ background: '#202842' }}
+            >
+              Post the poll
+            </button>
+            <button onClick={() => setPollOpen(false)} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {fixtures && (
         <div className="max-h-56 overflow-y-auto border-b border-neutral-100">
           {fixtures.length === 0 && (
@@ -288,6 +390,15 @@ export function Composer({
         >
           ＋
         </button>
+        {isHost && (
+          <button
+            onClick={() => { setPollOpen((v) => !v); setFixtures(null) }}
+            className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-neutral-500"
+            aria-label="Create a poll"
+          >
+            📊
+          </button>
+        )}
         {isHost && (
           <button
             onClick={openFixtures}

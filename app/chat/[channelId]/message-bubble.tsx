@@ -6,6 +6,7 @@ import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 import { MessageAttachments } from './attachments'
 import { EventCard, type CardEvent } from './event-card'
 import { ContactSheet } from './contact-sheet'
+import { PollCard, type CardPoll } from './poll-card'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
@@ -109,7 +110,7 @@ export function MessageBubble({
 
         <div
           onDoubleClick={onReply}
-          className={`${message.event ? 'w-[85%] max-w-[85%] p-0' : 'max-w-[85%] px-3 py-2'} rounded-2xl ${
+          className={`${message.event || message.poll ? 'w-[85%] max-w-[85%] p-0' : 'max-w-[85%] px-3 py-2'} rounded-2xl ${
             message.is_announcement
               ? 'border-2'
               : mine
@@ -119,7 +120,7 @@ export function MessageBubble({
           style={
             message.is_announcement
               ? { borderColor: '#202842', background: '#2028420d', color: '#111' }
-              : message.event
+              : message.event || message.poll
                 ? { background: 'transparent', border: 'none' }
                 : mine
                   ? { background: '#202842' }
@@ -138,6 +139,10 @@ export function MessageBubble({
               <span className="block truncate">{message.reply_to_body ?? 'Message deleted'}</span>
             </div>
           )}
+
+          {!message.deleted_at && message.poll ? (
+            <PollCard poll={message.poll as CardPoll} isHost={isHost} />
+          ) : null}
 
           {!message.deleted_at && message.event ? (
             <EventCard

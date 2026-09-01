@@ -1337,6 +1337,7 @@ export type Database = {
           is_announcement: boolean
           pinned_at: string | null
           pinned_by: string | null
+          poll_id: string | null
           reply_to_id: string | null
           sender_id: string | null
           status: Database["public"]["Enums"]["message_status"]
@@ -1357,6 +1358,7 @@ export type Database = {
           is_announcement?: boolean
           pinned_at?: string | null
           pinned_by?: string | null
+          poll_id?: string | null
           reply_to_id?: string | null
           sender_id?: string | null
           status?: Database["public"]["Enums"]["message_status"]
@@ -1377,6 +1379,7 @@ export type Database = {
           is_announcement?: boolean
           pinned_at?: string | null
           pinned_by?: string | null
+          poll_id?: string | null
           reply_to_id?: string | null
           sender_id?: string | null
           status?: Database["public"]["Enums"]["message_status"]
@@ -1423,6 +1426,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_poll_fkey"
+            columns: ["poll_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id", "academy_id"]
           },
           {
             foreignKeyName: "messages_reply_to_id_fkey"
@@ -2107,6 +2117,15 @@ export type Database = {
           token: string
         }[]
       }
+      cast_poll_vote: {
+        Args: {
+          p_note?: string
+          p_options: string[]
+          p_player?: string
+          p_poll: string
+        }
+        Returns: undefined
+      }
       channel_messages: {
         Args: { p_before?: string; p_channel: string; p_limit?: number }
         Returns: {
@@ -2120,6 +2139,8 @@ export type Database = {
           id: string
           is_announcement: boolean
           pinned_at: string
+          poll: Json
+          poll_id: string
           reply_to_body: string
           reply_to_id: string
           reply_to_name: string
@@ -2151,6 +2172,16 @@ export type Database = {
           team_name: string
           won: number
         }[]
+      }
+      convert_poll_to_event: {
+        Args: {
+          p_poll: string
+          p_starts_at: string
+          p_title: string
+          p_type?: Database["public"]["Enums"]["event_type"]
+          p_venue?: string
+        }
+        Returns: string
       }
       create_academy: {
         Args: {
@@ -2231,6 +2262,15 @@ export type Database = {
           unread_count: number
         }[]
       }
+      my_poll_votes: {
+        Args: { p_poll: string }
+        Returns: {
+          note: string
+          option_ids: string[]
+          player_id: string
+          player_name: string
+        }[]
+      }
       my_profile: {
         Args: never
         Returns: {
@@ -2304,6 +2344,24 @@ export type Database = {
         Args: { p_poll: string }
         Returns: {
           option_id: string
+          votes: number
+        }[]
+      }
+      poll_non_responders: {
+        Args: { p_poll: string }
+        Returns: {
+          full_name: string
+          player_id: string
+          player_name: string
+          profile_id: string
+        }[]
+      }
+      poll_results: {
+        Args: { p_poll: string }
+        Returns: {
+          label: string
+          option_id: string
+          voted_by_me: boolean
           votes: number
         }[]
       }
