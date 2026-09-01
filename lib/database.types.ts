@@ -2157,6 +2157,20 @@ export type Database = {
         Args: { p_academy: string; p_team?: string; p_token: string }
         Returns: string
       }
+      claim_notifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          auth: string
+          body: string
+          endpoint: string
+          id: string
+          p256dh: string
+          profile_id: string
+          sub_id: string
+          title: string
+          url: string
+        }[]
+      }
       competition_ladder: {
         Args: { p_competition: string; p_division: string }
         Returns: {
@@ -2171,6 +2185,23 @@ export type Database = {
           points: number
           team_name: string
           won: number
+        }[]
+      }
+      competition_run_sheet: {
+        Args: { p_competition: string; p_division?: string }
+        Returns: {
+          away_name: string
+          away_score: number
+          can_score: boolean
+          division: string
+          field_label: string
+          fixture_id: string
+          group_label: string
+          home_name: string
+          home_score: number
+          round: string
+          starts_at: string
+          status: Database["public"]["Enums"]["fixture_status"]
         }[]
       }
       convert_poll_to_event: {
@@ -2212,6 +2243,19 @@ export type Database = {
         }[]
       }
       expire_stale_join_requests: { Args: never; Returns: number }
+      generate_fixtures: {
+        Args: {
+          p_competition: string
+          p_division: string
+          p_fields?: string[]
+          p_game_mins?: number
+          p_gap_mins?: number
+          p_replace?: boolean
+          p_start_at: string
+          p_venue_label?: string
+        }
+        Returns: number
+      }
       get_reaction_voters: {
         Args: { p_emoji: string; p_message: string }
         Returns: {
@@ -2389,6 +2433,7 @@ export type Database = {
         Args: { p_default_country?: string; p_raw: string }
         Returns: string
       }
+      zone_time: { Args: { p_zone: string }; Returns: string }
     }
     Enums: {
       academy_role: "owner" | "admin" | "coach" | "parent" | "player"
