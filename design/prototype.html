@@ -291,13 +291,24 @@
         <div class="note"><span class="tag">Event</span><div><b>Asymmetric visibility.</b> Coaches get the attendance roster; parents see only their own answer.</div></div>
         <div class="note"><span class="tag">Team</span><div><b>The only WhatsApp integration in v1</b> — tap-to-call and <code>wa.me</code> deep links, gated by the academy's directory setting.</div></div>
         <div class="note"><span class="tag">Joining</span><div><b>Nobody signs up.</b> A parent taps the coach's link in the WhatsApp group, types their name, and the coach approves. No password, no texted code, no SMS sent.</div></div>
+        <div class="note"><span class="tag">Names</span><div><b>Tap a sender's name</b> in the U8s channel. As Parent you get the name and teams; as Coach you also get Call, Text and WhatsApp — because the academy hides family numbers from other families.</div></div>
+        <div class="note"><span class="tag">Queue</span><div>As Coach, the amber bar at the top of the channel is a message held for approval. A parent cannot publish their own.</div></div>
         <div class="note"><span class="tag">Admin</span><div><b>Migration in one paste.</b> Bulk "Name, Phone" lines, live invite status, and a per-team QR that a coach drops into the old WhatsApp group.</div></div>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Not built here</h2>
-      <p style="color:var(--ink-2); margin:6px 0 0; font-size:14px">This is a static prototype — no Supabase, no auth, no realtime. It exists to settle layout, hierarchy and the permission rules before I write the UI against the schema. Data is illustrative: NRIFA, three teams, a September round.</p>
+      <h2>This is the sketch. The app is real.</h2>
+      <p style="color:var(--ink-2); margin:6px 0 10px; font-size:14px">
+        Everything below now exists, deployed, with the rules enforced in the database rather than
+        the interface. This page is the quick way to flip between coach and parent without signing
+        in twice.
+      </p>
+      <a class="btn" style="display:block;text-decoration:none" href="https://squadroom-dev.netlify.app" target="_blank" rel="noopener">Open the real app &rarr;</a>
+      <div class="notes" style="margin-top:14px">
+        <div class="note"><span class="tag">Live</span><div>Onboarding, approvals, teams &amp; join links, chat with photos, event cards, polls, fixtures, directory, DMs, settings.</div></div>
+        <div class="note"><span class="tag">Queued</span><div>Reminders are generated 24h and 2h before every event. Nothing delivers them yet — push is the next build.</div></div>
+      </div>
     </div>
   </main>
 
@@ -460,6 +471,18 @@
 
       <!-- ============ CHANNEL ============ -->
       <section class="screen" id="s-channel" hidden style="background:var(--surface-3)">
+        <div class="approval coach-only" id="approval">
+          <div class="approval-hd">Waiting for you · <span id="ap-count">1</span></div>
+          <div class="approval-item">
+            <div class="ap-from">Tom Bui</div>
+            <div class="ap-body">Anyone got a spare pair of shin pads size small?</div>
+            <div class="ap-acts">
+              <button class="btn" style="padding:5px 10px;font-size:12px" data-ap="ok">Approve</button>
+              <button class="btn ghost" style="padding:5px 10px;font-size:12px" data-ap="no">Reject</button>
+            </div>
+          </div>
+        </div>
+
         <div class="pinbar">
           <div class="pinrow"><span class="lbl">Next</span><span class="txt">Sat 5 Sep, 9:00am &middot; vs Gladesville Ravens</span></div>
           <div class="pinrow"><span class="lbl">Pinned</span><span class="txt">Kit is navy this week. Be there 8:30 sharp.</span></div>
@@ -561,7 +584,19 @@
           </div>
 
           <div class="msg">
-            <div class="who">Priya Nair <span class="badge parent">Parent</span></div>
+            <div class="who"><button class="whoname" data-contact="Dan Kowalski|Parent|U8 SPL|hidden">Dan Kowalski</button> <span class="badge parent">Parent</span></div>
+            <div class="bub" style="padding:4px">
+              <div class="photo-grid">
+                <div class="photo"></div><div class="photo alt"></div>
+              </div>
+              <div style="padding:6px 8px 2px;font-size:14px">Mila's first goal 😄</div>
+            </div>
+            <div class="reacts"><button class="react" data-who="You (Coach Joey), Priya Nair +4"><span>❤️</span><span class="n">6</span></button></div>
+            <div class="stamp tnum">9:46</div>
+          </div>
+
+          <div class="msg">
+            <div class="who"><button class="whoname" data-contact="Priya Nair|Parent|U8 SPL|hidden">Priya Nair</button> <span class="badge parent">Parent</span></div>
             <div class="bub">Arjun's got a birthday party but he'll be there for the morning games 👍</div>
             <div class="reacts"><button class="react" data-who="You (Coach Joey)"><span>❤️</span><span class="n">1</span></button></div>
             <div class="stamp tnum">9:44</div>
@@ -1090,6 +1125,28 @@
             </div>
           </div>
 
+          <div class="sect coach-only" style="margin-top:16px"><span class="eyebrow">Academy settings</span></div>
+          <div class="card coach-only" style="padding:12px;display:grid;gap:12px">
+            <div>
+              <div class="setlbl">Family phone numbers</div>
+              <div class="setsub" style="margin-bottom:7px">Coaches are always contactable. This is about families seeing each other.</div>
+              <div class="seg" role="group" aria-label="Directory" style="width:100%">
+                <button data-dir="staff" aria-pressed="true" style="flex:1">Staff only</button>
+                <button data-dir="all" style="flex:1">Everyone</button>
+              </div>
+              <div class="fhint" id="dir-hint">Parents can call coaches, not each other. The safer default.</div>
+            </div>
+            <div>
+              <div class="setlbl">Private messages</div>
+              <div class="setsub" style="margin-bottom:7px">Inside Squadroom, where messages are kept.</div>
+              <div class="seg" role="group" aria-label="DMs" style="width:100%">
+                <button data-dm="staff" aria-pressed="true" style="flex:1">With coaches</button>
+                <button data-dm="open" style="flex:1">Anyone</button>
+              </div>
+              <div class="fhint" id="dm-hint">Two parents cannot open a private thread.</div>
+            </div>
+          </div>
+
           <div class="sect" style="margin-top:16px"><span class="eyebrow">Muted channels</span></div>
           <div class="card">
             <div class="row"><div class="body"><div class="nm">U10s Age Group</div><div class="sub">Muted &middot; still counts unread</div></div><button class="pill off" data-toast="Unmuted U10s Age Group">Unmute</button></div>
@@ -1199,6 +1256,20 @@
           <button data-quick="👍">👍</button><button data-quick="❤️">❤️</button><button data-quick="✅">✅</button>
           <button data-quick="❌">❌</button><button data-quick="❓">❓</button><button data-quick="😂">😂</button>
         </div>
+      </div>
+
+      <div class="scrim" id="cscrim" hidden></div>
+      <div class="sheet" id="contact-sheet" hidden role="dialog" aria-modal="true" aria-label="Contact">
+        <div class="sheet-grab" aria-hidden="true"></div>
+        <div style="display:flex;gap:11px;align-items:center">
+          <div class="av" id="c-av" style="width:48px;height:48px;border-radius:50%;font-size:15px">PN</div>
+          <div style="min-width:0">
+            <div id="c-name" style="font-size:18px;font-weight:600"></div>
+            <div id="c-sub" style="font-size:13px;color:var(--ink-3)"></div>
+          </div>
+        </div>
+        <div id="c-actions" style="display:grid;gap:8px;margin-top:14px"></div>
+        <button class="btn ghost" style="margin-top:10px" data-contact-close>Close</button>
       </div>
 
       <div class="scrim" id="scrim" hidden></div>
@@ -1511,6 +1582,24 @@
   .mdots i{width:4px; height:4px; border-radius:50%; display:block}
   .lg{display:flex; align-items:center; gap:5px}
   .lg i{width:7px; height:7px; border-radius:50%; display:block}
+
+  /* ---- photos, approval queue, contact sheet ---- */
+  .photo-grid{display:grid; grid-template-columns:1fr 1fr; gap:3px; border-radius:11px; overflow:hidden}
+  .photo{aspect-ratio:1; background:linear-gradient(135deg,#3d4a6d,#202842)}
+  .photo.alt{background:linear-gradient(135deg,#6b7a9c,#3d4a6d)}
+  .whoname{font:inherit; color:inherit; text-decoration:underline; text-underline-offset:2px; text-decoration-color:var(--line)}
+
+  .approval{background:var(--maybe-bg); border-bottom:1px solid var(--line); padding:9px 12px}
+  .approval-hd{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--maybe)}
+  .approval-item{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-top:7px}
+  .ap-from{font-size:11.5px; color:var(--ink-3)}
+  .ap-body{font-size:14px; margin-top:1px}
+  .ap-acts{display:flex; gap:6px; margin-top:7px}
+
+  #contact-sheet{max-height:none}
+  #c-actions .btn{padding:11px}
+  .c-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px}
+  .c-note{font-size:12px; color:var(--ink-3); background:var(--surface-2); border-radius:9px; padding:9px 11px; text-align:center; line-height:1.45}
 
   /* ---- contact picker sheet ---- */
   .ioswarn{display:flex; gap:7px; align-items:flex-start; font-size:12px; color:var(--maybe);
@@ -2125,6 +2214,103 @@
       list.appendChild(el);
     });
   });
+
+  /* ---- approval queue ---- */
+  document.querySelectorAll('[data-ap]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var approved = b.dataset.ap === 'ok'
+      var box = document.getElementById('approval')
+      if (box) box.hidden = true
+      if (approved) {
+        var el = document.createElement('div')
+        el.className = 'msg new'
+        el.innerHTML =
+          '<div class="who">Tom Bui <span class="badge parent">Parent</span></div>' +
+          '<div class="bub">Anyone got a spare pair of shin pads size small?</div>' +
+          '<div class="stamp tnum">' + nowLabel() + '</div>'
+        thread.appendChild(el)
+        scrollThread()
+      }
+      if (SR.toast) SR.toast(approved
+        ? 'Approved — now visible to the team'
+        : 'Rejected. Only Tom can see it.')
+    })
+  })
+
+  /* ---- contact sheet: what tapping a name gives you ---- */
+  var cSheet = document.getElementById('contact-sheet')
+  var cScrim = document.getElementById('cscrim')
+
+  function openContact(spec){
+    var parts = spec.split('|')
+    var name = parts[0], role = parts[1], team = parts[2], phone = parts[3]
+    var coachView = SR.getRole && SR.getRole() === 'coach'
+    // A parent's number is withheld from another parent while the academy is
+    // set to staff-only. A coach sees it because that is the job.
+    var visible = phone !== 'hidden' || coachView
+
+    document.getElementById('c-av').textContent =
+      name.split(' ').map(function(w){ return w[0] }).join('').slice(0,2).toUpperCase()
+    document.getElementById('c-name').textContent = name
+    document.getElementById('c-sub').textContent = role + ' · ' + team
+
+    var actions = document.getElementById('c-actions')
+    actions.innerHTML =
+      (coachView || role === 'Coach'
+        ? '<button class="btn" data-c="dm">Message in Squadroom</button>'
+        : '') +
+      (visible
+        ? '<div class="c-row">' +
+            '<button class="btn ghost" data-c="call">Call</button>' +
+            '<button class="btn ghost" data-c="text">Text</button>' +
+            '<button class="btn ghost" data-c="wa">WhatsApp</button>' +
+          '</div>' +
+          '<div style="text-align:center;font-size:12px;color:var(--ink-3)" class="tnum">+61 4XX XXX XXX</div>'
+        : '<div class="c-note">Your academy keeps family phone numbers private.<br>Coaches and admins are always contactable.</div>')
+
+    actions.querySelectorAll('[data-c]').forEach(function(b){
+      b.addEventListener('click', function(){
+        closeContact()
+        if (SR.toast) SR.toast({
+          dm:'Opening your conversation', call:'Calling…',
+          text:'Opening Messages', wa:'Opening WhatsApp',
+        }[b.dataset.c])
+      })
+    })
+
+    cSheet.hidden = false
+    cScrim.hidden = false
+  }
+  function closeContact(){ cSheet.hidden = true; cScrim.hidden = true }
+
+  document.querySelectorAll('[data-contact]').forEach(function(b){
+    b.addEventListener('click', function(){ openContact(b.dataset.contact) })
+  })
+  document.querySelectorAll('[data-contact-close]').forEach(function(b){
+    b.addEventListener('click', closeContact)
+  })
+  if (cScrim) cScrim.addEventListener('click', closeContact)
+
+  /* ---- academy settings, with their consequences ---- */
+  document.querySelectorAll('[data-dir]').forEach(function(b){
+    b.addEventListener('click', function(){
+      press('[data-dir]', 'dir', b.dataset.dir)
+      document.getElementById('dir-hint').textContent = b.dataset.dir === 'all'
+        ? 'Any member can call any other. Handy for lift-sharing; it also means every parent has every other parent’s number.'
+        : 'Parents can call coaches, not each other. The safer default.'
+      if (SR.toast) SR.toast(b.dataset.dir === 'all'
+        ? 'Family numbers now visible to everyone'
+        : 'Family numbers hidden from other families')
+    })
+  })
+  document.querySelectorAll('[data-dm]').forEach(function(b){
+    b.addEventListener('click', function(){
+      press('[data-dm]', 'dm', b.dataset.dm)
+      document.getElementById('dm-hint').textContent = b.dataset.dm === 'open'
+        ? 'Any two members can message privately.'
+        : 'Two parents cannot open a private thread.'
+    })
+  })
 
   phone.dataset.dev = 'std';
   apply(store.coach, 'coach');
