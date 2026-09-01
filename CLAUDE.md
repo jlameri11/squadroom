@@ -144,6 +144,34 @@ one and is meant to reach hundreds of academies.
     announcements or event reminders - those are what the exception is for.
 - **Twilio is not needed to build or pilot.** Add it for late-change alerts,
   or when onboarding an academy whose owner does not know every family.
+- **Screenshots are read by a model; nothing else about them is.** `/scan`
+  sends a fixture screenshot to Anthropic and gets back local date and clock
+  time strings exactly as printed. It is never asked for a UTC timestamp - it
+  would produce one, confidently, an hour out across a daylight-saving
+  boundary. `create_scanned_events` applies the academy's timezone in
+  Postgres, resolves a missing year, and fixes a finish time that crosses
+  midnight.
+  - **`events.private_to` is a fourth visibility rule** on a table that had
+    three. A parent's scan is theirs alone. It must be honoured in all four
+    readers: the `events_select` policy, `app_private.can_read_event`,
+    `my_upcoming_events`, and `calendar_feed_events`. Miss one and a family's
+    schedule appears in someone else's list.
+  - **A FOR ALL policy is also a SELECT policy.** `events_write` was FOR ALL,
+    and permissive policies OR together, so its "staff may touch any event"
+    clause silently beat the private_to filter and a coach read every private
+    event. Split into events_insert / events_update / events_delete. Never
+    write FOR ALL on a table whose read rule is narrower than its write rule.
+  - Asking to share with a team is a request, not a grant: the function
+    re-checks coaching rights and quietly makes it private otherwise.
+  - Images live in a private `scans` bucket for seven days, then
+    `netlify/functions/purge-scans.mts` deletes the file and blanks the path.
+    The scan row and its `raw` response outlive the picture, because when a
+    parent says the time came out wrong that is the only way to tell whether
+    the model misread it or our own date handling did.
+  - The consent line is on the upload screen, above the button. Buried
+    honesty is not honesty.
+  - Needs `ANTHROPIC_API_KEY`. Without it the page says the feature is off
+    rather than failing halfway through an upload.
 - **Payments use Stripe Connect Express** — money goes from parent straight
   to the academy. Squadroom never holds it. Card data never touches our
   servers. Platform billing (`academies.plan`) is a separate concern from

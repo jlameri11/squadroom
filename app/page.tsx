@@ -77,6 +77,9 @@ export default async function Home() {
         <Link href="/competitions" className="underline underline-offset-4">
           Competitions
         </Link>
+        <Link href="/scan" className="underline underline-offset-4">
+          Add games from a screenshot
+        </Link>
         <Link href="/calendar" className="underline underline-offset-4">
           Fixtures
         </Link>

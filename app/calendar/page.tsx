@@ -24,6 +24,11 @@ export default async function CalendarPage() {
           {academy.name} · next 60 days
         </p>
       </header>
+      <div className="border-b border-neutral-100 px-5 py-3">
+        <a href="/scan" className="text-sm underline underline-offset-4" style={{ color: '#202842' }}>
+          Add games from a screenshot
+        </a>
+      </div>
       <CalendarList
         academyId={academy.id}
         events={(events ?? []) as UpcomingEvent[]}

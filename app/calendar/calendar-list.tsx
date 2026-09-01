@@ -18,6 +18,9 @@ export type UpcomingEvent = {
   my_children: number
   going: number | null
   no_reply: number | null
+  private_to: string | null
+  source: string
+  confirmed_at: string | null
 }
 
 const TYPE_TINT: Record<string, string> = {
@@ -71,9 +74,21 @@ export function CalendarList({ academyId, events }: { academyId: string; events:
                   <span className="flex items-center gap-1.5">
                     <span className="truncate font-medium">{e.title}</span>
                     {cancelled && <span className="text-xs font-semibold text-red-600">Cancelled</span>}
+                    {/*
+                      A game a machine read off a screenshot is not the same
+                      claim as one a coach typed, and until somebody has
+                      checked it, it should not look like one.
+                    */}
+                    {e.source === 'screenshot' && !e.confirmed_at && (
+                      <span className="flex-none rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold text-amber-800">
+                        Check this
+                      </span>
+                    )}
                   </span>
                   <span className="block truncate text-sm text-neutral-500">
-                    {[e.team_name, e.venue, e.round].filter(Boolean).join(' · ')}
+                    {[e.team_name, e.venue, e.round, e.private_to ? 'Only you' : null]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                   {e.competition && (
                     <span className="mt-0.5 inline-block rounded bg-neutral-100 px-1.5 py-px text-[10px] text-neutral-600">

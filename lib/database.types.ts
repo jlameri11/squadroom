@@ -1,9 +1,3 @@
-// database.types.ts — generated from squadroom-dev. Do not edit by hand.
-//
-// Regenerate after every migration:
-//   npx supabase login          (once)
-//   npm run types
-
 export type Json =
   | string
   | number
@@ -790,6 +784,79 @@ export type Database = {
           },
         ]
       }
+      event_scans: {
+        Row: {
+          academy_id: string
+          created_at: string
+          error: string | null
+          found: number
+          id: string
+          model: string | null
+          processed_at: string | null
+          profile_id: string
+          purge_after: string
+          raw: Json | null
+          share: boolean
+          status: string
+          storage_path: string | null
+          team_id: string | null
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          error?: string | null
+          found?: number
+          id?: string
+          model?: string | null
+          processed_at?: string | null
+          profile_id: string
+          purge_after?: string
+          raw?: Json | null
+          share?: boolean
+          status?: string
+          storage_path?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          error?: string | null
+          found?: number
+          id?: string
+          model?: string | null
+          processed_at?: string | null
+          profile_id?: string
+          purge_after?: string
+          raw?: Json | null
+          share?: boolean
+          status?: string
+          storage_path?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_scans_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_scans_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_scans_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       events: {
         Row: {
           academy_id: string
@@ -797,6 +864,8 @@ export type Database = {
           arrive_at: string | null
           cancelled_at: string | null
           competition_id: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -806,7 +875,10 @@ export type Database = {
           kit_colour: string | null
           notes: string | null
           opponent: string | null
+          private_to: string | null
           round: string | null
+          source: string
+          source_scan_id: string | null
           starts_at: string
           team_id: string | null
           title: string
@@ -820,6 +892,8 @@ export type Database = {
           arrive_at?: string | null
           cancelled_at?: string | null
           competition_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -829,7 +903,10 @@ export type Database = {
           kit_colour?: string | null
           notes?: string | null
           opponent?: string | null
+          private_to?: string | null
           round?: string | null
+          source?: string
+          source_scan_id?: string | null
           starts_at: string
           team_id?: string | null
           title: string
@@ -843,6 +920,8 @@ export type Database = {
           arrive_at?: string | null
           cancelled_at?: string | null
           competition_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -852,7 +931,10 @@ export type Database = {
           kit_colour?: string | null
           notes?: string | null
           opponent?: string | null
+          private_to?: string | null
           round?: string | null
+          source?: string
+          source_scan_id?: string | null
           starts_at?: string
           team_id?: string | null
           title?: string
@@ -876,6 +958,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -888,6 +977,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fixtures"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_private_to_fkey"
+            columns: ["private_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_scan_fkey"
+            columns: ["source_scan_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "event_scans"
+            referencedColumns: ["id", "academy_id"]
           },
           {
             foreignKeyName: "events_team_fkey"
@@ -2354,6 +2457,10 @@ export type Database = {
         }
         Returns: number
       }
+      create_scanned_events: {
+        Args: { p_events: Json; p_scan: string }
+        Returns: string[]
+      }
       cross_group_standings: {
         Args: { p_competition: string; p_division: string; p_position: number }
         Returns: {
@@ -2420,6 +2527,7 @@ export type Database = {
         }[]
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
+      mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       member_contact: {
         Args: { p_academy: string; p_profile: string }
         Returns: {
@@ -2496,6 +2604,7 @@ export type Database = {
           arrive_at: string
           cancelled_at: string
           competition: string
+          confirmed_at: string
           ends_at: string
           going: number
           id: string
@@ -2504,7 +2613,9 @@ export type Database = {
           my_replies: number
           no_reply: number
           opponent: string
+          private_to: string
           round: string
+          source: string
           starts_at: string
           team_id: string
           team_name: string
@@ -2615,6 +2726,13 @@ export type Database = {
       revoke_member_tree: {
         Args: { p_academy: string; p_profile: string }
         Returns: number
+      }
+      scans_due_for_purge: {
+        Args: never
+        Returns: {
+          id: string
+          storage_path: string
+        }[]
       }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
