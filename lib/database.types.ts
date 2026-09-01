@@ -2490,6 +2490,35 @@ export type Database = {
           sender_name: string
         }[]
       }
+      platform_overview: {
+        Args: never
+        Returns: {
+          academy_id: string
+          channels: number
+          created_at: string
+          last_activity: string
+          members: number
+          messages: number
+          name: string
+          plan: string
+          players: number
+          slug: string
+          teams: number
+          type: Database["public"]["Enums"]["org_type"]
+        }[]
+      }
+      platform_totals: {
+        Args: never
+        Returns: {
+          active_7d: number
+          competitions: number
+          messages: number
+          organisations: number
+          people: number
+          players: number
+          teams: number
+        }[]
+      }
       poll_counts: {
         Args: { p_poll: string }
         Returns: {

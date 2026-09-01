@@ -18,6 +18,11 @@ export default async function CompetitionsPage() {
       <header className="border-b border-neutral-200 p-5">
         <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Competitions</h1>
         <p className="mt-0.5 text-sm text-neutral-500">Seasons, tournaments and gala days</p>
+        <Link href="/competitions/new"
+              className="mt-3 block rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-white"
+              style={{ background: '#202842' }}>
+          New competition
+        </Link>
       </header>
 
       {(comps ?? []).length === 0 && (

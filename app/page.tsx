@@ -68,6 +68,9 @@ export default async function Home() {
         <Link href="/settings" className="underline underline-offset-4">
           Your details
         </Link>
+        <Link href="/platform" className="underline underline-offset-4">
+          Platform
+        </Link>
         <Link href="/settings/academy" className="underline underline-offset-4">
           Academy settings
         </Link>
