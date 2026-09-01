@@ -131,10 +131,27 @@ one and is meant to reach hundreds of academies.
   - Because of this, the iOS web-push hole matters more: notifications only
     work once a parent installs the PWA. That is an argument for bringing
     the Capacitor phase forward if the NRIFA pilot shows poor reach.
-- **Push delivery is a scheduled Netlify function**, not a database webhook.
-  It needs the service-role key, which can never ship inside a Capacitor
-  bundle, so this stays server-side permanently. `netlify/functions/send-push.mts`
-  runs every minute and drains `notification_queue`.
+- **Push is sent by a Netlify function, woken by the database.** The sending
+  needs the service-role key, which can never ship inside a Capacitor bundle,
+  so it stays server-side permanently. What changed is who starts it.
+  - `netlify/functions/push-now.mts` is called by a pg_net trigger the moment
+    something is enqueued, authorised by `PUSH_WAKE_SECRET`. A parent gets a
+    message in about a second.
+  - `netlify/functions/send-push.mts` runs every five minutes as a SAFETY
+    NET, for the times the wake-up never lands. Both share `lib/push/drain.ts`
+    — Netlify will not let a scheduled function be invoked over HTTP, which
+    is why they cannot be one file.
+  - It used to be one function on `* * * * *`: 43,200 invocations a month,
+    almost all finding an empty queue, and it had eaten roughly half the
+    Netlify allowance before the product had a single real user. Measure
+    what a cron costs before choosing its interval.
+  - The trigger is statement-level and debounced to one call per 15s, so an
+    announcement to 300 parents wakes it once. It skips notifications
+    scheduled for later, or a nightly reminder sweep would wake it for
+    nothing.
+  - After changing the site URL or rotating the secret, run
+    `node scripts/configure-push-wake.mjs`. The database stores the endpoint
+    in `app_private.config`, which nothing but the service role can reach.
   - Notifications are ENQUEUED by a database trigger, never by the client. A
     client that forgets - or a native app, or a script - would silently stop
     notifying anyone.

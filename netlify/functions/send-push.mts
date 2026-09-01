@@ -1,99 +1,30 @@
 import type { Config } from '@netlify/functions'
-import { createClient } from '@supabase/supabase-js'
-import webpush from 'web-push'
+import { drainNotificationQueue } from '../../lib/push/drain.js'
 
 /**
- * Drains the notification queue and sends web push. Scheduled, not triggered:
- * posting a message must not wait on a push provider, and a provider being
- * slow must not make chat feel broken.
+ * The safety net, not the delivery mechanism.
  *
- * Lives here rather than in the Next app because it needs the service-role
- * key, which can never ship inside a Capacitor bundle. This is the sanctioned
- * server, and it will still be the server after the native build exists.
+ * push-now.mts is what actually makes a phone buzz: the database calls it the
+ * instant a notification is enqueued. This exists for the times that call
+ * never lands — pg_net down, a deploy mid-flight, a row whose scheduled_for
+ * has only just come around — and to sweep up anything left behind.
+ *
+ * It ran every minute until the Netlify allowance was half gone with no users
+ * on the product. Almost all of those invocations found an empty queue.
  */
 export default async function handler() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-  const privateKey = process.env.VAPID_PRIVATE_KEY
-  const subject = process.env.VAPID_SUBJECT ?? 'mailto:hello@squadroom.app'
-
-  if (!url || !serviceKey || !publicKey || !privateKey) {
-    return new Response('Missing configuration', { status: 500 })
-  }
-
-  webpush.setVapidDetails(subject, publicKey, privateKey)
-  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
-
-  // Claiming increments attempts in the same statement, so a crash mid-send
-  // cannot leave a row to be retried forever.
-  const { data: due, error } = await supabase.rpc('claim_notifications', { p_limit: 200 })
-  if (error) return new Response(`claim failed: ${error.message}`, { status: 500 })
-  if (!due || due.length === 0) return new Response('nothing due', { status: 200 })
-
-  type Due = {
-    id: string
-    title: string
-    body: string | null
-    url: string | null
-    endpoint: string
-    p256dh: string | null
-    auth: string | null
-    sub_id: string
-  }
-
-  const rows = due as Due[]
-  const sent: string[] = []
-  const deadSubscriptions: string[] = []
-
-  await Promise.all(
-    rows.map(async (row) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: row.endpoint,
-            keys: { p256dh: row.p256dh ?? '', auth: row.auth ?? '' },
-          },
-          JSON.stringify({
-            title: row.title,
-            body: row.body,
-            url: row.url,
-            // One notification per conversation, replaced as it goes, rather
-            // than a stack of twelve.
-            tag: row.url,
-          })
-        )
-        sent.push(row.id)
-      } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode
-        // 404 and 410 mean the browser threw the subscription away — the app
-        // was uninstalled, or site data cleared. Retrying that forever is how
-        // a queue silts up, so the subscription is retired instead.
-        if (status === 404 || status === 410) deadSubscriptions.push(row.sub_id)
-      }
+  try {
+    const result = await drainNotificationQueue()
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
     })
-  )
-
-  if (sent.length > 0) {
-    await supabase
-      .from('notification_queue')
-      .update({ sent_at: new Date().toISOString() })
-      .in('id', sent)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'drain failed'
+    return new Response(message, { status: 500 })
   }
-
-  if (deadSubscriptions.length > 0) {
-    await supabase
-      .from('push_subscriptions')
-      .update({ failed_at: new Date().toISOString() })
-      .in('id', deadSubscriptions)
-  }
-
-  return new Response(
-    JSON.stringify({ claimed: rows.length, sent: sent.length, retired: deadSubscriptions.length }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } }
-  )
 }
 
 export const config: Config = {
-  schedule: '* * * * *',
+  schedule: '*/5 * * * *',
 }
