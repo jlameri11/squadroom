@@ -2189,6 +2189,18 @@ export type Database = {
         }[]
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
+      member_contact: {
+        Args: { p_academy: string; p_profile: string }
+        Returns: {
+          can_dm: boolean
+          full_name: string
+          is_me: boolean
+          phone: string
+          profile_id: string
+          role: Database["public"]["Enums"]["academy_role"]
+          teams: string[]
+        }[]
+      }
       member_directory: {
         Args: { p_academy: string }
         Returns: {
@@ -2216,6 +2228,15 @@ export type Database = {
           team_id: string
           type: Database["public"]["Enums"]["channel_type"]
           unread_count: number
+        }[]
+      }
+      my_profile: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          phone: string
         }[]
       }
       my_rsvps_for_event: {
@@ -2274,6 +2295,10 @@ export type Database = {
       revoke_member_tree: {
         Args: { p_academy: string; p_profile: string }
         Returns: number
+      }
+      set_my_profile: {
+        Args: { p_full_name: string; p_phone: string }
+        Returns: undefined
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

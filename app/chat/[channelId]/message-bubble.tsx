@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 import { MessageAttachments } from './attachments'
 import { EventCard, type CardEvent } from './event-card'
+import { ContactSheet } from './contact-sheet'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
@@ -24,6 +25,7 @@ export function MessageBubble({
   const [counts, setCounts] = useState<Count[]>([])
   const [picking, setPicking] = useState(false)
   const [voters, setVoters] = useState<string | null>(null)
+  const [showContact, setShowContact] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -86,12 +88,23 @@ export function MessageBubble({
 
       <div className={`mb-2.5 flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
         {!mine && (
-          <span className="mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-neutral-500">
+          <button
+            onClick={() => message.sender_id && setShowContact(true)}
+            className="mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-neutral-500 underline-offset-2 hover:underline"
+          >
             {message.sender_name ?? 'Unknown'}
             {message.sender_role && message.sender_role !== 'parent' && (
               <span className="rounded bg-neutral-100 px-1 py-px text-[10px] capitalize">{message.sender_role}</span>
             )}
-          </span>
+          </button>
+        )}
+
+        {showContact && message.sender_id && (
+          <ContactSheet
+            academyId={academyId}
+            profileId={message.sender_id}
+            onClose={() => setShowContact(false)}
+          />
         )}
 
         <div

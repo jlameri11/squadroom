@@ -14,6 +14,9 @@ export default async function Home() {
   if (!auth.user) redirect('/signin')
 
   // RLS returns only academies this person is a member of, so no filter here.
+  const { data: profile } = await supabase.rpc('my_profile')
+  const needsPhone = !profile?.[0]?.phone
+
   const { data: academies } = await supabase
     .from('academies')
     .select('id, name, slug, type, primary_colour')
@@ -26,6 +29,18 @@ export default async function Home() {
       <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>
         Your organisations
       </h1>
+
+      {needsPhone && (
+        <Link
+          href="/settings"
+          className="mt-4 block rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm"
+        >
+          <b className="text-amber-800">Add your mobile number</b>
+          <span className="mt-0.5 block text-amber-700">
+            Your team can&apos;t call or text you without it.
+          </span>
+        </Link>
+      )}
 
       <ul className="mt-5 flex flex-col gap-3">
         {academies.map((a) => (
@@ -49,6 +64,12 @@ export default async function Home() {
       <div className="mt-6 flex flex-col gap-2 text-sm">
         <Link href="/chat" className="underline underline-offset-4">
           Chat
+        </Link>
+        <Link href="/settings" className="underline underline-offset-4">
+          Your details
+        </Link>
+        <Link href="/settings/academy" className="underline underline-offset-4">
+          Academy settings
         </Link>
         <Link href="/directory" className="underline underline-offset-4">
           Directory
