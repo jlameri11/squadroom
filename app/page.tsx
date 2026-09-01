@@ -77,6 +77,12 @@ export default async function Home() {
         <Link href="/competitions" className="underline underline-offset-4">
           Competitions
         </Link>
+        <Link href="/payments" className="underline underline-offset-4">
+          Payments
+        </Link>
+        <Link href="/admin/payments" className="underline underline-offset-4">
+          Collect payments
+        </Link>
         <Link href="/scan" className="underline underline-offset-4">
           Add games from a screenshot
         </Link>

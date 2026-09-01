@@ -70,6 +70,56 @@ export type Database = {
           },
         ]
       }
+      academy_billing: {
+        Row: {
+          academy_id: string
+          charges_enabled: boolean
+          connected_at: string | null
+          country: string
+          currency: string
+          details_submitted: boolean
+          payouts_enabled: boolean
+          platform_fee_bps: number
+          requirements: Json | null
+          stripe_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          charges_enabled?: boolean
+          connected_at?: string | null
+          country?: string
+          currency?: string
+          details_submitted?: boolean
+          payouts_enabled?: boolean
+          platform_fee_bps?: number
+          requirements?: Json | null
+          stripe_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          charges_enabled?: boolean
+          connected_at?: string | null
+          country?: string
+          currency?: string
+          details_submitted?: boolean
+          payouts_enabled?: boolean
+          platform_fee_bps?: number
+          requirements?: Json | null
+          stripe_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_billing_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: true
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_invites: {
         Row: {
           academy_name_hint: string | null
@@ -1705,6 +1755,169 @@ export type Database = {
           },
         ]
       }
+      payment_requests: {
+        Row: {
+          academy_id: string
+          amount_cents: number
+          archived_at: string | null
+          closes_at: string | null
+          competition_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          due_on: string | null
+          id: string
+          per_player: boolean
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          amount_cents: number
+          archived_at?: string | null
+          closes_at?: string | null
+          competition_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          due_on?: string | null
+          id?: string
+          per_player?: boolean
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          amount_cents?: number
+          archived_at?: string | null
+          closes_at?: string | null
+          competition_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          due_on?: string | null
+          id?: string
+          per_player?: boolean
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          academy_id: string
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          paid_at: string | null
+          player_id: string | null
+          profile_id: string
+          refunded_at: string | null
+          request_id: string
+          status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          player_id?: string | null
+          profile_id: string
+          refunded_at?: string | null
+          request_id: string
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          player_id?: string | null
+          profile_id?: string
+          refunded_at?: string | null
+          request_id?: string
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "payments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_request_fkey"
+            columns: ["request_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       platform_admins: {
         Row: {
           created_at: string
@@ -2374,7 +2587,9 @@ export type Database = {
           body: string
           endpoint: string
           id: string
+          kind: string
           p256dh: string
+          platform: string
           profile_id: string
           sub_id: string
           title: string
@@ -2570,6 +2785,24 @@ export type Database = {
           unread_count: number
         }[]
       }
+      my_payment_requests: {
+        Args: { p_academy: string }
+        Returns: {
+          amount_cents: number
+          can_pay: boolean
+          closes_at: string
+          currency: string
+          description: string
+          due_on: string
+          paid_at: string
+          player_id: string
+          player_name: string
+          request_id: string
+          status: string
+          team_name: string
+          title: string
+        }[]
+      }
       my_poll_votes: {
         Args: { p_poll: string }
         Returns: {
@@ -2628,6 +2861,18 @@ export type Database = {
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
         Returns: string
+      }
+      payment_register: {
+        Args: { p_request: string }
+        Returns: {
+          amount_cents: number
+          guardian: string
+          guardian_phone: string
+          paid_at: string
+          player_id: string
+          player_name: string
+          status: string
+        }[]
       }
       peek_competition_invite: {
         Args: { p_token: string }
@@ -2715,6 +2960,15 @@ export type Database = {
           reaction_count: number
         }[]
       }
+      recent_wake_calls: {
+        Args: { p_minutes?: number }
+        Returns: {
+          created: string
+          id: number
+          ms: number
+          status_code: number
+        }[]
+      }
       resolve_finals: {
         Args: { p_competition: string; p_division: string }
         Returns: number
@@ -2736,6 +2990,10 @@ export type Database = {
       }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
+        Returns: undefined
+      }
+      set_push_wake_config: {
+        Args: { p_secret: string; p_url: string }
         Returns: undefined
       }
       show_limit: { Args: never; Returns: number }

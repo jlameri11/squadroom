@@ -201,10 +201,32 @@ one and is meant to reach hundreds of academies.
   - About 2 US cents a screenshot (~3,000 image tokens at 2200px, plus
     instructions and the reply). Downsizing further would save money and
     cost accuracy, and a fixture read an hour wrong is worse than none.
-- **Payments use Stripe Connect Express** — money goes from parent straight
-  to the academy. Squadroom never holds it. Card data never touches our
-  servers. Platform billing (`academies.plan`) is a separate concern from
-  academy collections; do not share a code path between them.
+- **Payments use Stripe Connect Express with DIRECT charges** — the charge is
+  created ON the academy's connected account, so money lands in their balance,
+  their name is on the parent's statement, and Squadroom is never in the flow
+  of funds. Destination charges would route it through us and make us liable
+  for every dispute about a kit order in a suburb we have never been to.
+  - **The webhook is the only thing that may mark a payment paid.** There is
+    no insert or update policy on `payments` for anyone, including owners. A
+    browser returning to `/payments?paid=1` is a claim; Stripe's signed event
+    is a fact. Proven by test: neither a parent nor the owner can write a row.
+  - Signature verification on the raw body is the whole security model of the
+    webhook. Parsing first and re-serialising changes the bytes and it will
+    never verify.
+  - **The amount is read from the database, never the request body.** Taking
+    a price from the client is how somebody pays 50c for a $50 gala day.
+  - `checkout.session.completed` does NOT mean paid — check `payment_status`.
+    BECS direct debit completes the session days before the money arrives.
+  - Amounts are integer cents, never a float. Dollars typed in the UI are
+    `Math.round(x * 100)`: 49.9 * 100 is 4989.999999999999.
+  - Platform billing (`academies.plan`) is what an academy pays Squadroom;
+    this is what a parent pays an academy. Never share a code path — a bug
+    that crosses them charges the wrong party. `platform_fee_bps` exists and
+    is 0: taking a slice of a parent's payment is a pricing decision, not a
+    code one.
+  - `profiles.phone` is a DOMAIN, not text. A set-returning function
+    declaring `text` fails with "structure of query does not match function
+    result type", which names neither the column nor the type.
 
 ## Phases
 
@@ -216,8 +238,7 @@ one and is meant to reach hundreds of academies.
 5. Polls (simple + availability), directory
 6. PWA + push + super-admin console **(push done)**
 7. Tournament Mode — self-run competitions, ladders, run sheets, visiting clubs
-8. Payments — Stripe Connect Express; tournament entry fees are its first
-   real use case, which is why it follows tournaments rather than leading
+8. Payments — Stripe Connect Express **(built; needs Stripe keys)**
 9. Capacitor native wrap — shell + adapters + APNs/FCM done; the iOS build
    itself needs Xcode and an Apple Developer account. See `native/README.md`
 
