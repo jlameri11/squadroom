@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useChannelMessages, type ChatMessage } from '@/lib/hooks/use-channel-messages'
 import { MessageBubble } from './message-bubble'
 import { Composer } from './composer'
+import { PendingQueue } from './pending-queue'
 
 export function ChannelView({
   channelId, academyId, teamId, name, postingMode, archived, isHost, muted, myId, initialMessages,
@@ -59,6 +60,8 @@ export function ChannelView({
           </p>
         </div>
       </header>
+
+      <PendingQueue channelId={channelId} isHost={isHost} />
 
       {pinned && (
         <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-2">

@@ -2228,6 +2228,10 @@ export type Database = {
         }[]
       }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
+      open_direct_channel: {
+        Args: { p_academy: string; p_other: string }
+        Returns: string
+      }
       peek_competition_invite: {
         Args: { p_token: string }
         Returns: {
@@ -2237,6 +2241,17 @@ export type Database = {
           organiser_name: string
           starts_on: string
           status: string
+        }[]
+      }
+      pending_messages: {
+        Args: { p_channel: string }
+        Returns: {
+          attachments: Json
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          sender_name: string
         }[]
       }
       poll_counts: {

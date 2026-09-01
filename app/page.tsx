@@ -50,6 +50,9 @@ export default async function Home() {
         <Link href="/chat" className="underline underline-offset-4">
           Chat
         </Link>
+        <Link href="/directory" className="underline underline-offset-4">
+          Directory
+        </Link>
         <Link href="/admin/requests" className="underline underline-offset-4">
           Join requests
         </Link>
