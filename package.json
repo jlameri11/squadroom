@@ -7,11 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "types": "supabase gen types typescript --project-id rnykncrdcywmetuvslvw > lib/database.types.ts"
+    "types": "supabase gen types typescript --project-id rnykncrdcywmetuvslvw > lib/database.types.ts",
+    "cap:sync": "cap sync",
+    "cap:ios": "cap open ios",
+    "cap:android": "cap open android"
   },
   "dependencies": {
+    "@capacitor-community/contacts": "^8.0.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/browser": "^8.0.4",
+    "@capacitor/camera": "^8.2.3",
     "@capacitor/core": "^8.5.1",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/push-notifications": "^8.1.2",

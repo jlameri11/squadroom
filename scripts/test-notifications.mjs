@@ -88,11 +88,23 @@ await admin.from('user_settings').update({
 
 head('7. Claiming is safe to run twice')
 await clear()
+// Quiet hours are still on from step 6, and a notification held until
+// midnight is not due, so it would never be claimed. Turn them off, or this
+// measures the wrong thing.
+await admin.from('user_settings').update({ quiet_hours_enabled: false }).eq('profile_id', sam.id)
 await coach.client.from('messages').insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: coach.id, body:'NOTIF::claim me' })
+// Named explicitly. This used to read `.eq('kind','message').limit(1)` with
+// no ordering, which is whichever row Postgres happened to return first —
+// it passed for months and then failed the day a migration moved the heap
+// around, reporting a broken function that was working perfectly.
+const { data: queued } = await admin.from('notification_queue')
+  .select('id, attempts, scheduled_for').eq('kind','message')
+  .order('created_at', { ascending: false }).limit(1).single()
 const { data: c1 } = await admin.rpc('claim_notifications', { p_limit: 100 })
-const { data: c2 } = await admin.rpc('claim_notifications', { p_limit: 100 })
+await admin.rpc('claim_notifications', { p_limit: 100 })
 ok(`first claim returned ${c1?.length ?? 0} deliverable (nobody has a device registered yet)`)
-const { data: attempts } = await admin.from('notification_queue').select('attempts').eq('kind','message').limit(1).single()
+const { data: attempts } = await admin.from('notification_queue')
+  .select('attempts').eq('id', queued.id).single()
 attempts.attempts === 2 ? ok('attempts counted, so a stuck row stops after five tries') : bad(`attempts=${attempts.attempts}`)
 
 await clear()

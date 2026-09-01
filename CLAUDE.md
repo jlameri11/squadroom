@@ -206,7 +206,31 @@ one and is meant to reach hundreds of academies.
 7. Tournament Mode — self-run competitions, ladders, run sheets, visiting clubs
 8. Payments — Stripe Connect Express; tournament entry fees are its first
    real use case, which is why it follows tournaments rather than leading
-9. Capacitor native wrap
+9. Capacitor native wrap — shell + adapters + APNs/FCM done; the iOS build
+   itself needs Xcode and an Apple Developer account. See `native/README.md`
+
+- **The native shell loads the deployed site, it does not bundle it.** The
+  product is server components reading cookies and cannot be statically
+  exported without rewriting every page, and the point of the phase is
+  notifications on iPhone, not a re-architecture. `capacitor.config.ts` reads
+  `CAP_SERVER_URL`.
+  - What makes it an app rather than a bookmark — and the answer if Apple
+    asks under guideline 4.2 — is APNs push, the system contact picker and
+    the camera. If review pushes back, the fallback is to bundle the shell
+    and move pages to client-side fetching, which "pages stay THIN" already
+    prepares for.
+- **iOS push talks to APNs directly. No Firebase.** Google owns Android push
+  so FCM is unavoidable there, but adding a Google project to solve an Apple
+  problem would be paying twice — an iPhone-only pilot needs no Google
+  account anywhere. `lib/push/apns.ts`, `lib/push/fcm.ts`.
+  - APNs is HTTP/2 only (`fetch` will not do) and the ES256 JWT signature
+    must be raw r||s, not DER: `dsaEncoding: 'ieee-p1363'`. The symptom
+    otherwise is a 403 `InvalidProviderToken` that suggests nothing.
+  - Sandbox and production have different device tokens as well as different
+    hosts. A debug build from Xcode is sandbox; TestFlight is production.
+  - A transport with no credentials configured is SKIPPED, never failed.
+    Marking it failed would retire a parent's subscription for the sin of
+    being on the other platform.
 
 ## Working notes
 

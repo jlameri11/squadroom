@@ -15,6 +15,8 @@
  * screen after this.
  */
 
+import { isNative } from './native'
+
 export type PickedContact = {
   name: string
   phone: string
@@ -81,5 +83,55 @@ export function normalisePhone(raw: string, defaultCountry = '61'): string {
   return ''
 }
 
-/** Swapped for the Capacitor implementation in phase 8. */
-export const contacts: ContactPicker = webContactPicker
+/**
+ * Native implementation.
+ *
+ * This is the one that closes the iPhone gap: Safari has no Contact Picker
+ * and never will, so until now a coach on an iPhone had to type or paste
+ * every number by hand while a coach on Android tapped a list.
+ *
+ * The privacy shape above is NOT relaxed here just because the platform
+ * would allow it. @capacitor-community/contacts can return the entire
+ * address book in one call, and it must never be asked to. The OS permission
+ * prompt says "Squadroom would like to access your contacts", and a coach
+ * granting that is agreeing to pick some people, not to upload their doctor
+ * and their ex.
+ *
+ * So the read is limited to what is needed to render our own picker, nothing
+ * is transmitted, and the review screen after this is still where the coach
+ * confirms who is actually invited.
+ */
+export const nativeContactPicker: ContactPicker = {
+  isSupported() {
+    return isNative()
+  },
+
+  async pick() {
+    const { Contacts } = await import('@capacitor-community/contacts')
+
+    const permission = await Contacts.requestPermissions()
+    if (permission.contacts !== 'granted') return []
+
+    // pickContact shows the SYSTEM picker and returns only the tapped
+    // person. getContacts, which returns everything, is deliberately not
+    // used — see the note above.
+    const { contact } = await Contacts.pickContact({
+      projection: { name: true, phones: true },
+    })
+    if (!contact) return []
+
+    const name = contact.name?.display?.trim() ?? ""
+    const phone = normalisePhone(contact.phones?.[0]?.number ?? "")
+    return name !== "" && phone !== "" ? [{ name, phone }] : []
+  },
+}
+
+/**
+ * One picker for callers to use. Deciding here rather than at each call site
+ * is the whole point of the adapter — a page that asks which platform it is
+ * on is a page that will need rewriting for native.
+ */
+export const contacts: ContactPicker = {
+  isSupported: () => (isNative() ? nativeContactPicker : webContactPicker).isSupported(),
+  pick: () => (isNative() ? nativeContactPicker : webContactPicker).pick(),
+}
