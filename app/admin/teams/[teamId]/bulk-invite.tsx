@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { contacts } from '@/lib/adapters/contacts'
 
 type Parsed = { name: string; phone: string; raw: string; ok: boolean }
 
@@ -16,6 +17,31 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+
+  // Whether a picker exists is a question about the device, so it can only be
+  // answered in the browser. Rendering a button that does nothing on an
+  // iPhone is worse than not offering it.
+  const [canPick, setCanPick] = useState(false)
+  useEffect(() => setCanPick(contacts.isSupported()), [])
+
+  /**
+   * The picker returns only who the coach tapped, and it lands in the SAME
+   * textarea as a pasted list rather than sending anything.
+   *
+   * That is deliberate. A chosen contact and a typed one get the same review
+   * before anyone is invited — one path in, one place to check it, and no way
+   * to accidentally invite someone because a tap registered twice.
+   */
+  async function pickFromContacts() {
+    const chosen = await contacts.pick()
+    if (chosen.length === 0) return
+    const lines = chosen.map((c) => `${c.name}, ${c.phone}`)
+    setText((current) => {
+      const existing = current.trim()
+      const fresh = lines.filter((l) => !existing.includes(l))
+      return [existing, ...fresh].filter(Boolean).join('\n')
+    })
+  }
 
   const parsed: Parsed[] = text
     .split('\n')
@@ -79,6 +105,21 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
       <p className="mt-1 text-sm text-neutral-500">
         One “Name, Phone” per line. They still get approved by you before they see anything.
       </p>
+      {canPick && (
+        <p className="mt-1 text-xs text-neutral-500">
+          Choosing from contacts adds them to the box below — nothing is sent until you check it.
+          Only the people you tap are read; Squadroom never sees the rest of your phone.
+        </p>
+      )}
+
+      {canPick && (
+        <button
+          onClick={pickFromContacts}
+          className="mt-3 w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm font-medium"
+        >
+          Choose from contacts
+        </button>
+      )}
 
       <textarea
         value={text}
