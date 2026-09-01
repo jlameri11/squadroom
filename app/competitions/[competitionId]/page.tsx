@@ -14,7 +14,7 @@ export default async function CompetitionPage(props: {
 
   const { data: comp } = await supabase
     .from('competitions')
-    .select('id, name, type, season, organiser, organiser_id, starts_on, status')
+    .select('id, name, type, season, organiser, organiser_id, starts_on, status, mode')
     .eq('id', competitionId)
     .maybeSingle()
 
@@ -62,6 +62,7 @@ export default async function CompetitionPage(props: {
 
       <CompetitionView
         competitionId={comp.id}
+        mode={comp.mode}
         isOrganiser={isOrganiser}
         divisions={divisions}
         fixtures={(sheet ?? []) as Fixture[]}

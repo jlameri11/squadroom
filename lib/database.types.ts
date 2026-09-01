@@ -3,9 +3,6 @@
 // Regenerate after every migration:
 //   npx supabase login          (once)
 //   npm run types
-//
-// If it drifts from the database, TypeScript will happily agree with the
-// stale version, which is worse than having no types at all.
 
 export type Json =
   | string
@@ -332,6 +329,51 @@ export type Database = {
           },
         ]
       }
+      competition_announcements: {
+        Row: {
+          body: string
+          club_count: number
+          competition_id: string
+          id: string
+          sent_at: string
+          sent_by: string
+          urgent: boolean
+        }
+        Insert: {
+          body: string
+          club_count?: number
+          competition_id: string
+          id?: string
+          sent_at?: string
+          sent_by: string
+          urgent?: boolean
+        }
+        Update: {
+          body?: string
+          club_count?: number
+          competition_id?: string
+          id?: string
+          sent_at?: string
+          sent_by?: string
+          urgent?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_announcements_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_announcements_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_clubs: {
         Row: {
           academy_id: string
@@ -538,6 +580,7 @@ export type Database = {
           created_by: string | null
           ends_on: string | null
           id: string
+          mode: Database["public"]["Enums"]["competition_mode"]
           name: string
           notes: string | null
           organiser: string | null
@@ -554,6 +597,7 @@ export type Database = {
           created_by?: string | null
           ends_on?: string | null
           id?: string
+          mode?: Database["public"]["Enums"]["competition_mode"]
           name: string
           notes?: string | null
           organiser?: string | null
@@ -570,6 +614,7 @@ export type Database = {
           created_by?: string | null
           ends_on?: string | null
           id?: string
+          mode?: Database["public"]["Enums"]["competition_mode"]
           name?: string
           notes?: string | null
           organiser?: string | null
@@ -825,6 +870,7 @@ export type Database = {
         Row: {
           away_entry_id: string | null
           away_score: number | null
+          away_source: string | null
           competition_id: string
           created_at: string
           division: string
@@ -833,11 +879,13 @@ export type Database = {
           group_label: string | null
           home_entry_id: string | null
           home_score: number | null
+          home_source: string | null
           id: string
           notes: string | null
           round: string | null
           score_entered_at: string | null
           score_entered_by: string | null
+          stage: string
           starts_at: string | null
           status: Database["public"]["Enums"]["fixture_status"]
           updated_at: string
@@ -847,6 +895,7 @@ export type Database = {
         Insert: {
           away_entry_id?: string | null
           away_score?: number | null
+          away_source?: string | null
           competition_id: string
           created_at?: string
           division: string
@@ -855,11 +904,13 @@ export type Database = {
           group_label?: string | null
           home_entry_id?: string | null
           home_score?: number | null
+          home_source?: string | null
           id?: string
           notes?: string | null
           round?: string | null
           score_entered_at?: string | null
           score_entered_by?: string | null
+          stage?: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["fixture_status"]
           updated_at?: string
@@ -869,6 +920,7 @@ export type Database = {
         Update: {
           away_entry_id?: string | null
           away_score?: number | null
+          away_source?: string | null
           competition_id?: string
           created_at?: string
           division?: string
@@ -877,11 +929,13 @@ export type Database = {
           group_label?: string | null
           home_entry_id?: string | null
           home_score?: number | null
+          home_source?: string | null
           id?: string
           notes?: string | null
           round?: string | null
           score_entered_at?: string | null
           score_entered_by?: string | null
+          stage?: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["fixture_status"]
           updated_at?: string
@@ -2110,6 +2164,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      broadcast_to_competition: {
+        Args: { p_body: string; p_competition: string; p_urgent?: boolean }
+        Returns: number
+      }
       bulk_invite_clubs: {
         Args: { p_clubs: Json; p_competition: string; p_division: string }
         Returns: {
@@ -2171,6 +2229,18 @@ export type Database = {
           url: string
         }[]
       }
+      competition_contacts: {
+        Args: { p_competition: string }
+        Returns: {
+          academy_id: string
+          accepted_by: string
+          club_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          status: string
+        }[]
+      }
       competition_ladder: {
         Args: { p_competition: string; p_division: string }
         Returns: {
@@ -2223,6 +2293,29 @@ export type Database = {
         }
         Returns: string
       }
+      create_finals: {
+        Args: {
+          p_competition: string
+          p_division: string
+          p_fields?: string[]
+          p_game_mins?: number
+          p_gap_mins?: number
+          p_start_at: string
+          p_venue_label?: string
+        }
+        Returns: number
+      }
+      cross_group_standings: {
+        Args: { p_competition: string; p_division: string; p_position: number }
+        Returns: {
+          entry_id: string
+          goal_difference: number
+          goals_for: number
+          group_label: string
+          points: number
+          team_name: string
+        }[]
+      }
       enqueue_event_reminders: { Args: never; Returns: number }
       ensure_system_channel: {
         Args: {
@@ -2253,6 +2346,19 @@ export type Database = {
           p_replace?: boolean
           p_start_at: string
           p_venue_label?: string
+        }
+        Returns: number
+      }
+      generate_fixtures_managed: {
+        Args: {
+          p_competition: string
+          p_division: string
+          p_fields: string[]
+          p_game_mins: number
+          p_gap_mins: number
+          p_replace: boolean
+          p_start_at: string
+          p_venue_label: string
         }
         Returns: number
       }
@@ -2419,6 +2525,14 @@ export type Database = {
           reaction_count: number
         }[]
       }
+      resolve_finals: {
+        Args: { p_competition: string; p_division: string }
+        Returns: number
+      }
+      resolve_source: {
+        Args: { p_competition: string; p_division: string; p_source: string }
+        Returns: string
+      }
       revoke_member_tree: {
         Args: { p_academy: string; p_profile: string }
         Returns: number
@@ -2440,6 +2554,7 @@ export type Database = {
       channel_member_role: "host" | "co_host" | "member"
       channel_status: "active" | "archived"
       channel_type: "team" | "age_group" | "coaches" | "academy_wide" | "direct"
+      competition_mode: "managed" | "comms_only"
       competition_type:
         | "season"
         | "tournament"
@@ -2597,6 +2712,7 @@ export const Constants = {
       channel_member_role: ["host", "co_host", "member"],
       channel_status: ["active", "archived"],
       channel_type: ["team", "age_group", "coaches", "academy_wide", "direct"],
+      competition_mode: ["managed", "comms_only"],
       competition_type: [
         "season",
         "tournament",

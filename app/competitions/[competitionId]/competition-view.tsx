@@ -36,29 +36,49 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, isOrganiser, divisions, fixtures, ladders, entries,
+  competitionId, mode, isOrganiser, divisions, fixtures, ladders, entries,
 }: {
   competitionId: string
+  mode: string
   isOrganiser: boolean
   divisions: string[]
   fixtures: Fixture[]
   ladders: Record<string, LadderRow[]>
   entries: Entry[]
 }) {
-  const [tab, setTab] = useState<'run' | 'ladder' | 'clubs'>('run')
+  // In comms-only mode the draw and the ladder live in whatever software the
+  // organiser already uses. Showing empty versions here would invite someone
+  // to fill them in and create a second, wrong answer.
+  const commsOnly = mode === 'comms_only'
+  const tabs = commsOnly
+    ? (['send', 'clubs'] as const)
+    : (['run', 'ladder', 'clubs', 'send'] as const)
+
+  const [tab, setTab] = useState<string>(tabs[0])
   const [division, setDivision] = useState(divisions[0] ?? '')
+
+  const LABEL: Record<string, string> = {
+    run: 'Run sheet', ladder: 'Ladder', clubs: 'Clubs', send: 'Send',
+  }
 
   return (
     <div>
+      {commsOnly && (
+        <p className="border-b border-neutral-100 bg-neutral-50 px-4 py-2 text-xs text-neutral-600">
+          Run elsewhere. Squadroom carries the messages and the reminders — the draw and the
+          ladder stay where the organiser keeps them.
+        </p>
+      )}
+
       <div className="flex gap-1 border-b border-neutral-200 p-2">
-        {(['run', 'ladder', 'clubs'] as const).map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className="flex-1 rounded-lg py-2 text-sm font-medium"
             style={tab === t ? { background: '#2028420f', color: '#202842' } : { color: '#6B7280' }}
           >
-            {t === 'run' ? 'Run sheet' : t === 'ladder' ? 'Ladder' : 'Clubs'}
+            {LABEL[t]}
           </button>
         ))}
       </div>
@@ -90,6 +110,7 @@ export function CompetitionView({
       )}
       {tab === 'ladder' && <Ladder rows={ladders[division] ?? []} />}
       {tab === 'clubs' && <Clubs entries={entries} />}
+      {tab === 'send' && <Broadcast competitionId={competitionId} isOrganiser={isOrganiser} />}
     </div>
   )
 }
@@ -145,6 +166,8 @@ function RunSheet({
 
   return (
     <div>
+      {isOrganiser && <SetUpFinals competitionId={competitionId} division={division} />}
+
       {[...slots.entries()].map(([slot, games]) => (
         <section key={slot}>
           <h2 className="sticky top-0 border-b border-neutral-100 bg-neutral-50/95 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 backdrop-blur">
@@ -205,6 +228,104 @@ function RunSheet({
           ))}
         </section>
       ))}
+    </div>
+  )
+}
+
+function Broadcast({ competitionId, isOrganiser }: { competitionId: string; isOrganiser: boolean }) {
+  const [body, setBody] = useState('')
+  const [sent, setSent] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (!isOrganiser) {
+    return (
+      <p className="m-5 rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+        Only the organiser can message every club.
+      </p>
+    )
+  }
+
+  async function send() {
+    setBusy(true); setError(null); setSent(null)
+    const supabase = createClient()
+    const { data, error } = await supabase.rpc('broadcast_to_competition', {
+      p_competition: competitionId, p_body: body.trim(),
+    })
+    setBusy(false)
+    if (error) return setError(error.message)
+    setSent(data as number)
+    setBody('')
+  }
+
+  return (
+    <div className="p-5">
+      <h2 className="font-semibold">Message every club</h2>
+      <p className="mt-1 text-sm text-neutral-500">
+        {/* Say exactly where it lands. An organiser about to tell forty clubs
+            their Saturday is off should know what that does. */}
+        This appears as an announcement in each club&apos;s own channel, from you. Clubs never
+        see each other, and a muted channel still shows it.
+      </p>
+
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={4}
+        placeholder="Round 12 is off — grounds closed. Details Monday."
+        className="mt-3 w-full rounded-xl border border-neutral-300 p-3 text-sm"
+      />
+
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {sent !== null && (
+        <p className="mt-2 text-sm text-green-700">Delivered to {sent} {sent === 1 ? 'club' : 'clubs'}.</p>
+      )}
+
+      <button
+        onClick={send}
+        disabled={busy || body.trim().length === 0}
+        className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+        style={{ background: '#202842' }}
+      >
+        {busy ? 'Sending…' : 'Send to every club'}
+      </button>
+    </div>
+  )
+}
+
+function SetUpFinals({ competitionId, division }: { competitionId: string; division: string }) {
+  const router = useRouter()
+  const [at, setAt] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function build() {
+    if (!at) return setError('Pick a kick-off time.')
+    setBusy(true); setError(null)
+    const supabase = createClient()
+    const { error } = await supabase.rpc('create_finals', {
+      p_competition: competitionId, p_division: division,
+      p_start_at: new Date(at).toISOString(),
+    })
+    setBusy(false)
+    if (error) return setError(error.message)
+    router.refresh()
+  }
+
+  return (
+    <div className="border-t border-neutral-200 p-4">
+      <h3 className="font-semibold">Set up the finals</h3>
+      <p className="mt-0.5 text-sm text-neutral-500">
+        {/* The reassurance a coach actually wants before pressing it. */}
+        Times and fields now; the teams fill themselves in as results come in.
+      </p>
+      <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)}
+             className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2.5" />
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <button onClick={build} disabled={busy}
+              className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm font-semibold disabled:opacity-50">
+        {busy ? 'Setting up…' : 'Set up finals'}
+      </button>
     </div>
   )
 }
