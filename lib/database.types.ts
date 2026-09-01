@@ -2161,6 +2161,7 @@ export type Database = {
         }
         Returns: string
       }
+      enqueue_event_reminders: { Args: never; Returns: number }
       ensure_system_channel: {
         Args: {
           p_academy: string
@@ -2248,6 +2249,30 @@ export type Database = {
           status: Database["public"]["Enums"]["rsvp_status"]
         }[]
       }
+      my_upcoming_events: {
+        Args: { p_academy: string; p_days?: number }
+        Returns: {
+          address: string
+          arrive_at: string
+          cancelled_at: string
+          competition: string
+          ends_at: string
+          going: number
+          id: string
+          kit_colour: string
+          my_children: number
+          my_replies: number
+          no_reply: number
+          opponent: string
+          round: string
+          starts_at: string
+          team_id: string
+          team_name: string
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          venue: string
+        }[]
+      }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
@@ -2302,6 +2327,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      to_e164: {
+        Args: { p_default_country?: string; p_raw: string }
+        Returns: string
+      }
     }
     Enums: {
       academy_role: "owner" | "admin" | "coach" | "parent" | "player"
