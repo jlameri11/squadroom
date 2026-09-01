@@ -55,6 +55,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
       archived={channel.status === 'archived'}
       isHost={isHost}
       muted={membership?.muted ?? false}
+      restrictions={(channel.restrictions ?? {}) as Record<string, boolean>}
       myId={auth.user.id}
       initialMessages={messages}
     />

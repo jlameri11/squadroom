@@ -7,9 +7,10 @@ import { useChannelMessages, type ChatMessage } from '@/lib/hooks/use-channel-me
 import { MessageBubble } from './message-bubble'
 import { Composer } from './composer'
 import { PendingQueue } from './pending-queue'
+import { ChannelSettings } from './channel-settings'
 
 export function ChannelView({
-  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, myId, initialMessages,
+  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, restrictions, myId, initialMessages,
 }: {
   channelId: string
   academyId: string
@@ -19,12 +20,14 @@ export function ChannelView({
   archived: boolean
   isHost: boolean
   muted: boolean
+  restrictions: Record<string, boolean>
   myId: string
   initialMessages: ChatMessage[]
 }) {
   const { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic } =
     useChannelMessages(channelId, initialMessages)
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
   const supabase = useRef(createClient())
 
@@ -59,7 +62,26 @@ export function ChannelView({
             {muted && ' · muted'}
           </p>
         </div>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="flex-none rounded-lg px-2 py-1 text-lg text-neutral-400"
+          aria-label="Channel settings"
+        >
+          ⋯
+        </button>
       </header>
+
+      {showSettings && (
+        <ChannelSettings
+          channelId={channelId}
+          name={name}
+          postingMode={postingMode}
+          restrictions={restrictions}
+          muted={muted}
+          isHost={isHost}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       <PendingQueue channelId={channelId} isHost={isHost} />
 

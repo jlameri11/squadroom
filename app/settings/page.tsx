@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
+import { CalendarFeed } from './calendar-feed'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
         email={auth.user.email ?? null}
       />
       <PushToggle />
+      <CalendarFeed />
     </main>
   )
 }

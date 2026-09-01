@@ -195,6 +195,38 @@ export type Database = {
           },
         ]
       }
+      calendar_feeds: {
+        Row: {
+          created_at: string
+          last_read_at: string | null
+          profile_id: string
+          read_count: number
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          last_read_at?: string | null
+          profile_id: string
+          read_count?: number
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          last_read_at?: string | null
+          profile_id?: string
+          read_count?: number
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_feeds_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_members: {
         Row: {
           academy_id: string
@@ -2175,6 +2207,23 @@ export type Database = {
           token: string
         }[]
       }
+      calendar_feed_events: {
+        Args: { p_token: string }
+        Returns: {
+          address: string
+          arrive_at: string
+          cancelled_at: string
+          ends_at: string
+          event_id: string
+          kit_colour: string
+          opponent: string
+          starts_at: string
+          timezone: string
+          title: string
+          updated_at: string
+          venue: string
+        }[]
+      }
       cast_poll_vote: {
         Args: {
           p_note?: string
@@ -2395,6 +2444,7 @@ export type Database = {
         }[]
       }
       mirror_fixture: { Args: { p_fixture: string }; Returns: undefined }
+      my_calendar_token: { Args: { p_rotate?: boolean }; Returns: string }
       my_channels: {
         Args: { p_academy: string }
         Returns: {

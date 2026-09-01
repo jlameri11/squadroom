@@ -166,6 +166,16 @@ export function EventCard({
           </div>
         )}
 
+        {!cancelled && (
+          <a
+            href={`/api/ics/${event.id}`}
+            className="mt-3 block rounded-lg border border-neutral-200 py-2 text-center text-xs font-semibold"
+            style={{ color: '#202842' }}
+          >
+            Add to calendar
+          </a>
+        )}
+
         {isCoach && summary && (
           <p className="mt-3 border-t border-neutral-100 pt-2 text-xs text-neutral-500">
             <b style={{ color: '#1C7A4C' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
