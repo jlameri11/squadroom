@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
+import { PushToggle } from './push-toggle'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -23,6 +24,7 @@ export default async function SettingsPage() {
         initialPhone={me?.phone ?? ''}
         email={auth.user.email ?? null}
       />
+      <PushToggle />
     </main>
   )
 }

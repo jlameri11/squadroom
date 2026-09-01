@@ -7,6 +7,9 @@
   command = "npm run build"
   publish = ".next"
 
+[functions]
+  directory = "netlify/functions"
+
 [build.environment]
   # Next 16 needs 20+. Pinned so a Netlify default bump cannot break a deploy
   # at the worst possible moment.

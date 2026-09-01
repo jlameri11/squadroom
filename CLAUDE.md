@@ -131,6 +131,17 @@ one and is meant to reach hundreds of academies.
   - Because of this, the iOS web-push hole matters more: notifications only
     work once a parent installs the PWA. That is an argument for bringing
     the Capacitor phase forward if the NRIFA pilot shows poor reach.
+- **Push delivery is a scheduled Netlify function**, not a database webhook.
+  It needs the service-role key, which can never ship inside a Capacitor
+  bundle, so this stays server-side permanently. `netlify/functions/send-push.mts`
+  runs every minute and drains `notification_queue`.
+  - Notifications are ENQUEUED by a database trigger, never by the client. A
+    client that forgets - or a native app, or a script - would silently stop
+    notifying anyone.
+  - A 404 or 410 from a push endpoint means the browser discarded the
+    subscription. Retire it rather than retrying, or the queue silts up.
+  - Quiet hours DELAY a message rather than dropping it. They do not apply to
+    announcements or event reminders - those are what the exception is for.
 - **Twilio is not needed to build or pilot.** Add it for late-change alerts,
   or when onboarding an academy whose owner does not know every family.
 - **Payments use Stripe Connect Express** — money goes from parent straight
@@ -146,7 +157,7 @@ one and is meant to reach hundreds of academies.
 3. Chat: channels, realtime, hosts, posting modes, reactions
 4. Events, RSVPs, event cards in chat, reminders
 5. Polls (simple + availability), directory
-6. PWA + push + super-admin console
+6. PWA + push + super-admin console **(push done)**
 7. Tournament Mode — self-run competitions, ladders, run sheets, visiting clubs
 8. Payments — Stripe Connect Express; tournament entry fees are its first
    real use case, which is why it follows tournaments rather than leading
