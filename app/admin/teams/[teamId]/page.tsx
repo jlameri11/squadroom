@@ -3,6 +3,8 @@ import { redirect, notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { JoinLinkPanel } from './join-link-panel'
+import { AddPlayers } from './add-players'
+import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
 import { SeasonControl } from './season-control'
 import { siteUrl } from '@/lib/site'
@@ -58,18 +60,19 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
   // string we already have, so there is no reason to ship a QR library to
   // every phone that opens this page.
   const qrSvg = joinUrl
-    ? await QRCode.toString(joinUrl, { type: 'svg', margin: 1, width: 220, color: { dark: 'var(--brand)', light: '#ffffff' } })
+    ? await QRCode.toString(joinUrl, { type: 'svg', margin: 1, width: 220, color: { dark: '#202842', light: '#ffffff' } })
     : null
 
+  const playerNames = (players ?? []).map((p) => p.full_name)
+
   return (
-    <main className="mx-auto max-w-md p-5">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>{team.name}</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          {team.age_group} · {team.season}
-          {team.status === 'ended' && ' · season ended, channels read-only'}
-        </p>
-      </header>
+    <AppShellPage
+      title={team.name}
+      meta={`${team.age_group} · ${team.season}${team.status === 'ended' ? ' · season ended' : ''}`}
+      back="/admin/teams"
+      action={<AddPlayers teamId={team.id} academyId={team.academy_id} existing={playerNames} />}
+    >
+      <div className="p-4">
 
       <JoinLinkPanel
         teamId={team.id}
@@ -114,7 +117,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       </section>
 
       <SeasonControl teamId={team.id} status={team.status} />
-    </main>
+      </div>
+    </AppShellPage>
   )
 }
 
