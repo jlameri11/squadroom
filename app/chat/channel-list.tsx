@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 type Row = {
   channel_id: string
@@ -14,63 +16,216 @@ type Row = {
   last_sender_name: string | null
 }
 
+type Found = {
+  messages: {
+    id: string
+    channel_id: string
+    body: string
+    created_at: string
+    channel_name: string | null
+    sender_name: string | null
+  }[]
+  people: { profile_id: string; full_name: string; role: string }[]
+}
+
 export function ChannelList({ channels }: { channels: Row[] }) {
-  const active = channels.filter((c) => c.status === 'active')
+  const [query, setQuery] = useState('')
+  const [found, setFound] = useState<Found | null>(null)
+  const [searching, setSearching] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounced, because a search box that fires on every keystroke sends nine
+  // queries to Sydney to answer a five-letter word.
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current)
+    const q = query.trim()
+    if (q.length < 2) {
+      setFound(null)
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    timer.current = setTimeout(() => {
+      createClient()
+        .rpc('search_chat', { p_query: q })
+        .then(({ data }) => {
+          setFound((data ?? null) as unknown as Found | null)
+          setSearching(false)
+        })
+    }, 280)
+    return () => {
+      if (timer.current) clearTimeout(timer.current)
+    }
+  }, [query])
+
+  // The three groups from the prototype. Direct messages are separated
+  // because they are a different kind of thing — one person rather than a
+  // room — and an ended season is separated because it is read-only and
+  // should not sit among the channels people still post in.
+  const active = channels.filter((c) => c.status === 'active' && c.type !== 'direct')
+  const direct = channels.filter((c) => c.status === 'active' && c.type === 'direct')
   const archived = channels.filter((c) => c.status === 'archived')
 
-  if (channels.length === 0) {
-    return (
-      <p className="m-4 card p-6 text-center text-sm text-ink-3">
-        No channels yet. Create a team and its channel appears automatically.
-      </p>
-    )
-  }
-
   return (
-    <div className="p-4">
-      <div className="card overflow-hidden">
-        {active.map((c) => <ChannelRow key={c.channel_id} c={c} />)}
-      </div>
+    <div className="p-3.5">
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search messages and people"
+        type="search"
+        className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3.5 py-2.5 text-sm"
+      />
 
-      {archived.length > 0 && (
+      {query.trim().length >= 2 ? (
+        <Results found={found} searching={searching} query={query.trim()} />
+      ) : channels.length === 0 ? (
+        <p className="card mt-4 p-6 text-center text-sm text-ink-3">
+          No channels yet. Create a team and its channel appears automatically.
+        </p>
+      ) : (
         <>
-          <h2 className="eyebrow px-1 pb-2 pt-6">Past seasons</h2>
-          <div className="card overflow-hidden">
-            {archived.map((c) => <ChannelRow key={c.channel_id} c={c} />)}
-          </div>
+          <Group title="Your channels" rows={active} />
+          <Group title="Direct" rows={direct} />
+          <Group title={`Archived · past seasons`} rows={archived} />
         </>
       )}
     </div>
   )
 }
 
-function ChannelRow({ c }: { c: Row }) {
-  const initials = (c.name ?? '··').replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2)
-    .map((w) => w[0]).join('').toUpperCase() || '··'
+function Group({ title, rows }: { title: string; rows: Row[] }) {
+  if (rows.length === 0) return null
+  return (
+    <section className="mt-5">
+      <h2 className="eyebrow px-1 pb-2">{title}</h2>
+      <div className="card overflow-hidden">
+        {rows.map((c) => (
+          <ChannelRow key={c.channel_id} c={c} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function Results({
+  found,
+  searching,
+  query,
+}: {
+  found: Found | null
+  searching: boolean
+  query: string
+}) {
+  if (searching && !found) {
+    return <p className="mt-6 text-center text-sm text-ink-3">Searching…</p>
+  }
+  const messages = found?.messages ?? []
+  const people = found?.people ?? []
+
+  if (messages.length === 0 && people.length === 0) {
+    return (
+      <p className="card mt-4 p-6 text-center text-sm text-ink-3">
+        Nothing matching “{query}”.
+      </p>
+    )
+  }
 
   return (
-    <Link
-      href={`/chat/${c.channel_id}`}
-      className="row active:bg-[var(--surface-3)]"
-    >
+    <>
+      {people.length > 0 && (
+        <section className="mt-5">
+          <h2 className="eyebrow px-1 pb-2">People</h2>
+          <div className="card overflow-hidden">
+            {people.map((p) => (
+              <div key={p.profile_id} className="row">
+                <span className="av alt">{initials(p.full_name)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{p.full_name}</span>
+                  <span className="badge">{p.role}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {messages.length > 0 && (
+        <section className="mt-5">
+          <h2 className="eyebrow px-1 pb-2">
+            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+          </h2>
+          <div className="card overflow-hidden">
+            {messages.map((m) => (
+              <Link key={m.id} href={`/chat/${m.channel_id}`} className="row items-start">
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="truncate text-sm font-semibold">
+                      {m.channel_name ?? 'Direct message'}
+                    </span>
+                    <span className="flex-none text-xs text-ink-3">{shortTime(m.created_at)}</span>
+                  </span>
+                  <span className="mt-0.5 block text-sm text-ink-2">
+                    {m.sender_name ? <b className="font-medium">{m.sender_name.split(' ')[0]}: </b> : null}
+                    <Highlight text={m.body} term={query} />
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
+
+/**
+ * Shows the match in context rather than the start of the message.
+ *
+ * A search result that always begins at the first word is useless for the
+ * thing people actually search a team chat for: a detail buried in the
+ * middle of a long message about something else.
+ */
+function Highlight({ text, term }: { text: string; term: string }) {
+  const at = text.toLowerCase().indexOf(term.toLowerCase())
+  if (at < 0) return <>{text.slice(0, 90)}</>
+
+  const from = Math.max(0, at - 28)
+  const before = (from > 0 ? '…' : '') + text.slice(from, at)
+  const hit = text.slice(at, at + term.length)
+  const after = text.slice(at + term.length, at + term.length + 50)
+
+  return (
+    <>
+      {before}
+      <mark style={{ background: 'var(--gold)', color: 'var(--ink)', borderRadius: 3, padding: '0 2px' }}>
+        {hit}
+      </mark>
+      {after}
+      {text.length > at + term.length + 50 ? '…' : ''}
+    </>
+  )
+}
+
+function ChannelRow({ c }: { c: Row }) {
+  return (
+    <Link href={`/chat/${c.channel_id}`} className="chan active:bg-[var(--surface-3)]">
       <span
-        className="display grid h-11 w-11 flex-none place-items-center rounded-xl text-[15px] text-white"
-        style={{ background: c.status === 'archived' ? 'var(--ink-3)' : 'var(--brand)' }}
+        className={`av ${c.status === 'archived' || c.unread_count === 0 ? 'alt' : ''}`}
       >
-        {initials}
+        {initials(c.name ?? '··')}
       </span>
 
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
-          <span className="truncate font-semibold">{c.name ?? 'Direct message'}</span>
-          {c.muted && <span className="tag">muted</span>}
+          <span className="truncate text-sm font-semibold">{c.name ?? 'Direct message'}</span>
+          {c.muted && <span className="badge">muted</span>}
         </span>
-        <span className="block truncate text-sm text-ink-3">
+        <span className="block truncate text-xs text-ink-2">
           {c.last_message_body
             ? `${c.last_sender_name ? c.last_sender_name.split(' ')[0] + ': ' : ''}${c.last_message_body}`
-            : c.last_message_at
-              ? 'Message deleted'
-              : c.status === 'archived' ? 'Read-only' : 'No messages yet'}
+            : c.status === 'archived'
+              ? 'Read-only · season ended'
+              : 'No messages yet'}
         </span>
       </span>
 
@@ -94,12 +249,23 @@ function ChannelRow({ c }: { c: Row }) {
   )
 }
 
+function initials(name: string) {
+  return (
+    name
+      .replace(/[^A-Za-z0-9 ]/g, '')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() || '··'
+  )
+}
+
 function shortTime(iso: string) {
   const d = new Date(iso)
-  const now = new Date()
-  const sameDay = d.toDateString() === now.toDateString()
-  if (sameDay) return d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
-  const days = Math.round((now.getTime() - d.getTime()) / 86400000)
+  const days = (Date.now() - d.getTime()) / 864e5
+  if (days < 1) return d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
   if (days < 7) return d.toLocaleDateString('en-AU', { weekday: 'short' })
   return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 }

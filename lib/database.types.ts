@@ -3036,6 +3036,10 @@ export type Database = {
           storage_path: string
         }[]
       }
+      search_chat: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: Json
+      }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
