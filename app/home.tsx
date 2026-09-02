@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { AppBar, TabBar, Screen } from '@/components/app-shell'
+import { createClient } from '@/lib/supabase/client'
 
 export type HomeEvent = {
   id: string
@@ -15,6 +17,12 @@ export type HomeEvent = {
   my_children: number
   source: string
   confirmed_at: string | null
+  academy_id?: string
+  round: string | null
+  kit_colour: string | null
+  going: number | null
+  no_reply: number | null
+  rsvps: { player_id: string; player_name: string; status: string | null }[]
 }
 
 export type HomeChannel = {
@@ -123,100 +131,65 @@ export function Home({
         </Link>
       )}
 
-      <Section title="Next up" href="/calendar" more="All fixtures">
-        {events.length === 0 ? (
-          <Empty>Nothing in the next three weeks.</Empty>
-        ) : (
-          <ul className="flex flex-col">
-            {events.map((e) => {
-              const cancelled = Boolean(e.cancelled_at)
-              const owed = !cancelled && e.my_children > e.my_replies
-              const when = new Date(e.starts_at)
-              return (
-                <li key={e.id}>
-                  <Link
-                    href={`/calendar/${e.id}`}
-                    className={`row items-start ${cancelled ? 'opacity-55' : ''}`}
-                  >
-                    {/* The date chip from the prototype: day and time stacked
-                        in a fixed column, so a list of six games scans down
-                        the left edge instead of wrapping. */}
-                    <span
-                      className="w-[52px] flex-none rounded-[10px] py-1.5 text-center"
-                      style={{ background: 'var(--surface-3)' }}
-                    >
-                      <span
-                        className="display block text-[13px] uppercase leading-none"
-                        style={{ color: TYPE_TINT[e.type] ?? 'var(--ink-2)' }}
-                      >
-                        {when.toLocaleDateString('en-AU', { weekday: 'short' })}
-                      </span>
-                      <span className="mt-0.5 block text-[13px] tabular-nums leading-none text-ink-2">
-                        {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                      </span>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate font-medium">{e.title}</span>
-                        {cancelled && (
-                          <span className="tag flex-none" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>
-                            Off
-                          </span>
-                        )}
-                        {e.source === 'screenshot' && !e.confirmed_at && (
-                          <span className="tag flex-none" style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}>
-                            Check
-                          </span>
-                        )}
-                      </span>
-                      <span className="block truncate text-sm text-ink-3">
-                        {[e.team_name, e.venue].filter(Boolean).join(' · ') || 'No ground yet'}
-                      </span>
-                    </span>
-                    {owed && (
-                      <span className="pill flex-none self-center">
-                        {e.my_children - e.my_replies} to answer
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </Section>
+      <section className="px-3.5 pb-5 pt-4">
+        <div className="sect">
+          <span className="eyebrow">Upcoming · next 3 weeks</span>
+          <Link href="/calendar" className="text-xs text-ink-3 underline underline-offset-2">
+            All fixtures
+          </Link>
+        </div>
 
-      <Section title="Chats" href="/chat" more="All chats">
-        {channels.length === 0 ? (
-          <Empty>You&apos;re not in any chats yet.</Empty>
+        {events.length === 0 ? (
+          <p className="card p-6 text-center text-sm text-ink-3">
+            Nothing in the next three weeks.
+          </p>
         ) : (
-          <ul className="flex flex-col">
-            {channels.slice(0, 5).map((c) => (
-              <li key={c.channel_id}>
-                <Link
-                  href={`/chat/${c.channel_id}`}
-                  className="row"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate font-medium">{c.name}</span>
-                      {c.muted && <span className="tag flex-none">muted</span>}
-                    </span>
-                    <span className="block truncate text-sm text-ink-3">
-                      {c.last_message_body
-                        ? `${c.last_sender_name ? `${c.last_sender_name.split(' ')[0]}: ` : ''}${c.last_message_body}`
-                        : 'No messages yet'}
-                    </span>
-                  </span>
-                  {c.unread_count > 0 && (
-                    <span className="pill flex-none">{c.unread_count}</span>
-                  )}
-                </Link>
-              </li>
+          <div className="stack">
+            {events.map((e) => (
+              <EventCard key={e.id} event={e} isCoach={isCoach} academyId={academy.id} />
             ))}
-          </ul>
+          </div>
         )}
-      </Section>
+      </section>
+
+      <section className="px-3.5 pb-5">
+        <div className="sect">
+          <span className="eyebrow">Channels</span>
+          {unread > 0 ? (
+            <span className="pill">{unread}</span>
+          ) : (
+            <Link href="/chat" className="text-xs text-ink-3 underline underline-offset-2">
+              All chats
+            </Link>
+          )}
+        </div>
+
+        {channels.length === 0 ? (
+          <p className="card p-6 text-center text-sm text-ink-3">You&apos;re not in any chats yet.</p>
+        ) : (
+          <div className="card overflow-hidden">
+            {channels.slice(0, 5).map((c) => (
+              <Link key={c.channel_id} href={`/chat/${c.channel_id}`} className="chan">
+                <span className={`av ${c.unread_count > 0 ? '' : 'alt'}`}>
+                  {initials(c.name)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold">{c.name}</span>
+                    {c.muted && <span className="badge">muted</span>}
+                  </span>
+                  <span className="block truncate text-xs text-ink-2">
+                    {c.last_message_body
+                      ? `${c.last_sender_name ? `${c.last_sender_name.split(' ')[0]}: ` : ''}${c.last_message_body}`
+                      : 'No messages yet'}
+                  </span>
+                </span>
+                {c.unread_count > 0 && <span className="pill flex-none">{c.unread_count}</span>}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
       <Group title="Yours">
         <Item href="/calendar" label="Fixtures" hint="Every game and training session" />
@@ -264,35 +237,137 @@ function todayLabel() {
   return new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function Section({
-  title,
-  href,
-  more,
-  children,
+/**
+ * One fixture, and — for a parent — the answer for each of their children
+ * right on it.
+ *
+ * This is the difference between the app and a website. Answering "is Leo
+ * playing Saturday" is the most common thing anyone does here, and it used to
+ * cost a navigation: a tap, a 250ms trip to Sydney, a new page. Now it is a
+ * tap that paints immediately and saves in the background.
+ */
+function EventCard({
+  event,
+  isCoach,
+  academyId,
 }: {
-  title: string
-  href: string
-  more: string
-  children: React.ReactNode
+  event: HomeEvent
+  isCoach: boolean
+  academyId: string
 }) {
+  const [answers, setAnswers] = useState(event.rsvps ?? [])
+  const when = new Date(event.starts_at)
+  const cancelled = Boolean(event.cancelled_at)
+
+  async function answer(playerId: string, status: string) {
+    // Optimistic. A parent standing in a car park should see the button move
+    // the instant they press it, not after a round trip across the Pacific.
+    setAnswers((prev) =>
+      prev.map((a) => (a.player_id === playerId ? { ...a, status } : a))
+    )
+    const supabase = createClient()
+    const { data: auth } = await supabase.auth.getUser()
+    if (!auth.user) return
+    await supabase.from('event_rsvps').upsert(
+      {
+        academy_id: academyId,
+        event_id: event.id,
+        profile_id: auth.user.id,
+        player_id: playerId,
+        status: status as 'yes' | 'no' | 'maybe',
+      },
+      { onConflict: 'event_id,profile_id,player_id' }
+    )
+  }
+
   return (
-    <section className="mb-6">
-      <div className="flex items-baseline justify-between px-4 pb-2">
-        <h2 className="eyebrow">{title}</h2>
-        <Link href={href} className="text-xs text-ink-3 underline underline-offset-2">
-          {more}
+    <article className={`card ev ${cancelled ? 'opacity-60' : ''}`}>
+      <div className="ev-top">
+        <Link href={`/calendar/${event.id}`} className="datechip">
+          <div className="d">{when.getDate()}</div>
+          <div className="m">{when.toLocaleDateString('en-AU', { weekday: 'short' })}</div>
         </Link>
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-[3px] flex flex-wrap items-center gap-1.5">
+            <span className={`typechip ${event.type === 'match' ? 'match' : ''}`}>
+              {cancelled ? 'Called off' : event.type}
+            </span>
+            {event.team_name && <span className="badge">{event.team_name}</span>}
+            {event.round && <span className="badge">{event.round}</span>}
+            {event.source === 'screenshot' && !event.confirmed_at && (
+              <span className="badge" style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}>
+                Check
+              </span>
+            )}
+          </div>
+
+          <Link href={`/calendar/${event.id}`} className="block">
+            <div className="ev-ttl">{event.title}</div>
+            <div className="ev-sub tabular-nums">
+              {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+              {event.venue ? ` · ${event.venue}` : ''}
+            </div>
+          </Link>
+        </div>
       </div>
-      <div className="card mx-4 overflow-hidden">{children}</div>
-    </section>
+
+      {/* A coach wants the tally and a way into the roster; a parent wants to
+          answer. They are different jobs, and neither belongs on the other's
+          screen. */}
+      {isCoach && event.going !== null && !cancelled && (
+        <Link href={`/calendar/${event.id}`} className="ev-sub flex justify-between">
+          <span>
+            <b style={{ color: 'var(--yes)' }}>{event.going} in</b>
+            {event.no_reply ? ` · ${event.no_reply} no reply` : ''}
+          </span>
+          <span style={{ color: 'var(--brand)' }}>View roster</span>
+        </Link>
+      )}
+
+      {!isCoach && !cancelled && answers.length > 0 && (
+        <div className="stack">
+          {answers.map((a) => (
+            <div key={a.player_id} className="kidrow">
+              <span className="who truncate">{a.player_name.split(' ')[0]}</span>
+              <div className="rsvp">
+                {(['yes', 'maybe', 'no'] as const).map((v) => (
+                  <button
+                    key={v}
+                    data-v={v}
+                    aria-pressed={a.status === v}
+                    onClick={() => answer(a.player_id, v)}
+                  >
+                    {v === 'yes' ? 'Going' : v === 'maybe' ? 'Maybe' : 'Out'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </article>
+  )
+}
+
+function initials(name: string) {
+  return (
+    (name ?? '')
+      .replace(/[^A-Za-z0-9 ]/g, '')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() || '··'
   )
 }
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-6">
-      <h2 className="eyebrow px-4 pb-2">{title}</h2>
-      <ul className="card mx-4 overflow-hidden">{children}</ul>
+    <section className="px-3.5 pb-5">
+      <h2 className="eyebrow px-1 pb-2">{title}</h2>
+      <ul className="card overflow-hidden">{children}</ul>
     </section>
   )
 }

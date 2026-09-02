@@ -160,6 +160,76 @@ body {
     border: 1px solid var(--line);
   }
 
+  /* ---- the upcoming card, straight from the prototype ---- */
+
+  .ev { padding: 11px 12px; display: grid; gap: 9px; }
+  .ev-top { display: flex; gap: 11px; align-items: flex-start; }
+  .ev-ttl { font-weight: 600; font-size: 14.5px; line-height: 1.25; }
+  .ev-sub { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+
+  /* Day number large, weekday small. A column of these scans as a calendar
+     rather than as a list of times. */
+  .datechip {
+    flex: none; width: 46px; text-align: center;
+    border-radius: 9px; background: var(--surface-2); padding: 5px 0;
+  }
+  .datechip .d {
+    font-family: var(--font-barlow), sans-serif;
+    font-size: 21px; font-weight: 700; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .datechip .m {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--ink-3); font-weight: 600;
+  }
+
+  .typechip {
+    font-family: var(--font-barlow), sans-serif;
+    text-transform: uppercase; letter-spacing: .07em;
+    font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px;
+    background: var(--surface-2); color: var(--ink-2);
+  }
+  /* A match is the thing people are actually organising around, so it is the
+     only event type that gets the brand colour. */
+  .typechip.match { background: var(--brand); color: var(--brand-ink); }
+
+  .badge {
+    font-family: var(--font-barlow), sans-serif;
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; padding: 2px 6px; border-radius: 5px;
+    background: var(--surface-2); color: var(--ink-3);
+  }
+
+  /* One child, three buttons. The whole point: a parent answers from the home
+     screen without opening anything. */
+  .kidrow { display: flex; align-items: center; gap: 8px; }
+  .kidrow .who {
+    font-size: 12.5px; font-weight: 600; width: 52px; flex: none; color: var(--ink-2);
+  }
+  .rsvp { display: flex; gap: 6px; flex: 1; }
+  .rsvp button {
+    flex: 1; padding: 7px 4px; border-radius: 9px;
+    border: 1px solid var(--line); font-size: 12.5px; font-weight: 600;
+    color: var(--ink-2); background: var(--surface);
+  }
+  .rsvp button[aria-pressed="true"][data-v="yes"]   { background: var(--yes-bg);   border-color: var(--yes);   color: var(--yes); }
+  .rsvp button[aria-pressed="true"][data-v="maybe"] { background: var(--maybe-bg); border-color: var(--maybe); color: var(--maybe); }
+  .rsvp button[aria-pressed="true"][data-v="no"]    { background: var(--no-bg);    border-color: var(--no);    color: var(--no); }
+
+  .chan { display: flex; gap: 11px; align-items: center; padding: 11px 12px; width: 100%; text-align: left; }
+  .chan + .chan { border-top: 1px solid var(--line-2); }
+  .av {
+    width: 40px; height: 40px; border-radius: 11px; flex: none;
+    display: grid; place-items: center;
+    font-family: var(--font-barlow), sans-serif; font-weight: 700; font-size: 15px;
+    background: var(--brand); color: var(--brand-ink);
+  }
+  .av.alt { background: var(--surface-2); color: var(--ink-2); }
+
+  .sect { display: flex; align-items: center; justify-content: space-between; margin: 2px 2px 9px; }
+  .stack { display: grid; gap: 9px; }
+  .pad { padding: 14px; }
+
   /* The unread / to-answer pill. Orange because it is the only thing on the
      screen asking you to do something. */
   .pill {
