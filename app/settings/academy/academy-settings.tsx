@@ -11,16 +11,36 @@ import { createClient } from '@/lib/supabase/client'
  * should be a decision someone made on purpose, having read what it does -
  * not something that drifted open because the wording was vague.
  */
+/**
+ * Six clubs' worth of colours, plus whatever they actually wear.
+ *
+ * Every one of these is dark enough to carry white text in the app bar,
+ * which is the only real constraint — a club picking their own hi-vis
+ * yellow would produce a header nobody can read. The custom field is there
+ * because a club's colours are theirs, and a preset list is a guess.
+ */
+const PRESETS = [
+  { name: 'NRIFA navy', value: '#202842' },
+  { name: 'Bottle green', value: '#1C4634' },
+  { name: 'Claret', value: '#6B1F32' },
+  { name: 'Royal blue', value: '#17418C' },
+  { name: 'Black', value: '#16181D' },
+  { name: 'Forest', value: '#2E4A2C' },
+]
+
 export function AcademySettings({
-  academyId, dmPolicy, directoryVisibility,
+  academyId, dmPolicy, directoryVisibility, primaryColour = '#202842', academyName = 'Your club',
 }: {
   academyId: string
   dmPolicy: string
   directoryVisibility: string
+  primaryColour?: string
+  academyName?: string
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
   const [dir, setDir] = useState(directoryVisibility)
+  const [colour, setColour] = useState(primaryColour)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -29,6 +49,7 @@ export function AcademySettings({
   type Patch =
     | { directory_visibility: 'staff_only' | 'all' }
     | { dm_policy: 'staff_only' | 'open' }
+    | { primary_colour: string }
 
   async function update(patch: Patch) {
     setBusy(true)
@@ -43,6 +64,65 @@ export function AcademySettings({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <section>
+        <h2 className="font-semibold">Club colours</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          Used across the app — the bar at the top, buttons, and the badge every family sees.
+        </p>
+
+        {/* The preview is the point. A hex code tells nobody anything; a
+            navy bar with the club's initials on it tells them exactly what
+            they are choosing. */}
+        <div
+          className="mt-3 flex items-center gap-3 rounded-xl px-4 pb-3.5 pt-3"
+          style={{ background: colour, color: '#fff' }}
+        >
+          <span
+            className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[15px]"
+            style={{ background: '#ffffff26' }}
+          >
+            {academyName.slice(0, 2).toUpperCase()}
+          </span>
+          <span className="min-w-0">
+            <span className="display block truncate text-[21px] leading-tight">{academyName}</span>
+            <span className="block text-xs opacity-75">This is how it will look</span>
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {PRESETS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => { setColour(p.value); void update({ primary_colour: p.value }) }}
+              aria-label={p.name}
+              aria-pressed={colour.toLowerCase() === p.value.toLowerCase()}
+              className="h-9 w-9 rounded-[9px] border-2"
+              style={{
+                background: p.value,
+                borderColor: colour.toLowerCase() === p.value.toLowerCase() ? 'var(--ink)' : 'transparent',
+                boxShadow: 'inset 0 0 0 1px #00000018',
+              }}
+            />
+          ))}
+
+          <label className="flex items-center gap-2 rounded-[9px] border border-[var(--line)] px-2.5">
+            <input
+              type="color"
+              value={colour}
+              onChange={(e) => setColour(e.target.value)}
+              onBlur={() => update({ primary_colour: colour })}
+              className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
+              aria-label="Choose any colour"
+            />
+            <span className="text-xs text-ink-2">Custom</span>
+          </label>
+        </div>
+
+        <p className="mt-2 text-xs text-ink-3">
+          Pick something dark enough for white text to read on — the club name sits on top of it.
+        </p>
+      </section>
 
       <section>
         <h2 className="font-semibold">Family phone numbers</h2>

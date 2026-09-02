@@ -110,7 +110,7 @@ const TABS: { tab: Tab; href: string; label: string; icon: React.ReactNode; staf
   },
   {
     tab: 'admin',
-    href: '/admin/teams',
+    href: '/admin',
     label: 'Admin',
     staffOnly: true,
     icon: (

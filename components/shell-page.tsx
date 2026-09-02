@@ -14,6 +14,7 @@ export function AppShellPage({
   action,
   isStaff = true,
   unread = 0,
+  brand,
   children,
 }: {
   title: string
@@ -22,11 +23,16 @@ export function AppShellPage({
   action?: React.ReactNode
   isStaff?: boolean
   unread?: number
+  /** The club's colour. Overrides --brand for everything inside. */
+  brand?: string | null
   academyId?: string
   children: React.ReactNode
 }) {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div
+      className="mx-auto flex min-h-dvh w-full max-w-md flex-col"
+      style={brand ? ({ '--brand': brand } as React.CSSProperties) : undefined}
+    >
       <AppBar title={title} meta={meta} back={back} action={action} />
       <Screen>{children}</Screen>
       <TabBar isStaff={isStaff} unread={unread} />

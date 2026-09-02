@@ -89,7 +89,10 @@ export function Home({
   const tint = academy.primary_colour || 'var(--brand)'
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div
+      className="mx-auto flex min-h-dvh w-full max-w-md flex-col"
+      style={{ '--brand': tint } as React.CSSProperties}
+    >
       <AppBar
         title={academy.name}
         meta={`${role[0].toUpperCase()}${role.slice(1)} · ${todayLabel()}`}
@@ -192,50 +195,14 @@ export function Home({
       </section>
 
       {/*
-        Four tiles, not fifteen rows.
+        Nothing else belongs here.
 
-        Fixtures, Chat, Team and Settings all live in the tab bar already, so
-        listing them again below was the screen repeating itself — which is
-        most of why it looked cluttered. What is left here is only what has no
-        other home: the things a coach does occasionally and a parent almost
-        never.
+        The prototype's home screen is exactly two things — what is coming up,
+        and the rooms you are in. Everything I had added underneath (tiles,
+        an admin list, "elsewhere") was the screen listing the tab bar back at
+        the person looking at it. Running the club now lives on the Admin tab,
+        where a coach goes when that is what they came to do.
       */}
-      <section className="px-3.5 pb-5">
-        <h2 className="eyebrow px-1 pb-2">Shortcuts</h2>
-        <div className="grid grid-cols-2 gap-2.5">
-          <Tile href="/scan" label="Scan a draw" note="From a screenshot" />
-          <Tile href="/payments" label="Payments" note="What you owe" />
-          {isCoach && <Tile href="/admin/import" label="Import a draw" note="From Dribl" />}
-          {isCoach && <Tile href="/competitions" label="Competitions" note="Cups & gala days" />}
-        </div>
-      </section>
-
-      {isCoach && (
-        <section className="px-3.5 pb-5">
-          <h2 className="eyebrow px-1 pb-2">Running {academy.name}</h2>
-          <ul className="card overflow-hidden">
-            <Item href="/admin/teams" label="Teams and players" />
-            <Item href="/admin/requests" label="Join requests" hint="Approve new families" />
-            {isStaff && <Item href="/admin/payments" label="Collect payments" />}
-            {isStaff && <Item href="/admin/members" label="Members and invites" />}
-            {isStaff && <Item href="/settings/academy" label="Club settings" />}
-          </ul>
-        </section>
-      )}
-
-      {(otherAcademies.length > 0 || isPlatformAdmin) && (
-        <section className="px-3.5 pb-5">
-          <h2 className="eyebrow px-1 pb-2">Elsewhere</h2>
-          <ul className="card overflow-hidden">
-            {otherAcademies.map((a) => (
-              <Item key={a.id} href="/" label={a.name} hint={a.type} />
-            ))}
-            <Item href="/start" label="Create another organisation" />
-            {isPlatformAdmin && <Item href="/platform" label="Platform" hint="Every academy" />}
-          </ul>
-        </section>
-      )}
-
       </Screen>
 
       <TabBar isStaff={isCoach} unread={unread} />
@@ -370,17 +337,6 @@ function initials(name: string) {
       .map((w) => w[0])
       .join('')
       .toUpperCase() || '··'
-  )
-}
-
-/* A shortcut. Square-ish, two lines, big enough for a thumb — the things
-   that have no home in the tab bar. */
-function Tile({ href, label, note }: { href: string; label: string; note: string }) {
-  return (
-    <Link href={href} className="card flex flex-col justify-between p-3" style={{ minHeight: 74 }}>
-      <span className="display text-[15px] leading-tight">{label}</span>
-      <span className="text-xs text-ink-3">{note}</span>
-    </Link>
   )
 }
 

@@ -10,7 +10,7 @@ export default async function AcademySettingsPage() {
 
   const { data: academies } = await supabase
     .from('academies')
-    .select('id, name, dm_policy, directory_visibility')
+    .select('id, name, dm_policy, directory_visibility, primary_colour, name')
     .order('name')
   const academy = academies?.[0]
   if (!academy) redirect('/start')
@@ -33,7 +33,9 @@ export default async function AcademySettingsPage() {
         <AcademySettings
           academyId={academy.id}
           dmPolicy={academy.dm_policy}
-          directoryVisibility={academy.directory_visibility}
+          primaryColour={academy.primary_colour}
+      academyName={academy.name}
+      directoryVisibility={academy.directory_visibility}
         />
       ) : (
         <p className="mt-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
