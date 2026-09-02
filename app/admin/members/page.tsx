@@ -29,7 +29,7 @@ export default async function MembersPage() {
   })
 
   return (
-    <AppShellPage title="Members">
+    <AppShellPage title="Members" back="/admin">
       <div className="p-4">
 
       <MemberTree

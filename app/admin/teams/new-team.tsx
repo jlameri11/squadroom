@@ -47,16 +47,25 @@ export function NewTeam({ academyId }: { academyId: string }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-4 w-full rounded-xl px-4 py-3 font-medium text-white"
-        style={{ background: 'var(--brand)' }}
+        className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
+        style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+        aria-label="Add a team"
       >
-        New team
+        ＋
       </button>
     )
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 flex flex-col gap-3 rounded-xl border border-[var(--line)] p-4">
+    <div className="fixed inset-0 z-50 flex items-end" style={{ background: '#0E172680' }}>
+      <form
+        onSubmit={submit}
+        className="max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl p-5"
+        style={{ background: 'var(--surface)' }}
+      >
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
+        <h2 className="display mb-3 text-xl">Add a team</h2>
+        <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Team name</span>
         <input
@@ -90,9 +99,11 @@ export function NewTeam({ academyId }: { academyId: string }) {
         </label>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>
 
-      <div className="flex gap-2">
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+
+      <div className="mt-3 flex gap-2">
         <button
           type="submit"
           disabled={busy}
@@ -109,9 +120,10 @@ export function NewTeam({ academyId }: { academyId: string }) {
           Cancel
         </button>
       </div>
-      <p className="text-xs text-ink-2">
+      <p className="mt-3 text-xs text-ink-2">
         Its channel is created automatically, and coaches join it as hosts.
       </p>
-    </form>
+      </form>
+    </div>
   )
 }

@@ -35,7 +35,7 @@ export default async function InvitesPage() {
   ])
 
   return (
-    <AppShellPage title="Invites">
+    <AppShellPage title="Invites" back="/admin">
       <div className="p-4">
 
       <InviteList

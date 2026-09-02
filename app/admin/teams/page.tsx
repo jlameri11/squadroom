@@ -27,7 +27,7 @@ export default async function TeamsPage() {
     .order('age_group')
 
   return (
-    <AppShellPage title="Teams">
+    <AppShellPage title="Teams" back="/admin" action={<NewTeam academyId={academy.id} />}>
       <div className="p-4">
 
       <TeamList
@@ -41,8 +41,6 @@ export default async function TeamsPage() {
           playerCount: countOf(t.players),
         }))}
       />
-
-      <NewTeam academyId={academy.id} />
     </div>
     </AppShellPage>
   )

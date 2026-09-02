@@ -1,36 +1,15 @@
-import Link from 'next/link'
-
-const TABS = [
-  { href: '/chat', label: 'Chat' },
-  { href: '/calendar', label: 'Fixtures' },
-  { href: '/competitions', label: 'Comps' },
-  { href: '/directory', label: 'Directory' },
-  { href: '/admin/requests', label: 'Requests' },
-  { href: '/admin/teams', label: 'Teams' },
-  { href: '/admin/invites', label: 'Invites' },
-  { href: '/admin/members', label: 'Members' },
-]
-
+/**
+ * No navigation of its own.
+ *
+ * This used to carry a horizontally-scrolling bar of eight links — Chat,
+ * Fixtures, Comps, Directory, Requests, Teams, Invites, Members — from before
+ * the app had a tab bar or an admin hub. Every one of those is now either a
+ * tab at the bottom or a row on /admin, so it was a third navigation offering
+ * the same destinations in a different order, which is the kind of thing that
+ * makes an app feel like a website.
+ *
+ * The sub-pages carry a back arrow to /admin instead.
+ */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div>
-      <nav className="sticky top-0 z-10 border-b border-[var(--line)] bg-[var(--surface)]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-md gap-1 overflow-x-auto p-2">
-          <Link href="/" className="rounded-lg px-3 py-2 text-sm text-ink-2">
-            ←
-          </Link>
-          {TABS.map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-ink hover:bg-[var(--surface-2)]"
-            >
-              {t.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-      {children}
-    </div>
-  )
+  return children
 }

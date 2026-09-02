@@ -25,7 +25,7 @@ export default async function RequestsPage() {
     .order('created_at', { ascending: true })
 
   return (
-    <AppShellPage title="Join requests">
+    <AppShellPage title="Join requests" back="/admin">
       <div className="p-4">
 
       <RequestList

@@ -25,7 +25,7 @@ export default async function AcademySettingsPage() {
   const isStaff = me?.role === 'owner' || me?.role === 'admin'
 
   return (
-    <AppShellPage title="Club settings">
+    <AppShellPage title="Club settings" back="/admin">
       <div className="p-4">
       <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
 
