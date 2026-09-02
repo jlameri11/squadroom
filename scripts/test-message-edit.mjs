@@ -20,11 +20,17 @@ const { data: ch } = await admin.from('channels').select('id')
   .eq('team_id','00000000-0000-0000-0000-0000000d0008').eq('type','team').single()
 await admin.from('messages').delete().like('body','EDITTEST%')
 
+// Deleting a message blanks its body (0012's archive trigger), so a cleanup
+// that matches on body leaves every deleted message behind — which is exactly
+// what happened, and it showed up as "Message deleted" at the top of a real
+// channel list. Track ids instead.
+const made = []
 const post = async (who, body) => {
   const { data, error } = await who.client.from('messages')
     .insert({ academy_id: NRIFA, channel_id: ch.id, sender_id: who.id, body })
     .select('id, body, edited_at').single()
   if (error) throw new Error(error.message)
+  made.push(data.id)
   return data
 }
 
@@ -76,5 +82,5 @@ const removed = msgs.find(m => m.id === m2.id)
 removed ? ok('the thread still renders it as removed rather than losing the context')
         : ok('deleted messages are filtered from the thread')
 
-await admin.from('messages').delete().like('body','EDITTEST%')
+await admin.from('messages').delete().in('id', made)
 console.log('\ncleaned up\n')
