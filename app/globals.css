@@ -54,6 +54,87 @@
   color-scheme: light;
 }
 
+
+/*
+ * Dark, which is what the prototype actually is.
+ *
+ * Not an inversion of the light palette — the values below are the
+ * prototype's own. A junior football app gets opened at 6am on a wet
+ * Saturday and at 9pm when somebody remembers to answer an RSVP, and on a
+ * phone at either hour a dark screen is the kinder one.
+ *
+ * Three states, not two. An explicit choice stamps data-theme on the root;
+ * the default stamps nothing, and then only prefers-color-scheme separates
+ * light from dark. So the media query is guarded against an explicit light
+ * choice, and the [data-theme="dark"] block repeats the tokens so a manual
+ * pick wins in both directions.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand-soft: #ffffff14;
+    --brand-faint: #ffffff0a;
+    --brand-ink: #ffffff;
+
+    --paper: #080D16;
+    --surface: #121B29;
+    --surface-2: #1B2637;
+    --surface-3: #0E1723;
+    --paper-blur: #080D16F2;
+
+    --ink: #E8EDF4;
+    --ink-2: #A6B2C4;
+    --ink-3: #75839A;
+
+    --line: #243044;
+    --line-2: #1A2434;
+
+    --accent: #FF7A45;
+    --gold: #EFBD5B;
+
+    --yes: #4FB587;    --yes-bg: #4FB58722;
+    --maybe: #D0A03C;  --maybe-bg: #D0A03C22;
+    --no: #D9755F;     --no-bg: #D9755F22;
+
+    --bubble-in: #1B2637;
+    --bubble-out: #23405C;
+
+    --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --brand-soft: #ffffff14;
+  --brand-faint: #ffffff0a;
+  --brand-ink: #ffffff;
+
+  --paper: #080D16;
+  --surface: #121B29;
+  --surface-2: #1B2637;
+  --surface-3: #0E1723;
+  --paper-blur: #080D16F2;
+
+  --ink: #E8EDF4;
+  --ink-2: #A6B2C4;
+  --ink-3: #75839A;
+
+  --line: #243044;
+  --line-2: #1A2434;
+
+  --accent: #FF7A45;
+  --gold: #EFBD5B;
+
+  --yes: #4FB587;    --yes-bg: #4FB58722;
+  --maybe: #D0A03C;  --maybe-bg: #D0A03C22;
+  --no: #D9755F;     --no-bg: #D9755F22;
+
+  --bubble-in: #1B2637;
+  --bubble-out: #23405C;
+
+  --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
+  color-scheme: dark;
+}
+
 @theme inline {
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
@@ -111,7 +192,7 @@ body {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 1px 2px #0e17260d;
   }
 
   /* A tappable line in a list. 52px minimum because a thumb is not a mouse. */

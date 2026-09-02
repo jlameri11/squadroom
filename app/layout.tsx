@@ -30,7 +30,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#202842',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#202842' },
+    { media: '(prefers-color-scheme: dark)', color: '#080D16' },
+  ],
   // The app is a phone app. Letting it be pinch-zoomed is fine; letting iOS
   // zoom it on every input focus is not, and that is handled by the 16px
   // rule in globals.css rather than by locking scale.
@@ -42,6 +45,17 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en-AU" className={`${plex.variable} ${barlow.variable} h-full`}>
+      {/*
+        Applied before the first paint. Reading the choice in an effect would
+        show a light screen for a frame and then swap, which on a phone at
+        6am is worse than either theme.
+      */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
+        }}
+      />
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />
         {children}
