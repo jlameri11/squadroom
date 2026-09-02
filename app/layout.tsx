@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Sans, Barlow_Condensed } from 'next/font/google'
 import './globals.css'
+import { HashSession } from '@/components/hash-session'
 
 const plex = IBM_Plex_Sans({
   variable: '--font-plex',
@@ -41,7 +42,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en-AU" className={`${plex.variable} ${barlow.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-paper text-ink">{children}</body>
+      <body className="min-h-full flex flex-col bg-paper text-ink">
+        <HashSession />
+        {children}
+      </body>
     </html>
   )
 }
