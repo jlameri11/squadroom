@@ -1,5 +1,7 @@
 'use client'
 
+import { Sheet } from '@/components/sheet'
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -126,63 +128,96 @@ export function AddPlayers({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: '#0E172680' }}>
-      <div
-        className="max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl p-5"
-        style={{ background: 'var(--surface)' }}
-      >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
+    <Sheet onClose={() => setOpen(false)}>
         <h2 className="display text-xl">Add players</h2>
         <p className="mt-1 text-sm text-ink-2">
           The child, and the parent who should get the invite.
         </p>
 
         <ul className="mt-4 flex flex-col gap-3">
-          {rows.map((r, i) => (
-            <li key={i} className="rounded-xl border border-[var(--line)] p-3">
-              <input
-                value={r.player}
-                onChange={(e) => set(i, { player: e.target.value })}
-                placeholder="Player's name"
-                autoFocus={i === 0}
-                className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 font-medium"
-              />
-
-              <div className="mt-2 flex gap-2">
+          {rows.map((r, i) => {
+            const hasParent = Boolean(r.parent.trim() || r.phone.trim())
+            return (
+              <li key={i} className="rounded-xl border border-[var(--line)] p-3">
                 <input
-                  value={r.parent}
-                  onChange={(e) => set(i, { parent: e.target.value })}
-                  placeholder="Parent's name"
-                  className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 text-sm"
+                  value={r.player}
+                  onChange={(e) => set(i, { player: e.target.value })}
+                  placeholder="Player's name"
+                  autoFocus={i === 0}
+                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 font-medium"
                 />
-                <input
-                  value={r.phone}
-                  onChange={(e) => set(i, { phone: e.target.value })}
-                  placeholder="Mobile"
-                  inputMode="tel"
-                  className="w-32 flex-none rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 text-sm"
-                />
-              </div>
 
-              {canPick && (
-                <button
-                  onClick={() => pickParent(i)}
-                  className="mt-2 w-full rounded-lg border border-[var(--line)] px-3 py-2 text-sm font-medium"
-                >
-                  Choose parent from contacts
-                </button>
-              )}
+                {/*
+                  Two ways in, and both are always offered.
+                  Hiding the contacts button where no picker exists left an
+                  iPhone with nothing but an unexplained gap; hiding the
+                  number field where one does exist would strand the coach who
+                  has the number written down but not saved.
+                */}
+                {!hasParent ? (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => (canPick ? pickParent(i) : set(i, { parent: ' ' }))}
+                      className="flex-1 rounded-lg border border-[var(--line)] px-3 py-2.5 text-sm font-medium"
+                    >
+                      {canPick ? 'Choose from contacts' : 'Add phone number'}
+                    </button>
+                    {canPick && (
+                      <button
+                        onClick={() => set(i, { parent: ' ' })}
+                        className="rounded-lg border border-[var(--line)] px-3 py-2.5 text-sm text-ink-2"
+                      >
+                        Type it
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      value={r.parent.trim() === '' ? '' : r.parent}
+                      onChange={(e) => set(i, { parent: e.target.value })}
+                      placeholder="Parent's name"
+                      autoFocus={r.parent === ' '}
+                      className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 text-sm"
+                    />
+                    <input
+                      value={r.phone}
+                      onChange={(e) => set(i, { phone: e.target.value })}
+                      placeholder="0412 345 678"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      className="w-36 flex-none rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 text-sm tabular-nums"
+                    />
+                  </div>
+                )}
 
-              {rows.length > 1 && (
-                <button
-                  onClick={() => setRows(rows.filter((_, n) => n !== i))}
-                  className="mt-2 text-xs text-ink-3"
-                >
-                  Remove
-                </button>
-              )}
-            </li>
-          ))}
+                {hasParent && (
+                  <div className="mt-2 flex items-center gap-3">
+                    {canPick && (
+                      <button onClick={() => pickParent(i)} className="text-xs underline underline-offset-2" style={{ color: 'var(--brand)' }}>
+                        Pick from contacts instead
+                      </button>
+                    )}
+                    <button
+                      onClick={() => set(i, { parent: '', phone: '' })}
+                      className="text-xs text-ink-3"
+                    >
+                      No parent yet
+                    </button>
+                  </div>
+                )}
+
+                {rows.length > 1 && (
+                  <button
+                    onClick={() => setRows(rows.filter((_, n) => n !== i))}
+                    className="mt-2 text-xs" style={{ color: 'var(--no)' }}
+                  >
+                    Remove this player
+                  </button>
+                )}
+              </li>
+            )
+          })}
         </ul>
 
         <button
@@ -194,8 +229,8 @@ export function AddPlayers({
 
         {!canPick && (
           <p className="mt-3 text-xs text-ink-3">
-            Your phone&apos;s contact picker isn&apos;t available in this browser — Safari has none.
-            Type the number, or use the installed app.
+            Safari has no contact picker, so numbers are typed here. The installed app can open
+            your contacts directly.
           </p>
         )}
 
@@ -221,7 +256,6 @@ export function AddPlayers({
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   )
 }

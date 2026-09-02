@@ -1,5 +1,7 @@
 'use client'
 
+import { Sheet } from '@/components/sheet'
+
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -79,12 +81,7 @@ export function NewChat({ academyId, canCreate }: { academyId: string; canCreate
   const ready = name.trim().length > 0 && (teamId !== '' || chosen.size > 0)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: '#0E172680' }}>
-      <div
-        className="max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl p-5"
-        style={{ background: 'var(--surface)' }}
-      >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
+    <Sheet onClose={() => setOpen(false)}>
         <h2 className="display text-xl">Start a chat</h2>
 
         <label className="mt-4 block text-sm">
@@ -179,7 +176,6 @@ export function NewChat({ academyId, canCreate }: { academyId: string; canCreate
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   )
 }

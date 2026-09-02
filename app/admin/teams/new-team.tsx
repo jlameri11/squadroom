@@ -1,5 +1,7 @@
 'use client'
 
+import { Sheet } from '@/components/sheet'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -57,13 +59,7 @@ export function NewTeam({ academyId }: { academyId: string }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: '#0E172680' }}>
-      <form
-        onSubmit={submit}
-        className="max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl p-5"
-        style={{ background: 'var(--surface)' }}
-      >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
+    <Sheet onClose={() => setOpen(false)}><form onSubmit={submit}>
         <h2 className="display mb-3 text-xl">Add a team</h2>
         <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1.5">
@@ -124,6 +120,6 @@ export function NewTeam({ academyId }: { academyId: string }) {
         Its channel is created automatically, and coaches join it as hosts.
       </p>
       </form>
-    </div>
+    </Sheet>
   )
 }

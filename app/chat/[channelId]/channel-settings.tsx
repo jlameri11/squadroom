@@ -1,5 +1,7 @@
 'use client'
 
+import { Sheet } from '@/components/sheet'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -85,13 +87,7 @@ export function ChannelSettings({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-5 pb-8"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
+    <Sheet onClose={onClose}>
         <h2 className="text-lg font-semibold">{name}</h2>
 
         <section className="mt-4">
@@ -180,8 +176,7 @@ export function ChannelSettings({
         <button onClick={onClose} className="mt-5 w-full py-2 text-sm text-ink-2">
           Done
         </button>
-      </div>
-    </div>
+    </Sheet>
   )
 }
 

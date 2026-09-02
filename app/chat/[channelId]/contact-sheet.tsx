@@ -1,5 +1,7 @@
 'use client'
 
+import { Sheet } from '@/components/sheet'
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -54,12 +56,7 @@ export function ContactSheet({
   const digits = contact?.phone?.replace(/\D/g, '') ?? ''
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="relative w-full max-w-md rounded-t-2xl bg-[var(--surface)] p-5 pb-8"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Sheet onClose={onClose}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
 
         {!contact ? (
@@ -134,7 +131,6 @@ export function ContactSheet({
         <button onClick={onClose} className="mt-4 w-full py-2 text-sm text-ink-2">
           Close
         </button>
-      </div>
-    </div>
+    </Sheet>
   )
 }
