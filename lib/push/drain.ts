@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 import { apnsConfigFromEnv, sendApns } from './apns.js'
 import { fcmConfigFromEnv, sendFcm } from './fcm.js'
+import { sendSmsEscalations } from './sms.js'
 
 /**
  * Draining the notification queue, extracted so two callers can share it:
@@ -28,6 +29,7 @@ export type DrainResult = {
   sent: number
   retired: number
   skipped: number
+  sms: number
 }
 
 type Due = {
@@ -47,7 +49,13 @@ type Due = {
 // What is allowed to interrupt a focus mode. Everything else is ordinary,
 // because an app that treats every message as urgent gets muted permanently
 // and then delivers nothing at all.
-const URGENT = new Set(['event_reminder', 'announcement'])
+const URGENT = new Set([
+  'event_reminder',
+  'announcement',
+  'event_cancelled',
+  'event_changed',
+  'event_back_on',
+])
 
 export async function drainNotificationQueue(): Promise<DrainResult> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -68,9 +76,19 @@ export async function drainNotificationQueue(): Promise<DrainResult> {
 
   // Claiming increments attempts in the same statement, so a crash mid-send
   // cannot leave a row to be retried forever.
+  // Texts first, and independently. A cancellation inside 24 hours is the
+  // one thing here that must not wait behind a slow push provider, and a
+  // failure on either side must not suppress the other.
+  const sms = await sendSmsEscalations().catch((err) => {
+    console.error('sms escalation failed', err instanceof Error ? err.message : err)
+    return { sent: 0 }
+  })
+
   const { data: due, error } = await supabase.rpc('claim_notifications', { p_limit: 200 })
   if (error) throw new Error(`claim failed: ${error.message}`)
-  if (!due || due.length === 0) return { claimed: 0, sent: 0, retired: 0, skipped: 0 }
+  if (!due || due.length === 0) {
+    return { claimed: 0, sent: 0, retired: 0, skipped: 0, sms: sms.sent }
+  }
 
   const rows = due as Due[]
   const sent: string[] = []
@@ -136,5 +154,11 @@ export async function drainNotificationQueue(): Promise<DrainResult> {
       .in('id', deadSubscriptions)
   }
 
-  return { claimed: rows.length, sent: sent.length, retired: deadSubscriptions.length, skipped }
+  return {
+    claimed: rows.length,
+    sent: sent.length,
+    retired: deadSubscriptions.length,
+    skipped,
+    sms: sms.sent,
+  }
 }

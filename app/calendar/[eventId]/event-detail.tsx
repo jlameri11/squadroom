@@ -21,6 +21,7 @@ export function EventDetail({
     arrive_at: string | null; venue: string | null; address: string | null
     opponent: string | null; kit_colour: string | null; round: string | null
     notes: string | null; cancelled_at: string | null
+    cancellation_reason: string | null; cancellation_note: string | null
   }
   mine: Mine[]
   isCoach: boolean
@@ -107,6 +108,8 @@ export function EventDetail({
         Add to your phone&apos;s calendar
       </a>
 
+      {isCoach && <CallItOff event={event} />}
+
       {!cancelled && answers.length > 0 && (
         <section className="mt-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -170,5 +173,157 @@ export function EventDetail({
         </section>
       )}
     </>
+  )
+}
+
+const REASONS = [
+  { value: 'wet_weather', label: 'Wet weather' },
+  { value: 'ground_closed', label: 'Ground closed' },
+  { value: 'not_enough_players', label: 'Not enough players' },
+  { value: 'forfeit', label: 'Forfeit' },
+  { value: 'other', label: 'Something else' },
+] as const
+
+/**
+ * Calling a game off, and putting it back on.
+ *
+ * This is the highest-consequence button in the product: pressing it wakes
+ * every phone in the team, and inside 24 hours it also sends a text. So it
+ * asks for a reason before it will do anything — "cancelled" and "the council
+ * shut the ground" are different messages to somebody already loading the car
+ * — and it says plainly how many people are about to be interrupted.
+ */
+function CallItOff({
+  event,
+}: {
+  event: {
+    id: string
+    title: string
+    starts_at: string
+    cancelled_at: string | null
+    cancellation_reason: string | null
+    cancellation_note: string | null
+  }
+}) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState<string>('wet_weather')
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const cancelled = Boolean(event.cancelled_at)
+
+  // Inside 24 hours the notification escalates to SMS, and a coach should
+  // know that before pressing rather than after the bill.
+  const soon =
+    new Date(event.starts_at).getTime() - Date.now() < 24 * 3600 * 1000 &&
+    new Date(event.starts_at).getTime() > Date.now() - 3 * 3600 * 1000
+
+  async function set(cancel: boolean) {
+    setBusy(true)
+    setError(null)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('events')
+      .update(
+        cancel
+          ? {
+              cancelled_at: new Date().toISOString(),
+              cancellation_reason: reason,
+              cancellation_note: note.trim() || null,
+            }
+          : { cancelled_at: null, cancellation_reason: null, cancellation_note: null }
+      )
+      .eq('id', event.id)
+    setBusy(false)
+    if (error) return setError(error.message)
+    window.location.reload()
+  }
+
+  if (cancelled) {
+    return (
+      <section className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+        <p className="text-sm font-semibold text-red-800">This game is off</p>
+        {(event.cancellation_reason || event.cancellation_note) && (
+          <p className="mt-0.5 text-sm text-red-700">
+            {REASONS.find((r) => r.value === event.cancellation_reason)?.label}
+            {event.cancellation_note ? ` — ${event.cancellation_note}` : ''}
+          </p>
+        )}
+        <p className="mt-1 text-xs text-red-600">Everyone in the team has been told.</p>
+        <button
+          onClick={() => set(false)}
+          disabled={busy}
+          className="mt-3 w-full rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium"
+        >
+          {busy ? 'Working…' : "It's back on"}
+        </button>
+        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      </section>
+    )
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm font-medium text-red-700"
+      >
+        Call this game off
+      </button>
+    )
+  }
+
+  return (
+    <section className="mt-5 rounded-xl border border-neutral-300 p-4">
+      <h2 className="font-semibold">Call this game off</h2>
+      <p className="mt-1 text-sm text-neutral-500">
+        Everyone in the team gets a notification straight away, whether or not they
+        RSVP&apos;d and whatever their quiet hours are set to.
+        {soon && ' Because it is within 24 hours, they also get a text message.'}
+      </p>
+
+      <label className="mt-3 block text-sm">
+        <span className="text-neutral-500">Why</span>
+        <select
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+        >
+          {REASONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="mt-2 block text-sm">
+        <span className="text-neutral-500">Anything to add (optional)</span>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Council closed all grounds — training Tuesday as normal"
+          className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+        />
+      </label>
+
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => set(true)}
+          disabled={busy}
+          className="flex-1 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? 'Telling everyone…' : 'Call it off and tell everyone'}
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+    </section>
   )
 }

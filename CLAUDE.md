@@ -178,6 +178,27 @@ one and is meant to reach hundreds of academies.
     subscription. Retire it rather than retrying, or the queue silts up.
   - Quiet hours DELAY a message rather than dropping it. They do not apply to
     announcements or event reminders - those are what the exception is for.
+- **Calling a game off notifies everyone who can see it, and cannot be muted.**
+  `cancelled_at` used to be set with nothing sent at all — the fixture went
+  grey and a family who did not open the app drove to the ground. The trigger
+  is `events_notify_change`.
+  - It goes to the whole team, NOT to those who RSVP'd. Reminders follow the
+    register, which is right for "your kid has a game tomorrow"; the family
+    least likely to have answered is the one most likely to turn up anyway.
+  - Quiet hours do not apply, and there is deliberately **no setting to turn
+    it off**. Everything else in the product can be muted because everything
+    else is someone else's business. An opt-out here would only ever be
+    discovered on a wet Saturday.
+  - Inside 24 hours it sets `escalate_sms`, which is the one case Twilio was
+    kept for. The flag is set by the trigger and never by a client — a text
+    costs money and arrives whether or not anyone wanted it.
+  - The reason is part of the message. "Wet weather" and "forfeit" are
+    different things to somebody already loading the car.
+- **Never assert on a global count of `notification_queue`.** pg_cron queues
+  reminders for other events every five minutes, so a test that counts every
+  `event_reminder` row is measuring the whole database. `test-reminders`
+  passed for months that way and then failed the day another test created a
+  fixture twelve hours out. Scope to `payload->event_id`.
 - **Twilio is not needed to build or pilot.** Add it for late-change alerts,
   or when onboarding an academy whose owner does not know every family.
 - **Screenshots are read by a model; nothing else about them is.** `/scan`

@@ -912,6 +912,8 @@ export type Database = {
           academy_id: string
           address: string | null
           arrive_at: string | null
+          cancellation_note: string | null
+          cancellation_reason: string | null
           cancelled_at: string | null
           competition_id: string | null
           confirmed_at: string | null
@@ -941,6 +943,8 @@ export type Database = {
           academy_id: string
           address?: string | null
           arrive_at?: string | null
+          cancellation_note?: string | null
+          cancellation_reason?: string | null
           cancelled_at?: string | null
           competition_id?: string | null
           confirmed_at?: string | null
@@ -970,6 +974,8 @@ export type Database = {
           academy_id?: string
           address?: string | null
           arrive_at?: string | null
+          cancellation_note?: string | null
+          cancellation_reason?: string | null
           cancelled_at?: string | null
           competition_id?: string | null
           confirmed_at?: string | null
@@ -1699,6 +1705,7 @@ export type Database = {
           body: string | null
           created_at: string
           dedupe_key: string | null
+          escalate_sms: boolean
           id: string
           kind: string
           last_error: string | null
@@ -1706,6 +1713,8 @@ export type Database = {
           profile_id: string
           scheduled_for: string
           sent_at: string | null
+          sms_attempts: number
+          sms_sent_at: string | null
           title: string
           url: string | null
         }
@@ -1715,6 +1724,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           dedupe_key?: string | null
+          escalate_sms?: boolean
           id?: string
           kind: string
           last_error?: string | null
@@ -1722,6 +1732,8 @@ export type Database = {
           profile_id: string
           scheduled_for?: string
           sent_at?: string | null
+          sms_attempts?: number
+          sms_sent_at?: string | null
           title: string
           url?: string | null
         }
@@ -1731,6 +1743,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           dedupe_key?: string | null
+          escalate_sms?: boolean
           id?: string
           kind?: string
           last_error?: string | null
@@ -1738,6 +1751,8 @@ export type Database = {
           profile_id?: string
           scheduled_for?: string
           sent_at?: string | null
+          sms_attempts?: number
+          sms_sent_at?: string | null
           title?: string
           url?: string | null
         }
@@ -2598,6 +2613,16 @@ export type Database = {
           sub_id: string
           title: string
           url: string
+        }[]
+      }
+      claim_sms_escalations: {
+        Args: { p_limit?: number }
+        Returns: {
+          body: string
+          id: string
+          phone: string
+          profile_id: string
+          title: string
         }[]
       }
       competition_contacts: {

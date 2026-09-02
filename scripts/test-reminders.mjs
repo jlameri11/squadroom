@@ -21,36 +21,49 @@ await admin.from('events').insert({
   venue: 'ELS Hall Park',
 })
 const { data: n1 } = await admin.rpc('enqueue_event_reminders')
-const { data: q1 } = await admin.from('notification_queue').select('profile_id, title, body, dedupe_key').eq('kind','event_reminder')
+const { data: q1 } = await admin.from('notification_queue')
+  .select('profile_id, title, body, dedupe_key')
+  .eq('kind','event_reminder').contains('payload', { event_id: EV })
 q1.length > 0 ? ok(`${q1.length} queued for the U8 team`) : bad('nothing queued')
 q1[0]?.title.startsWith('Tomorrow: ') ? ok(`titled "${q1[0].title}"`) : bad(`title: ${q1[0]?.title}`)
 q1[0]?.body?.includes('arrive') ? ok(`body has the arrival time: "${q1[0].body}"`) : bad(`body: ${q1[0]?.body}`)
 
+// Every assertion below counts rows FOR THIS EVENT. They used to count every
+// event_reminder row in the database, while pg_cron queues reminders for
+// other events every five minutes — so the numbers depended on what else
+// happened to be within 24 hours when the test ran. It passed for months and
+// then failed the day another test created a fixture twelve hours out.
+const mine = () => admin.from('notification_queue')
+  .select('profile_id', { count: 'exact' })
+  .eq('kind','event_reminder').contains('payload', { event_id: EV })
+const clearMine = () => admin.from('notification_queue')
+  .delete().eq('kind','event_reminder').contains('payload', { event_id: EV })
+
 head('2. Running again does not send it twice')
 await admin.rpc('enqueue_event_reminders')
-const { count: n2 } = await admin.from('notification_queue').select('*',{count:'exact',head:true}).eq('kind','event_reminder')
+const { count: n2 } = await mine()
 n2 === q1.length ? ok(`still ${n2} — dedupe_key holds`) : bad(`grew to ${n2}`)
 
 head('3. Opting out is respected')
 const sam='00000000-0000-0000-0000-0000000000b1'
-await admin.from('notification_queue').delete().eq('kind','event_reminder')
+await clearMine()
 await admin.from('user_settings').update({ notify_reminder_24h: false }).eq('profile_id', sam)
 await admin.rpc('enqueue_event_reminders')
-const { data: q3 } = await admin.from('notification_queue').select('profile_id').eq('kind','event_reminder')
+const { data: q3 } = await mine()
 q3.some(r => r.profile_id === sam) ? bad('queued for someone who turned it off') : ok('skipped the person who opted out')
 await admin.from('user_settings').update({ notify_reminder_24h: true }).eq('profile_id', sam)
 
 head('4. Moving the event drops the reminders that were already queued')
-await admin.from('notification_queue').delete().eq('kind','event_reminder')
+await clearMine()
 await admin.rpc('enqueue_event_reminders')
-const { count: before } = await admin.from('notification_queue').select('*',{count:'exact',head:true}).eq('kind','event_reminder')
+const { count: before } = await mine()
 const moved = new Date(Date.now() + 8*864e5)
 await admin.from('events').update({
   starts_at: moved.toISOString(),
   ends_at: new Date(moved.getTime()+3600e3).toISOString(),
   arrive_at: new Date(moved.getTime()-1800e3).toISOString(),
 }).eq('id', EV)
-const { count: after } = await admin.from('notification_queue').select('*',{count:'exact',head:true}).eq('kind','event_reminder')
+const { count: after } = await mine()
 before > 0 && after === 0 ? ok(`${before} cleared — nobody gets yesterday's time`) : bad(`${before} -> ${after}`)
 
 head('5. Cancelling does the same')
@@ -65,13 +78,13 @@ const { error: mv } = await admin.from('events').update({
 }).eq('id', EV)
 if (mv) bad(`could not move the event back: ${mv.message}`)
 await admin.rpc('enqueue_event_reminders')
-const { count: b2 } = await admin.from('notification_queue').select('*',{count:'exact',head:true}).eq('kind','event_reminder')
+const { count: b2 } = await mine()
 await admin.from('events').update({ cancelled_at: new Date().toISOString() }).eq('id', EV)
-const { count: a2 } = await admin.from('notification_queue').select('*',{count:'exact',head:true}).eq('kind','event_reminder')
+const { count: a2 } = await mine()
 b2 > 0 && a2 === 0 ? ok(`${b2} cleared on cancellation`) : bad(`${b2} -> ${a2}`)
 
 head('6. A reminder is only queued once the window opens')
-await admin.from('notification_queue').delete().eq('kind','event_reminder')
+await clearMine()
 const far = new Date(Date.now() + 5*864e5)
 await admin.from('events').update({
   cancelled_at: null,
@@ -80,7 +93,7 @@ await admin.from('events').update({
   arrive_at: new Date(far.getTime() - 1800e3).toISOString(),
 }).eq('id', EV)
 await admin.rpc('enqueue_event_reminders')
-const { count: early } = await admin.from('notification_queue').select('*',{count:'exact',head:true}).eq('kind','event_reminder')
+const { count: early } = await mine()
 early === 0 ? ok('an event five days out queues nothing yet') : bad(`queued ${early} too early`)
 
 await reset()
