@@ -25,6 +25,8 @@ export function MessageBubble({
 }) {
   const [counts, setCounts] = useState<Count[]>([])
   const [picking, setPicking] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const [voters, setVoters] = useState<string | null>(null)
   const [showContact, setShowContact] = useState(false)
   const supabase = createClient()
@@ -78,6 +80,30 @@ export function MessageBubble({
 
   const day = new Date(message.created_at)
   const time = day.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
+
+  async function saveEdit() {
+    const body = (editing ?? '').trim()
+    if (!body || body === message.body) return setEditing(null)
+    setBusy(true)
+    const supabase = createClient()
+    // edited_at is stamped by a trigger, not here — see 0069. A client that
+    // forgot to set it would rewrite what somebody said with no trace.
+    await supabase.from('messages').update({ body }).eq('id', message.id)
+    setBusy(false)
+    setEditing(null)
+  }
+
+  async function remove() {
+    setBusy(true)
+    const supabase = createClient()
+    // Soft delete: the archive trigger from 0012 depends on it, and a hard
+    // delete would take every reply to this message with it.
+    await supabase
+      .from('messages')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', message.id)
+    setBusy(false)
+  }
 
   return (
     <>
@@ -159,9 +185,33 @@ export function MessageBubble({
               Message deleted
             </span>
           ) : (
-            message.body && (
+            message.body &&
+            (editing !== null ? (
+              <span className="block">
+                <textarea
+                  value={editing}
+                  onChange={(e) => setEditing(e.target.value)}
+                  rows={2}
+                  autoFocus
+                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2 text-[15px] text-ink"
+                />
+                <span className="mt-1 flex gap-2">
+                  <button
+                    onClick={saveEdit}
+                    disabled={busy}
+                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-white"
+                    style={{ background: 'var(--brand)' }}
+                  >
+                    {busy ? 'Saving…' : 'Save'}
+                  </button>
+                  <button onClick={() => setEditing(null)} className="px-1 text-xs text-ink-2">
+                    Cancel
+                  </button>
+                </span>
+              </span>
+            ) : (
               <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">{message.body}</span>
-            )
+            ))
           )}
 
           <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-white/60' : 'text-ink-3'}`}>
@@ -194,6 +244,33 @@ export function MessageBubble({
 
           {!message.deleted_at && (
             <button onClick={onReply} className="px-1 text-xs text-ink-3">Reply</button>
+          )}
+
+          {/* Only the author may change the words. A host can take a message
+              down but not put words in a parent's mouth — the database
+              enforces that too, so a crafted request cannot do it either. */}
+          {!message.deleted_at && mine && message.body && editing === null && (
+            <button
+              onClick={() => setEditing(message.body ?? '')}
+              className="px-1 text-xs text-ink-3"
+            >
+              Edit
+            </button>
+          )}
+
+          {!message.deleted_at && (mine || isHost) && (
+            <button
+              onClick={() => {
+                if (confirm(mine ? 'Delete this message?' : 'Remove this message for everyone?')) {
+                  void remove()
+                }
+              }}
+              disabled={busy}
+              className="px-1 text-xs"
+              style={{ color: 'var(--no)' }}
+            >
+              {mine ? 'Delete' : 'Remove'}
+            </button>
           )}
         </div>
 

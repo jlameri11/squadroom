@@ -191,41 +191,51 @@ export function Home({
         )}
       </section>
 
-      <Group title="Yours">
-        <Item href="/calendar" label="Fixtures" hint="Every game and training session" />
-        <Item href="/payments" label="Payments" hint="What you owe, and what you've paid" />
-        <Item href="/scan" label="Add games from a screenshot" hint="Photograph your Dribl draw" />
-        <Item href="/directory" label="Directory" hint="Who's who at the club" />
-        <Item href="/settings" label="Your details" hint="Phone, notifications, calendar" />
-      </Group>
+      {/*
+        Four tiles, not fifteen rows.
+
+        Fixtures, Chat, Team and Settings all live in the tab bar already, so
+        listing them again below was the screen repeating itself — which is
+        most of why it looked cluttered. What is left here is only what has no
+        other home: the things a coach does occasionally and a parent almost
+        never.
+      */}
+      <section className="px-3.5 pb-5">
+        <h2 className="eyebrow px-1 pb-2">Shortcuts</h2>
+        <div className="grid grid-cols-2 gap-2.5">
+          <Tile href="/scan" label="Scan a draw" note="From a screenshot" />
+          <Tile href="/payments" label="Payments" note="What you owe" />
+          {isCoach && <Tile href="/admin/import" label="Import a draw" note="From Dribl" />}
+          {isCoach && <Tile href="/competitions" label="Competitions" note="Cups & gala days" />}
+        </div>
+      </section>
 
       {isCoach && (
-        <Group title="Running the team">
-          <Item href="/admin/teams" label="Teams and players" />
-          <Item href="/admin/requests" label="Join requests" hint="Approve new families" />
-          <Item href="/admin/import" label="Import a draw" hint="From a Dribl export" />
-          <Item href="/competitions" label="Competitions" hint="Tournaments and gala days" />
-        </Group>
-      )}
-
-      {isStaff && (
-        <Group title="Running the club">
-          <Item href="/admin/payments" label="Collect payments" hint="Fees, tournament entries" />
-          <Item href="/admin/members" label="Members and who invited them" />
-          <Item href="/admin/invites" label="Invites" />
-          <Item href="/settings/academy" label="Club settings" hint="Privacy and branding" />
-        </Group>
+        <section className="px-3.5 pb-5">
+          <h2 className="eyebrow px-1 pb-2">Running {academy.name}</h2>
+          <ul className="card overflow-hidden">
+            <Item href="/admin/teams" label="Teams and players" />
+            <Item href="/admin/requests" label="Join requests" hint="Approve new families" />
+            {isStaff && <Item href="/admin/payments" label="Collect payments" />}
+            {isStaff && <Item href="/admin/members" label="Members and invites" />}
+            {isStaff && <Item href="/settings/academy" label="Club settings" />}
+          </ul>
+        </section>
       )}
 
       {(otherAcademies.length > 0 || isPlatformAdmin) && (
-        <Group title="Elsewhere">
-          {otherAcademies.map((a) => (
-            <Item key={a.id} href="/" label={a.name} hint={a.type} />
-          ))}
-          <Item href="/start" label="Create another organisation" />
-          {isPlatformAdmin && <Item href="/platform" label="Platform" hint="Every academy" />}
-        </Group>
+        <section className="px-3.5 pb-5">
+          <h2 className="eyebrow px-1 pb-2">Elsewhere</h2>
+          <ul className="card overflow-hidden">
+            {otherAcademies.map((a) => (
+              <Item key={a.id} href="/" label={a.name} hint={a.type} />
+            ))}
+            <Item href="/start" label="Create another organisation" />
+            {isPlatformAdmin && <Item href="/platform" label="Platform" hint="Every academy" />}
+          </ul>
+        </section>
       )}
+
       </Screen>
 
       <TabBar isStaff={isCoach} unread={unread} />
@@ -363,12 +373,14 @@ function initials(name: string) {
   )
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+/* A shortcut. Square-ish, two lines, big enough for a thumb — the things
+   that have no home in the tab bar. */
+function Tile({ href, label, note }: { href: string; label: string; note: string }) {
   return (
-    <section className="px-3.5 pb-5">
-      <h2 className="eyebrow px-1 pb-2">{title}</h2>
-      <ul className="card overflow-hidden">{children}</ul>
-    </section>
+    <Link href={href} className="card flex flex-col justify-between p-3" style={{ minHeight: 74 }}>
+      <span className="display text-[15px] leading-tight">{label}</span>
+      <span className="text-xs text-ink-3">{note}</span>
+    </Link>
   )
 }
 
