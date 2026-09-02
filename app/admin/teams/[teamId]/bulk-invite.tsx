@@ -92,7 +92,7 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-3 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm font-medium"
+        className="mt-3 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-medium"
       >
         Add families by phone instead
       </button>
@@ -100,13 +100,13 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
   }
 
   return (
-    <section className="mt-3 rounded-xl border border-neutral-300 p-4">
+    <section className="mt-3 rounded-xl border border-[var(--line)] p-4">
       <h2 className="font-semibold">Add by phone</h2>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-ink-2">
         One “Name, Phone” per line. They still get approved by you before they see anything.
       </p>
       {canPick && (
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-ink-2">
           Choosing from contacts adds them to the box below — nothing is sent until you check it.
           Only the people you tap are read; Squadroom never sees the rest of your phone.
         </p>
@@ -115,7 +115,7 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
       {canPick && (
         <button
           onClick={pickFromContacts}
-          className="mt-3 w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm font-medium"
+          className="mt-3 w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-medium"
         >
           Choose from contacts
         </button>
@@ -126,7 +126,7 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
         onChange={(e) => setText(e.target.value)}
         rows={5}
         placeholder={'Sam Whitfield, 0412 345 678\nPriya Nair, 0423 987 654'}
-        className="mt-3 w-full rounded-xl border border-neutral-300 p-3 font-mono text-sm"
+        className="mt-3 w-full rounded-xl border border-[var(--line)] p-3 font-mono text-sm"
       />
 
       {parsed.length > 0 && (
@@ -134,7 +134,7 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
           {good.map((p) => (
             <div key={p.raw} className="flex justify-between gap-3">
               <span className="truncate">{p.name}</span>
-              <span className="flex-none tabular-nums text-neutral-500">{p.phone}</span>
+              <span className="flex-none tabular-nums text-ink-2">{p.phone}</span>
             </div>
           ))}
           {bad.map((p) => (
@@ -145,18 +145,18 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
         </div>
       )}
 
-      {result && <p className="mt-3 text-sm text-neutral-700">{result}</p>}
+      {result && <p className="mt-3 text-sm text-ink">{result}</p>}
 
       <div className="mt-3 flex gap-2">
         <button
           onClick={send}
           disabled={busy || good.length === 0}
           className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Inviting…' : good.length ? `Invite ${good.length}` : 'Nothing to send'}
         </button>
-        <button onClick={() => setOpen(false)} className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm">
+        <button onClick={() => setOpen(false)} className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm">
           Close
         </button>
       </div>

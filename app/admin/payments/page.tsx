@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { PaymentsAdmin, type RequestRow, type BillingStatus } from './payments-admin'
 
 export default async function AdminPaymentsPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase.from('academies').select('id, name').order('name')
   const academy = academies?.[0]

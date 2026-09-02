@@ -50,11 +50,11 @@ export function ChannelView({
 
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col">
-      <header className="flex items-center gap-3 border-b border-neutral-200 px-4 py-3">
-        <Link href="/chat" className="text-neutral-500">←</Link>
+      <header className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-3">
+        <Link href="/chat" className="text-ink-2">←</Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-semibold">{name}</h1>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-2">
             {archived ? 'Past season · read-only'
               : postingMode === 'hosts_only' ? 'Announcements only'
               : postingMode === 'replies_only' ? 'Replies only'
@@ -64,7 +64,7 @@ export function ChannelView({
         </div>
         <button
           onClick={() => setShowSettings(true)}
-          className="flex-none rounded-lg px-2 py-1 text-lg text-neutral-400"
+          className="flex-none rounded-lg px-2 py-1 text-lg text-ink-3"
           aria-label="Channel settings"
         >
           ⋯
@@ -86,9 +86,9 @@ export function ChannelView({
       <PendingQueue channelId={channelId} isHost={isHost} />
 
       {pinned && (
-        <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Pinned</p>
-          <p className="truncate text-sm text-neutral-700">{pinned.body}</p>
+        <div className="border-b border-[var(--line)] bg-[var(--surface-3)] px-4 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-2">Pinned</p>
+          <p className="truncate text-sm text-ink">{pinned.body}</p>
         </div>
       )}
 
@@ -97,14 +97,14 @@ export function ChannelView({
           <button
             onClick={loadOlder}
             disabled={loadingOlder}
-            className="mx-auto mb-3 block rounded-full border border-neutral-300 px-3 py-1 text-xs text-neutral-600"
+            className="mx-auto mb-3 block rounded-full border border-[var(--line)] px-3 py-1 text-xs text-ink-2"
           >
             {loadingOlder ? 'Loading…' : 'Earlier messages'}
           </button>
         )}
 
         {messages.length === 0 && (
-          <p className="py-10 text-center text-sm text-neutral-500">
+          <p className="py-10 text-center text-sm text-ink-2">
             Nothing here yet. Say hello.
           </p>
         )}

@@ -19,7 +19,7 @@ type Result = { option_id: string; label: string; votes: number; voted_by_me: bo
 type MyVote = { player_id: string | null; player_name: string | null; option_ids: string[] | null; note: string | null }
 type Missing = { profile_id: string; full_name: string; player_id: string | null; player_name: string | null }
 
-const TINT: Record<string, string> = { yes: '#1C7A4C', maybe: '#9C6B06', no: '#8E3020' }
+const TINT: Record<string, string> = { yes: 'var(--yes)', maybe: 'var(--maybe)', no: 'var(--no)' }
 
 export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) {
   const [results, setResults] = useState<Result[]>([])
@@ -61,15 +61,15 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
   const closesSoon = poll.closes_at && poll.is_open
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border bg-white" style={{ borderColor: '#202842' }}>
-      <div className="flex items-center gap-2 px-3 py-2" style={{ background: '#2028420d' }}>
+    <div className="w-full overflow-hidden rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--brand)' }}>
+      <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand)0d' }}>
         <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
-              style={{ background: '#202842' }}>
+              style={{ background: 'var(--brand)' }}>
           {poll.type === 'availability' ? 'Availability' : 'Poll'}
         </span>
-        {!poll.is_open && <span className="text-xs font-medium text-neutral-500">Closed</span>}
+        {!poll.is_open && <span className="text-xs font-medium text-ink-2">Closed</span>}
         {closesSoon && (
-          <span className="ml-auto text-xs text-neutral-500">
+          <span className="ml-auto text-xs text-ink-2">
             closes {new Date(poll.closes_at!).toLocaleDateString('en-AU', { weekday: 'short', hour: 'numeric' })}
           </span>
         )}
@@ -83,7 +83,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
           <div className="mt-3 flex flex-col gap-2">
             {mine.map((m) => (
               <div key={m.player_id} className="flex items-center gap-2">
-                <span className="w-14 flex-none truncate text-sm font-medium text-neutral-600">
+                <span className="w-14 flex-none truncate text-sm font-medium text-ink-2">
                   {m.player_name?.split(' ')[0]}
                 </span>
                 <div className="flex flex-1 gap-1">
@@ -97,7 +97,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
                         className="flex-1 rounded-lg border py-1.5 text-xs font-semibold capitalize disabled:opacity-60"
                         style={on
                           ? { borderColor: TINT[opt], background: `${TINT[opt]}18`, color: TINT[opt] }
-                          : { borderColor: '#E5E7EB', color: '#6B7280' }}
+                          : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
                       >
                         {opt}
                       </button>
@@ -107,7 +107,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
               </div>
             ))}
             {mine.some((m) => m.note) && (
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-ink-2">
                 Note: {mine.find((m) => m.note)?.note}
               </p>
             )}
@@ -125,12 +125,12 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
                   onClick={() => poll.is_open && poll.type !== 'availability' && vote(r.option_id, null)}
                   disabled={!poll.is_open || poll.type === 'availability' || busy === 'me'}
                   className="relative overflow-hidden rounded-lg border px-2.5 py-2 text-left text-sm disabled:cursor-default"
-                  style={{ borderColor: r.voted_by_me ? '#202842' : '#E5E7EB' }}
+                  style={{ borderColor: r.voted_by_me ? 'var(--brand)' : 'var(--line)' }}
                 >
-                  <span className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, background: '#2028420f' }} />
+                  <span className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, background: 'var(--brand)0f' }} />
                   <span className="relative flex justify-between gap-2">
                     <span className={r.voted_by_me ? 'font-semibold' : ''}>{r.label}</span>
-                    <span className="tabular-nums text-neutral-500">{r.votes}</span>
+                    <span className="tabular-nums text-ink-2">{r.votes}</span>
                   </span>
                 </button>
               )
@@ -139,23 +139,23 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
         )}
 
         {poll.anonymous && (
-          <p className="mt-2 text-xs text-neutral-500">
+          <p className="mt-2 text-xs text-ink-2">
             {/* Say it on the card. Nobody reads a setting they cannot see. */}
             Answers are anonymous — even to the coach.
           </p>
         )}
 
         {isHost && missing.length > 0 && (
-          <div className="mt-3 border-t border-neutral-100 pt-2">
+          <div className="mt-3 border-t border-[var(--line-2)] pt-2">
             <button
               onClick={() => setShowMissing((v) => !v)}
               className="text-xs font-semibold"
-              style={{ color: '#DD5620' }}
+              style={{ color: 'var(--accent)' }}
             >
               {missing.length} still to answer {showMissing ? '▾' : '▸'}
             </button>
             {showMissing && (
-              <p className="mt-1 text-xs text-neutral-600">
+              <p className="mt-1 text-xs text-ink-2">
                 {missing.map((m) => m.player_name ?? m.full_name).join(', ')}
               </p>
             )}
@@ -163,7 +163,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
         )}
 
         {isHost && poll.type === 'availability' && !poll.linked_event_id && (
-          <p className="mt-2 text-xs text-neutral-500">
+          <p className="mt-2 text-xs text-ink-2">
             When you make this a fixture, everyone&apos;s answer comes with it.
           </p>
         )}

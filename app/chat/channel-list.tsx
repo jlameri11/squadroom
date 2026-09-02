@@ -84,7 +84,7 @@ function ChannelRow({ c }: { c: Row }) {
           // are fourteen messages waiting.
           <span
             className="grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-bold text-white"
-            style={{ background: c.muted ? '#9CA3AF' : '#DD5620' }}
+            style={{ background: c.muted ? 'var(--ink-3)' : 'var(--accent)' }}
           >
             {c.unread_count > 99 ? '99+' : c.unread_count}
           </span>

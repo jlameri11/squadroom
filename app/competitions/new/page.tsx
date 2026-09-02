@@ -58,35 +58,35 @@ export default function NewCompetition() {
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>New competition</h1>
+      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>New competition</h1>
 
       <form onSubmit={create} className="mt-5 flex flex-col gap-4">
         {orgs.length > 1 && (
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Run by</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Run by</span>
             <select value={organiserId} onChange={(e) => setOrganiserId(e.target.value)}
-                    className="rounded-xl border border-neutral-300 px-3 py-3">
+                    className="rounded-xl border border-[var(--line)] px-3 py-3">
               {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </label>
         )}
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Name</span>
           <input required value={name} onChange={(e) => setName(e.target.value)}
                  placeholder="NRIFA U7s Tournament"
-                 className="rounded-xl border border-neutral-300 px-3 py-3" />
+                 className="rounded-xl border border-[var(--line)] px-3 py-3" />
         </label>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">What is it</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">What is it</span>
           <div className="flex flex-wrap gap-2">
             {(['tournament', 'gala_day', 'season', 'friendly_series'] as const).map((t) => (
               <button key={t} type="button" onClick={() => setType(t)}
                       className="rounded-full border px-3 py-1.5 text-sm capitalize"
                       style={type === t
-                        ? { background: '#202842', borderColor: '#202842', color: '#fff' }
-                        : { borderColor: '#E5E7EB', color: '#4B5563' }}>
+                        ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' }
+                        : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
                 {t.replace('_', ' ')}
               </button>
             ))}
@@ -94,7 +94,7 @@ export default function NewCompetition() {
         </div>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-2">
             Who runs the competition
           </legend>
           {/* This choice is hard to change later — fixtures and results start
@@ -103,12 +103,12 @@ export default function NewCompetition() {
           {MODES.map((m) => (
             <label key={m.value}
                    className="flex cursor-pointer items-start gap-3 rounded-xl border p-3"
-                   style={{ borderColor: mode === m.value ? '#202842' : '#E5E7EB' }}>
+                   style={{ borderColor: mode === m.value ? 'var(--brand)' : 'var(--line)' }}>
               <input type="radio" name="mode" className="mt-1"
                      checked={mode === m.value} onChange={() => setMode(m.value)} />
               <span>
                 <span className="block font-medium">{m.label}</span>
-                <span className="block text-sm text-neutral-500">{m.hint}</span>
+                <span className="block text-sm text-ink-2">{m.hint}</span>
               </span>
             </label>
           ))}
@@ -118,7 +118,7 @@ export default function NewCompetition() {
 
         <button type="submit" disabled={busy || !organiserId}
                 className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-                style={{ background: '#202842' }}>
+                style={{ background: 'var(--brand)' }}>
           {busy ? 'Creating…' : 'Create and invite clubs'}
         </button>
       </form>

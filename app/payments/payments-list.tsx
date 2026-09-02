@@ -18,7 +18,7 @@ export type Owing = {
   can_pay: boolean
 }
 
-const NAVY = '#202842'
+const NAVY = 'var(--brand)'
 
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat('en-AU', { style: 'currency', currency: currency.toUpperCase() }).format(
@@ -69,7 +69,7 @@ export function PaymentsList({
         </p>
       )}
       {cancelled && (
-        <p className="mb-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
+        <p className="mb-4 rounded-lg border border-[var(--line)] bg-[var(--surface-3)] p-3 text-sm text-ink-2">
           Payment cancelled. Nothing was charged.
         </p>
       )}
@@ -80,7 +80,7 @@ export function PaymentsList({
       )}
 
       {owing.length === 0 && (
-        <p className="rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+        <p className="rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
           Nothing to pay.
         </p>
       )}
@@ -90,15 +90,15 @@ export function PaymentsList({
           const key = row.request_id + (row.player_id ?? '')
           const overdue = row.due_on && new Date(row.due_on) < new Date()
           return (
-            <li key={key} className="rounded-xl border border-neutral-200 p-4">
+            <li key={key} className="rounded-xl border border-[var(--line)] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-semibold">{row.title}</div>
                   {row.player_name && (
-                    <div className="text-sm text-neutral-500">For {row.player_name}</div>
+                    <div className="text-sm text-ink-2">For {row.player_name}</div>
                   )}
                   {row.description && (
-                    <p className="mt-1 text-sm text-neutral-500">{row.description}</p>
+                    <p className="mt-1 text-sm text-ink-2">{row.description}</p>
                   )}
                 </div>
                 <div className="flex-none text-right font-semibold tabular-nums" style={{ color: NAVY }}>
@@ -107,7 +107,7 @@ export function PaymentsList({
               </div>
 
               {row.due_on && (
-                <div className={`mt-2 text-xs ${overdue ? 'font-semibold text-red-600' : 'text-neutral-500'}`}>
+                <div className={`mt-2 text-xs ${overdue ? 'font-semibold text-red-600' : 'text-ink-2'}`}>
                   {overdue ? 'Was due ' : 'Due '}
                   {new Date(row.due_on).toLocaleDateString('en-AU', {
                     day: 'numeric',
@@ -129,7 +129,7 @@ export function PaymentsList({
                 // A dead Pay button is worse than none. If the academy has
                 // not finished onboarding, say that rather than sending
                 // someone into a checkout that cannot take their money.
-                <p className="mt-3 rounded-lg bg-neutral-100 p-2.5 text-center text-xs text-neutral-600">
+                <p className="mt-3 rounded-lg bg-[var(--surface-2)] p-2.5 text-center text-xs text-ink-2">
                   Your club is still setting up payments. Nothing to do yet.
                 </p>
               )}
@@ -140,18 +140,18 @@ export function PaymentsList({
 
       {settled.length > 0 && (
         <section className="mt-7">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Paid</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">Paid</h2>
           <ul className="mt-2 flex flex-col gap-1">
             {settled.map((row) => (
               <li
                 key={row.request_id + (row.player_id ?? '')}
-                className="flex justify-between gap-3 border-b border-neutral-100 py-2 text-sm"
+                className="flex justify-between gap-3 border-b border-[var(--line-2)] py-2 text-sm"
               >
                 <span className="min-w-0 truncate">
                   {row.title}
                   {row.player_name ? ` · ${row.player_name}` : ''}
                 </span>
-                <span className="flex-none tabular-nums text-neutral-500">
+                <span className="flex-none tabular-nums text-ink-2">
                   {money(row.amount_cents, row.currency)}
                 </span>
               </li>

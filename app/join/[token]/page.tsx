@@ -41,7 +41,7 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-3 p-6">
         <h1 className="text-2xl font-semibold">This link has expired</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-2">
           Ask your coach to send you a new one — they can create it in a couple of taps.
         </p>
       </main>

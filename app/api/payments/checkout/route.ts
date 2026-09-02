@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
   const { data: billing } = await admin
     .from('academy_billing')
-    .select('stripe_account_id, charges_enabled, platform_fee_bps, currency')
+    .select('stripe_account_id, charges_enabled, currency')
     .eq('academy_id', req.academy_id)
     .maybeSingle()
 
@@ -88,8 +88,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'This is already paid.' }, { status: 409 })
   }
 
-  const feeBps = billing.platform_fee_bps ?? 0
-  const applicationFee = Math.floor((req.amount_cents * feeBps) / 10000)
+  // No application fee, and no code path that could add one. Squadroom
+  // charges clubs a plan; it takes nothing from a parent's payment. The
+  // charge is created on the academy's own connected account, so the money
+  // goes parent -> club and we are never in the flow of funds.
 
   const session = await stripe.checkout.sessions.create(
     {
@@ -117,9 +119,6 @@ export async function POST(request: Request) {
         player_id: playerId ?? '',
         profile_id: auth.user.id,
       },
-      ...(applicationFee > 0
-        ? { payment_intent_data: { application_fee_amount: applicationFee } }
-        : {}),
     },
     { stripeAccount: billing.stripe_account_id }
   )

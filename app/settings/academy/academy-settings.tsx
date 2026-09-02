@@ -46,7 +46,7 @@ export function AcademySettings({
 
       <section>
         <h2 className="font-semibold">Family phone numbers</h2>
-        <p className="mt-0.5 text-sm text-neutral-500">
+        <p className="mt-0.5 text-sm text-ink-2">
           Coaches and admins are always contactable. This is about whether families can
           see each other.
         </p>
@@ -70,7 +70,7 @@ export function AcademySettings({
 
       <section>
         <h2 className="font-semibold">Private messages</h2>
-        <p className="mt-0.5 text-sm text-neutral-500">Inside Squadroom, where messages are kept.</p>
+        <p className="mt-0.5 text-sm text-ink-2">Inside Squadroom, where messages are kept.</p>
         <div className="mt-3 flex flex-col gap-2">
           <Option
             on={dm === 'staff_only'}
@@ -102,18 +102,18 @@ function Option({
       onClick={onClick}
       disabled={disabled}
       className="rounded-xl border p-3 text-left disabled:opacity-60"
-      style={{ borderColor: on ? '#202842' : '#E5E7EB', background: on ? '#2028420a' : undefined }}
+      style={{ borderColor: on ? 'var(--brand)' : 'var(--line)', background: on ? 'var(--brand)0a' : undefined }}
     >
       <span className="flex items-center gap-2">
         <span
           className="grid h-4 w-4 flex-none place-items-center rounded-full border"
-          style={{ borderColor: on ? '#202842' : '#9CA3AF' }}
+          style={{ borderColor: on ? 'var(--brand)' : 'var(--ink-3)' }}
         >
-          {on && <span className="h-2 w-2 rounded-full" style={{ background: '#202842' }} />}
+          {on && <span className="h-2 w-2 rounded-full" style={{ background: 'var(--brand)' }} />}
         </span>
         <span className="font-medium">{title}</span>
       </span>
-      <span className="mt-1 block pl-6 text-sm text-neutral-500">{detail}</span>
+      <span className="mt-1 block pl-6 text-sm text-ink-2">{detail}</span>
     </button>
   )
 }

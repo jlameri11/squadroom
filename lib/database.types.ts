@@ -79,7 +79,6 @@ export type Database = {
           currency: string
           details_submitted: boolean
           payouts_enabled: boolean
-          platform_fee_bps: number
           requirements: Json | null
           stripe_account_id: string | null
           updated_at: string
@@ -92,7 +91,6 @@ export type Database = {
           currency?: string
           details_submitted?: boolean
           payouts_enabled?: boolean
-          platform_fee_bps?: number
           requirements?: Json | null
           stripe_account_id?: string | null
           updated_at?: string
@@ -105,7 +103,6 @@ export type Database = {
           currency?: string
           details_submitted?: boolean
           payouts_enabled?: boolean
-          platform_fee_bps?: number
           requirements?: Json | null
           stripe_account_id?: string | null
           updated_at?: string
@@ -2778,6 +2775,7 @@ export type Database = {
           profile_id: string
         }[]
       }
+      home_screen: { Args: never; Returns: Json }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       member_contact: {

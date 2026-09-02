@@ -35,14 +35,14 @@ export function CalendarFeed() {
   if (!url) return null
 
   return (
-    <section className="mt-8 rounded-xl border border-neutral-200 p-4">
+    <section className="mt-8 rounded-xl border border-[var(--line)] p-4">
       <h2 className="font-semibold">Your fixtures in your phone&apos;s calendar</h2>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-ink-2">
         Subscribe once and every game your children play appears automatically — including when a
         time or ground changes.
       </p>
 
-      <p className="mt-3 break-all rounded-lg bg-neutral-100 p-2 font-mono text-xs">{url}</p>
+      <p className="mt-3 break-all rounded-lg bg-[var(--surface-2)] p-2 font-mono text-xs">{url}</p>
 
       <div className="mt-3 flex gap-2">
         <button
@@ -52,32 +52,32 @@ export function CalendarFeed() {
             setTimeout(() => setCopied(false), 2000)
           }}
           className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {copied ? 'Copied' : 'Copy link'}
         </button>
         <a
           href={url.replace(/^https?:/, 'webcal:')}
-          className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm font-medium"
+          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-medium"
         >
           Subscribe
         </a>
       </div>
 
       <details className="mt-3">
-        <summary className="cursor-pointer text-xs text-neutral-500">How to add it</summary>
-        <p className="mt-2 text-xs text-neutral-500">
+        <summary className="cursor-pointer text-xs text-ink-2">How to add it</summary>
+        <p className="mt-2 text-xs text-ink-2">
           <b>iPhone:</b> Settings → Apps → Calendar → Accounts → Add Account → Other → Add
           Subscribed Calendar, and paste the link.<br />
           <b>Google Calendar:</b> Other calendars → + → From URL.
         </p>
       </details>
 
-      <div className="mt-3 border-t border-neutral-100 pt-3">
+      <div className="mt-3 border-t border-[var(--line-2)] pt-3">
         {/* Anyone holding the link can read this person's fixtures without
             signing in. That is what makes it work in a calendar app, and it
             is worth saying rather than burying. */}
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-ink-2">
           Anyone with this link can see your children&apos;s fixtures without signing in. It shows
           your games only — never another family&apos;s.
         </p>
@@ -88,7 +88,7 @@ export function CalendarFeed() {
               {busy ? 'Working…' : 'Yes, break the old link'}
             </button>
             <button onClick={() => setConfirmRotate(false)}
-                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs">
+                    className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs">
               Cancel
             </button>
           </div>

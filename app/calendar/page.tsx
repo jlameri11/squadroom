@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { AppShellPage } from '@/components/shell-page'
 
 export default async function CalendarPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase.from('academies').select('id, name').order('name')
   const academy = academies?.[0]

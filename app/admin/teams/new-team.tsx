@@ -48,7 +48,7 @@ export function NewTeam({ academyId }: { academyId: string }) {
       <button
         onClick={() => setOpen(true)}
         className="mt-4 w-full rounded-xl px-4 py-3 font-medium text-white"
-        style={{ background: '#202842' }}
+        style={{ background: 'var(--brand)' }}
       >
         New team
       </button>
@@ -56,36 +56,36 @@ export function NewTeam({ academyId }: { academyId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-4 flex flex-col gap-3 rounded-xl border border-neutral-300 p-4">
+    <form onSubmit={submit} className="mt-4 flex flex-col gap-3 rounded-xl border border-[var(--line)] p-4">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Team name</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Team name</span>
         <input
           required
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="U8 SPL"
-          className="rounded-xl border border-neutral-300 px-3 py-3"
+          className="rounded-xl border border-[var(--line)] px-3 py-3"
         />
       </label>
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Age group</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Age group</span>
           <select
             value={ageGroup}
             onChange={(e) => setAgeGroup(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
           >
             {AGE_GROUPS.map((g) => <option key={g}>{g}</option>)}
           </select>
         </label>
         <label className="flex flex-1 flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Season</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Season</span>
           <input
             value={season}
             onChange={(e) => setSeason(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
           />
         </label>
       </div>
@@ -97,19 +97,19 @@ export function NewTeam({ academyId }: { academyId: string }) {
           type="submit"
           disabled={busy}
           className="flex-1 rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Creating…' : 'Create team'}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-xl border border-neutral-300 px-4 py-3"
+          className="rounded-xl border border-[var(--line)] px-4 py-3"
         >
           Cancel
         </button>
       </div>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-ink-2">
         Its channel is created automatically, and coaches join it as hosts.
       </p>
     </form>

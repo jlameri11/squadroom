@@ -259,11 +259,15 @@ one and is meant to reach hundreds of academies.
     BECS direct debit completes the session days before the money arrives.
   - Amounts are integer cents, never a float. Dollars typed in the UI are
     `Math.round(x * 100)`: 49.9 * 100 is 4989.999999999999.
-  - Platform billing (`academies.plan`) is what an academy pays Squadroom;
-    this is what a parent pays an academy. Never share a code path — a bug
-    that crosses them charges the wrong party. `platform_fee_bps` exists and
-    is 0: taking a slice of a parent's payment is a pricing decision, not a
-    code one.
+  - **Squadroom charges CLUBS, never parents.** Revenue is `academies.plan`;
+    a parent's payment goes to their club and we take nothing from it. There
+    is deliberately no application-fee column and no code path that could add
+    one — 0065 removed `platform_fee_bps` rather than leaving it at zero,
+    because a dormant skimming mechanism is one somebody switches on later in
+    a hurry, and the first anyone hears of it is a parent seeing $45.90 where
+    the coach wrote $45. Changing this must be a migration and a conversation.
+  - Platform billing and academy collections never share a code path — a bug
+    that crosses them charges the wrong party.
   - `profiles.phone` is a DOMAIN, not text. A set-returning function
     declaring `text` fails with "structure of query does not match function
     result type", which names neither the column nor the type.

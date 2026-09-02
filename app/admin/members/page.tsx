@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { MemberTree } from './member-tree'
 
 /**
@@ -11,8 +11,8 @@ import { MemberTree } from './member-tree'
  */
 export default async function MembersPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase
     .from('academies')
@@ -30,10 +30,10 @@ export default async function MembersPage() {
   return (
     <main className="mx-auto max-w-md p-5">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>
           Members
         </h1>
-        <p className="mt-1 text-sm text-neutral-500">{academy.name}</p>
+        <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
       </header>
 
       <MemberTree

@@ -31,7 +31,7 @@ type RegisterRow = {
   amount_cents: number
 }
 
-const NAVY = '#202842'
+const NAVY = 'var(--brand)'
 const money = (cents: number, currency = 'aud') =>
   new Intl.NumberFormat('en-AU', { style: 'currency', currency: currency.toUpperCase() }).format(
     cents / 100
@@ -75,16 +75,16 @@ export function PaymentsAdmin({
       <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
         Payments
       </h1>
-      <p className="mt-0.5 text-sm text-neutral-500">{academyName}</p>
+      <p className="mt-0.5 text-sm text-ink-2">{academyName}</p>
 
-      <section className="mt-5 rounded-xl border border-neutral-200 p-4">
+      <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
         <h2 className="font-semibold">Where the money goes</h2>
         {/*
           Stated plainly and first. A treasurer handing over bank details
           deserves to know who ends up holding the money, and the answer here
           is genuinely "not us".
         */}
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-2">
           Straight into {academyName}&apos;s own bank account. Squadroom never holds your money and
           never sees a card number — Stripe handles all of it.
         </p>
@@ -105,7 +105,7 @@ export function PaymentsAdmin({
             <button
               onClick={connect}
               disabled={busy}
-              className="mt-3 w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm font-medium"
+              className="mt-3 w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-medium"
             >
               {busy ? 'Opening…' : 'Finish setup with Stripe'}
             </button>
@@ -131,7 +131,7 @@ export function PaymentsAdmin({
           What you&apos;re collecting
         </h2>
         {requests.length === 0 ? (
-          <p className="mt-2 rounded-xl bg-neutral-100 p-4 text-center text-sm text-neutral-500">
+          <p className="mt-2 rounded-xl bg-[var(--surface-2)] p-4 text-center text-sm text-ink-2">
             Nothing yet.
           </p>
         ) : (
@@ -163,11 +163,11 @@ function RequestCard({ request }: { request: RequestRow }) {
   const unpaid = register?.filter((r) => r.status !== 'paid') ?? []
 
   return (
-    <li className="rounded-xl border border-neutral-200 p-3">
+    <li className="rounded-xl border border-[var(--line)] p-3">
       <button onClick={toggle} className="flex w-full items-start justify-between gap-3 text-left">
         <span className="min-w-0">
           <span className="block font-medium">{request.title}</span>
-          <span className="block text-sm text-neutral-500">
+          <span className="block text-sm text-ink-2">
             {[
               request.teams?.name ?? 'Whole academy',
               request.per_player ? 'per player' : 'per family',
@@ -185,10 +185,10 @@ function RequestCard({ request }: { request: RequestRow }) {
       </button>
 
       {open && register && (
-        <div className="mt-3 border-t border-neutral-100 pt-3">
+        <div className="mt-3 border-t border-[var(--line-2)] pt-3">
           <p className="text-sm font-medium">
             {paid.length} paid · {unpaid.length} outstanding ·{' '}
-            <span style={{ color: '#1C7A4C' }}>
+            <span style={{ color: 'var(--yes)' }}>
               {money(paid.reduce((sum, r) => sum + r.amount_cents, 0), request.currency)} collected
             </span>
           </p>
@@ -210,12 +210,12 @@ function RequestCard({ request }: { request: RequestRow }) {
                     Text {r.guardian?.split(' ')[0] ?? 'parent'}
                   </a>
                 ) : (
-                  <span className="flex-none text-xs text-neutral-400">no number</span>
+                  <span className="flex-none text-xs text-ink-3">no number</span>
                 )}
               </li>
             ))}
             {paid.map((r) => (
-              <li key={r.player_id} className="flex justify-between gap-2 text-neutral-400">
+              <li key={r.player_id} className="flex justify-between gap-2 text-ink-3">
                 <span className="min-w-0 truncate line-through">{r.player_name}</span>
                 <span className="flex-none text-xs">paid</span>
               </li>
@@ -274,7 +274,7 @@ function NewRequest({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-4 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm font-medium"
+        className="mt-4 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-medium"
       >
         Ask for a payment
       </button>
@@ -282,34 +282,34 @@ function NewRequest({
   }
 
   return (
-    <section className="mt-4 rounded-xl border border-neutral-300 p-4">
+    <section className="mt-4 rounded-xl border border-[var(--line)] p-4">
       <h2 className="font-semibold">Ask for a payment</h2>
       <div className="mt-3 flex flex-col gap-2">
         <label className="text-sm">
-          <span className="text-neutral-500">What for</span>
+          <span className="text-ink-2">What for</span>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Spring Gala Day entry"
-            className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+            className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
           />
         </label>
         <label className="text-sm">
-          <span className="text-neutral-500">How much, per player</span>
+          <span className="text-ink-2">How much, per player</span>
           <input
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             inputMode="decimal"
             placeholder="45.00"
-            className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2 tabular-nums"
+            className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2 tabular-nums"
           />
         </label>
         <label className="text-sm">
-          <span className="text-neutral-500">Who</span>
+          <span className="text-ink-2">Who</span>
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
-            className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+            className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
           >
             <option value="">Everyone at the academy</option>
             {teams.map((t) => (
@@ -320,12 +320,12 @@ function NewRequest({
           </select>
         </label>
         <label className="text-sm">
-          <span className="text-neutral-500">Due by (optional)</span>
+          <span className="text-ink-2">Due by (optional)</span>
           <input
             type="date"
             value={dueOn}
             onChange={(e) => setDueOn(e.target.value)}
-            className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+            className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
           />
         </label>
       </div>
@@ -343,7 +343,7 @@ function NewRequest({
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm"
+          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
         >
           Cancel
         </button>

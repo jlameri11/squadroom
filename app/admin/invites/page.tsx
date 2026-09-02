@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { InviteList } from './invite-list'
 
 /**
@@ -11,8 +11,8 @@ import { InviteList } from './invite-list'
  */
 export default async function InvitesPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase.from('academies').select('id, name').order('name')
   const academy = academies?.[0]
@@ -36,8 +36,8 @@ export default async function InvitesPage() {
   return (
     <main className="mx-auto max-w-md p-5">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Invites</h1>
-        <p className="mt-1 text-sm text-neutral-500">{academy.name}</p>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Invites</h1>
+        <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
       </header>
 
       <InviteList

@@ -26,7 +26,7 @@ export default async function JoinCompetition(props: { params: Promise<{ token: 
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-3 p-6">
         <h1 className="text-2xl font-semibold">This invitation isn&apos;t active</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-2">
           {invite?.status === 'claimed'
             ? 'It has already been used. If that wasn’t you, ask the organiser to send a new one.'
             : 'Ask the organiser for a new link.'}

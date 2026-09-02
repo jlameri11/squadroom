@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { ImportClient } from './import-client'
 
 export default async function ImportPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase
     .from('academies')

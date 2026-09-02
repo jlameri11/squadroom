@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { DirectoryList } from './directory-list'
 
 export default async function DirectoryPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase
     .from('academies')
@@ -20,7 +20,7 @@ export default async function DirectoryPage() {
       .from('academy_members')
       .select('role')
       .eq('academy_id', academy.id)
-      .eq('profile_id', auth.user.id)
+      .eq('profile_id', userId)
       .maybeSingle(),
   ])
 
@@ -28,16 +28,16 @@ export default async function DirectoryPage() {
 
   return (
     <main className="mx-auto max-w-md">
-      <header className="border-b border-neutral-200 p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Directory</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">
+      <header className="border-b border-[var(--line)] p-5">
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Directory</h1>
+        <p className="mt-0.5 text-sm text-ink-2">
           {academy.name} · {people?.length ?? 0} people
         </p>
       </header>
 
       <DirectoryList
         academyId={academy.id}
-        myId={auth.user.id}
+        myId={userId}
         iAmStaff={iAmStaff}
         dmPolicy={academy.dm_policy}
         people={(people ?? []).map((p) => ({

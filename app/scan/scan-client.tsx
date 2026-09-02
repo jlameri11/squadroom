@@ -21,7 +21,7 @@ type ScannedEvent = {
 }
 
 const MAX_EDGE = 2200 // Small print on a fixture list has to survive this.
-const NAVY = '#202842'
+const NAVY = 'var(--brand)'
 
 // A season draw is rarely one screenshot — it is the four or five it took to
 // scroll through the round. Ten is comfortably more than that, and it is also
@@ -181,7 +181,7 @@ export function ScanClient({
         <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
           Add games from a screenshot
         </h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-2">
           Screenshot your draw in Dribl, drop them here, and the games go straight into your
           calendar. A whole round usually takes a few screenshots — add them all at once.
         </p>
@@ -193,7 +193,7 @@ export function ScanClient({
           <select
             value={shareTeam}
             onChange={(e) => setShareTeam(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-neutral-300 p-2.5 text-sm"
+            className="mt-1 w-full rounded-lg border border-[var(--line)] p-2.5 text-sm"
           >
             <option value="">Just me — nobody else sees them</option>
             {teams.map((t) => (
@@ -202,7 +202,7 @@ export function ScanClient({
               </option>
             ))}
           </select>
-          <span className="mt-1 block text-xs text-neutral-500">
+          <span className="mt-1 block text-xs text-ink-2">
             {shareTeam
               ? 'These become team fixtures, and parents can RSVP to them.'
               : `Private to you. Nobody else at ${academyName} will see them.`}
@@ -223,7 +223,7 @@ export function ScanClient({
           if (files.length > 0) void handleFiles(files)
         }}
         className={`mt-4 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center ${
-          dragging ? 'border-neutral-400 bg-neutral-50' : 'border-neutral-300'
+          dragging ? 'border-[var(--ink-3)] bg-[var(--surface-3)]' : 'border-[var(--line)]'
         }`}
       >
         <input
@@ -239,13 +239,13 @@ export function ScanClient({
           }}
         />
         {busy ? (
-          <span className="text-sm text-neutral-600">{busy}</span>
+          <span className="text-sm text-ink-2">{busy}</span>
         ) : (
           <>
             <span className="font-medium" style={{ color: NAVY }}>
               Choose screenshots
             </span>
-            <span className="mt-1 text-sm text-neutral-500">
+            <span className="mt-1 text-sm text-ink-2">
               or drag them here — up to {MAX_BATCH} at a time
             </span>
           </>
@@ -257,7 +257,7 @@ export function ScanClient({
         opens. A fixture list is harmless; a team sheet with children's names
         on it is not, and people will drop one in eventually.
       */}
-      <p className="mt-3 text-xs leading-relaxed text-neutral-500">
+      <p className="mt-3 text-xs leading-relaxed text-ink-2">
         The screenshot is sent to Anthropic to be read, then deleted from Squadroom after seven
         days. Times are read as they appear on screen and set in {timezone}. Please don&apos;t
         upload anything with other children&apos;s details on it.
@@ -283,9 +283,9 @@ function Results({
 }) {
   if (events.length === 0) {
     return (
-      <div className="mt-6 rounded-xl border border-neutral-200 p-4">
+      <div className="mt-6 rounded-xl border border-[var(--line)] p-4">
         <p className="font-medium">No games found in that image.</p>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-2">
           A screenshot of the draw itself usually works better than a photo of a screen. You can
           also{' '}
           <Link href="/calendar" className="underline underline-offset-4">
@@ -302,7 +302,7 @@ function Results({
       <h2 className="font-semibold" style={{ color: NAVY }}>
         {events.length} {events.length === 1 ? 'game' : 'games'} added
       </h2>
-      <p className="mt-0.5 text-sm text-neutral-500">
+      <p className="mt-0.5 text-sm text-ink-2">
         These are in your calendar already. Check the times against the screenshot — a machine read
         them.
       </p>
@@ -379,11 +379,11 @@ function EventRow({
   }
 
   return (
-    <li className="rounded-xl border border-neutral-200 p-3">
+    <li className="rounded-xl border border-[var(--line)] p-3">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="font-medium">{event.title}</div>
-          <div className="mt-0.5 text-sm text-neutral-500">
+          <div className="mt-0.5 text-sm text-ink-2">
             {when.toLocaleDateString(undefined, {
               weekday: 'short',
               day: 'numeric',
@@ -394,27 +394,27 @@ function EventRow({
             {event.venue ? ` · ${event.venue}` : ''}
           </div>
           {event.private_to && (
-            <div className="mt-1 text-xs text-neutral-400">Only you can see this</div>
+            <div className="mt-1 text-xs text-ink-3">Only you can see this</div>
           )}
         </div>
         <button
           onClick={() => setOpen(!open)}
-          className="flex-none rounded-lg border border-neutral-300 px-2.5 py-1 text-sm"
+          className="flex-none rounded-lg border border-[var(--line)] px-2.5 py-1 text-sm"
         >
           {open ? 'Close' : 'Edit'}
         </button>
       </div>
 
       {open && (
-        <div className="mt-3 flex flex-col gap-2 border-t border-neutral-100 pt-3">
+        <div className="mt-3 flex flex-col gap-2 border-t border-[var(--line-2)] pt-3">
           <Field label="What" value={draft.title} onChange={(v) => setDraft({ ...draft, title: v })} />
           <label className="text-sm">
-            <span className="text-neutral-500">Kick-off</span>
+            <span className="text-ink-2">Kick-off</span>
             <input
               type="datetime-local"
               value={draft.starts_at}
               onChange={(e) => setDraft({ ...draft, starts_at: e.target.value })}
-              className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+              className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
             />
           </label>
           <Field label="Where" value={draft.venue} onChange={(v) => setDraft({ ...draft, venue: v })} />
@@ -434,7 +434,7 @@ function EventRow({
             </button>
             <button
               onClick={remove}
-              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm text-red-600"
+              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-red-600"
             >
               Remove this game
             </button>
@@ -456,11 +456,11 @@ function Field({
 }) {
   return (
     <label className="text-sm">
-      <span className="text-neutral-500">{label}</span>
+      <span className="text-ink-2">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+        className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
       />
     </label>
   )

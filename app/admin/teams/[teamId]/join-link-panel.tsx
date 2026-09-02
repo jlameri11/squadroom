@@ -74,9 +74,9 @@ export function JoinLinkPanel({
 
   if (!link) {
     return (
-      <section className="rounded-xl border border-neutral-200 p-4">
+      <section className="rounded-xl border border-[var(--line)] p-4">
         <h2 className="font-semibold">Bring this team in</h2>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-2">
           Create a link, paste it into the team&apos;s WhatsApp group, and approve people as they
           appear. Nothing is sent by text.
         </p>
@@ -85,7 +85,7 @@ export function JoinLinkPanel({
           onClick={create}
           disabled={busy}
           className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Creating…' : 'Create join link'}
         </button>
@@ -98,10 +98,10 @@ export function JoinLinkPanel({
   })
 
   return (
-    <section className="rounded-xl border border-neutral-200 p-4">
+    <section className="rounded-xl border border-[var(--line)] p-4">
       <h2 className="font-semibold">Join link</h2>
-      <p className="mt-1 break-all text-sm" style={{ color: '#202842' }}>{link.url}</p>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 break-all text-sm" style={{ color: 'var(--brand)' }}>{link.url}</p>
+      <p className="mt-1 text-sm text-ink-2">
         Used {link.useCount}{link.maxUses ? ` of ${link.maxUses}` : ' times'} · expires {expires}
       </p>
 
@@ -111,20 +111,20 @@ export function JoinLinkPanel({
         <button
           onClick={copy}
           className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {copied ? 'Copied' : 'Copy link'}
         </button>
         <button
           onClick={() => setShowQr((v) => !v)}
-          className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm"
+          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
         >
           {showQr ? 'Hide QR' : 'QR code'}
         </button>
         <button
           onClick={revoke}
           disabled={busy}
-          className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm text-red-600 disabled:opacity-50"
+          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm text-red-600 disabled:opacity-50"
         >
           Revoke
         </button>
@@ -132,8 +132,8 @@ export function JoinLinkPanel({
 
       {showQr && qrSvg && (
         <div className="mt-4 flex flex-col items-center gap-2">
-          <div className="rounded-xl bg-white p-2" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-          <p className="text-center text-xs text-neutral-500">
+          <div className="rounded-xl bg-[var(--surface)] p-2" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+          <p className="text-center text-xs text-ink-2">
             Hold this up at training. Revoking it later never removes anyone already in.
           </p>
         </div>

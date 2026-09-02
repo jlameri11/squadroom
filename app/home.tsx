@@ -67,7 +67,7 @@ export function Home({
   channels,
 }: {
   academy: Academy
-  otherAcademies: Academy[]
+  otherAcademies: { id: string; name: string; type: string }[]
   role: string
   isPlatformAdmin: boolean
   needsPhone: boolean
@@ -78,7 +78,7 @@ export function Home({
   const unread = channels.reduce((sum, c) => sum + (c.muted ? 0 : c.unread_count), 0)
   const isStaff = role === 'owner' || role === 'admin'
   const isCoach = isStaff || role === 'coach'
-  const tint = academy.primary_colour || '#202842'
+  const tint = academy.primary_colour || 'var(--brand)'
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
@@ -113,7 +113,7 @@ export function Home({
           className="mx-4 mb-4 flex items-center gap-3 rounded-[14px] p-3.5 text-sm text-white"
           style={{ background: 'var(--accent)', boxShadow: 'var(--shadow)' }}
         >
-          <span className="display grid h-8 w-8 flex-none place-items-center rounded-full bg-white/25 text-base">
+          <span className="display grid h-8 w-8 flex-none place-items-center rounded-full bg-[var(--surface)]/25 text-base">
             {pendingRequests}
           </span>
           <span>

@@ -7,9 +7,9 @@ type Mine = { playerId: string | null; playerName: string | null; status: string
 type RosterRow = { playerId: string | null; name: string; status: string | null; note: string | null }
 
 const CHOICES = [
-  { value: 'yes',   label: 'Going', tint: '#1C7A4C' },
-  { value: 'maybe', label: 'Maybe', tint: '#9C6B06' },
-  { value: 'no',    label: 'Out',   tint: '#8E3020' },
+  { value: 'yes',   label: 'Going', tint: 'var(--yes)' },
+  { value: 'maybe', label: 'Maybe', tint: 'var(--maybe)' },
+  { value: 'no',    label: 'Out',   tint: 'var(--no)' },
 ] as const
 
 export function EventDetail({
@@ -53,16 +53,16 @@ export function EventDetail({
       <header className="mt-3">
         <div className="flex items-center gap-2">
           <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
-                style={{ background: cancelled ? '#8E3020' : '#202842' }}>
+                style={{ background: cancelled ? 'var(--no)' : 'var(--brand)' }}>
             {cancelled ? 'Cancelled' : event.type}
           </span>
-          {event.round && <span className="text-sm text-neutral-500">{event.round}</span>}
+          {event.round && <span className="text-sm text-ink-2">{event.round}</span>}
         </div>
         <h1 className="mt-1.5 text-2xl font-semibold">{event.title}</h1>
       </header>
 
       <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-        <dt className="text-neutral-500">When</dt>
+        <dt className="text-ink-2">When</dt>
         <dd className="tabular-nums">
           {when.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}
           {', '}
@@ -72,7 +72,7 @@ export function EventDetail({
 
         {event.arrive_at && (
           <>
-            <dt className="text-neutral-500">Arrive</dt>
+            <dt className="text-ink-2">Arrive</dt>
             <dd className="tabular-nums">
               {new Date(event.arrive_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
             </dd>
@@ -81,29 +81,29 @@ export function EventDetail({
 
         {event.venue && (
           <>
-            <dt className="text-neutral-500">Where</dt>
+            <dt className="text-ink-2">Where</dt>
             <dd>
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(event.address ?? event.venue)}`}
                 target="_blank" rel="noopener noreferrer"
-                className="underline underline-offset-2" style={{ color: '#202842' }}
+                className="underline underline-offset-2" style={{ color: 'var(--brand)' }}
               >
                 {event.venue}
               </a>
-              {event.address && <span className="block text-neutral-500">{event.address}</span>}
+              {event.address && <span className="block text-ink-2">{event.address}</span>}
             </dd>
           </>
         )}
 
-        {event.opponent && (<><dt className="text-neutral-500">Against</dt><dd>{event.opponent}</dd></>)}
-        {event.kit_colour && (<><dt className="text-neutral-500">Kit</dt><dd>{event.kit_colour}</dd></>)}
+        {event.opponent && (<><dt className="text-ink-2">Against</dt><dd>{event.opponent}</dd></>)}
+        {event.kit_colour && (<><dt className="text-ink-2">Kit</dt><dd>{event.kit_colour}</dd></>)}
       </dl>
 
-      {event.notes && <p className="mt-3 rounded-xl bg-neutral-100 p-3 text-sm">{event.notes}</p>}
+      {event.notes && <p className="mt-3 rounded-xl bg-[var(--surface-2)] p-3 text-sm">{event.notes}</p>}
 
       <a
         href={`/api/ics/${event.id}`}
-        className="mt-4 block rounded-xl border border-neutral-300 px-4 py-2.5 text-center text-sm font-medium"
+        className="mt-4 block rounded-xl border border-[var(--line)] px-4 py-2.5 text-center text-sm font-medium"
       >
         Add to your phone&apos;s calendar
       </a>
@@ -112,7 +112,7 @@ export function EventDetail({
 
       {!cancelled && answers.length > 0 && (
         <section className="mt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
             Your answer
           </h2>
           <div className="mt-2 flex flex-col gap-2">
@@ -130,7 +130,7 @@ export function EventDetail({
                         className="flex-1 rounded-lg border py-2 text-sm font-semibold disabled:opacity-60"
                         style={on
                           ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
-                          : { borderColor: '#E5E7EB', color: '#6B7280' }}
+                          : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
                       >
                         {c.label}
                       </button>
@@ -145,29 +145,29 @@ export function EventDetail({
 
       {isCoach && summary && (
         <section className="mt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
             Who&apos;s coming
           </h2>
           <p className="mt-1 text-sm">
-            <b style={{ color: '#1C7A4C' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
+            <b style={{ color: 'var(--yes)' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
             {summary.out_count} out · {summary.no_reply} no reply
           </p>
 
-          <div className="mt-2 rounded-xl border border-neutral-200">
+          <div className="mt-2 rounded-xl border border-[var(--line)]">
             {roster.map((r, i) => (
-              <div key={r.playerId ?? i} className={`flex items-center gap-2 p-3 ${i > 0 ? 'border-t border-neutral-100' : ''}`}>
+              <div key={r.playerId ?? i} className={`flex items-center gap-2 p-3 ${i > 0 ? 'border-t border-[var(--line-2)]' : ''}`}>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{r.name}</span>
-                  {r.note && <span className="block truncate text-xs text-neutral-500">“{r.note}”</span>}
+                  {r.note && <span className="block truncate text-xs text-ink-2">“{r.note}”</span>}
                 </span>
                 <span className="flex-none text-xs font-semibold"
-                      style={{ color: CHOICES.find((c) => c.value === r.status)?.tint ?? '#9CA3AF' }}>
+                      style={{ color: CHOICES.find((c) => c.value === r.status)?.tint ?? 'var(--ink-3)' }}>
                   {CHOICES.find((c) => c.value === r.status)?.label ?? '—'}
                 </span>
               </div>
             ))}
             {roster.length === 0 && (
-              <p className="p-4 text-center text-sm text-neutral-500">Nobody has answered yet.</p>
+              <p className="p-4 text-center text-sm text-ink-2">Nobody has answered yet.</p>
             )}
           </div>
         </section>
@@ -253,7 +253,7 @@ function CallItOff({
         <button
           onClick={() => set(false)}
           disabled={busy}
-          className="mt-3 w-full rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-medium"
+          className="mt-3 w-full rounded-xl border border-red-300 bg-[var(--surface)] px-4 py-2.5 text-sm font-medium"
         >
           {busy ? 'Working…' : "It's back on"}
         </button>
@@ -266,7 +266,7 @@ function CallItOff({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm font-medium text-red-700"
+        className="mt-5 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-medium text-red-700"
       >
         Call this game off
       </button>
@@ -274,20 +274,20 @@ function CallItOff({
   }
 
   return (
-    <section className="mt-5 rounded-xl border border-neutral-300 p-4">
+    <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
       <h2 className="font-semibold">Call this game off</h2>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-ink-2">
         Everyone in the team gets a notification straight away, whether or not they
         RSVP&apos;d and whatever their quiet hours are set to.
         {soon && ' Because it is within 24 hours, they also get a text message.'}
       </p>
 
       <label className="mt-3 block text-sm">
-        <span className="text-neutral-500">Why</span>
+        <span className="text-ink-2">Why</span>
         <select
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+          className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
         >
           {REASONS.map((r) => (
             <option key={r.value} value={r.value}>
@@ -298,12 +298,12 @@ function CallItOff({
       </label>
 
       <label className="mt-2 block text-sm">
-        <span className="text-neutral-500">Anything to add (optional)</span>
+        <span className="text-ink-2">Anything to add (optional)</span>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Council closed all grounds — training Tuesday as normal"
-          className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+          className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
         />
       </label>
 
@@ -319,7 +319,7 @@ function CallItOff({
         </button>
         <button
           onClick={() => setOpen(false)}
-          className="rounded-xl border border-neutral-300 px-4 py-2.5 text-sm"
+          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm"
         >
           Cancel
         </button>

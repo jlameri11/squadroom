@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 
 export default async function CompetitionsPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   // RLS returns competitions you organise or your club has entered.
   const { data: comps } = await supabase
@@ -15,18 +15,18 @@ export default async function CompetitionsPage() {
 
   return (
     <main className="mx-auto max-w-md">
-      <header className="border-b border-neutral-200 p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Competitions</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Seasons, tournaments and gala days</p>
+      <header className="border-b border-[var(--line)] p-5">
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Competitions</h1>
+        <p className="mt-0.5 text-sm text-ink-2">Seasons, tournaments and gala days</p>
         <Link href="/competitions/new"
               className="mt-3 block rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-white"
-              style={{ background: '#202842' }}>
+              style={{ background: 'var(--brand)' }}>
           New competition
         </Link>
       </header>
 
       {(comps ?? []).length === 0 && (
-        <p className="m-5 rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+        <p className="m-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
           Nothing yet. A competition you enter, or one you run, appears here.
         </p>
       )}
@@ -35,15 +35,15 @@ export default async function CompetitionsPage() {
         <Link
           key={c.id}
           href={`/competitions/${c.id}`}
-          className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4"
+          className="flex items-center gap-3 border-b border-[var(--line-2)] px-5 py-4"
         >
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{c.name}</span>
-            <span className="block truncate text-sm capitalize text-neutral-500">
+            <span className="block truncate text-sm capitalize text-ink-2">
               {[c.type.replace('_', ' '), orgName(c.academies), c.season].filter(Boolean).join(' · ')}
             </span>
           </span>
-          {c.status === 'ended' && <span className="text-xs text-neutral-400">ended</span>}
+          {c.status === 'ended' && <span className="text-xs text-ink-3">ended</span>}
         </Link>
       ))}
     </main>

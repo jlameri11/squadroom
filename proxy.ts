@@ -37,8 +37,15 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refreshes the token and rewrites the cookies. Do not remove.
-  await supabase.auth.getUser()
+  // Refreshes the token when it is near expiry and rewrites the cookies. Do
+  // not remove: parents are meant never to see a sign-in screen again after
+  // their coach approves them.
+  //
+  // getClaims rather than getUser. getUser calls Supabase on EVERY request,
+  // and with each page doing the same that was two round trips to Sydney
+  // before a single query ran. getClaims verifies the signature locally
+  // against cached JWKS and still refreshes an expiring token.
+  await supabase.auth.getClaims()
 
   return response
 }

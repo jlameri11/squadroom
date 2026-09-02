@@ -1,14 +1,14 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { EventDetail } from './event-detail'
 
 export default async function EventPage(props: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await props.params
   const supabase = await createClient()
 
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: event } = await supabase
     .from('events')
@@ -32,7 +32,7 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <Link href="/calendar" className="text-sm text-neutral-500">← Fixtures</Link>
+      <Link href="/calendar" className="text-sm text-ink-2">← Fixtures</Link>
       <EventDetail
         event={event}
         mine={(mine ?? []).map((r) => ({

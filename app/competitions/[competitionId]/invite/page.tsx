@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { InviteClubs, type ExistingInvite } from './invite-clubs'
 import { siteUrl } from '@/lib/site'
 
@@ -11,8 +11,8 @@ export default async function InviteClubsPage(props: {
   const { competitionId } = await props.params
   const supabase = await createClient()
 
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: comp } = await supabase
     .from('competitions')
@@ -45,8 +45,8 @@ export default async function InviteClubsPage(props: {
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <Link href={`/competitions/${competitionId}`} className="text-sm text-neutral-500">← {comp.name}</Link>
-      <h1 className="mt-2 text-2xl font-semibold" style={{ color: '#202842' }}>Invite clubs</h1>
+      <Link href={`/competitions/${competitionId}`} className="text-sm text-ink-2">← {comp.name}</Link>
+      <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Invite clubs</h1>
 
       <InviteClubs
         competitionId={competitionId}

@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { ChannelView } from './channel-view'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 
@@ -7,8 +7,8 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
   const { channelId } = await props.params
   const supabase = await createClient()
 
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: channel } = await supabase
     .from('channels')
@@ -23,7 +23,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
       .from('channel_members')
       .select('role, muted')
       .eq('channel_id', channelId)
-      .eq('profile_id', auth.user.id)
+      .eq('profile_id', userId)
       .maybeSingle(),
     supabase.rpc('channel_messages', { p_channel: channelId, p_limit: 50 }),
   ])
@@ -36,7 +36,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
     .from('academy_members')
     .select('role')
     .eq('academy_id', channel.academy_id)
-    .eq('profile_id', auth.user.id)
+    .eq('profile_id', userId)
     .maybeSingle()
 
   const isHost =
@@ -56,7 +56,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
       isHost={isHost}
       muted={membership?.muted ?? false}
       restrictions={(channel.restrictions ?? {}) as Record<string, boolean>}
-      myId={auth.user.id}
+      myId={userId}
       initialMessages={messages}
     />
   )

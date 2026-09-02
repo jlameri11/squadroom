@@ -88,23 +88,23 @@ export function ChannelSettings({
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 pb-8"
+        className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-5 pb-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-neutral-300" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
         <h2 className="text-lg font-semibold">{name}</h2>
 
         <section className="mt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
             Notifications
           </h3>
           <button
             onClick={toggleMute}
-            className="mt-2 flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left"
+            className="mt-2 flex w-full items-center justify-between rounded-xl border border-[var(--line)] p-3 text-left"
           >
             <span>
               <span className="block font-medium">Mute this channel</span>
-              <span className="block text-sm text-neutral-500">
+              <span className="block text-sm text-ink-2">
                 {/* Muting is not hiding, and people assume it is. */}
                 Stops the buzzing. You&apos;ll still see the unread count, and announcements still
                 come through.
@@ -112,10 +112,10 @@ export function ChannelSettings({
             </span>
             <span
               className="ml-3 h-6 w-11 flex-none rounded-full p-0.5 transition"
-              style={{ background: isMuted ? '#202842' : '#E5E7EB' }}
+              style={{ background: isMuted ? 'var(--brand)' : 'var(--line)' }}
             >
               <span
-                className="block h-5 w-5 rounded-full bg-white transition"
+                className="block h-5 w-5 rounded-full bg-[var(--surface)] transition"
                 style={{ transform: isMuted ? 'translateX(20px)' : 'none' }}
               />
             </span>
@@ -125,7 +125,7 @@ export function ChannelSettings({
         {isHost && (
           <>
             <section className="mt-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
                 Who can post
               </h3>
               <div className="mt-2 flex flex-col gap-2">
@@ -136,25 +136,25 @@ export function ChannelSettings({
                     disabled={busy}
                     className="rounded-xl border p-3 text-left disabled:opacity-60"
                     style={{
-                      borderColor: mode === m.value ? '#202842' : '#E5E7EB',
-                      background: mode === m.value ? '#2028420a' : undefined,
+                      borderColor: mode === m.value ? 'var(--brand)' : 'var(--line)',
+                      background: mode === m.value ? 'var(--brand)0a' : undefined,
                     }}
                   >
                     <span className="flex items-center gap-2">
                       <span className="grid h-4 w-4 flex-none place-items-center rounded-full border"
-                            style={{ borderColor: mode === m.value ? '#202842' : '#9CA3AF' }}>
-                        {mode === m.value && <span className="h-2 w-2 rounded-full" style={{ background: '#202842' }} />}
+                            style={{ borderColor: mode === m.value ? 'var(--brand)' : 'var(--ink-3)' }}>
+                        {mode === m.value && <span className="h-2 w-2 rounded-full" style={{ background: 'var(--brand)' }} />}
                       </span>
                       <span className="font-medium">{m.label}</span>
                     </span>
-                    <span className="mt-1 block pl-6 text-sm text-neutral-500">{m.hint}</span>
+                    <span className="mt-1 block pl-6 text-sm text-ink-2">{m.hint}</span>
                   </button>
                 ))}
               </div>
             </section>
 
             <section className="mt-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
                 Extra rules
               </h3>
               <div className="mt-2 flex flex-col gap-2">
@@ -177,7 +177,7 @@ export function ChannelSettings({
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
-        <button onClick={onClose} className="mt-5 w-full py-2 text-sm text-neutral-500">
+        <button onClick={onClose} className="mt-5 w-full py-2 text-sm text-ink-2">
           Done
         </button>
       </div>
@@ -187,14 +187,14 @@ export function ChannelSettings({
 
 function Rule({ on, onClick, label, hint }: { on: boolean; onClick: () => void; label: string; hint: string }) {
   return (
-    <button onClick={onClick} className="flex items-start justify-between rounded-xl border border-neutral-200 p-3 text-left">
+    <button onClick={onClick} className="flex items-start justify-between rounded-xl border border-[var(--line)] p-3 text-left">
       <span>
         <span className="block font-medium">{label}</span>
-        <span className="block text-sm text-neutral-500">{hint}</span>
+        <span className="block text-sm text-ink-2">{hint}</span>
       </span>
       <span className="ml-3 h-6 w-11 flex-none rounded-full p-0.5 transition"
-            style={{ background: on ? '#202842' : '#E5E7EB' }}>
-        <span className="block h-5 w-5 rounded-full bg-white transition"
+            style={{ background: on ? 'var(--brand)' : 'var(--line)' }}>
+        <span className="block h-5 w-5 rounded-full bg-[var(--surface)] transition"
               style={{ transform: on ? 'translateX(20px)' : 'none' }} />
       </span>
     </button>

@@ -51,22 +51,22 @@ export function PendingQueue({ channelId, isHost }: { channelId: string; isHost:
       </p>
       <div className="mt-1.5 flex flex-col gap-2">
         {items.map((m) => (
-          <div key={m.id} className="rounded-lg border border-amber-200 bg-white p-2">
-            <p className="text-xs text-neutral-500">{m.sender_name ?? 'Someone'}</p>
+          <div key={m.id} className="rounded-lg border border-amber-200 bg-[var(--surface)] p-2">
+            <p className="text-xs text-ink-2">{m.sender_name ?? 'Someone'}</p>
             <p className="text-sm">{m.body}</p>
             <div className="mt-1.5 flex gap-2">
               <button
                 onClick={() => decide(m.id, 'published')}
                 disabled={busy === m.id}
                 className="rounded px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                style={{ background: '#202842' }}
+                style={{ background: 'var(--brand)' }}
               >
                 Approve
               </button>
               <button
                 onClick={() => decide(m.id, 'rejected')}
                 disabled={busy === m.id}
-                className="rounded border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
+                className="rounded border border-[var(--line)] px-2 py-1 text-xs disabled:opacity-50"
               >
                 Reject
               </button>

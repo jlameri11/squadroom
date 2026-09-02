@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { ScanClient, type CoachedTeam } from './scan-client'
 
 /**
@@ -8,8 +8,8 @@ import { ScanClient, type CoachedTeam } from './scan-client'
  */
 export default async function ScanPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase
     .from('academies')
@@ -24,7 +24,7 @@ export default async function ScanPage() {
   const { data: coached } = await supabase
     .from('team_members')
     .select('team_id, role, teams(id, name, academy_id)')
-    .eq('profile_id', auth.user.id)
+    .eq('profile_id', userId)
     .eq('role', 'coach')
 
   const teams: CoachedTeam[] = (coached ?? [])

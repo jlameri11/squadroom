@@ -82,7 +82,7 @@ export function MessageBubble({
   return (
     <>
       {showDay && (
-        <div className="my-3 text-center text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+        <div className="my-3 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-3">
           {dayLabel(day)}
         </div>
       )}
@@ -91,11 +91,11 @@ export function MessageBubble({
         {!mine && (
           <button
             onClick={() => message.sender_id && setShowContact(true)}
-            className="mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-neutral-500 underline-offset-2 hover:underline"
+            className="mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-ink-2 underline-offset-2 hover:underline"
           >
             {message.sender_name ?? 'Unknown'}
             {message.sender_role && message.sender_role !== 'parent' && (
-              <span className="rounded bg-neutral-100 px-1 py-px text-[10px] capitalize">{message.sender_role}</span>
+              <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[10px] capitalize">{message.sender_role}</span>
             )}
           </button>
         )}
@@ -115,26 +115,26 @@ export function MessageBubble({
               ? 'border-2'
               : mine
                 ? 'text-white'
-                : 'border border-neutral-200 bg-white'
+                : 'border border-[var(--line)] bg-[var(--surface)]'
           }`}
           style={
             message.is_announcement
-              ? { borderColor: '#202842', background: '#2028420d', color: '#111' }
+              ? { borderColor: 'var(--brand)', background: 'var(--brand)0d', color: '#111' }
               : message.event || message.poll
                 ? { background: 'transparent', border: 'none' }
                 : mine
-                  ? { background: '#202842' }
+                  ? { background: 'var(--brand)' }
                   : undefined
           }
         >
           {message.is_announcement && (
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide" style={{ color: '#202842' }}>
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--brand)' }}>
               Announcement
             </span>
           )}
 
           {message.reply_to_id && (
-            <div className={`mb-1.5 border-l-2 pl-2 text-xs ${mine && !message.is_announcement ? 'border-white/40 text-white/80' : 'border-neutral-300 text-neutral-500'}`}>
+            <div className={`mb-1.5 border-l-2 pl-2 text-xs ${mine && !message.is_announcement ? 'border-white/40 text-white/80' : 'border-[var(--line)] text-ink-2'}`}>
               <span className="font-medium">{message.reply_to_name ?? 'Someone'}</span>
               <span className="block truncate">{message.reply_to_body ?? 'Message deleted'}</span>
             </div>
@@ -155,7 +155,7 @@ export function MessageBubble({
           {!message.deleted_at && <MessageAttachments attachments={message.attachments} />}
 
           {message.deleted_at ? (
-            <span className={`text-sm italic ${mine && !message.is_announcement ? 'text-white/60' : 'text-neutral-400'}`}>
+            <span className={`text-sm italic ${mine && !message.is_announcement ? 'text-white/60' : 'text-ink-3'}`}>
               Message deleted
             </span>
           ) : (
@@ -164,7 +164,7 @@ export function MessageBubble({
             )
           )}
 
-          <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-white/60' : 'text-neutral-400'}`}>
+          <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-white/60' : 'text-ink-3'}`}>
             {time}{message.edited_at && ' · edited'}
           </span>
         </div>
@@ -176,29 +176,29 @@ export function MessageBubble({
               onClick={() => react(c.emoji)}
               onContextMenu={(e) => { e.preventDefault(); whoReacted(c.emoji) }}
               className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs ${
-                c.reacted_by_me ? 'border-neutral-800 bg-neutral-100' : 'border-neutral-200'
+                c.reacted_by_me ? 'border-[var(--brand)] bg-[var(--surface-2)]' : 'border-[var(--line)]'
               }`}
             >
               <span>{c.emoji}</span>
-              <span className="font-semibold text-neutral-600">{c.reaction_count}</span>
+              <span className="font-semibold text-ink-2">{c.reaction_count}</span>
             </button>
           ))}
 
           <button
             onClick={() => setPicking((v) => !v)}
-            className="rounded-full border border-dashed border-neutral-300 px-1.5 py-0.5 text-xs text-neutral-400"
+            className="rounded-full border border-dashed border-[var(--line)] px-1.5 py-0.5 text-xs text-ink-3"
             aria-label="Add a reaction"
           >
             ＋
           </button>
 
           {!message.deleted_at && (
-            <button onClick={onReply} className="px-1 text-xs text-neutral-400">Reply</button>
+            <button onClick={onReply} className="px-1 text-xs text-ink-3">Reply</button>
           )}
         </div>
 
         {picking && (
-          <div className="mt-1 flex gap-1 rounded-full border border-neutral-200 bg-white p-1 shadow-sm">
+          <div className="mt-1 flex gap-1 rounded-full border border-[var(--line)] bg-[var(--surface)] p-1 shadow-sm">
             {QUICK.map((e) => (
               <button key={e} onClick={() => react(e)} className="px-1.5 text-lg">{e}</button>
             ))}
@@ -206,7 +206,7 @@ export function MessageBubble({
         )}
 
         {voters && (
-          <button onClick={() => setVoters(null)} className="mt-1 max-w-[85%] text-left text-xs text-neutral-500">
+          <button onClick={() => setVoters(null)} className="mt-1 max-w-[85%] text-left text-xs text-ink-2">
             {voters} — tap to hide
           </button>
         )}

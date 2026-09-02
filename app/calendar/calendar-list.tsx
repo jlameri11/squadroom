@@ -53,7 +53,7 @@ export function CalendarList({ academyId, events }: { academyId: string; events:
         <section key={day}>
           <h2
             className="eyebrow sticky top-0 z-10 border-b px-4 py-2 backdrop-blur"
-            style={{ background: '#EEF1F5F2', borderColor: 'var(--line-2)' }}
+            style={{ background: 'var(--paper)F2', borderColor: 'var(--line-2)' }}
           >
             {dayLabel(day)}
           </h2>

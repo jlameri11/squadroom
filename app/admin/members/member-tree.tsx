@@ -48,7 +48,7 @@ export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeR
 
   if (items.length === 0) {
     return (
-      <p className="rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+      <p className="rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
         Only owners and admins can see who invited whom.
       </p>
     )
@@ -56,7 +56,7 @@ export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeR
 
   return (
     <div className="flex flex-col gap-2">
-      {error && <p className="text-sm text-neutral-600">{error}</p>}
+      {error && <p className="text-sm text-ink-2">{error}</p>}
 
       {items.map((r, i) => {
         const kids = descendantCount(i)
@@ -66,18 +66,18 @@ export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeR
             key={r.profileId}
             style={{ marginLeft: `${Math.min(r.depth, 4) * 16}px` }}
             className={`rounded-xl border p-3 ${
-              removed ? 'border-neutral-200 opacity-50' : 'border-neutral-200'
+              removed ? 'border-[var(--line)] opacity-50' : 'border-[var(--line)]'
             }`}
           >
             <div className="flex items-center gap-2">
               <span className="font-medium">{r.fullName}</span>
-              <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs capitalize text-neutral-600">
+              <span className="rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-xs capitalize text-ink-2">
                 {r.role}
               </span>
-              {removed && <span className="text-xs text-neutral-500">removed</span>}
+              {removed && <span className="text-xs text-ink-2">removed</span>}
             </div>
 
-            <div className="mt-0.5 text-sm text-neutral-500">
+            <div className="mt-0.5 text-sm text-ink-2">
               {r.inviterName ? `Invited by ${r.inviterName}` : 'Founded this organisation'}
               {kids > 0 && ` · brought ${kids}`}
             </div>
@@ -95,7 +95,7 @@ export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeR
                     </button>
                     <button
                       onClick={() => setConfirming(null)}
-                      className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                      className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-sm"
                     >
                       Cancel
                     </button>

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { RequestList } from './request-list'
 
 /**
@@ -14,8 +14,8 @@ import { RequestList } from './request-list'
 export default async function RequestsPage() {
   const supabase = await createClient()
 
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: requests } = await supabase
     .from('join_requests')
@@ -26,10 +26,10 @@ export default async function RequestsPage() {
   return (
     <main className="mx-auto max-w-md p-5">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>
           Join requests
         </h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-2">
           Families waiting for you to let them in.
         </p>
       </header>

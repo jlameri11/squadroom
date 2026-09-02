@@ -34,3 +34,26 @@ export async function createClient() {
     }
   )
 }
+
+/**
+ * Who is asking, without a network round trip.
+ *
+ * `getUser()` calls Supabase to revalidate the token on EVERY page render.
+ * With the proxy doing it too that was two round trips to Sydney before a
+ * page had run a single query — and it is why a signed-in screen took 1-2
+ * seconds while /signin took 29ms.
+ *
+ * `getClaims()` verifies the JWT signature locally against the project's
+ * cached JWKS, so it is arithmetic rather than a request. It is exactly as
+ * trustworthy: a forged token fails signature verification either way, and
+ * RLS is still the thing that decides what any of it can read.
+ *
+ * Returns null rather than throwing, because every caller's next line is a
+ * redirect to /signin.
+ */
+export async function getUserId(): Promise<string | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getClaims()
+  if (error || !data?.claims?.sub) return null
+  return data.claims.sub
+}

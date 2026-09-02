@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { CompetitionView, type Fixture, type LadderRow } from './competition-view'
 
 export default async function CompetitionPage(props: {
@@ -9,8 +9,8 @@ export default async function CompetitionPage(props: {
   const { competitionId } = await props.params
   const supabase = await createClient()
 
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: comp } = await supabase
     .from('competitions')
@@ -33,7 +33,7 @@ export default async function CompetitionPage(props: {
       .from('academy_members')
       .select('role')
       .eq('academy_id', comp.organiser_id)
-      .eq('profile_id', auth.user.id)
+      .eq('profile_id', userId)
       .maybeSingle(),
   ])
 
@@ -52,10 +52,10 @@ export default async function CompetitionPage(props: {
 
   return (
     <main className="mx-auto max-w-md">
-      <header className="border-b border-neutral-200 p-5">
-        <Link href="/competitions" className="text-sm text-neutral-500">← Competitions</Link>
-        <h1 className="mt-2 text-2xl font-semibold" style={{ color: '#202842' }}>{comp.name}</h1>
-        <p className="mt-0.5 text-sm capitalize text-neutral-500">
+      <header className="border-b border-[var(--line)] p-5">
+        <Link href="/competitions" className="text-sm text-ink-2">← Competitions</Link>
+        <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand)' }}>{comp.name}</h1>
+        <p className="mt-0.5 text-sm capitalize text-ink-2">
           {[comp.type.replace('_', ' '), comp.organiser, comp.season].filter(Boolean).join(' · ')}
         </p>
       </header>

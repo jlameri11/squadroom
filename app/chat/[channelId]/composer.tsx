@@ -222,7 +222,7 @@ export function Composer({
 
   if (archived) {
     return (
-      <div className="border-t border-neutral-200 p-4 text-center text-sm text-neutral-500">
+      <div className="border-t border-[var(--line)] p-4 text-center text-sm text-ink-2">
         This season has ended. Everything is still here to read.
       </div>
     )
@@ -230,8 +230,8 @@ export function Composer({
 
   if (!canPost) {
     return (
-      <div className="border-t border-neutral-200 p-3">
-        <p className="mb-2 text-center text-xs text-neutral-500">
+      <div className="border-t border-[var(--line)] p-3">
+        <p className="mb-2 text-center text-xs text-ink-2">
           Only hosts post here. You can still react.
         </p>
         <div className="flex gap-1.5">
@@ -239,7 +239,7 @@ export function Composer({
             <button
               key={e}
               onClick={() => quickReact(e)}
-              className="flex-1 rounded-lg border border-neutral-200 py-1.5 text-lg active:bg-neutral-100"
+              className="flex-1 rounded-lg border border-[var(--line)] py-1.5 text-lg active:bg-[var(--surface-2)]"
             >
               {e}
             </button>
@@ -250,20 +250,20 @@ export function Composer({
   }
 
   return (
-    <div className="border-t border-neutral-200">
+    <div className="border-t border-[var(--line)]">
       {replyTo && (
-        <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-2 text-xs">
-          <span className="min-w-0 flex-1 truncate text-neutral-500">
+        <div className="flex items-center gap-2 border-b border-[var(--line-2)] px-4 py-2 text-xs">
+          <span className="min-w-0 flex-1 truncate text-ink-2">
             Replying to <b>{replyTo.sender_name}</b>: {replyTo.body}
           </span>
-          <button onClick={onCancelReply} className="text-neutral-400">✕</button>
+          <button onClick={onCancelReply} className="text-ink-3">✕</button>
         </div>
       )}
 
       {error && <p className="px-4 pt-2 text-xs text-red-600">{error}</p>}
 
       {isHost && (
-        <label className="flex items-center gap-2 px-4 pt-2 text-xs text-neutral-500">
+        <label className="flex items-center gap-2 px-4 pt-2 text-xs text-ink-2">
           <input
             type="checkbox"
             checked={announcement}
@@ -281,7 +281,7 @@ export function Composer({
               <img src={p.preview} alt="" className="h-16 w-16 rounded-lg object-cover" />
               <button
                 onClick={() => removePending(i)}
-                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-neutral-900 text-xs text-white"
+                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--brand)] text-xs text-white"
                 aria-label="Remove"
               >
                 ✕
@@ -292,7 +292,7 @@ export function Composer({
       )}
 
       {pollOpen && (
-        <div className="border-b border-neutral-100 p-3">
+        <div className="border-b border-[var(--line-2)] p-3">
           <div className="mb-2 flex gap-1">
             {(['availability', 'simple'] as const).map((k) => (
               <button
@@ -300,8 +300,8 @@ export function Composer({
                 onClick={() => setPollKind(k)}
                 className="flex-1 rounded-lg border py-1.5 text-xs font-semibold"
                 style={pollKind === k
-                  ? { borderColor: '#202842', background: '#2028420f', color: '#202842' }
-                  : { borderColor: '#E5E7EB', color: '#6B7280' }}
+                  ? { borderColor: 'var(--brand)', background: 'var(--brand)0f', color: 'var(--brand)' }
+                  : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
               >
                 {k === 'availability' ? 'Who’s available' : 'Question'}
               </button>
@@ -315,7 +315,7 @@ export function Composer({
             placeholder={pollKind === 'availability'
               ? 'Gala Day — Sun 20 Sep, Valentine Park. Who’s available?'
               : 'What should we do for the end of season?'}
-            className="w-full rounded-lg border border-neutral-300 p-2 text-sm"
+            className="w-full rounded-lg border border-[var(--line)] p-2 text-sm"
           />
 
           {pollKind === 'simple' ? (
@@ -324,10 +324,10 @@ export function Composer({
               onChange={(e) => setPollOptions(e.target.value)}
               rows={3}
               placeholder={'One option per line\nBBQ at the park\nBowling\nPresentation night'}
-              className="mt-2 w-full rounded-lg border border-neutral-300 p-2 text-sm"
+              className="mt-2 w-full rounded-lg border border-[var(--line)] p-2 text-sm"
             />
           ) : (
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-ink-2">
               Each family answers yes, maybe or no for each of their children.
             </p>
           )}
@@ -336,11 +336,11 @@ export function Composer({
             <button
               onClick={createPoll}
               className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white"
-              style={{ background: '#202842' }}
+              style={{ background: 'var(--brand)' }}
             >
               Post the poll
             </button>
-            <button onClick={() => setPollOpen(false)} className="rounded-lg border border-neutral-300 px-3 py-2 text-sm">
+            <button onClick={() => setPollOpen(false)} className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm">
               Cancel
             </button>
           </div>
@@ -348,19 +348,19 @@ export function Composer({
       )}
 
       {fixtures && (
-        <div className="max-h-56 overflow-y-auto border-b border-neutral-100">
+        <div className="max-h-56 overflow-y-auto border-b border-[var(--line-2)]">
           {fixtures.length === 0 && (
-            <p className="p-3 text-center text-sm text-neutral-500">Nothing coming up for this team.</p>
+            <p className="p-3 text-center text-sm text-ink-2">Nothing coming up for this team.</p>
           )}
           {fixtures.map((f) => (
             <button
               key={f.id}
               onClick={() => shareFixture(f.id)}
-              className="flex w-full items-center gap-3 border-b border-neutral-50 px-4 py-2.5 text-left active:bg-neutral-50"
+              className="flex w-full items-center gap-3 border-b border-[var(--line-2)] px-4 py-2.5 text-left active:bg-[var(--surface-3)]"
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{f.title}</span>
-                <span className="block text-xs capitalize text-neutral-500">
+                <span className="block text-xs capitalize text-ink-2">
                   {f.type} ·{' '}
                   {new Date(f.starts_at).toLocaleString('en-AU', {
                     weekday: 'short', day: 'numeric', month: 'short',
@@ -368,7 +368,7 @@ export function Composer({
                   })}
                 </span>
               </span>
-              <span className="flex-none text-xs font-semibold" style={{ color: '#202842' }}>Post</span>
+              <span className="flex-none text-xs font-semibold" style={{ color: 'var(--brand)' }}>Post</span>
             </button>
           ))}
         </div>
@@ -385,7 +385,7 @@ export function Composer({
         />
         <button
           onClick={() => fileInput.current?.click()}
-          className="grid h-10 w-10 flex-none place-items-center rounded-full text-xl text-neutral-500"
+          className="grid h-10 w-10 flex-none place-items-center rounded-full text-xl text-ink-2"
           aria-label="Add a photo"
         >
           ＋
@@ -393,7 +393,7 @@ export function Composer({
         {isHost && (
           <button
             onClick={() => { setPollOpen((v) => !v); setFixtures(null) }}
-            className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-neutral-500"
+            className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-ink-2"
             aria-label="Create a poll"
           >
             📊
@@ -402,7 +402,7 @@ export function Composer({
         {isHost && (
           <button
             onClick={openFixtures}
-            className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-neutral-500"
+            className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-ink-2"
             aria-label="Share a fixture"
           >
             📅
@@ -418,13 +418,13 @@ export function Composer({
           placeholder={
             !isHost && postingMode === 'replies_only' ? 'Reply to the team…' : 'Message'
           }
-          className="max-h-32 flex-1 resize-none rounded-2xl bg-neutral-100 px-3.5 py-2.5 text-[15px] outline-none"
+          className="max-h-32 flex-1 resize-none rounded-2xl bg-[var(--surface-2)] px-3.5 py-2.5 text-[15px] outline-none"
         />
         <button
           onClick={send}
           disabled={(!text.trim() && pending.length === 0) || uploading}
           className="grid h-10 w-10 flex-none place-items-center rounded-full text-white disabled:opacity-40"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
           aria-label="Send"
         >
           {uploading ? '…' : '↑'}

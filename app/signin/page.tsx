@@ -68,7 +68,7 @@ export default function SignIn() {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-3 p-6">
         <h1 className="text-2xl font-semibold">Check your email</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-2">
           We sent a sign-in link to {email}. It expires shortly and works once.
         </p>
       </main>
@@ -79,19 +79,19 @@ export default function SignIn() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
       <div>
         <h1 className="text-2xl font-semibold">Squadroom</h1>
-        <p className="mt-1 text-sm text-neutral-500">Coach and admin sign-in.</p>
+        <p className="mt-1 text-sm text-ink-2">Coach and admin sign-in.</p>
       </div>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Email</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Email</span>
           <input
             required
             type="email"
             inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3 text-base"
+            className="rounded-xl border border-[var(--line)] px-3 py-3 text-base"
             autoComplete="email"
             // A phone will otherwise capitalise and autocorrect an email
             // address into something that no longer exists.
@@ -107,18 +107,18 @@ export default function SignIn() {
           type="submit"
           disabled={busy}
           className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Sending…' : 'Email me a link'}
         </button>
 
-        <p className="text-center text-sm text-neutral-500">
+        <p className="text-center text-sm text-ink-2">
           New here?{' '}
           <Link href="/signup" className="underline underline-offset-4">
             Set up an academy or club
           </Link>
         </p>
-        <p className="text-center text-xs text-neutral-500">
+        <p className="text-center text-xs text-ink-2">
           Parents don&apos;t sign in — their coach lets them in.
         </p>
       </form>

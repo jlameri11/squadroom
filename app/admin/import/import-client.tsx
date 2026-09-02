@@ -26,7 +26,7 @@ type Prepared = {
   problem: string | null
 }
 
-const NAVY = '#202842'
+const NAVY = 'var(--brand)'
 
 export function ImportClient({
   academyId,
@@ -154,7 +154,7 @@ export function ImportClient({
       <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
         Import a draw
       </h1>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-ink-2">
         In Dribl: Events → filter to your team → Export → Events. Then drop the file here.
         Nothing is created until you have checked it.
       </p>
@@ -171,7 +171,7 @@ export function ImportClient({
       )}
 
       {headers.length === 0 ? (
-        <label className="mt-4 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 p-6 text-center">
+        <label className="mt-4 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--line)] p-6 text-center">
           <input
             type="file"
             accept=".csv,.xlsx,.xls,text/csv"
@@ -184,23 +184,23 @@ export function ImportClient({
             }}
           />
           {busy ? (
-            <span className="text-sm text-neutral-600">{busy}</span>
+            <span className="text-sm text-ink-2">{busy}</span>
           ) : (
             <>
               <span className="font-medium" style={{ color: NAVY }}>
                 Choose a spreadsheet
               </span>
-              <span className="mt-1 text-sm text-neutral-500">.csv, .xlsx or .xls</span>
+              <span className="mt-1 text-sm text-ink-2">.csv, .xlsx or .xls</span>
             </>
           )}
         </label>
       ) : (
         <>
-          <p className="mt-4 text-sm text-neutral-500">
+          <p className="mt-4 text-sm text-ink-2">
             <b>{fileName}</b> · {rows.length} rows
           </p>
 
-          <section className="mt-4 rounded-xl border border-neutral-200 p-4">
+          <section className="mt-4 rounded-xl border border-[var(--line)] p-4">
             <h2 className="font-semibold">Which column is which?</h2>
             {/*
               The suggestion is the starting point, not the answer. Every field
@@ -208,7 +208,7 @@ export function ImportClient({
               guessed and never shown is how an importer quietly puts every
               game on the wrong day.
             */}
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-ink-2">
               I have had a guess from the column names. Check the two marked required —
               everything else can stay blank.
             </p>
@@ -216,7 +216,7 @@ export function ImportClient({
             <div className="mt-3 flex flex-col gap-2">
               {FIELDS.map((field) => (
                 <label key={field.key} className="text-sm">
-                  <span className="text-neutral-500">
+                  <span className="text-ink-2">
                     {field.label}
                     {field.required && <span className="text-red-600"> *</span>}
                   </span>
@@ -225,7 +225,7 @@ export function ImportClient({
                     onChange={(e) =>
                       setMapping({ ...mapping, [field.key]: e.target.value || undefined })
                     }
-                    className="mt-0.5 w-full rounded-lg border border-neutral-300 p-2"
+                    className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
                   >
                     <option value="">— not in this file —</option>
                     {headers.map((h) => (
@@ -234,7 +234,7 @@ export function ImportClient({
                       </option>
                     ))}
                   </select>
-                  <span className="mt-0.5 block text-xs text-neutral-400">{field.hint}</span>
+                  <span className="mt-0.5 block text-xs text-ink-3">{field.hint}</span>
                 </label>
               ))}
             </div>
@@ -245,7 +245,7 @@ export function ImportClient({
             <select
               value={teamId}
               onChange={(e) => setTeamId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-300 p-2.5 text-sm"
+              className="mt-1 w-full rounded-lg border border-[var(--line)] p-2.5 text-sm"
             >
               <option value="">Everyone at {academyName}</option>
               {teams.map((t) => (
@@ -260,21 +260,21 @@ export function ImportClient({
             <h2 className="font-semibold" style={{ color: NAVY }}>
               {good.length} {good.length === 1 ? 'game' : 'games'} ready
             </h2>
-            <p className="mt-0.5 text-xs text-neutral-500">
+            <p className="mt-0.5 text-xs text-ink-2">
               Times are read exactly as written and set in {timezone}.
             </p>
 
             <ul className="mt-2 flex flex-col gap-1">
               {good.slice(0, 8).map((p) => (
-                <li key={p.index} className="flex justify-between gap-3 border-b border-neutral-100 py-1.5 text-sm">
+                <li key={p.index} className="flex justify-between gap-3 border-b border-[var(--line-2)] py-1.5 text-sm">
                   <span className="min-w-0 truncate">{p.title}</span>
-                  <span className="flex-none tabular-nums text-neutral-500">
+                  <span className="flex-none tabular-nums text-ink-2">
                     {formatWhen(p.local_date!, p.local_time!)}
                   </span>
                 </li>
               ))}
               {good.length > 8 && (
-                <li className="py-1 text-xs text-neutral-400">…and {good.length - 8} more</li>
+                <li className="py-1 text-xs text-ink-3">…and {good.length - 8} more</li>
               )}
             </ul>
 
@@ -317,13 +317,13 @@ export function ImportClient({
                 setHeaders([])
                 setRows([])
               }}
-              className="rounded-xl border border-neutral-300 px-4 py-3 text-sm"
+              className="rounded-xl border border-[var(--line)] px-4 py-3 text-sm"
             >
               Cancel
             </button>
           </div>
 
-          <p className="mt-3 text-xs text-neutral-500">
+          <p className="mt-3 text-xs text-ink-2">
             Importing the same draw again updates the games that moved rather than creating a
             second copy of the season.
           </p>

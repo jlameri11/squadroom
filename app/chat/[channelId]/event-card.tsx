@@ -21,9 +21,9 @@ type Rsvp = { player_id: string; player_name: string; status: string | null; not
 type Summary = { going: number; maybe: number; out_count: number; no_reply: number }
 
 const CHOICES = [
-  { value: 'yes',   label: 'Going', tint: '#1C7A4C' },
-  { value: 'maybe', label: 'Maybe', tint: '#9C6B06' },
-  { value: 'no',    label: 'Out',   tint: '#8E3020' },
+  { value: 'yes',   label: 'Going', tint: 'var(--yes)' },
+  { value: 'maybe', label: 'Maybe', tint: 'var(--maybe)' },
+  { value: 'no',    label: 'Out',   tint: 'var(--no)' },
 ] as const
 
 /**
@@ -78,21 +78,21 @@ export function EventCard({
   const cancelled = Boolean(event.cancelled_at)
 
   return (
-    <div className={`w-full overflow-hidden rounded-xl border bg-white ${cancelled ? 'opacity-60' : ''}`}
-         style={{ borderColor: '#202842' }}>
-      <div className="flex items-center gap-2 px-3 py-2" style={{ background: '#2028420d' }}>
+    <div className={`w-full overflow-hidden rounded-xl border bg-[var(--surface)] ${cancelled ? 'opacity-60' : ''}`}
+         style={{ borderColor: 'var(--brand)' }}>
+      <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand)0d' }}>
         <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
-              style={{ background: '#202842' }}>
+              style={{ background: 'var(--brand)' }}>
           {cancelled ? 'Cancelled' : event.type}
         </span>
-        {event.round && <span className="text-xs font-medium text-neutral-600">{event.round}</span>}
+        {event.round && <span className="text-xs font-medium text-ink-2">{event.round}</span>}
       </div>
 
       <div className="p-3">
         <p className="font-semibold leading-snug">{event.title}</p>
 
         <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
-          <dt className="text-neutral-500">When</dt>
+          <dt className="text-ink-2">When</dt>
           <dd className="tabular-nums">
             {when.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
             {', '}
@@ -101,7 +101,7 @@ export function EventCard({
 
           {event.arrive_at && (
             <>
-              <dt className="text-neutral-500">Arrive</dt>
+              <dt className="text-ink-2">Arrive</dt>
               <dd className="tabular-nums">
                 {new Date(event.arrive_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
               </dd>
@@ -110,7 +110,7 @@ export function EventCard({
 
           {event.venue && (
             <>
-              <dt className="text-neutral-500">Where</dt>
+              <dt className="text-ink-2">Where</dt>
               <dd>
                 {/* Straight to Maps. A parent reading this is in a car. */}
                 <a
@@ -118,7 +118,7 @@ export function EventCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2"
-                  style={{ color: '#202842' }}
+                  style={{ color: 'var(--brand)' }}
                 >
                   {event.venue}
                 </a>
@@ -128,7 +128,7 @@ export function EventCard({
 
           {event.kit_colour && (
             <>
-              <dt className="text-neutral-500">Kit</dt>
+              <dt className="text-ink-2">Kit</dt>
               <dd>{event.kit_colour}</dd>
             </>
           )}
@@ -138,7 +138,7 @@ export function EventCard({
           <div className="mt-3 flex flex-col gap-2">
             {rsvps.map((r) => (
               <div key={r.player_id} className="flex items-center gap-2">
-                <span className="w-14 flex-none truncate text-sm font-medium text-neutral-600">
+                <span className="w-14 flex-none truncate text-sm font-medium text-ink-2">
                   {r.player_name.split(' ')[0]}
                 </span>
                 <div className="flex flex-1 gap-1">
@@ -153,7 +153,7 @@ export function EventCard({
                         style={
                           on
                             ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
-                            : { borderColor: '#E5E7EB', color: '#6B7280' }
+                            : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
                         }
                       >
                         {c.label}
@@ -169,22 +169,22 @@ export function EventCard({
         {!cancelled && (
           <a
             href={`/api/ics/${event.id}`}
-            className="mt-3 block rounded-lg border border-neutral-200 py-2 text-center text-xs font-semibold"
-            style={{ color: '#202842' }}
+            className="mt-3 block rounded-lg border border-[var(--line)] py-2 text-center text-xs font-semibold"
+            style={{ color: 'var(--brand)' }}
           >
             Add to calendar
           </a>
         )}
 
         {isCoach && summary && (
-          <p className="mt-3 border-t border-neutral-100 pt-2 text-xs text-neutral-500">
-            <b style={{ color: '#1C7A4C' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
+          <p className="mt-3 border-t border-[var(--line-2)] pt-2 text-xs text-ink-2">
+            <b style={{ color: 'var(--yes)' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
             {summary.out_count} out · {summary.no_reply} no reply
           </p>
         )}
 
         {!isCoach && rsvps.length === 0 && !cancelled && (
-          <p className="mt-2 text-xs text-neutral-500">
+          <p className="mt-2 text-xs text-ink-2">
             No children of yours in this team yet.
           </p>
         )}

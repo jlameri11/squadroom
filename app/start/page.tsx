@@ -48,35 +48,35 @@ export default function Start() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
       <div>
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>
           Set up your organisation
         </h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm text-ink-2">
           You&apos;ll be the owner. You can invite coaches straight after.
         </p>
       </div>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Name</span>
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="NRIFA Football Academy"
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
           />
         </label>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-2">
             What is it?
           </legend>
           {TYPES.map((t) => (
             <label
               key={t.value}
               className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${
-                type === t.value ? 'border-neutral-900' : 'border-neutral-200'
+                type === t.value ? 'border-[var(--brand)]' : 'border-[var(--line)]'
               }`}
             >
               <input
@@ -88,7 +88,7 @@ export default function Start() {
               />
               <span>
                 <span className="block font-medium">{t.label}</span>
-                <span className="block text-sm text-neutral-500">{t.hint}</span>
+                <span className="block text-sm text-ink-2">{t.hint}</span>
               </span>
             </label>
           ))}
@@ -100,7 +100,7 @@ export default function Start() {
           type="submit"
           disabled={busy}
           className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-          style={{ background: '#202842' }}
+          style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Creating…' : 'Create it'}
         </button>

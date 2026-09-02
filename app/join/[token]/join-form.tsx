@@ -80,7 +80,7 @@ export function JoinForm({
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
         <h1 className="text-2xl font-semibold">Waiting for your coach</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-2">
           They&apos;ll see that you asked to join {teamName ?? academyName} and tap approve. You can
           close this — come back any time.
         </p>
@@ -88,7 +88,7 @@ export function JoinForm({
         <button
           onClick={checkApproval}
           disabled={busy}
-          className="rounded-xl bg-neutral-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-white disabled:opacity-50"
         >
           {busy ? 'Checking…' : 'Check again'}
         </button>
@@ -100,28 +100,28 @@ export function JoinForm({
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
       <div>
         <h1 className="text-2xl font-semibold">Join {teamName ?? academyName}</h1>
-        <p className="mt-1 text-sm text-neutral-500">{academyName}</p>
+        <p className="mt-1 text-sm text-ink-2">{academyName}</p>
       </div>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Your name</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Your name</span>
           <input
             required
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
             autoComplete="name"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Mobile</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Mobile</span>
           <input
             required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
             inputMode="tel"
             autoComplete="tel"
             placeholder="0412 345 678"
@@ -129,13 +129,13 @@ export function JoinForm({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
             Your children in this team
           </span>
           <input
             value={children}
             onChange={(e) => setChildren(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
             placeholder="Leo Whitfield, Zoe Whitfield"
           />
         </label>
@@ -145,11 +145,11 @@ export function JoinForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-neutral-900 px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-white disabled:opacity-50"
         >
           {busy ? 'Sending…' : 'Request to join'}
         </button>
-        <p className="text-center text-xs text-neutral-500">
+        <p className="text-center text-xs text-ink-2">
           No password. No verification code. Your coach approves you.
         </p>
       </form>

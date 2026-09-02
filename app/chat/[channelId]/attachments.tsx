@@ -50,7 +50,7 @@ export function MessageAttachments({ attachments }: { attachments: unknown }) {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white p-2 text-sm"
+              className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2 text-sm"
             >
               <span className="text-lg">📄</span>
               <span className="min-w-0 flex-1 truncate">{a.name}</span>
@@ -71,7 +71,7 @@ export function MessageAttachments({ attachments }: { attachments: unknown }) {
               />
             ) : (
               <div
-                className="w-full animate-pulse rounded-lg bg-neutral-200"
+                className="w-full animate-pulse rounded-lg bg-[var(--surface-2)]"
                 style={{ aspectRatio: list.length > 1 ? '1 / 1' : String(ratio) }}
               />
             )}

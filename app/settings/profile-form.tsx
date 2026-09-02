@@ -39,25 +39,25 @@ export function ProfileForm({
   return (
     <form onSubmit={save} className="mt-5 flex flex-col gap-4">
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Name</span>
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="rounded-xl border border-neutral-300 px-3 py-3"
+          className="rounded-xl border border-[var(--line)] px-3 py-3"
         />
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Mobile</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Mobile</span>
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           inputMode="tel"
           placeholder="0412 345 678"
-          className="rounded-xl border border-neutral-300 px-3 py-3"
+          className="rounded-xl border border-[var(--line)] px-3 py-3"
         />
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-ink-2">
           {/* Say what it is for and who sees it, at the point of asking. */}
           So your team can call or text you. Coaches and admins are always
           contactable; whether families can see each other&apos;s numbers is your
@@ -66,7 +66,7 @@ export function ProfileForm({
       </label>
 
       {email && (
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-ink-2">
           You sign in with {email}.
         </p>
       )}
@@ -78,7 +78,7 @@ export function ProfileForm({
         type="submit"
         disabled={busy}
         className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-        style={{ background: '#202842' }}
+        style={{ background: 'var(--brand)' }}
       >
         {busy ? 'Saving…' : 'Save'}
       </button>

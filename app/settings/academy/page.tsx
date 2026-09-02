@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUserId } from '@/lib/supabase/server'
 import { AcademySettings } from './academy-settings'
 
 export default async function AcademySettingsPage() {
   const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/signin')
+  const userId = await getUserId()
+  if (!userId) redirect('/signin')
 
   const { data: academies } = await supabase
     .from('academies')
@@ -18,15 +18,15 @@ export default async function AcademySettingsPage() {
     .from('academy_members')
     .select('role')
     .eq('academy_id', academy.id)
-    .eq('profile_id', auth.user.id)
+    .eq('profile_id', userId)
     .maybeSingle()
 
   const isStaff = me?.role === 'owner' || me?.role === 'admin'
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Academy settings</h1>
-      <p className="mt-1 text-sm text-neutral-500">{academy.name}</p>
+      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Academy settings</h1>
+      <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
 
       {isStaff ? (
         <AcademySettings
@@ -35,7 +35,7 @@ export default async function AcademySettingsPage() {
           directoryVisibility={academy.directory_visibility}
         />
       ) : (
-        <p className="mt-5 rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+        <p className="mt-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
           Only owners and admins can change these.
         </p>
       )}

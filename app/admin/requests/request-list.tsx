@@ -36,7 +36,7 @@ export function RequestList({ initial }: { initial: PendingRequest[] }) {
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+      <p className="rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
         Nobody waiting. New requests land here the moment someone taps your team link.
       </p>
     )
@@ -47,13 +47,13 @@ export function RequestList({ initial }: { initial: PendingRequest[] }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {rows.map((r) => (
-        <article key={r.id} className="rounded-xl border border-neutral-200 p-4">
+        <article key={r.id} className="rounded-xl border border-[var(--line)] p-4">
           <div className="font-semibold">{r.fullName}</div>
-          <div className="mt-0.5 text-sm text-neutral-500">
+          <div className="mt-0.5 text-sm text-ink-2">
             {[r.team ?? r.academy, r.phone].filter(Boolean).join(' · ')}
           </div>
           {r.children.length > 0 && (
-            <div className="mt-1 text-sm text-neutral-500">
+            <div className="mt-1 text-sm text-ink-2">
               Children: {r.children.join(', ')}
             </div>
           )}
@@ -66,14 +66,14 @@ export function RequestList({ initial }: { initial: PendingRequest[] }) {
               onClick={() => decide(r.id, 'approve')}
               disabled={busyId === r.id}
               className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: '#202842' }}
+              style={{ background: 'var(--brand)' }}
             >
               {busyId === r.id ? 'Working…' : 'Approve'}
             </button>
             <button
               onClick={() => decide(r.id, 'decline')}
               disabled={busyId === r.id}
-              className="rounded-lg border border-neutral-300 px-3 py-2.5 text-sm font-medium disabled:opacity-50"
+              className="rounded-lg border border-[var(--line)] px-3 py-2.5 text-sm font-medium disabled:opacity-50"
             >
               Decline
             </button>
