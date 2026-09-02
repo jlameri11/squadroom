@@ -24,17 +24,17 @@ export type UpcomingEvent = {
 }
 
 const TYPE_TINT: Record<string, string> = {
-  match: '#202842',
-  tournament: '#9C6B06',
-  training: '#6B7280',
-  social: '#1C7A4C',
-  other: '#6B7280',
+  match: 'var(--brand)',
+  tournament: 'var(--maybe)',
+  training: 'var(--ink-2)',
+  social: 'var(--yes)',
+  other: 'var(--ink-2)',
 }
 
 export function CalendarList({ academyId, events }: { academyId: string; events: UpcomingEvent[] }) {
   if (events.length === 0) {
     return (
-      <p className="m-5 rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+      <p className="card m-4 p-6 text-center text-sm text-ink-3">
         Nothing coming up for your teams.
       </p>
     )
@@ -51,7 +51,10 @@ export function CalendarList({ academyId, events }: { academyId: string; events:
     <div>
       {[...days.entries()].map(([day, list]) => (
         <section key={day}>
-          <h2 className="sticky top-0 border-b border-neutral-100 bg-neutral-50/95 px-5 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 backdrop-blur">
+          <h2
+            className="eyebrow sticky top-0 z-10 border-b px-4 py-2 backdrop-blur"
+            style={{ background: '#EEF1F5F2', borderColor: 'var(--line-2)' }}
+          >
             {dayLabel(day)}
           </h2>
 
@@ -64,48 +67,47 @@ export function CalendarList({ academyId, events }: { academyId: string; events:
               <Link
                 key={e.id}
                 href={`/calendar/${e.id}`}
-                className={`flex items-start gap-3 border-b border-neutral-100 px-5 py-3 ${cancelled ? 'opacity-50' : ''}`}
+                className={`row items-start ${cancelled ? 'opacity-50' : ''}`}
+                style={{ borderColor: 'var(--line-2)' }}
               >
-                <span className="mt-0.5 w-14 flex-none text-sm font-semibold tabular-nums" style={{ color: TYPE_TINT[e.type] ?? '#6B7280' }}>
+                <span className="display mt-0.5 w-14 flex-none text-[15px] tabular-nums" style={{ color: TYPE_TINT[e.type] ?? 'var(--ink-2)' }}>
                   {new Date(e.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
                 </span>
 
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate font-medium">{e.title}</span>
-                    {cancelled && <span className="text-xs font-semibold text-red-600">Cancelled</span>}
+                    {cancelled && (
+                      <span className="tag" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>Off</span>
+                    )}
                     {/*
                       A game a machine read off a screenshot is not the same
                       claim as one a coach typed, and until somebody has
                       checked it, it should not look like one.
                     */}
                     {e.source === 'screenshot' && !e.confirmed_at && (
-                      <span className="flex-none rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold text-amber-800">
-                        Check this
+                      <span className="tag flex-none" style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}>
+                        Check
                       </span>
                     )}
                   </span>
-                  <span className="block truncate text-sm text-neutral-500">
+                  <span className="block truncate text-sm text-ink-3">
                     {[e.team_name, e.venue, e.round, e.private_to ? 'Only you' : null]
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
                   {e.competition && (
-                    <span className="mt-0.5 inline-block rounded bg-neutral-100 px-1.5 py-px text-[10px] text-neutral-600">
-                      {e.competition}
-                    </span>
+                    <span className="tag mt-1 inline-block">{e.competition}</span>
                   )}
                 </span>
 
                 <span className="flex-none text-right">
                   {owed && (
-                    <span className="rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: '#DD5620' }}>
-                      {e.my_children - e.my_replies} to answer
-                    </span>
+                    <span className="pill">{e.my_children - e.my_replies} to answer</span>
                   )}
                   {!owed && e.going !== null && (
-                    <span className="text-xs text-neutral-500">
-                      <b style={{ color: '#1C7A4C' }}>{e.going} in</b>
+                    <span className="text-xs text-ink-3">
+                      <b style={{ color: 'var(--yes)' }}>{e.going} in</b>
                       {e.no_reply ? ` · ${e.no_reply} quiet` : ''}
                     </span>
                   )}

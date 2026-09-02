@@ -20,22 +20,24 @@ export function ChannelList({ channels }: { channels: Row[] }) {
 
   if (channels.length === 0) {
     return (
-      <p className="m-5 rounded-xl bg-neutral-100 p-5 text-center text-sm text-neutral-500">
+      <p className="m-4 card p-6 text-center text-sm text-ink-3">
         No channels yet. Create a team and its channel appears automatically.
       </p>
     )
   }
 
   return (
-    <div>
-      {active.map((c) => <ChannelRow key={c.channel_id} c={c} />)}
+    <div className="p-4">
+      <div className="card overflow-hidden">
+        {active.map((c) => <ChannelRow key={c.channel_id} c={c} />)}
+      </div>
 
       {archived.length > 0 && (
         <>
-          <h2 className="px-5 pb-1 pt-6 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Past seasons
-          </h2>
-          {archived.map((c) => <ChannelRow key={c.channel_id} c={c} />)}
+          <h2 className="eyebrow px-1 pb-2 pt-6">Past seasons</h2>
+          <div className="card overflow-hidden">
+            {archived.map((c) => <ChannelRow key={c.channel_id} c={c} />)}
+          </div>
         </>
       )}
     </div>
@@ -49,11 +51,11 @@ function ChannelRow({ c }: { c: Row }) {
   return (
     <Link
       href={`/chat/${c.channel_id}`}
-      className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3.5 active:bg-neutral-50"
+      className="row active:bg-[var(--surface-3)]"
     >
       <span
-        className="grid h-11 w-11 flex-none place-items-center rounded-xl text-sm font-bold text-white"
-        style={{ background: c.status === 'archived' ? '#9CA3AF' : '#202842' }}
+        className="display grid h-11 w-11 flex-none place-items-center rounded-xl text-[15px] text-white"
+        style={{ background: c.status === 'archived' ? 'var(--ink-3)' : 'var(--brand)' }}
       >
         {initials}
       </span>
@@ -61,9 +63,9 @@ function ChannelRow({ c }: { c: Row }) {
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate font-semibold">{c.name ?? 'Direct message'}</span>
-          {c.muted && <span className="text-xs text-neutral-400">muted</span>}
+          {c.muted && <span className="tag">muted</span>}
         </span>
-        <span className="block truncate text-sm text-neutral-500">
+        <span className="block truncate text-sm text-ink-3">
           {c.last_message_body
             ? `${c.last_sender_name ? c.last_sender_name.split(' ')[0] + ': ' : ''}${c.last_message_body}`
             : c.last_message_at
@@ -74,7 +76,7 @@ function ChannelRow({ c }: { c: Row }) {
 
       <span className="flex flex-none flex-col items-end gap-1.5">
         {c.last_message_at && (
-          <span className="text-xs text-neutral-400">{shortTime(c.last_message_at)}</span>
+          <span className="text-xs text-ink-3">{shortTime(c.last_message_at)}</span>
         )}
         {c.unread_count > 0 && (
           // Muted still counts. Muting says "don't buzz me", not "hide this

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { InviteClubs, type ExistingInvite } from './invite-clubs'
+import { siteUrl } from '@/lib/site'
 
 export default async function InviteClubsPage(props: {
   params: Promise<{ competitionId: string }>
@@ -30,7 +31,9 @@ export default async function InviteClubsPage(props: {
   ])
 
   const h = await headers()
-  const origin = `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host') ?? 'localhost:3000'}`
+  // The canonical site, never the request host. A join link goes into a
+  // WhatsApp group and has to keep working after the next deploy.
+  const origin = siteUrl()
 
   // The tokens themselves are only readable by the organiser, so they are
   // fetched separately rather than through the contacts function.

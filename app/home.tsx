@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { AppBar, TabBar, Screen } from '@/components/app-shell'
 
 export type HomeEvent = {
   id: string
@@ -36,11 +37,11 @@ type Academy = {
 }
 
 const TYPE_TINT: Record<string, string> = {
-  match: '#202842',
-  tournament: '#9C6B06',
-  training: '#6B7280',
-  social: '#1C7A4C',
-  other: '#6B7280',
+  match: 'var(--brand)',
+  tournament: 'var(--maybe)',
+  training: 'var(--ink-2)',
+  social: 'var(--yes)',
+  other: 'var(--ink-2)',
 }
 
 /**
@@ -74,38 +75,28 @@ export function Home({
   events: HomeEvent[]
   channels: HomeChannel[]
 }) {
+  const unread = channels.reduce((sum, c) => sum + (c.muted ? 0 : c.unread_count), 0)
   const isStaff = role === 'owner' || role === 'admin'
   const isCoach = isStaff || role === 'coach'
   const tint = academy.primary_colour || '#202842'
 
   return (
-    <main className="mx-auto max-w-md pb-10">
-      <header className="flex items-center gap-3 p-5 pb-4">
-        <span
-          className="grid h-11 w-11 flex-none place-items-center overflow-hidden rounded-xl text-sm font-bold text-white"
-          style={{ background: tint }}
-        >
-          {academy.logo_url ? (
-            <img src={academy.logo_url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            academy.name.slice(0, 2).toUpperCase()
-          )}
-        </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold" style={{ color: tint }}>
-            {academy.name}
-          </h1>
-          <p className="text-sm capitalize text-neutral-500">{role}</p>
-        </div>
-      </header>
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+      <AppBar
+        title={academy.name}
+        meta={`${role[0].toUpperCase()}${role.slice(1)} · ${todayLabel()}`}
+        crest={academy.name.slice(0, 2).toUpperCase()}
+      />
 
+      <Screen>
       {needsPhone && (
         <Link
           href="/settings"
-          className="mx-5 mb-4 block rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm"
+          className="card mx-4 mb-4 mt-4 block p-3.5 text-sm"
+          style={{ borderColor: 'var(--gold)', background: '#FDF7E9' }}
         >
-          <b className="text-amber-800">Add your mobile number</b>
-          <span className="mt-0.5 block text-amber-700">
+          <b style={{ color: '#7A5B12' }}>Add your mobile number</b>
+          <span className="mt-0.5 block" style={{ color: '#8A6A22' }}>
             Your team can&apos;t call or text you without it.
           </span>
         </Link>
@@ -119,10 +110,10 @@ export function Home({
       {isCoach && pendingRequests > 0 && (
         <Link
           href="/admin/requests"
-          className="mx-5 mb-4 flex items-center gap-3 rounded-xl p-3 text-sm text-white"
-          style={{ background: '#DD5620' }}
+          className="mx-4 mb-4 flex items-center gap-3 rounded-[14px] p-3.5 text-sm text-white"
+          style={{ background: 'var(--accent)', boxShadow: 'var(--shadow)' }}
         >
-          <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-white/25 font-bold">
+          <span className="display grid h-8 w-8 flex-none place-items-center rounded-full bg-white/25 text-base">
             {pendingRequests}
           </span>
           <span>
@@ -145,18 +136,22 @@ export function Home({
                 <li key={e.id}>
                   <Link
                     href={`/calendar/${e.id}`}
-                    className={`flex items-start gap-3 border-b border-neutral-100 px-5 py-3 ${
-                      cancelled ? 'opacity-55' : ''
-                    }`}
+                    className={`row items-start ${cancelled ? 'opacity-55' : ''}`}
                   >
-                    <span className="w-14 flex-none">
+                    {/* The date chip from the prototype: day and time stacked
+                        in a fixed column, so a list of six games scans down
+                        the left edge instead of wrapping. */}
+                    <span
+                      className="w-[52px] flex-none rounded-[10px] py-1.5 text-center"
+                      style={{ background: 'var(--surface-3)' }}
+                    >
                       <span
-                        className="block text-xs font-semibold uppercase"
-                        style={{ color: TYPE_TINT[e.type] ?? '#6B7280' }}
+                        className="display block text-[13px] uppercase leading-none"
+                        style={{ color: TYPE_TINT[e.type] ?? 'var(--ink-2)' }}
                       >
                         {when.toLocaleDateString('en-AU', { weekday: 'short' })}
                       </span>
-                      <span className="block text-sm tabular-nums text-neutral-500">
+                      <span className="mt-0.5 block text-[13px] tabular-nums leading-none text-ink-2">
                         {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                     </span>
@@ -164,23 +159,22 @@ export function Home({
                       <span className="flex items-center gap-1.5">
                         <span className="truncate font-medium">{e.title}</span>
                         {cancelled && (
-                          <span className="flex-none text-xs font-semibold text-red-600">Off</span>
+                          <span className="tag flex-none" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>
+                            Off
+                          </span>
                         )}
                         {e.source === 'screenshot' && !e.confirmed_at && (
-                          <span className="flex-none rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold text-amber-800">
+                          <span className="tag flex-none" style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}>
                             Check
                           </span>
                         )}
                       </span>
-                      <span className="block truncate text-sm text-neutral-500">
+                      <span className="block truncate text-sm text-ink-3">
                         {[e.team_name, e.venue].filter(Boolean).join(' · ') || 'No ground yet'}
                       </span>
                     </span>
                     {owed && (
-                      <span
-                        className="flex-none self-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
-                        style={{ background: '#DD5620' }}
-                      >
+                      <span className="pill flex-none self-center">
                         {e.my_children - e.my_replies} to answer
                       </span>
                     )}
@@ -201,26 +195,21 @@ export function Home({
               <li key={c.channel_id}>
                 <Link
                   href={`/chat/${c.channel_id}`}
-                  className="flex items-center gap-3 border-b border-neutral-100 px-5 py-3"
+                  className="row"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate font-medium">{c.name}</span>
-                      {c.muted && <span className="flex-none text-xs text-neutral-400">muted</span>}
+                      {c.muted && <span className="tag flex-none">muted</span>}
                     </span>
-                    <span className="block truncate text-sm text-neutral-500">
+                    <span className="block truncate text-sm text-ink-3">
                       {c.last_message_body
                         ? `${c.last_sender_name ? `${c.last_sender_name.split(' ')[0]}: ` : ''}${c.last_message_body}`
                         : 'No messages yet'}
                     </span>
                   </span>
                   {c.unread_count > 0 && (
-                    <span
-                      className="flex-none rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
-                      style={{ background: tint }}
-                    >
-                      {c.unread_count}
-                    </span>
+                    <span className="pill flex-none">{c.unread_count}</span>
                   )}
                 </Link>
               </li>
@@ -264,8 +253,15 @@ export function Home({
           {isPlatformAdmin && <Item href="/platform" label="Platform" hint="Every academy" />}
         </Group>
       )}
-    </main>
+      </Screen>
+
+      <TabBar isStaff={isCoach} unread={unread} />
+    </div>
   )
+}
+
+function todayLabel() {
+  return new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function Section({
@@ -280,25 +276,23 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="mb-5">
-      <div className="flex items-baseline justify-between px-5 pb-1.5">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{title}</h2>
-        <Link href={href} className="text-xs text-neutral-500 underline underline-offset-2">
+    <section className="mb-6">
+      <div className="flex items-baseline justify-between px-4 pb-2">
+        <h2 className="eyebrow">{title}</h2>
+        <Link href={href} className="text-xs text-ink-3 underline underline-offset-2">
           {more}
         </Link>
       </div>
-      {children}
+      <div className="card mx-4 overflow-hidden">{children}</div>
     </section>
   )
 }
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-5">
-      <h2 className="px-5 pb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-        {title}
-      </h2>
-      <ul className="flex flex-col">{children}</ul>
+    <section className="mb-6">
+      <h2 className="eyebrow px-4 pb-2">{title}</h2>
+      <ul className="card mx-4 overflow-hidden">{children}</ul>
     </section>
   )
 }
@@ -306,15 +300,12 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 function Item({ href, label, hint }: { href: string; label: string; hint?: string }) {
   return (
     <li>
-      <Link
-        href={href}
-        className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3"
-      >
+      <Link href={href} className="row justify-between">
         <span className="min-w-0">
           <span className="block truncate font-medium">{label}</span>
-          {hint && <span className="block truncate text-sm text-neutral-500">{hint}</span>}
+          {hint && <span className="block truncate text-sm text-ink-3">{hint}</span>}
         </span>
-        <span className="flex-none text-neutral-300">›</span>
+        <span className="flex-none text-lg text-ink-3">›</span>
       </Link>
     </li>
   )
@@ -322,8 +313,6 @@ function Item({ href, label, hint }: { href: string; label: string; hint?: strin
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mx-5 rounded-xl bg-neutral-100 p-4 text-center text-sm text-neutral-500">
-      {children}
-    </p>
+    <p className="p-5 text-center text-sm text-ink-3">{children}</p>
   )
 }

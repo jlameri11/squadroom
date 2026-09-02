@@ -27,8 +27,14 @@ export default function SignIn() {
     setError(null)
 
     const supabase = createClient()
+    // Trimmed and lowercased before it goes anywhere. A phone keyboard
+    // capitalises the first letter and autocomplete often leaves a trailing
+    // space, and `type="email"` then refuses to submit at all — the browser
+    // shows its own tooltip, our error never runs, and it reads as the form
+    // being broken.
+    const address = email.trim().toLowerCase()
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: address,
       options: {
         // Never create an account from this form. A stranger typing an email
         // must not become a user; staff are added by an existing owner.
@@ -38,7 +44,23 @@ export default function SignIn() {
     })
 
     setBusy(false)
-    if (error) return setError('Could not send the link. Check the address.')
+    if (error) {
+      // These are three different problems and they need three different
+      // sentences. "Check the address" sent people to re-type a correct
+      // email when the real answer was "wait a minute" or "you have no
+      // account yet".
+      const status = error.status ?? 0
+      if (status === 429) {
+        return setError('Too many attempts just now. Wait a minute and try again.')
+      }
+      if (/not found|signups not allowed|invalid/i.test(error.message)) {
+        return setError(
+          `We don't recognise ${address}. Ask whoever runs your academy to add you — or if you are a parent, use the link your coach sent you.`
+        )
+      }
+      return setError(error.message)
+    }
+    setEmail(address)
     setSent(true)
   }
 
@@ -66,10 +88,16 @@ export default function SignIn() {
           <input
             required
             type="email"
+            inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-neutral-300 px-3 py-3 text-base"
             autoComplete="email"
+            // A phone will otherwise capitalise and autocorrect an email
+            // address into something that no longer exists.
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
           />
         </label>
 

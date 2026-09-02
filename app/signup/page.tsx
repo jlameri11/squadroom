@@ -27,8 +27,9 @@ function SignUpForm() {
     setError(null)
 
     const supabase = createClient()
+    const address = email.trim().toLowerCase()
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: address,
       options: {
         shouldCreateUser: true,
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
@@ -36,7 +37,14 @@ function SignUpForm() {
     })
 
     setBusy(false)
-    if (error) return setError('Could not send the link. Check the address and try again.')
+    if (error) {
+      return setError(
+        (error.status ?? 0) === 429
+          ? 'Too many attempts just now. Wait a minute and try again.'
+          : error.message
+      )
+    }
+    setEmail(address)
     setSent(true)
   }
 
@@ -69,10 +77,17 @@ function SignUpForm() {
           <input
             required
             type="email"
+            inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-neutral-300 px-3 py-3"
+            className="rounded-xl border border-neutral-300 px-3 py-3 text-base"
             autoComplete="email"
+            // Same as sign-in: a phone capitalises and autocorrects an email
+            // into an address that does not exist, and a trailing space makes
+            // the browser block the submit before our code ever runs.
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
           />
         </label>
 

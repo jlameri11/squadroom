@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ChannelList } from './channel-list'
+import { AppShellPage } from '@/components/shell-page'
 
 export default async function ChatPage() {
   const supabase = await createClient()
@@ -13,13 +14,18 @@ export default async function ChatPage() {
 
   const { data: channels } = await supabase.rpc('my_channels', { p_academy: academy.id })
 
+  const rows = channels ?? []
+  const unread = rows.reduce((n, c) => n + (c.muted ? 0 : c.unread_count), 0)
+  const active = rows.filter((c) => c.status === 'active').length
+
   return (
-    <main className="mx-auto max-w-md">
-      <header className="border-b border-neutral-200 p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Chats</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">{academy.name}</p>
-      </header>
-      <ChannelList channels={channels ?? []} />
-    </main>
+    <AppShellPage
+      title="Chats"
+      meta={`${active} ${active === 1 ? 'channel' : 'channels'}${unread ? ` · ${unread} unread` : ''}`}
+      academyId={academy.id}
+      unread={unread}
+    >
+      <ChannelList channels={rows} />
+    </AppShellPage>
   )
 }

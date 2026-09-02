@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
+import { AppShellPage } from '@/components/shell-page'
 
 export default async function CalendarPage() {
   const supabase = await createClient()
@@ -17,22 +18,13 @@ export default async function CalendarPage() {
   })
 
   return (
-    <main className="mx-auto max-w-md">
-      <header className="border-b border-neutral-200 p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: '#202842' }}>Fixtures</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">
-          {academy.name} · next 60 days
-        </p>
-      </header>
-      <div className="border-b border-neutral-100 px-5 py-3">
-        <a href="/scan" className="text-sm underline underline-offset-4" style={{ color: '#202842' }}>
+    <AppShellPage title="Fixtures" meta={`${academy.name} · next 60 days`}>
+      <div className="border-b px-4 py-3" style={{ borderColor: 'var(--line-2)' }}>
+        <a href="/scan" className="text-sm underline underline-offset-4" style={{ color: 'var(--brand)' }}>
           Add games from a screenshot
         </a>
       </div>
-      <CalendarList
-        academyId={academy.id}
-        events={(events ?? []) as UpcomingEvent[]}
-      />
-    </main>
+      <CalendarList academyId={academy.id} events={(events ?? []) as UpcomingEvent[]} />
+    </AppShellPage>
   )
 }

@@ -20,16 +20,4 @@ export function stripeOrNull(): Stripe | null {
   })
 }
 
-/**
- * Where Stripe sends people back to. Netlify serves the same app from a
- * deploy-unique hostname as well as the canonical one, and a return URL built
- * from the request origin can therefore land on a host with no session
- * cookie — which reads as being signed out immediately after paying.
- */
-export function siteUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.URL ??
-    'https://squadroom-dev.netlify.app'
-  ).replace(/\/$/, '')
-}
+export { siteUrl } from '../site'

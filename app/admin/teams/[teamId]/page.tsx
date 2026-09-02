@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { JoinLinkPanel } from './join-link-panel'
 import { BulkInvite } from './bulk-invite'
 import { SeasonControl } from './season-control'
+import { siteUrl } from '@/lib/site'
 
 /**
  * One team: how people get in, and who is already here.
@@ -48,7 +49,9 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
   ])
 
   const h = await headers()
-  const origin = `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('host') ?? 'localhost:3000'}`
+  // The canonical site, never the request host. A join link goes into a
+  // WhatsApp group and has to keep working after the next deploy.
+  const origin = siteUrl()
   const joinUrl = link ? `${origin}/join/${link.token}` : null
 
   // Rendered here rather than in the browser: it is a static image of a

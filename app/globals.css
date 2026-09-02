@@ -1,26 +1,174 @@
 @import "tailwindcss";
 
+/*
+ * The design system, taken from design/prototype.html rather than invented
+ * again here. Every screen used to carry its own inline #202842 and its own
+ * idea of what a card looked like, which is how eleven slightly different
+ * greys ended up in one app.
+ *
+ * Two typefaces, both doing a job:
+ *   Barlow Condensed — headings, tabs, chips. It is a team-sheet face; it
+ *     holds a long team name in a narrow column without shrinking.
+ *   IBM Plex Sans — everything read as prose. Open, tall x-height, and it
+ *     survives being read one-handed in a car park.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand: #202842;
+  --brand-soft: #2028421a;
+  --brand-ink: #ffffff;
+
+  --paper: #EEF1F5;
+  --surface: #ffffff;
+  --surface-2: #E7EBF1;
+  --surface-3: #F5F7FA;
+
+  --ink: #0E1726;
+  --ink-2: #4C5A6D;
+  --ink-3: #8391A3;
+
+  --line: #D9E0E9;
+  --line-2: #EAEEF3;
+
+  --accent: #DD5620;
+  --gold: #EFBD5B;
+
+  /* RSVP states, and the tints behind them. Semantic, not decorative — these
+     never double as accents. */
+  --yes: #1C7A4C;    --yes-bg: #1C7A4C18;
+  --maybe: #9C6B06;  --maybe-bg: #9C6B0618;
+  --no: #8E3020;     --no-bg: #8E302018;
+
+  --bubble-in: #ffffff;
+  --bubble-out: #DCE7F2;
+
+  --shadow: 0 1px 2px #0e17260f, 0 8px 24px #0e172614;
+  --radius: 14px;
+
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand: var(--brand);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-accent: var(--accent);
+  --color-gold: var(--gold);
+  --color-yes: var(--yes);
+  --color-maybe: var(--maybe);
+  --color-no: var(--no);
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow), "Arial Narrow", sans-serif;
+  --radius-card: var(--radius);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/*
+ * The handful of things every screen needs. Deliberately small: these are the
+ * shapes the prototype actually uses, not a component library nobody asked
+ * for.
+ */
+@layer components {
+  .display {
+    font-family: var(--font-barlow), "Arial Narrow", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* The label above a group. Small, wide-tracked, never bold enough to
+     compete with the thing it introduces. */
+  .eyebrow {
+    font-family: var(--font-barlow), sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  /* A tappable line in a list. 52px minimum because a thumb is not a mouse. */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line-2);
+    background: var(--surface);
+  }
+  .row:last-child { border-bottom: 0; }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--font-barlow), sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+  .btn:disabled { opacity: 0.5; }
+
+  .btn-quiet {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  /* The unread / to-answer pill. Orange because it is the only thing on the
+     screen asking you to do something. */
+  .pill {
+    display: inline-block;
+    min-width: 22px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* An input under 16px makes iOS zoom the whole page on focus, which then does
+   not zoom back. Every text field in the product is 16px for that one
+   reason. */
+input, select, textarea { font-size: 16px; }
