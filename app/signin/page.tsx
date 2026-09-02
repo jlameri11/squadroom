@@ -17,6 +17,8 @@ import { createClient } from '@/lib/supabase/client'
  */
 export default function SignIn() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState<'link' | 'password'>('link')
   const [checking, setChecking] = useState(true)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,23 +41,72 @@ export default function SignIn() {
     })
   }, [])
 
+  /**
+   * Password sign-in, for anyone who would rather not wait for an email.
+   *
+   * Ordinary Supabase auth, not a shortcut around it: the same session, the
+   * same RLS, the same everything. It exists because a magic link needs a
+   * working inbox and a working mail server, and when either is having a bad
+   * day there has to be another door that is not a back one.
+   */
+  async function signInWithPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
+    setBusy(false)
+    if (error) {
+      return setError(
+        /invalid login/i.test(error.message)
+          ? 'That email and password do not match. If you have never set a password, use the emailed link instead.'
+          : error.message
+      )
+    }
+    window.location.replace('/')
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError(null)
 
-    const supabase = createClient()
-    // Trimmed and lowercased before it goes anywhere. A phone keyboard
-    // capitalises the first letter and autocomplete often leaves a trailing
-    // space, and `type="email"` then refuses to submit at all — the browser
-    // shows its own tooltip, our error never runs, and it reads as the form
-    // being broken.
+    // A phone keyboard capitalises the first letter and autocomplete often
+    // leaves a trailing space, and `type="email"` then refuses to submit at
+    // all — the browser shows its own tooltip, our error never runs, and it
+    // reads as the form being broken.
     const address = email.trim().toLowerCase()
+
+    // Squadroom's own email first. Supabase's built-in mail server allows a
+    // couple of messages an hour across the whole project, which means two
+    // coaches signing in on a Saturday lock each other out.
+    const ours = await fetch('/api/auth/send-link', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: address }),
+    })
+
+    if (ours.ok) {
+      setBusy(false)
+      setEmail(address)
+      return setSent(true)
+    }
+
+    if (ours.status === 429) {
+      const payload = await ours.json().catch(() => null)
+      setBusy(false)
+      return setError(payload?.error ?? 'A link is already on its way. Check your inbox.')
+    }
+
+    // 503 means no mail provider is configured on this deployment. Fall back
+    // to Supabase's own, which works — just slowly, and with the shared limit.
+    const supabase = createClient()
     const { error } = await supabase.auth.signInWithOtp({
       email: address,
       options: {
-        // Never create an account from this form. A stranger typing an email
-        // must not become a user; staff are added by an existing owner.
         shouldCreateUser: false,
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -63,13 +114,11 @@ export default function SignIn() {
 
     setBusy(false)
     if (error) {
-      // These are three different problems and they need three different
-      // sentences. "Check the address" sent people to re-type a correct
-      // email when the real answer was "wait a minute" or "you have no
-      // account yet".
       const status = error.status ?? 0
       if (status === 429) {
-        return setError('Too many attempts just now. Wait a minute and try again.')
+        return setError(
+          'Too many sign-in emails have gone out from this club in the last hour. Ask whoever set Squadroom up to add a mail provider, or try again shortly.'
+        )
       }
       if (/not found|signups not allowed|invalid/i.test(error.message)) {
         return setError(
@@ -111,7 +160,7 @@ export default function SignIn() {
         <p className="mt-1 text-sm text-ink-2">Coach and admin sign-in.</p>
       </div>
 
-      <form onSubmit={submit} className="flex flex-col gap-4">
+      <form onSubmit={mode === 'password' ? signInWithPassword : submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Email</span>
           <input
@@ -130,6 +179,20 @@ export default function SignIn() {
           />
         </label>
 
+        {mode === 'password' && (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Password</span>
+            <input
+              required
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="rounded-xl border border-[var(--line)] px-3 py-3 text-base"
+            />
+          </label>
+        )}
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
@@ -138,7 +201,17 @@ export default function SignIn() {
           className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
-          {busy ? 'Sending…' : 'Email me a link'}
+          {busy
+            ? mode === 'password' ? 'Signing in…' : 'Sending…'
+            : mode === 'password' ? 'Sign in' : 'Email me a link'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setMode(mode === 'password' ? 'link' : 'password'); setError(null) }}
+          className="text-center text-sm text-ink-2 underline underline-offset-4"
+        >
+          {mode === 'password' ? 'Email me a link instead' : 'Use a password instead'}
         </button>
 
         <p className="text-center text-sm text-ink-2">

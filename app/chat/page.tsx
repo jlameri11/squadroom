@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ChannelList } from './channel-list'
 import { AppShellPage } from '@/components/shell-page'
+import { NewChat } from './new-chat'
 
 /** One round trip. See 0068 — the academy lookup used to be a second one. */
 export default async function ChatPage() {
@@ -27,6 +28,7 @@ export default async function ChatPage() {
       meta={`${active} ${active === 1 ? 'channel' : 'channels'}${unread ? ` · ${unread} unread` : ''}`}
       isStaff={screen.is_staff}
       unread={unread}
+      action={<NewChat academyId={screen.academy.id} canCreate={screen.is_staff} />}
     >
       <ChannelList channels={rows} />
     </AppShellPage>

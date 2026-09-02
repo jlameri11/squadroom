@@ -2687,6 +2687,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_channel: {
+        Args: {
+          p_academy: string
+          p_members?: string[]
+          p_mode?: Database["public"]["Enums"]["posting_mode"]
+          p_name: string
+          p_team?: string
+        }
+        Returns: string
+      }
       create_finals: {
         Args: {
           p_competition: string
@@ -2894,6 +2904,7 @@ export type Database = {
           venue: string
         }[]
       }
+      nav_badges: { Args: never; Returns: Json }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
@@ -3045,7 +3056,13 @@ export type Database = {
       academy_role: "owner" | "admin" | "coach" | "parent" | "player"
       channel_member_role: "host" | "co_host" | "member"
       channel_status: "active" | "archived"
-      channel_type: "team" | "age_group" | "coaches" | "academy_wide" | "direct"
+      channel_type:
+        | "team"
+        | "age_group"
+        | "coaches"
+        | "academy_wide"
+        | "direct"
+        | "custom"
       competition_mode: "managed" | "comms_only"
       competition_type:
         | "season"
@@ -3088,12 +3105,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3117,11 +3134,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3142,11 +3159,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3167,11 +3184,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3184,11 +3201,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3203,7 +3220,14 @@ export const Constants = {
       academy_role: ["owner", "admin", "coach", "parent", "player"],
       channel_member_role: ["host", "co_host", "member"],
       channel_status: ["active", "archived"],
-      channel_type: ["team", "age_group", "coaches", "academy_wide", "direct"],
+      channel_type: [
+        "team",
+        "age_group",
+        "coaches",
+        "academy_wide",
+        "direct",
+        "custom",
+      ],
       competition_mode: ["managed", "comms_only"],
       competition_type: [
         "season",
