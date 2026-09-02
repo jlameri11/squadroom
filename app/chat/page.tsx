@@ -1,20 +1,23 @@
 import { redirect } from 'next/navigation'
-import { createClient, getUserId } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { ChannelList } from './channel-list'
 import { AppShellPage } from '@/components/shell-page'
 
+/** One round trip. See 0068 — the academy lookup used to be a second one. */
 export default async function ChatPage() {
   const supabase = await createClient()
-  const userId = await getUserId()
-  if (!userId) redirect('/signin')
+  const { data } = await supabase.rpc('chat_screen')
 
-  const { data: academies } = await supabase.from('academies').select('id, name').order('name')
-  const academy = academies?.[0]
-  if (!academy) redirect('/start')
+  const screen = data as unknown as {
+    academy: { id: string; name: string } | null
+    is_staff: boolean
+    channels: Parameters<typeof ChannelList>[0]['channels']
+  } | null
 
-  const { data: channels } = await supabase.rpc('my_channels', { p_academy: academy.id })
+  if (!screen) redirect('/signin')
+  if (!screen.academy) redirect('/start')
 
-  const rows = channels ?? []
+  const rows = screen.channels ?? []
   const unread = rows.reduce((n, c) => n + (c.muted ? 0 : c.unread_count), 0)
   const active = rows.filter((c) => c.status === 'active').length
 
@@ -22,7 +25,7 @@ export default async function ChatPage() {
     <AppShellPage
       title="Chats"
       meta={`${active} ${active === 1 ? 'channel' : 'channels'}${unread ? ` · ${unread} unread` : ''}`}
-      academyId={academy.id}
+      isStaff={screen.is_staff}
       unread={unread}
     >
       <ChannelList channels={rows} />

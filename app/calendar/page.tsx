@@ -1,30 +1,34 @@
 import { redirect } from 'next/navigation'
-import { createClient, getUserId } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { AppShellPage } from '@/components/shell-page'
 
+/** One round trip. See 0068. */
 export default async function CalendarPage() {
   const supabase = await createClient()
-  const userId = await getUserId()
-  if (!userId) redirect('/signin')
+  const { data } = await supabase.rpc('fixtures_screen', { p_days: 60 })
 
-  const { data: academies } = await supabase.from('academies').select('id, name').order('name')
-  const academy = academies?.[0]
-  if (!academy) redirect('/start')
+  const screen = data as unknown as {
+    academy: { id: string; name: string } | null
+    is_staff: boolean
+    events: UpcomingEvent[]
+  } | null
 
-  const { data: events } = await supabase.rpc('my_upcoming_events', {
-    p_academy: academy.id,
-    p_days: 60,
-  })
+  if (!screen) redirect('/signin')
+  if (!screen.academy) redirect('/start')
 
   return (
-    <AppShellPage title="Fixtures" meta={`${academy.name} · next 60 days`}>
+    <AppShellPage
+      title="Fixtures"
+      meta={`${screen.academy.name} · next 60 days`}
+      isStaff={screen.is_staff}
+    >
       <div className="border-b px-4 py-3" style={{ borderColor: 'var(--line-2)' }}>
         <a href="/scan" className="text-sm underline underline-offset-4" style={{ color: 'var(--brand)' }}>
           Add games from a screenshot
         </a>
       </div>
-      <CalendarList academyId={academy.id} events={(events ?? []) as UpcomingEvent[]} />
+      <CalendarList academyId={screen.academy.id} events={screen.events ?? []} />
     </AppShellPage>
   )
 }

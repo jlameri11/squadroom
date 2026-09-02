@@ -139,6 +139,11 @@ export function TabBar({ isStaff, unread = 0 }: { isStaff: boolean; unread?: num
           <Link
             key={t.tab}
             href={t.href}
+            // Fetch the destination before it is tapped. There are only five
+            // of these and they are on every screen, so the cost is bounded —
+            // and with staleTimes above, a prefetched screen stays warm for a
+            // minute rather than being re-fetched on every navigation.
+            prefetch
             aria-current={on ? 'page' : undefined}
             className="relative grid flex-1 justify-items-center gap-[3px] rounded-[10px] px-0.5 py-1.5 text-[10.5px] font-semibold"
             style={{ color: on ? 'var(--brand)' : 'var(--ink-3)' }}

@@ -2588,6 +2588,7 @@ export type Database = {
           sender_role: Database["public"]["Enums"]["academy_role"]
         }[]
       }
+      chat_screen: { Args: never; Returns: Json }
       check_join_rate: {
         Args: { p_ip_hash: string; p_link: string }
         Returns: boolean
@@ -2741,6 +2742,7 @@ export type Database = {
         }[]
       }
       expire_stale_join_requests: { Args: never; Returns: number }
+      fixtures_screen: { Args: { p_days?: number }; Returns: Json }
       generate_fixtures: {
         Args: {
           p_competition: string
