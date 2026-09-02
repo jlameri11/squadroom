@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
+import { AppShellPage } from '@/components/shell-page'
 
 /**
  * The platform owner's page. Nobody else's.
@@ -22,17 +23,18 @@ export default async function PlatformPage() {
 
   if (!rows || rows.length === 0) {
     return (
-      <main className="mx-auto max-w-md p-5">
+      <AppShellPage title="Platform">
+      <div className="p-4">
         <p className="rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
           Nothing here for you.
         </p>
-      </main>
+      </div>
+    </AppShellPage>
     )
   }
 
   return (
     <main className="mx-auto max-w-2xl p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Platform</h1>
 
       {t && (
         <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">

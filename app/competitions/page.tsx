@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
+import { AppShellPage } from '@/components/shell-page'
 
 export default async function CompetitionsPage() {
   const supabase = await createClient()
@@ -14,16 +15,8 @@ export default async function CompetitionsPage() {
     .order('starts_on', { ascending: false })
 
   return (
-    <main className="mx-auto max-w-md">
-      <header className="border-b border-[var(--line)] p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Competitions</h1>
-        <p className="mt-0.5 text-sm text-ink-2">Seasons, tournaments and gala days</p>
-        <Link href="/competitions/new"
-              className="mt-3 block rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-white"
-              style={{ background: 'var(--brand)' }}>
-          New competition
-        </Link>
-      </header>
+    <AppShellPage title="Competitions">
+      <div className="p-4">
 
       {(comps ?? []).length === 0 && (
         <p className="m-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
@@ -46,7 +39,8 @@ export default async function CompetitionsPage() {
           {c.status === 'ended' && <span className="text-xs text-ink-3">ended</span>}
         </Link>
       ))}
-    </main>
+    </div>
+    </AppShellPage>
   )
 }
 

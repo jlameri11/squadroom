@@ -50,11 +50,21 @@ export function ChannelView({
 
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col">
-      <header className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-3">
-        <Link href="/chat" className="text-ink-2">←</Link>
+      <header
+        className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3"
+        style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+      >
+        <Link
+          href="/chat"
+          aria-label="Back to chats"
+          className="-ml-1 grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
+          style={{ background: '#ffffff26' }}
+        >
+          ‹
+        </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-semibold">{name}</h1>
-          <p className="text-xs text-ink-2">
+          <h1 className="display truncate text-[21px] leading-tight">{name}</h1>
+          <p className="truncate text-xs opacity-75">
             {archived ? 'Past season · read-only'
               : postingMode === 'hosts_only' ? 'Announcements only'
               : postingMode === 'replies_only' ? 'Replies only'
@@ -64,7 +74,8 @@ export function ChannelView({
         </div>
         <button
           onClick={() => setShowSettings(true)}
-          className="flex-none rounded-lg px-2 py-1 text-lg text-ink-3"
+          className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-lg"
+          style={{ background: '#ffffff26' }}
           aria-label="Channel settings"
         >
           ⋯
@@ -86,18 +97,24 @@ export function ChannelView({
       <PendingQueue channelId={channelId} isHost={isHost} />
 
       {pinned && (
-        <div className="border-b border-[var(--line)] bg-[var(--surface-3)] px-4 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-2">Pinned</p>
-          <p className="truncate text-sm text-ink">{pinned.body}</p>
+        <div
+          className="flex items-start gap-2.5 border-b px-4 py-2.5"
+          style={{ background: '#FDF7E9', borderColor: 'var(--line)' }}
+        >
+          <span className="mt-0.5 flex-none text-sm" aria-hidden>📌</span>
+          <span className="min-w-0">
+            <span className="eyebrow block" style={{ color: '#8A6A22' }}>Pinned</span>
+            <span className="block truncate text-sm text-ink">{pinned.body}</span>
+          </span>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3" style={{ background: 'var(--paper)' }}>
         {hasMore && (
           <button
             onClick={loadOlder}
             disabled={loadingOlder}
-            className="mx-auto mb-3 block rounded-full border border-[var(--line)] px-3 py-1 text-xs text-ink-2"
+            className="mx-auto mb-3 block rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 py-1 text-xs text-ink-2"
           >
             {loadingOlder ? 'Loading…' : 'Earlier messages'}
           </button>

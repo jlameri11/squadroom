@@ -76,7 +76,7 @@ export function CompetitionView({
             key={t}
             onClick={() => setTab(t)}
             className="flex-1 rounded-lg py-2 text-sm font-medium"
-            style={tab === t ? { background: 'var(--brand)0f', color: 'var(--brand)' } : { color: 'var(--ink-2)' }}
+            style={tab === t ? { background: 'var(--brand-soft)', color: 'var(--brand)' } : { color: 'var(--ink-2)' }}
           >
             {LABEL[t]}
           </button>

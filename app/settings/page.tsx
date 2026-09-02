@@ -3,6 +3,7 @@ import { createClient, getUserId } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
+import { AppShellPage } from '@/components/shell-page'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -17,8 +18,8 @@ export default async function SettingsPage() {
   const me = data?.[0]
 
   return (
-    <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Your details</h1>
+    <AppShellPage title="Your details" meta="Only you see these">
+      <div className="p-4">
       <p className="mt-1 text-sm text-ink-2">
         Your name is what people see on your messages.
       </p>
@@ -29,6 +30,7 @@ export default async function SettingsPage() {
       />
       <PushToggle />
       <CalendarFeed />
-    </main>
+    </div>
+    </AppShellPage>
   )
 }

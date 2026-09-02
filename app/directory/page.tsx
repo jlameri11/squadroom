@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { DirectoryList } from './directory-list'
+import { AppShellPage } from '@/components/shell-page'
 
 export default async function DirectoryPage() {
   const supabase = await createClient()
@@ -27,13 +28,8 @@ export default async function DirectoryPage() {
   const iAmStaff = me?.role === 'owner' || me?.role === 'admin' || me?.role === 'coach'
 
   return (
-    <main className="mx-auto max-w-md">
-      <header className="border-b border-[var(--line)] p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Directory</h1>
-        <p className="mt-0.5 text-sm text-ink-2">
-          {academy.name} · {people?.length ?? 0} people
-        </p>
-      </header>
+    <AppShellPage title="Directory">
+      <div className="p-4">
 
       <DirectoryList
         academyId={academy.id}
@@ -48,6 +44,7 @@ export default async function DirectoryPage() {
           teams: p.teams ?? [],
         }))}
       />
-    </main>
+    </div>
+    </AppShellPage>
   )
 }

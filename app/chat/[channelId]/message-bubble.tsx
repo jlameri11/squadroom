@@ -114,16 +114,16 @@ export function MessageBubble({
             message.is_announcement
               ? 'border-2'
               : mine
-                ? 'text-white'
+                ? 'text-ink'
                 : 'border border-[var(--line)] bg-[var(--surface)]'
           }`}
           style={
             message.is_announcement
-              ? { borderColor: 'var(--brand)', background: 'var(--brand)0d', color: '#111' }
+              ? { borderColor: 'var(--brand)', background: 'var(--brand-soft)', color: 'var(--ink)' }
               : message.event || message.poll
                 ? { background: 'transparent', border: 'none' }
                 : mine
-                  ? { background: 'var(--brand)' }
+                  ? { background: 'var(--bubble-out)' }
                   : undefined
           }
         >
@@ -134,7 +134,7 @@ export function MessageBubble({
           )}
 
           {message.reply_to_id && (
-            <div className={`mb-1.5 border-l-2 pl-2 text-xs ${mine && !message.is_announcement ? 'border-white/40 text-white/80' : 'border-[var(--line)] text-ink-2'}`}>
+            <div className={`mb-1.5 border-l-2 pl-2 text-xs ${mine && !message.is_announcement ? 'border-[var(--brand)]/30 text-ink-2' : 'border-[var(--line)] text-ink-2'}`}>
               <span className="font-medium">{message.reply_to_name ?? 'Someone'}</span>
               <span className="block truncate">{message.reply_to_body ?? 'Message deleted'}</span>
             </div>

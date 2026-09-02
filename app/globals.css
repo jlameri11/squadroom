@@ -16,6 +16,12 @@
 :root {
   --brand: #202842;
   --brand-soft: #2028421a;
+  /* The faintest wash of the brand, for a selected row or a card header. The
+     colour sweep produced `var(--brand)0d` in eight places, which is not CSS
+     — a variable and a hex alpha suffix do not concatenate, so those
+     backgrounds silently rendered as nothing at all. */
+  --brand-faint: #2028420d;
+  --paper-blur: #EEF1F5F2;
   --brand-ink: #ffffff;
 
   --paper: #EEF1F5;
@@ -50,6 +56,8 @@
 
 @theme inline {
   --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-faint: var(--brand-faint);
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { RequestList } from './request-list'
+import { AppShellPage } from '@/components/shell-page'
 
 /**
  * The coach's queue. Everything a parent typed, and the two buttons that
@@ -24,15 +25,8 @@ export default async function RequestsPage() {
     .order('created_at', { ascending: true })
 
   return (
-    <main className="mx-auto max-w-md p-5">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>
-          Join requests
-        </h1>
-        <p className="mt-1 text-sm text-ink-2">
-          Families waiting for you to let them in.
-        </p>
-      </header>
+    <AppShellPage title="Join requests">
+      <div className="p-4">
 
       <RequestList
         initial={(requests ?? []).map((r) => ({
@@ -44,7 +38,8 @@ export default async function RequestsPage() {
           academy: firstOf(r.academies)?.name ?? null,
         }))}
       />
-    </main>
+    </div>
+    </AppShellPage>
   )
 }
 

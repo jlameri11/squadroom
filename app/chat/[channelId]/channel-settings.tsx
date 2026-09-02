@@ -137,7 +137,7 @@ export function ChannelSettings({
                     className="rounded-xl border p-3 text-left disabled:opacity-60"
                     style={{
                       borderColor: mode === m.value ? 'var(--brand)' : 'var(--line)',
-                      background: mode === m.value ? 'var(--brand)0a' : undefined,
+                      background: mode === m.value ? 'var(--brand-faint)' : undefined,
                     }}
                   >
                     <span className="flex items-center gap-2">

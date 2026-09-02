@@ -300,7 +300,7 @@ export function Composer({
                 onClick={() => setPollKind(k)}
                 className="flex-1 rounded-lg border py-1.5 text-xs font-semibold"
                 style={pollKind === k
-                  ? { borderColor: 'var(--brand)', background: 'var(--brand)0f', color: 'var(--brand)' }
+                  ? { borderColor: 'var(--brand)', background: 'var(--brand-soft)', color: 'var(--brand)' }
                   : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
               >
                 {k === 'availability' ? 'Who’s available' : 'Question'}

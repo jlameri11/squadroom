@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { AcademySettings } from './academy-settings'
+import { AppShellPage } from '@/components/shell-page'
 
 export default async function AcademySettingsPage() {
   const supabase = await createClient()
@@ -24,8 +25,8 @@ export default async function AcademySettingsPage() {
   const isStaff = me?.role === 'owner' || me?.role === 'admin'
 
   return (
-    <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Academy settings</h1>
+    <AppShellPage title="Club settings">
+      <div className="p-4">
       <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
 
       {isStaff ? (
@@ -39,6 +40,7 @@ export default async function AcademySettingsPage() {
           Only owners and admins can change these.
         </p>
       )}
-    </main>
+    </div>
+    </AppShellPage>
   )
 }

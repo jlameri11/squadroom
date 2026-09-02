@@ -102,7 +102,7 @@ function Option({
       onClick={onClick}
       disabled={disabled}
       className="rounded-xl border p-3 text-left disabled:opacity-60"
-      style={{ borderColor: on ? 'var(--brand)' : 'var(--line)', background: on ? 'var(--brand)0a' : undefined }}
+      style={{ borderColor: on ? 'var(--brand)' : 'var(--line)', background: on ? 'var(--brand-faint)' : undefined }}
     >
       <span className="flex items-center gap-2">
         <span

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { MemberTree } from './member-tree'
+import { AppShellPage } from '@/components/shell-page'
 
 /**
  * Who is in the academy, and who let them in.
@@ -28,13 +29,8 @@ export default async function MembersPage() {
   })
 
   return (
-    <main className="mx-auto max-w-md p-5">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>
-          Members
-        </h1>
-        <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
-      </header>
+    <AppShellPage title="Members">
+      <div className="p-4">
 
       <MemberTree
         academyId={academy.id}
@@ -47,6 +43,7 @@ export default async function MembersPage() {
           depth: r.depth as number,
         }))}
       />
-    </main>
+    </div>
+    </AppShellPage>
   )
 }

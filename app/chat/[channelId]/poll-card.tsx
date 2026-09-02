@@ -62,7 +62,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
 
   return (
     <div className="w-full overflow-hidden rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--brand)' }}>
-      <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand)0d' }}>
+      <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand-faint)' }}>
         <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
               style={{ background: 'var(--brand)' }}>
           {poll.type === 'availability' ? 'Availability' : 'Poll'}
@@ -127,7 +127,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
                   className="relative overflow-hidden rounded-lg border px-2.5 py-2 text-left text-sm disabled:cursor-default"
                   style={{ borderColor: r.voted_by_me ? 'var(--brand)' : 'var(--line)' }}
                 >
-                  <span className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, background: 'var(--brand)0f' }} />
+                  <span className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, background: 'var(--brand-soft)' }} />
                   <span className="relative flex justify-between gap-2">
                     <span className={r.voted_by_me ? 'font-semibold' : ''}>{r.label}</span>
                     <span className="tabular-nums text-ink-2">{r.votes}</span>

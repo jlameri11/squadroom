@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { InviteList } from './invite-list'
+import { AppShellPage } from '@/components/shell-page'
 
 /**
  * Who has been invited, by whom, and whether they turned up.
@@ -34,11 +35,8 @@ export default async function InvitesPage() {
   ])
 
   return (
-    <main className="mx-auto max-w-md p-5">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Invites</h1>
-        <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
-      </header>
+    <AppShellPage title="Invites">
+      <div className="p-4">
 
       <InviteList
         invites={(invites ?? []).map((i) => ({
@@ -58,7 +56,8 @@ export default async function InvitesPage() {
           createdAt: r.created_at,
         }))}
       />
-    </main>
+    </div>
+    </AppShellPage>
   )
 }
 

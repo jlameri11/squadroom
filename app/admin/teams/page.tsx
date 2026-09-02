@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { TeamList } from './team-list'
 import { NewTeam } from './new-team'
+import { AppShellPage } from '@/components/shell-page'
 
 /**
  * Thin on purpose. Fetch, shape, hand to a client component.
@@ -26,11 +27,8 @@ export default async function TeamsPage() {
     .order('age_group')
 
   return (
-    <main className="mx-auto max-w-md p-5">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Teams</h1>
-        <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
-      </header>
+    <AppShellPage title="Teams">
+      <div className="p-4">
 
       <TeamList
         teams={(teams ?? []).map((t) => ({
@@ -45,7 +43,8 @@ export default async function TeamsPage() {
       />
 
       <NewTeam academyId={academy.id} />
-    </main>
+    </div>
+    </AppShellPage>
   )
 }
 
