@@ -39,16 +39,26 @@ export function HashSession() {
       // Strip the tokens from the address bar either way. They are
       // credentials, and leaving them in history or a shared screenshot is
       // exactly the leak this whole flow exists to avoid.
-      const clean = window.location.pathname + window.location.search
-      window.history.replaceState(null, '', clean)
+      window.history.replaceState(null, '', window.location.pathname)
 
       if (error) {
         window.location.replace('/signin?error=expired')
         return
       }
-      // A full load rather than a router refresh: the server needs to read
-      // the cookie that setSession has just written.
-      window.location.replace(clean)
+
+      // NOT the current path. The fragment arrives at /auth/callback, whose
+      // route handler cannot see it and has already bounced to /signin — so
+      // reloading "where we are" put a freshly signed-in person back on the
+      // login screen, which is exactly how it looked: the link works, and you
+      // end up at sign-in anyway.
+      const here = window.location.pathname
+      const destination = here === '/signin' || here === '/auth/callback' || here === '/signup'
+        ? '/'
+        : here + window.location.search
+
+      // A full load rather than a router refresh: the server has to read the
+      // cookie setSession just wrote.
+      window.location.replace(destination)
     })
   }, [])
 

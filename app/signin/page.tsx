@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -17,9 +17,27 @@ import { createClient } from '@/lib/supabase/client'
  */
 export default function SignIn() {
   const [email, setEmail] = useState('')
+  const [checking, setChecking] = useState(true)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // Somebody arriving here with a valid session has almost always just come
+  // through a link that worked. Showing them a login form is how a successful
+  // sign-in looks like a failed one.
+  useEffect(() => {
+    // An emailed link lands here carrying its token in the fragment, because
+    // /auth/callback cannot see a fragment and bounces. HashSession is
+    // already signing that person in, so showing the form for the moment it
+    // takes would flash a login screen at somebody who just logged in.
+    if (window.location.hash.includes('access_token=')) return
+
+    const supabase = createClient()
+    supabase.auth.getClaims().then(({ data }) => {
+      if (data?.claims?.sub) window.location.replace('/')
+      else setChecking(false)
+    })
+  }, [])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -62,6 +80,17 @@ export default function SignIn() {
     }
     setEmail(address)
     setSent(true)
+  }
+
+  if (checking) {
+    return (
+      <main
+        className="grid min-h-dvh place-items-center"
+        style={{ background: 'var(--paper)' }}
+      >
+        <p className="text-sm text-ink-2">Signing you in…</p>
+      </main>
+    )
   }
 
   if (sent) {
