@@ -920,6 +920,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           ends_at: string | null
+          external_ref: string | null
           fixture_id: string | null
           id: string
           kit_colour: string | null
@@ -948,6 +949,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           ends_at?: string | null
+          external_ref?: string | null
           fixture_id?: string | null
           id?: string
           kit_colour?: string | null
@@ -976,6 +978,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           ends_at?: string | null
+          external_ref?: string | null
           fixture_id?: string | null
           id?: string
           kit_colour?: string | null
@@ -2512,6 +2515,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      applied_migration: { Args: { p_name: string }; Returns: string }
       broadcast_to_competition: {
         Args: { p_body: string; p_competition: string; p_urgent?: boolean }
         Returns: number
@@ -2671,6 +2675,14 @@ export type Database = {
           p_venue_label?: string
         }
         Returns: number
+      }
+      create_imported_events: {
+        Args: { p_academy: string; p_events: Json; p_team: string }
+        Returns: {
+          created: number
+          skipped: number
+          updated: number
+        }[]
       }
       create_scanned_events: {
         Args: { p_events: Json; p_scan: string }

@@ -83,6 +83,9 @@ export default async function Home() {
         <Link href="/admin/payments" className="underline underline-offset-4">
           Collect payments
         </Link>
+        <Link href="/admin/import" className="underline underline-offset-4">
+          Import a draw
+        </Link>
         <Link href="/scan" className="underline underline-offset-4">
           Add games from a screenshot
         </Link>

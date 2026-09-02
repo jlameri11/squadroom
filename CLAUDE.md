@@ -37,7 +37,26 @@ one and is meant to reach hundreds of academies.
     Events → filter → Export → Events → download a spreadsheet.
   - So: build an importer, not an integration. Do NOT scrape the public Match
     Centre - fragile and almost certainly against their terms.
-  - Column mapping must be built against a real export file, never guessed.
+  - **Built at `/admin/import`, with no fixed column mapping at all.** It
+    reads whatever headers are in the file, SUGGESTS a mapping, and a human
+    confirms it before a row is written. That honours "never guess the
+    mapping" without needing a sample file, and survives Dribl renaming a
+    column — or a league secretary's own spreadsheet.
+  - Suggestion scoring is GLOBAL, not field-by-field in list order. The first
+    version walked fields in order, so `title` (matching "match") claimed a
+    column called "Match Id" on a prefix before `external_ref` could claim it
+    on an exact match — and that column is what stops a re-import duplicating
+    a season.
+  - `events.external_ref` is unique per academy and makes re-import safe: a
+    moved game moves, it does not appear twice. With no id column in the file
+    it falls back to team + kick-off, because one team cannot play twice at
+    the same moment.
+  - Dates are read DAY first. Australian d/m/y and American m/d/y are
+    indistinguishable for the first twelve days of every month, so the
+    preview shows the reading and a human can catch it.
+  - Never `toISOString()` a spreadsheet date. A local midnight in Sydney
+    becomes the previous day in UTC, which moves every Saturday game to
+    Friday.
   - Do NOT try to replace Dribl for association competition. Football NSW
     mandates registration there for eligibility, insurance and age
     verification - that is governance, not software, and the failure mode is

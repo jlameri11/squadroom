@@ -10,7 +10,8 @@
     "types": "supabase gen types typescript --project-id rnykncrdcywmetuvslvw > lib/database.types.ts",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
-    "cap:android": "cap open android"
+    "cap:android": "cap open android",
+    "test:parsing": "node --experimental-strip-types scripts/test-import-parsing.ts"
   },
   "dependencies": {
     "@capacitor-community/contacts": "^8.0.0",
@@ -28,7 +29,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "stripe": "^22.6.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@capacitor/android": "^8.5.1",
