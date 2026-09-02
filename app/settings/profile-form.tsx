@@ -71,8 +71,8 @@ export function ProfileForm({
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm text-green-700">Saved.</p>}
+      {error && <p className="text-sm ">{error}</p>}
+      {saved && <p className="text-sm ">Saved.</p>}
 
       <button
         type="submit"

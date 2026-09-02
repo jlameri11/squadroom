@@ -166,7 +166,7 @@ export function NewChat({ academyId, canCreate }: { academyId: string; canCreate
           </span>
         </label>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-sm ">{error}</p>}
 
         <div className="mt-4 flex gap-2">
           <button onClick={create} disabled={!ready || busy} className="btn flex-1 disabled:opacity-50">

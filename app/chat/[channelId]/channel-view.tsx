@@ -99,11 +99,11 @@ export function ChannelView({
       {pinned && (
         <div
           className="flex items-start gap-2.5 border-b px-4 py-2.5"
-          style={{ background: '#FDF7E9', borderColor: 'var(--line)' }}
+          style={{ background: 'var(--maybe-bg)', borderColor: 'var(--line)' }}
         >
           <span className="mt-0.5 flex-none text-sm" aria-hidden>📌</span>
           <span className="min-w-0">
-            <span className="eyebrow block" style={{ color: '#8A6A22' }}>Pinned</span>
+            <span className="eyebrow block" style={{ color: 'var(--maybe)' }}>Pinned</span>
             <span className="block truncate text-sm text-ink">{pinned.body}</span>
           </span>
         </div>

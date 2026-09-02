@@ -241,7 +241,7 @@ export function AddPlayers({
           </p>
         )}
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-sm ">{error}</p>}
 
         <p className="mt-3 text-xs text-ink-3">
           Only the contacts you tap are read — the rest of your address book is never uploaded.

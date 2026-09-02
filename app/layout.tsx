@@ -52,8 +52,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       */}
       <script
         dangerouslySetInnerHTML={{
-          __html:
-            "try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
+          __html:"try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
         }}
       />
       <body className="min-h-full flex flex-col bg-paper text-ink">

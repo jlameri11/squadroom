@@ -94,7 +94,7 @@ export function CalendarFeed() {
           </div>
         ) : (
           <button onClick={() => setConfirmRotate(true)}
-                  className="mt-1 text-xs text-red-600 underline underline-offset-4">
+                  className="mt-1 text-xs  underline underline-offset-4">
             Shared it by mistake? Get a new link
           </button>
         )}

@@ -45,13 +45,13 @@ export function PendingQueue({ channelId, isHost }: { channelId: string; isHost:
   if (!isHost || items.length === 0) return null
 
   return (
-    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+    <div className="border-b   px-4 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide ">
         Waiting for you · {items.length}
       </p>
       <div className="mt-1.5 flex flex-col gap-2">
         {items.map((m) => (
-          <div key={m.id} className="rounded-lg border border-amber-200 bg-[var(--surface)] p-2">
+          <div key={m.id} className="rounded-lg border  bg-[var(--surface)] p-2">
             <p className="text-xs text-ink-2">{m.sender_name ?? 'Someone'}</p>
             <p className="text-sm">{m.body}</p>
             <div className="mt-1.5 flex gap-2">

@@ -44,7 +44,7 @@ export function RequestList({ initial }: { initial: PendingRequest[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm ">{error}</p>}
 
       {rows.map((r) => (
         <article key={r.id} className="rounded-xl border border-[var(--line)] p-4">

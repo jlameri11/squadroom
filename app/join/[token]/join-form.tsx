@@ -84,7 +84,7 @@ export function JoinForm({
           They&apos;ll see that you asked to join {teamName ?? academyName} and tap approve. You can
           close this — come back any time.
         </p>
-        {error && <p className="text-sm text-amber-600">{error}</p>}
+        {error && <p className="text-sm ">{error}</p>}
         <button
           onClick={checkApproval}
           disabled={busy}
@@ -140,7 +140,7 @@ export function JoinForm({
           />
         </label>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm ">{error}</p>}
 
         <button
           type="submit"

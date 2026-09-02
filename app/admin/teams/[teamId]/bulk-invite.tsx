@@ -138,7 +138,7 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
             </div>
           ))}
           {bad.map((p) => (
-            <div key={p.raw} className="text-red-600">
+            <div key={p.raw} className="">
               Couldn&apos;t read: <span className="font-mono">{p.raw}</span>
             </div>
           ))}

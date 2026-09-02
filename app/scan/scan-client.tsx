@@ -264,7 +264,7 @@ export function ScanClient({
       </p>
 
       {error && (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <p className="mt-4 rounded-lg border p-3 text-sm " style={{ background: 'var(--no-bg)', borderColor: 'var(--no)', color: 'var(--no)' }}>
           {error}
         </p>
       )}
@@ -434,7 +434,7 @@ function EventRow({
             </button>
             <button
               onClick={remove}
-              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm text-red-600"
+              className="rounded-lg border border-[var(--line)] px-3 py-2 text-sm "
             >
               Remove this game
             </button>

@@ -160,12 +160,12 @@ export function ImportClient({
       </p>
 
       {result && (
-        <p className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+        <p className="mt-4 rounded-lg border p-3 text-sm " style={{ background: 'var(--yes-bg)', borderColor: 'var(--yes)', color: 'var(--yes)' }}>
           {result}
         </p>
       )}
       {error && (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <p className="mt-4 rounded-lg border p-3 text-sm " style={{ background: 'var(--no-bg)', borderColor: 'var(--no)', color: 'var(--no)' }}>
           {error}
         </p>
       )}
@@ -218,7 +218,7 @@ export function ImportClient({
                 <label key={field.key} className="text-sm">
                   <span className="text-ink-2">
                     {field.label}
-                    {field.required && <span className="text-red-600"> *</span>}
+                    {field.required && <span className=""> *</span>}
                   </span>
                   <select
                     value={mapping[field.key] ?? ''}
@@ -284,11 +284,11 @@ export function ImportClient({
               missing, or they find out on a Saturday.
             */}
             {bad.length > 0 && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <p className="text-sm font-medium text-amber-900">
+              <div className="mt-4 rounded-lg border   p-3">
+                <p className="text-sm font-medium ">
                   {bad.length} {bad.length === 1 ? 'row' : 'rows'} will be skipped
                 </p>
-                <ul className="mt-1 flex flex-col gap-0.5 text-xs text-amber-800">
+                <ul className="mt-1 flex flex-col gap-0.5 text-xs ">
                   {bad.slice(0, 5).map((p) => (
                     <li key={p.index}>
                       Row {p.index + 2}: {p.problem}
@@ -296,7 +296,7 @@ export function ImportClient({
                   ))}
                   {bad.length > 5 && <li>…and {bad.length - 5} more</li>}
                 </ul>
-                <p className="mt-2 text-xs text-amber-700">
+                <p className="mt-2 text-xs ">
                   Usually the Date or Kick-off dropdown is pointing at the wrong column.
                 </p>
               </div>

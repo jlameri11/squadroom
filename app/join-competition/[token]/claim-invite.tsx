@@ -116,7 +116,7 @@ export function ClaimInvite({
           </label>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm ">{error}</p>}
 
         <button type="submit" disabled={busy} className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           {busy ? 'Accepting…' : 'Accept and see our fixtures'}

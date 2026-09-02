@@ -104,10 +104,10 @@ export function Home({
         <Link
           href="/settings"
           className="card mx-4 mb-4 mt-4 block p-3.5 text-sm"
-          style={{ borderColor: 'var(--gold)', background: '#FDF7E9' }}
+          style={{ borderColor: 'var(--gold)', background: 'var(--maybe-bg)' }}
         >
-          <b style={{ color: '#7A5B12' }}>Add your mobile number</b>
-          <span className="mt-0.5 block" style={{ color: '#8A6A22' }}>
+          <b style={{ color: 'var(--maybe)' }}>Add your mobile number</b>
+          <span className="mt-0.5 block" style={{ color: 'var(--maybe)' }}>
             Your team can&apos;t call or text you without it.
           </span>
         </Link>

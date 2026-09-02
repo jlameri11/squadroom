@@ -19,9 +19,9 @@ export type RequestRow = {
 }
 
 const TONE: Record<string, string> = {
-  accepted: 'bg-green-50 text-green-700',
-  approved: 'bg-green-50 text-green-700',
-  pending:  'bg-amber-50 text-amber-700',
+  accepted: ' ',
+  approved: ' ',
+  pending:  ' ',
   declined: 'bg-[var(--surface-2)] text-ink-2',
   revoked:  'bg-[var(--surface-2)] text-ink-2',
   expired:  'bg-[var(--surface-2)] text-ink-2',

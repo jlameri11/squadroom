@@ -241,15 +241,15 @@ function CallItOff({
 
   if (cancelled) {
     return (
-      <section className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
-        <p className="text-sm font-semibold text-red-800">This game is off</p>
+      <section className="mt-5 rounded-xl border   p-4">
+        <p className="text-sm font-semibold ">This game is off</p>
         {(event.cancellation_reason || event.cancellation_note) && (
-          <p className="mt-0.5 text-sm text-red-700">
+          <p className="mt-0.5 text-sm ">
             {REASONS.find((r) => r.value === event.cancellation_reason)?.label}
             {event.cancellation_note ? ` — ${event.cancellation_note}` : ''}
           </p>
         )}
-        <p className="mt-1 text-xs text-red-600">Everyone in the team has been told.</p>
+        <p className="mt-1 text-xs ">Everyone in the team has been told.</p>
         <button
           onClick={() => set(false)}
           disabled={busy}
@@ -257,7 +257,7 @@ function CallItOff({
         >
           {busy ? 'Working…' : "It's back on"}
         </button>
-        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mt-2 text-sm ">{error}</p>}
       </section>
     )
   }
@@ -266,7 +266,7 @@ function CallItOff({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-5 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-medium text-red-700"
+        className="mt-5 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-medium "
       >
         Call this game off
       </button>
@@ -307,7 +307,7 @@ function CallItOff({
         />
       </label>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
 
       <div className="mt-3 flex gap-2">
         <button

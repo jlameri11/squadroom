@@ -260,7 +260,7 @@ export function Composer({
         </div>
       )}
 
-      {error && <p className="px-4 pt-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="px-4 pt-2 text-xs ">{error}</p>}
 
       {isHost && (
         <label className="flex items-center gap-2 px-4 pt-2 text-xs text-ink-2">

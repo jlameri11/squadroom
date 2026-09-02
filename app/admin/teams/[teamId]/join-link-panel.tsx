@@ -80,7 +80,7 @@ export function JoinLinkPanel({
           Create a link, paste it into the team&apos;s WhatsApp group, and approve people as they
           appear. Nothing is sent by text.
         </p>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-sm ">{error}</p>}
         <button
           onClick={create}
           disabled={busy}
@@ -105,7 +105,7 @@ export function JoinLinkPanel({
         Used {link.useCount}{link.maxUses ? ` of ${link.maxUses}` : ' times'} · expires {expires}
       </p>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
 
       <div className="mt-3 flex gap-2">
         <button
@@ -124,7 +124,7 @@ export function JoinLinkPanel({
         <button
           onClick={revoke}
           disabled={busy}
-          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm text-red-600 disabled:opacity-50"
+          className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm  disabled:opacity-50"
         >
           Revoke
         </button>
@@ -132,7 +132,8 @@ export function JoinLinkPanel({
 
       {showQr && qrSvg && (
         <div className="mt-4 flex flex-col items-center gap-2">
-          <div className="rounded-xl bg-[var(--surface)] p-2" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+          <div className="rounded-xl bg-[var(--surface)] p-2" dangerouslySetInnerHTML={{ __html: qrSvg }}
+          style={{ background: '#ffffff', borderRadius: 10, padding: 8 }} />
           <p className="text-center text-xs text-ink-2">
             Hold this up at training. Revoking it later never removes anyone already in.
           </p>

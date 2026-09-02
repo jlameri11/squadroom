@@ -103,7 +103,7 @@ export function InviteClubs({
           </p>
         )}
 
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-sm ">{error}</p>}
 
         <button onClick={invite} disabled={busy || names.length === 0}
                 className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"

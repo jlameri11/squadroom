@@ -103,7 +103,7 @@ export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeR
                 ) : (
                   <button
                     onClick={() => setConfirming(r.profileId)}
-                    className="text-sm text-red-600 underline underline-offset-4"
+                    className="text-sm  underline underline-offset-4"
                   >
                     {/* Say the consequence up front. Removing a coach quietly
                         taking fourteen families with them is not acceptable. */}

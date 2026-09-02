@@ -63,7 +63,7 @@ export function AcademySettings({
 
   return (
     <div className="mt-6 flex flex-col gap-6">
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm ">{error}</p>}
 
       <section>
         <h2 className="font-semibold">Club colours</h2>

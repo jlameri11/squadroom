@@ -97,7 +97,7 @@ export function NewTeam({ academyId }: { academyId: string }) {
 
       </div>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm ">{error}</p>}
 
       <div className="mt-3 flex gap-2">
         <button

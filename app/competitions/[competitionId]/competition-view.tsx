@@ -276,9 +276,9 @@ function Broadcast({ competitionId, isOrganiser }: { competitionId: string; isOr
         className="mt-3 w-full rounded-xl border border-[var(--line)] p-3 text-sm"
       />
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
       {sent !== null && (
-        <p className="mt-2 text-sm text-green-700">Delivered to {sent} {sent === 1 ? 'club' : 'clubs'}.</p>
+        <p className="mt-2 text-sm ">Delivered to {sent} {sent === 1 ? 'club' : 'clubs'}.</p>
       )}
 
       <button
@@ -321,7 +321,7 @@ function SetUpFinals({ competitionId, division }: { competitionId: string; divis
       </p>
       <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)}
              className="mt-2 w-full rounded-xl border border-[var(--line)] px-3 py-2.5" />
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
       <button onClick={build} disabled={busy}
               className="mt-2 w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold disabled:opacity-50">
         {busy ? 'Setting up…' : 'Set up finals'}
@@ -389,7 +389,7 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
         </label>
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
 
       <button onClick={build} disabled={busy}
               className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
@@ -462,7 +462,7 @@ function Clubs({ entries }: { entries: Entry[] }) {
   return (
     <div>
       {waiting > 0 && (
-        <p className="border-b border-[var(--line-2)] bg-amber-50 px-4 py-2 text-xs text-amber-800">
+        <p className="border-b border-[var(--line-2)]  px-4 py-2 text-xs " style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}>
           {waiting} {waiting === 1 ? 'club has' : 'clubs have'} not accepted their invitation yet. They
           are still on the draw.
         </p>

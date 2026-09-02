@@ -39,7 +39,7 @@ export function SeasonControl({ teamId, status }: { teamId: string; status: stri
           ? 'Channels are read-only. Everything said and shared is still there.'
           : 'Makes this team’s channels read-only. Nothing is deleted, and you can reopen it.'}
       </p>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
 
       {ended ? (
         <button

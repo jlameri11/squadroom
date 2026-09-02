@@ -83,7 +83,7 @@ export function DirectoryList({
         )}
       </div>
 
-      {error && <p className="px-4 pb-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="px-4 pb-2 text-sm ">{error}</p>}
 
       <Section title="Staff" people={staff} />
       <Section title="Families" people={others} />

@@ -90,14 +90,14 @@ export function PaymentsAdmin({
         </p>
 
         {ready ? (
-          <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">
+          <p className="mt-3 rounded-lg  p-3 text-sm " style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}>
             Ready to take payments.
             {billing?.payouts_enabled === false &&
               ' Payouts to your bank are still being verified — you can charge now, and the money will land once that clears.'}
           </p>
         ) : started ? (
           <>
-            <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="mt-3 rounded-lg  p-3 text-sm " style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}>
               {billing?.details_submitted
                 ? 'Stripe is checking your details. This usually takes a few minutes, occasionally a day or two.'
                 : 'Setup was started but not finished.'}
@@ -121,7 +121,7 @@ export function PaymentsAdmin({
           </button>
         )}
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-sm ">{error}</p>}
       </section>
 
       <NewRequest academyId={academyId} teams={teams} disabled={!ready} />
@@ -330,7 +330,7 @@ function NewRequest({
         </label>
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm ">{error}</p>}
 
       <div className="mt-3 flex gap-2">
         <button
