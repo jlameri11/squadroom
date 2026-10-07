@@ -104,8 +104,31 @@ say(`${FAMILIES.length} families, ${links} children linked to a parent`)
 // --- fixtures --------------------------------------------------------------
 // Only rows this script owns. source='manual' and a Round title is the seed's
 // own signature; anything imported or scanned carries a different source.
-await admin.from('events').delete().eq('academy_id', NRIFA).eq('source', 'manual').like('title', 'Round %')
-await admin.from('events').delete().eq('academy_id', NRIFA).eq('source', 'manual').eq('title', 'Tuesday training')
+// A fixture posted into a channel leaves a card behind, and the card's only
+// content IS the event. Deleting the event sets its event_id to null, which
+// leaves a message with no body, no attachments and no event — and
+// messages_not_empty refuses it, so the whole delete fails.
+//
+// This is a real product bug, not just a seeding one: a coach who posts a
+// fixture to the team can never afterwards delete it. Fixing it properly
+// needs a trigger that takes the card with the event. Until then, take the
+// cards out first.
+const clearCards = async (titleFilter) => {
+  const q = admin.from('events').select('id').eq('academy_id', NRIFA).eq('source', 'manual')
+  const { data: doomed } = await (titleFilter.like
+    ? q.like('title', titleFilter.like)
+    : q.eq('title', titleFilter.eq))
+  if (!doomed?.length) return
+  const ids = doomed.map((e) => e.id)
+  const { data: cards } = await admin
+    .from('messages').select('id, body').in('event_id', ids)
+  const empty = (cards ?? []).filter((m) => !m.body || !m.body.trim()).map((m) => m.id)
+  if (empty.length) await admin.from('messages').delete().in('id', empty)
+  const { error } = await admin.from('events').delete().in('id', ids)
+  if (error) throw new Error(`clearing ${JSON.stringify(titleFilter)}: ${error.message}`)
+}
+await clearCards({ like: 'Round %' })
+await clearCards({ eq: 'Tuesday training' })
 
 const saturday = (weeks) => {
   const d = new Date()
