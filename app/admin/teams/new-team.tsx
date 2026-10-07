@@ -8,7 +8,15 @@ import { createClient } from '@/lib/supabase/client'
 
 const AGE_GROUPS = ['U5','U6','U7','U8','U9','U10','U11','U12','U13','U14','U15','U16','U17','U18']
 
-export function NewTeam({ academyId }: { academyId: string }) {
+export function NewTeam({
+  academyId,
+  onCreated,
+}: {
+  academyId: string
+  /** Re-reads the list. router.refresh() could be served from the client
+      router cache, so a coach made a team and did not see it. */
+  onCreated?: () => void
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -42,7 +50,8 @@ export function NewTeam({ academyId }: { academyId: string }) {
     }
     setName('')
     setOpen(false)
-    router.refresh()
+    if (onCreated) onCreated()
+    else router.refresh()
   }
 
   if (!open) {
