@@ -18,8 +18,11 @@ const coach  = await sess('joeylameri@outlook.com')            // owner
 const sam    = await sess('p61400000011@squadroom.invalid')    // Leo + Zoe in U8
 const other  = await sess('p61400000012@squadroom.invalid')
 
-await admin.from('payment_requests').delete().eq('academy_id', NRIFA)
-await admin.from('academy_billing').delete().eq('academy_id', NRIFA)
+// Only what this test creates. It used to delete every payment request and
+// billing row for the academy, which quietly destroyed the demo data every
+// time the suite ran — and nobody noticed until a walkthrough showed an empty
+// payments screen.
+await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title','TESTPAY%')
 
 head('1. A parent cannot see the billing configuration')
 await admin.from('academy_billing').insert({
@@ -39,13 +42,17 @@ parentAsk ? ok('a parent cannot create a payment request')
           : bad('a parent invoiced the whole academy')
 
 const { data: req, error: coachAsk } = await coach.client.from('payment_requests').insert({
-  academy_id: NRIFA, team_id: U8, title: 'Spring Gala Day entry', amount_cents: 4500,
+  academy_id: NRIFA, team_id: U8, title: 'TESTPAY Gala Day entry', amount_cents: 4500,
   due_on: new Date(Date.now()+14*864e5).toISOString().slice(0,10), created_by: coach.id,
 }).select('id').single()
 coachAsk ? bad(coachAsk.message) : ok(`the coach asked for $45.00`)
 
 head('3. A parent sees a line per child, not one per family')
-const { data: owing, error: oe } = await sam.client.rpc('my_payment_requests', { p_academy: NRIFA })
+const { data: all, error: oe } = await sam.client.rpc('my_payment_requests', { p_academy: NRIFA })
+// Scoped to this test's request. The demo data has its own fee sitting
+// alongside, and a parent with two children correctly sees a line per child
+// per request — the old assertion only held while nothing else existed.
+const owing = (all ?? []).filter(o => o.request_id === req.id)
 oe ? bad(oe.message) : owing.length === 2
   ? ok(`${owing.length} rows: ${owing.map(o=>o.player_name.split(' ')[0]).join(' and ')} — chased separately`)
   : bad(`expected 2 children, got ${owing.length}`)
@@ -78,7 +85,8 @@ await admin.from('payments').insert({
   amount_cents: 4500, status: 'paid', paid_at: new Date().toISOString(),
   stripe_session_id: 'cs_test_' + Date.now(),
 })
-const { data: after } = await sam.client.rpc('my_payment_requests', { p_academy: NRIFA })
+const { data: afterAll } = await sam.client.rpc('my_payment_requests', { p_academy: NRIFA })
+const after = (afterAll ?? []).filter(o => o.request_id === req.id)
 const settled = after.filter(o => o.status === 'paid')
 settled.length === 1 ? ok(`${settled[0].player_name.split(' ')[0]} shows paid, the other still owes`)
                      : bad(`expected 1 paid, got ${settled.length}`)
@@ -108,6 +116,6 @@ head('9. A parent cannot open the register')
 const { error: peek } = await sam.client.rpc('payment_register', { p_request: req.id })
 peek ? ok(`refused: ${peek.message}`) : bad('a parent read who else has not paid')
 
-await admin.from('payment_requests').delete().eq('academy_id', NRIFA)
+await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title','TESTPAY%')
 await admin.from('academy_billing').delete().eq('academy_id', NRIFA)
 console.log('\ncleaned up\n')

@@ -83,9 +83,11 @@ async function upsertFamily([name, phone, kids]) {
       if (error) throw new Error(`${kid}: ${error.message}`)
       pid = data.id
     }
-    await admin.from('player_guardians').upsert(
-      { player_id: pid, profile_id: user.id }, { onConflict: 'player_id,profile_id' }
+    const { error: linkError } = await admin.from('player_guardians').upsert(
+      { player_id: pid, profile_id: user.id, academy_id: NRIFA },
+      { onConflict: 'player_id,profile_id' }
     )
+    if (linkError) throw new Error(`linking ${kid} to ${name}: ${linkError.message}`)
     playerIds.push(pid)
   }
   return { id: user.id, name, playerIds }
