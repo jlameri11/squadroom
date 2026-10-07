@@ -51,5 +51,32 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  /**
+   * Deliberately NOT every request.
+   *
+   * This runs a token check against Supabase, which from Netlify's us-east-2
+   * to a Sydney database costs about 300ms. It was running on every page, and
+   * the pages that also checked for themselves paid it twice — 667ms to draw
+   * a shell with no data in it.
+   *
+   * Home, chat and fixtures are now static shells whose data the browser
+   * fetches directly, so none of them needs a server session and none of them
+   * runs this. The browser's own client refreshes the token perfectly well;
+   * this exists for the routes that genuinely read the session server-side —
+   * the API handlers, the join flow, and the admin pages that still render
+   * their data on the server.
+   */
+  matcher: [
+    '/api/:path*',
+    '/auth/:path*',
+    '/join/:path*',
+    '/join-competition/:path*',
+    '/admin/:path*',
+    '/settings/:path*',
+    '/competitions/:path*',
+    '/payments/:path*',
+    '/scan/:path*',
+    '/platform/:path*',
+    '/start/:path*',
+  ],
 }

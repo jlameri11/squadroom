@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useScreen } from '@/lib/hooks/use-screen'
+import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
 import { AppBar, TabBar, Screen } from '@/components/app-shell'
 import { createClient } from '@/lib/supabase/client'
@@ -44,6 +46,50 @@ type Academy = {
   logo_url: string | null
 }
 
+type HomeData = {
+  profile: { phone: string | null } | null
+  academy: Academy | null
+  role: string | null
+  other_academies: { id: string; name: string; type: string }[]
+  is_platform_admin: boolean
+  pending_requests: number
+  events: HomeEvent[]
+  channels: HomeChannel[]
+}
+
+export function Home() {
+  const { data, failed } = useScreen<HomeData>('home_screen')
+
+  if (failed) {
+    return (
+      <div className="mx-auto grid min-h-dvh w-full max-w-md place-items-center p-6">
+        <p className="text-center text-sm text-ink-2">
+          Couldn&apos;t load. Check your connection and pull down to refresh.
+        </p>
+      </div>
+    )
+  }
+
+  if (!data) return <ScreenSkeleton />
+  if (!data.academy) {
+    if (typeof window !== 'undefined') window.location.replace('/start')
+    return <ScreenSkeleton />
+  }
+
+  return (
+    <HomeScreen
+      academy={data.academy}
+      otherAcademies={data.other_academies ?? []}
+      role={data.role ?? 'parent'}
+      isPlatformAdmin={data.is_platform_admin}
+      needsPhone={!data.profile?.phone}
+      pendingRequests={data.pending_requests ?? 0}
+      events={data.events ?? []}
+      channels={data.channels ?? []}
+    />
+  )
+}
+
 const TYPE_TINT: Record<string, string> = {
   match: 'var(--brand)',
   tournament: 'var(--maybe)',
@@ -64,7 +110,7 @@ const TYPE_TINT: Record<string, string> = {
  * Everything below is gated on role now. A menu that offers what you cannot
  * do is not a menu, it is a maze.
  */
-export function Home({
+function HomeScreen({
   academy,
   otherAcademies,
   role,

@@ -1,34 +1,13 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { CalendarList, type UpcomingEvent } from './calendar-list'
-import { AppShellPage } from '@/components/shell-page'
+import { FixturesScreen } from './fixtures-screen'
 
-/** One round trip. See 0068. */
-export default async function CalendarPage() {
-  const supabase = await createClient()
-  const { data } = await supabase.rpc('fixtures_screen', { p_days: 60 })
-
-  const screen = data as unknown as {
-    academy: { id: string; name: string } | null
-    is_staff: boolean
-    events: UpcomingEvent[]
-  } | null
-
-  if (!screen) redirect('/signin')
-  if (!screen.academy) redirect('/start')
-
-  return (
-    <AppShellPage
-      title="Fixtures"
-      meta={`${screen.academy.name} · next 60 days`}
-      isStaff={screen.is_staff}
-    >
-      <div className="border-b px-4 py-3" style={{ borderColor: 'var(--line-2)' }}>
-        <a href="/scan" className="text-sm underline underline-offset-4" style={{ color: 'var(--brand)' }}>
-          Add games from a screenshot
-        </a>
-      </div>
-      <CalendarList academyId={screen.academy.id} events={screen.events ?? []} />
-    </AppShellPage>
-  )
+/**
+ * A static shell. No server session, no round trip — see proxy.ts.
+ *
+ * Authorisation has not moved: every row still comes through RLS under the
+ * person's own identity. What moved is WHERE the question gets asked, and
+ * asking it from a browser in Sydney costs a few milliseconds rather than a
+ * Pacific crossing from Ohio and back.
+ */
+export default function CalendarPage() {
+  return <FixturesScreen />
 }

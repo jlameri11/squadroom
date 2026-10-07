@@ -18,7 +18,10 @@ import { createClient } from '@/lib/supabase/client'
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState<'link' | 'password'>('link')
+  // Password first. A magic link is the right door for a coach arriving for
+  // the first time; it is the wrong one for anybody who signs in regularly —
+  // it needs a working inbox, a working mail server, and a wait.
+  const [mode, setMode] = useState<'link' | 'password'>('password')
   const [checking, setChecking] = useState(true)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +36,13 @@ export default function SignIn() {
     // already signing that person in, so showing the form for the moment it
     // takes would flash a login screen at somebody who just logged in.
     if (window.location.hash.includes('access_token=')) return
+
+    // Last address used on this device. Saves retyping it every time, and
+    // it is not a secret — the password still is.
+    try {
+      const last = localStorage.getItem('squadroom.lastEmail')
+      if (last) setEmail(last)
+    } catch {}
 
     const supabase = createClient()
     supabase.auth.getClaims().then(({ data }) => {
@@ -66,6 +76,9 @@ export default function SignIn() {
           : error.message
       )
     }
+    try {
+      localStorage.setItem('squadroom.lastEmail', email.trim().toLowerCase())
+    } catch {}
     window.location.replace('/')
   }
 
@@ -157,7 +170,9 @@ export default function SignIn() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
       <div>
         <h1 className="text-2xl font-semibold">Squadroom</h1>
-        <p className="mt-1 text-sm text-ink-2">Coach and admin sign-in.</p>
+        <p className="mt-1 text-sm text-ink-2">
+          Coach and admin sign-in. Parents don&apos;t need one.
+        </p>
       </div>
 
       <form onSubmit={mode === 'password' ? signInWithPassword : submit} className="flex flex-col gap-4">
@@ -170,7 +185,7 @@ export default function SignIn() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="rounded-xl border border-[var(--line)] px-3 py-3 text-base"
-            autoComplete="email"
+            autoComplete="username"
             // A phone will otherwise capitalise and autocorrect an email
             // address into something that no longer exists.
             autoCapitalize="none"
