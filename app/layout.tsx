@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Sans, Barlow_Condensed } from 'next/font/google'
 import './globals.css'
 import { HashSession } from '@/components/hash-session'
+import { TabBar } from '@/components/app-shell'
 
 const plex = IBM_Plex_Sans({
   variable: '--font-plex',
@@ -57,7 +58,17 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       />
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />
-        {children}
+        {/*
+          Rendered once, above every page, so it survives navigation.
+          It used to be rendered BY each screen, which meant it unmounted and
+          rebuilt on every tap — and refetched its counts each time. A bar
+          that flickers on every tap is most of what "slow between pages"
+          feels like, whatever the actual numbers say.
+        */}
+        <div className="flex min-h-dvh flex-col">
+          <div className="flex-1">{children}</div>
+          <TabBar />
+        </div>
       </body>
     </html>
   )

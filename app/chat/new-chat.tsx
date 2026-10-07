@@ -1,6 +1,7 @@
 'use client'
 
 import { Sheet } from '@/components/sheet'
+import { invalidateScreen } from '@/lib/hooks/use-screen'
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -60,6 +61,9 @@ export function NewChat({ academyId, canCreate }: { academyId: string; canCreate
     })
     setBusy(false)
     if (error) return setError(error.message)
+    // The chat list is cached; without this the new room would not appear.
+    invalidateScreen('chat_screen')
+    invalidateScreen('home_screen')
     window.location.href = `/chat/${data}`
   }
 

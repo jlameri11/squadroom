@@ -1,7 +1,7 @@
 'use client'
 
 import { CalendarList, type UpcomingEvent } from './calendar-list'
-import { AppBar, TabBar, Screen } from '@/components/app-shell'
+import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { useScreen } from '@/lib/hooks/use-screen'
 
@@ -24,7 +24,7 @@ export function FixturesScreen() {
   if (!data?.academy) return <ScreenSkeleton />
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <AppBar title="Fixtures" meta={`${data.academy.name} · next 60 days`} />
       <Screen>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--line-2)' }}>
@@ -34,7 +34,6 @@ export function FixturesScreen() {
         </div>
         <CalendarList academyId={data.academy.id} events={data.events ?? []} />
       </Screen>
-      <TabBar isStaff={data.is_staff} />
     </div>
   )
 }

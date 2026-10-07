@@ -2,7 +2,7 @@
 
 import { ChannelList } from './channel-list'
 import { NewChat } from './new-chat'
-import { AppBar, TabBar, Screen } from '@/components/app-shell'
+import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { useScreen } from '@/lib/hooks/use-screen'
 
@@ -30,7 +30,7 @@ export function ChatScreen() {
   const active = rows.filter((c) => c.status === 'active').length
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <AppBar
         title="Chats"
         meta={`${active} ${active === 1 ? 'channel' : 'channels'}${unread ? ` · ${unread} unread` : ''}`}
@@ -39,7 +39,6 @@ export function ChatScreen() {
       <Screen>
         <ChannelList channels={rows} />
       </Screen>
-      <TabBar isStaff={data.is_staff} unread={unread} />
     </div>
   )
 }

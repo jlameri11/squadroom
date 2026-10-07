@@ -8,7 +8,7 @@
  */
 export function ScreenSkeleton() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <div className="flex items-center gap-3 px-4 pb-3.5 pt-3" style={{ background: 'var(--brand)' }}>
         <div className="h-9 w-9 flex-none rounded-[10px]" style={{ background: '#ffffff26' }} />
         <div className="min-w-0 flex-1">

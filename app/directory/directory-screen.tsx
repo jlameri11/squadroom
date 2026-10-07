@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { DirectoryList } from './directory-list'
-import { AppBar, TabBar, Screen } from '@/components/app-shell'
+import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
 
@@ -85,7 +85,7 @@ export function DirectoryScreen() {
   if (!state) return <ScreenSkeleton />
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <AppBar title="Directory" meta={`${state.people.length} people · ${state.academy.name}`} />
       <Screen>
         <div className="p-4">
@@ -105,7 +105,6 @@ export function DirectoryScreen() {
           />
         </div>
       </Screen>
-      <TabBar isStaff={state.isStaff} />
     </div>
   )
 }

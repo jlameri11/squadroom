@@ -158,21 +158,49 @@ type Badges = { unread: number; pending: number; is_staff: boolean }
  * navigation from the browser costs almost nothing: the query is two integers
  * and, for anyone in Australia, Supabase is a few milliseconds away.
  */
+/**
+ * Screens that have no tab bar.
+ *
+ * A full-screen conversation and the join flow are not places you tab away
+ * from — the conversation has its own back arrow, and the join flow is for
+ * somebody who is not signed in yet and has nowhere to go.
+ */
+const BARE = [
+  '/signin', '/signup', '/start', '/auth',
+  '/join', '/join-competition',
+]
+
+// Counts live outside the component, so moving between tabs does not throw
+// them away and ask for them again.
+let lastBadges: Badges | null = null
+
 export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number }) {
   const pathname = usePathname()
-  const [badges, setBadges] = useState<Badges | null>(null)
+  const [badges, setBadges] = useState<Badges | null>(lastBadges)
+
+  const hidden =
+    BARE.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
+    // A channel is full screen. /chat itself keeps its bar.
+    /^\/chat\/[^/]+$/.test(pathname)
 
   useEffect(() => {
+    if (hidden) return
     let live = true
     createClient()
       .rpc('nav_badges')
       .then(({ data }) => {
-        if (live && data) setBadges(data as unknown as Badges)
+        if (!live || !data) return
+        lastBadges = data as unknown as Badges
+        setBadges(lastBadges)
       })
     return () => {
       live = false
     }
-  }, [pathname])
+    // Refreshed on every navigation, but the previous answer stays on display
+    // while it does — so the bar never empties and rebuilds.
+  }, [pathname, hidden])
+
+  if (hidden) return null
 
   // The prop is the first paint; the fetch corrects it. Neither waits for the
   // other, so the bar never renders empty.

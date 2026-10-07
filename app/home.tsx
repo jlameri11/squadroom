@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useScreen } from '@/lib/hooks/use-screen'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
-import { AppBar, TabBar, Screen } from '@/components/app-shell'
+import { AppBar, Screen } from '@/components/app-shell'
 import { createClient } from '@/lib/supabase/client'
 
 export type HomeEvent = {
@@ -136,7 +136,7 @@ function HomeScreen({
 
   return (
     <div
-      className="mx-auto flex min-h-dvh w-full max-w-md flex-col"
+      className="mx-auto flex w-full max-w-md flex-1 flex-col"
       style={{ '--brand': tint } as React.CSSProperties}
     >
       <AppBar
@@ -250,8 +250,6 @@ function HomeScreen({
         where a coach goes when that is what they came to do.
       */}
       </Screen>
-
-      <TabBar isStaff={isCoach} unread={unread} />
     </div>
   )
 }

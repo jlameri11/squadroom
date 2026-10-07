@@ -19,13 +19,31 @@ import { createClient } from '@/lib/supabase/client'
  * It is also what CLAUDE.md meant by client-first: every rule lives in the
  * database, so which side asks makes no difference to what comes back.
  */
+/**
+ * What each screen last returned, kept for the life of the tab.
+ *
+ * Without it, every navigation re-fetched from nothing and showed a skeleton —
+ * including going back to a screen you were looking at four seconds ago. That
+ * flash, not the wait, is what "slow between pages" actually is: 60ms of
+ * fetching looks like a reload if the screen empties first.
+ *
+ * Stale-while-revalidate. The cached answer paints instantly and a fresh one
+ * replaces it when it lands, so a tab switch is immediate and still current
+ * within a frame or two.
+ */
+const cache = new Map<string, unknown>()
+
 export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
-  const [data, setData] = useState<T | null>(null)
+  const key = fn + ':' + JSON.stringify(args ?? {})
+  const [data, setData] = useState<T | null>(() => (cache.get(key) as T) ?? null)
   const [failed, setFailed] = useState(false)
-  const key = JSON.stringify(args ?? {})
 
   useEffect(() => {
     let live = true
+    // Show whatever we had for this screen immediately, even if this is a
+    // different instance of the component than the one that fetched it.
+    const cached = cache.get(key)
+    if (cached !== undefined) setData(cached as T)
     createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .rpc(fn as any, args as any)
@@ -41,15 +59,33 @@ export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
           window.location.replace('/signin')
           return
         }
-        if (error || data == null) return setFailed(true)
+        if (error || data == null) {
+          // A cached screen stays on display rather than being replaced by an
+          // error. A flaky moment on a train should not blank the fixtures.
+          if (cache.get(key) === undefined) setFailed(true)
+          return
+        }
+        cache.set(key, data)
         setData(data as T)
       })
     return () => {
       live = false
     }
-    // args is compared by value, not identity — an object literal in a caller
-    // would otherwise re-fetch on every render.
+    // Keyed by value, not identity — an object literal in a caller would
+    // otherwise re-fetch on every render.
   }, [fn, key])  // eslint-disable-line react-hooks/exhaustive-deps
 
   return { data, failed }
+}
+
+/**
+ * Drop a screen's cached answer so the next visit refetches.
+ *
+ * Call after writing something that changes what a screen shows — creating a
+ * chat, calling off a game — or the person is shown their own stale copy and
+ * concludes the write did not work.
+ */
+export function invalidateScreen(fn?: string) {
+  if (!fn) return cache.clear()
+  for (const k of cache.keys()) if (k.startsWith(fn + ':')) cache.delete(k)
 }

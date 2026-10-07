@@ -1,4 +1,4 @@
-import { AppBar, TabBar, Screen } from './app-shell'
+import { AppBar, Screen } from './app-shell'
 
 /**
  * A whole screen: navy bar, scrolling content, tab bar.
@@ -30,12 +30,11 @@ export function AppShellPage({
 }) {
   return (
     <div
-      className="mx-auto flex min-h-dvh w-full max-w-md flex-col"
+      className="mx-auto flex w-full max-w-md flex-1 flex-col"
       style={brand ? ({ '--brand': brand } as React.CSSProperties) : undefined}
     >
       <AppBar title={title} meta={meta} back={back} action={action} />
       <Screen>{children}</Screen>
-      <TabBar isStaff={isStaff} unread={unread} />
     </div>
   )
 }
