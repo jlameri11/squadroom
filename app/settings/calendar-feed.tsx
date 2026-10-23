@@ -14,6 +14,7 @@ export function CalendarFeed() {
   const [url, setUrl] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [copiedChild, setCopiedChild] = useState(false)
   const [confirmRotate, setConfirmRotate] = useState(false)
 
   useEffect(() => {
@@ -62,6 +63,49 @@ export function CalendarFeed() {
         >
           Subscribe
         </a>
+      </div>
+
+      {/*
+        The same token, as a page instead of a calendar file.
+
+        Children do not get Squadroom accounts, so this is how a fourteen-year-
+        old finds out when they are playing: their parent sends them this once.
+        It shows the next game, what to wear and when to be there — and nothing
+        that needs a login, because there is nothing for them to log in to.
+      */}
+      <div className="mt-4 rounded-xl border border-[var(--line)] p-3">
+        <h3 className="text-sm font-semibold">Send it to your child</h3>
+        <p className="mt-0.5 text-xs text-ink-2">
+          A page showing their next game, kit colour and arrive-by time. No app, no account — they
+          just keep the link.
+        </p>
+        <div className="mt-2.5 flex gap-2">
+          <button
+            onClick={async () => {
+              const child = url.replace('/api/calendar/', '/my/')
+              if (navigator.share) {
+                // The share sheet puts it straight into whatever they already
+                // message their kid on, which is the actual job.
+                await navigator.share({ title: 'Your games', url: child }).catch(() => {})
+              } else {
+                await navigator.clipboard.writeText(child)
+                setCopiedChild(true)
+                setTimeout(() => setCopiedChild(false), 2000)
+              }
+            }}
+            className="flex-1 rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-medium"
+          >
+            {copiedChild ? 'Copied' : 'Share their link'}
+          </button>
+          <a
+            href={url.replace('/api/calendar/', '/my/')}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm text-ink-2"
+          >
+            Preview
+          </a>
+        </div>
       </div>
 
       <details className="mt-3">

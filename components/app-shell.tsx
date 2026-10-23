@@ -168,6 +168,10 @@ type Badges = { unread: number; pending: number; is_staff: boolean }
 const BARE = [
   '/signin', '/signup', '/start', '/auth',
   '/join', '/join-competition',
+  // Opened by people with no account at all — a child with their family's
+  // link, or anyone with a public competition link. Offering them Home and
+  // Chat would be offering a sign-in screen to someone who must not have one.
+  '/my', '/c',
 ]
 
 // Counts live outside the component, so moving between tabs does not throw

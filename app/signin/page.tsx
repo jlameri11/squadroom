@@ -146,45 +146,65 @@ export default function SignIn() {
 
   if (checking) {
     return (
-      <main
-        className="grid min-h-dvh place-items-center"
-        style={{ background: 'var(--paper)' }}
-      >
-        <p className="text-sm text-ink-2">Signing you in…</p>
-      </main>
+      <Frame>
+        <p className="text-sm" style={{ color: '#ffffffb3' }}>
+          Signing you in…
+        </p>
+      </Frame>
     )
   }
 
   if (sent) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-3 p-6">
-        <h1 className="text-2xl font-semibold">Check your email</h1>
-        <p className="text-sm text-ink-2">
-          We sent a sign-in link to {email}. It expires shortly and works once.
+      <Frame>
+        <h1 className="display text-[28px] leading-tight" style={{ color: 'var(--brand-ink)' }}>
+          Check your email
+        </h1>
+        <p className="mt-2 text-sm" style={{ color: '#ffffffb3' }}>
+          A sign-in link is on its way to <b style={{ color: '#fff' }}>{email}</b>. It works once
+          and expires shortly.
         </p>
-      </main>
+        <button
+          onClick={() => setSent(false)}
+          className="mt-5 text-sm underline underline-offset-4"
+          style={{ color: '#ffffffb3' }}
+        >
+          Use a password instead
+        </button>
+      </Frame>
     )
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Squadroom</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          Coach and admin sign-in. Parents don&apos;t need one.
-        </p>
-      </div>
+    <Frame>
+      <h1 className="display text-[34px] leading-none" style={{ color: 'var(--brand-ink)' }}>
+        Squadroom
+      </h1>
+      {/*
+        Said on the sign-in screen itself, because the people most likely to
+        land here by mistake are parents who were sent a join link and tapped
+        the wrong thing. Telling them they do not need an account is faster
+        than them failing to make one.
+      */}
+      <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>
+        For coaches and club admins. Parents don&apos;t need an account — your coach sends you a
+        link.
+      </p>
 
-      <form onSubmit={mode === 'password' ? signInWithPassword : submit} className="flex flex-col gap-4">
+      <form
+        onSubmit={mode === 'password' ? signInWithPassword : submit}
+        className="mt-6 flex flex-col gap-4"
+      >
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Email</span>
+          <span className="eyebrow" style={{ color: '#ffffff99' }}>Email</span>
           <input
             required
             type="email"
             inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-[var(--line)] px-3 py-3 text-base"
+            className="rounded-xl border px-3.5 py-3 text-base"
+            style={{ background: '#ffffff14', borderColor: '#ffffff2e', color: '#fff' }}
             autoComplete="username"
             // A phone will otherwise capitalise and autocorrect an email
             // address into something that no longer exists.
@@ -196,25 +216,33 @@ export default function SignIn() {
 
         {mode === 'password' && (
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Password</span>
+            <span className="eyebrow" style={{ color: '#ffffff99' }}>Password</span>
             <input
               required
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              className="rounded-xl border border-[var(--line)] px-3 py-3 text-base"
+              className="rounded-xl border px-3.5 py-3 text-base"
+              style={{ background: '#ffffff14', borderColor: '#ffffff2e', color: '#fff' }}
             />
           </label>
         )}
 
-        {error && <p className="text-sm ">{error}</p>}
+        {error && (
+          <p
+            className="rounded-lg px-3 py-2.5 text-sm"
+            style={{ background: '#ffffff1f', color: '#FFD9CE' }}
+          >
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
-          style={{ background: 'var(--brand)' }}
+          className="rounded-xl px-4 py-3.5 font-semibold disabled:opacity-50"
+          style={{ background: 'var(--gold)', color: '#202842' }}
         >
           {busy
             ? mode === 'password' ? 'Signing in…' : 'Sending…'
@@ -224,21 +252,48 @@ export default function SignIn() {
         <button
           type="button"
           onClick={() => { setMode(mode === 'password' ? 'link' : 'password'); setError(null) }}
-          className="text-center text-sm text-ink-2 underline underline-offset-4"
+          className="text-center text-sm underline underline-offset-4"
+          style={{ color: '#ffffffb3' }}
         >
           {mode === 'password' ? 'Email me a link instead' : 'Use a password instead'}
         </button>
 
-        <p className="text-center text-sm text-ink-2">
+        <p className="pt-1 text-center text-sm" style={{ color: '#ffffff99' }}>
           New here?{' '}
-          <Link href="/signup" className="underline underline-offset-4">
-            Set up an academy or club
+          <Link href="/signup" className="underline underline-offset-4" style={{ color: '#fff' }}>
+            Set up an academy, club or league
           </Link>
         </p>
-        <p className="text-center text-xs text-ink-2">
-          Parents don&apos;t sign in — their coach lets them in.
-        </p>
       </form>
+    </Frame>
+  )
+}
+
+/**
+ * The navy ground every state sits on.
+ *
+ * A sign-in screen is the first thing a coach sees, and a bare white form
+ * with two inputs says nothing about what they are signing in to. The crest
+ * mark and the club navy do the work that a logo file would, without needing
+ * one — Squadroom is multi-tenant, so this screen cannot wear any single
+ * club's badge.
+ */
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <main
+      className="flex min-h-dvh flex-col justify-center px-6 py-10"
+      style={{ background: 'var(--brand)' }}
+    >
+      <div className="mx-auto w-full max-w-sm">
+        <span
+          className="display mb-6 grid h-12 w-12 place-items-center rounded-[14px] text-lg"
+          style={{ background: 'var(--gold)', color: '#202842' }}
+          aria-hidden
+        >
+          SQ
+        </span>
+        {children}
+      </div>
     </main>
   )
 }
