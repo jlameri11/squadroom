@@ -33,7 +33,19 @@ const { data: m1 } = await coach.client.from('messages')
   .insert({ academy_id: NRIFA, channel_id: u8.id, sender_id: coach.id, body: 'NOTIF::kit is navy' })
   .select('id').single()
 const { data: q1 } = await admin.from('notification_queue').select('profile_id, title, body').eq('kind','message')
-q1.length === 5 ? ok(`${q1.length} queued — the other five in the channel`) : bad(`${q1.length} queued`)
+// Counted from the channel, not hard-coded.
+//
+// This asserted `=== 5`, which was the seeded U8 roster. The squad has since
+// grown to seventeen and the test reported a broken trigger that was queuing
+// exactly the right number of notifications. The rule under test is "everyone
+// in the channel except the sender", so that is what to measure.
+const { count: inChannel } = await admin.from('channel_members')
+  .select('*', { count: 'exact', head: true }).eq('channel_id', u8.id)
+const expected = inChannel - 1
+q1.length === expected
+  ? ok(`${q1.length} queued — everyone in the channel but the sender`)
+  : bad(`${q1.length} queued, expected ${expected} (${inChannel} in the channel)`)
+q1.some(n => n.profile_id === coach.id) ? bad('the sender was notified') : ok('never the sender')
 q1.some(r => r.profile_id === coach.id) ? bad('the sender was notified') : ok('sender excluded')
 q1[0].body.startsWith('Joey Lameri: ') ? ok(`body reads "${q1[0].body}"`) : bad(q1[0].body)
 
@@ -105,7 +117,15 @@ await admin.rpc('claim_notifications', { p_limit: 100 })
 ok(`first claim returned ${c1?.length ?? 0} deliverable (nobody has a device registered yet)`)
 const { data: attempts } = await admin.from('notification_queue')
   .select('attempts').eq('id', queued.id).single()
-attempts.attempts === 2 ? ok('attempts counted, so a stuck row stops after five tries') : bad(`attempts=${attempts.attempts}`)
+// At least the two claims above, not exactly two.
+//
+// Inserting a message fires the pg_net wake-up trigger, so push-now may be
+// draining this very queue while the test runs — a third attempt means the
+// product is working, not failing. What matters is that claiming counts
+// attempts at all, which is what stops a stuck row retrying forever.
+attempts.attempts >= 2
+  ? ok(`attempts counted (${attempts.attempts}), so a stuck row stops after five tries`)
+  : bad(`attempts=${attempts.attempts} after two claims — not being counted`)
 
 await clear()
 await admin.from('user_settings').update({ quiet_hours_enabled: true }).neq('profile_id','00000000-0000-0000-0000-000000000000')

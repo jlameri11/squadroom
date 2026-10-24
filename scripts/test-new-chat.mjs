@@ -52,8 +52,21 @@ const { error: e4 } = await coach.client.rpc('create_channel', { p_academy: NRIF
 e4 ? ok(`refused: ${e4.message}`) : bad('created a channel with no name')
 
 head('6. Members from another academy are ignored, not added')
-const { data: outsider } = await admin.from('academy_members').select('profile_id')
-  .neq('academy_id', NRIFA).limit(1).maybeSingle()
+// Somebody with NO active NRIFA membership — not merely somebody who has a
+// membership elsewhere.
+//
+// The old query was `.neq('academy_id', NRIFA).limit(1)`, which assumed one
+// person belongs to one organisation. That stopped being true when Joey became
+// owner of Sydney Premier League as well as NRIFA: his SPL row came back as
+// the "outsider", create_channel correctly added him because he IS an NRIFA
+// owner, and the test reported a cross-tenant leak. The product was right and
+// the test's idea of an outsider was wrong.
+const { data: insiders } = await admin.from('academy_members')
+  .select('profile_id').eq('academy_id', NRIFA).eq('status', 'active')
+const inNrifa = new Set((insiders ?? []).map(m => m.profile_id))
+const { data: elsewhere } = await admin.from('academy_members')
+  .select('profile_id').neq('academy_id', NRIFA)
+const outsider = (elsewhere ?? []).find(m => !inNrifa.has(m.profile_id)) ?? null
 if (outsider) {
   const { data: ch2 } = await coach.client.rpc('create_channel', {
     p_academy: NRIFA, p_name: 'TESTCHAT filtered', p_members: [outsider.profile_id, parent.id],

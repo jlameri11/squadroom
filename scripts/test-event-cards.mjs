@@ -5,7 +5,7 @@ const anon =createClient(URL, PUB,{auth:{persistSession:false}})
 const ok=m=>console.log(`  \x1b[32m✓\x1b[0m ${m}`), bad=m=>{console.log(`  \x1b[31m✗\x1b[0m ${m}`);process.exitCode=1}
 const head=m=>console.log(`\n${m}`)
 const NRIFA='00000000-0000-0000-0000-0000000a0001'
-const MATCH='00000000-0000-0000-0000-0000000f0003'   // Round 12 vs Gladesville Ravens
+const U8_TEAM='00000000-0000-0000-0000-0000000d0008'
 
 async function sess(email){
   const { data:l } = await admin.auth.admin.generateLink({type:'magiclink', email})
@@ -17,7 +17,30 @@ const coach  = await sess('joeylameri@outlook.com')
 const parent = await sess('p61400000011@squadroom.invalid')   // Sam: Leo + Zoe in U8
 
 const { data: u8 } = await admin.from('channels').select('id')
-  .eq('team_id','00000000-0000-0000-0000-0000000d0008').eq('type','team').single()
+  .eq('team_id', U8_TEAM).eq('type','team').single()
+
+// FOUND, not hard-coded.
+//
+// This used to name seed.sql's "Round 12 vs Gladesville Ravens" by its fixed
+// uuid, and refresh-demo.mjs deletes every manual NRIFA event and re-inserts
+// the season with fresh ones — so the test started failing with a foreign key
+// violation that said nothing about the cause. Any upcoming U8 match will do;
+// what is under test is the card, not that particular Saturday.
+const { data: match } = await admin.from('events')
+  .select('id, title')
+  .eq('academy_id', NRIFA).eq('team_id', U8_TEAM).eq('type', 'match')
+  .is('private_to', null)
+  .gte('starts_at', new Date().toISOString())
+  .order('starts_at')
+  .limit(1)
+  .maybeSingle()
+
+if (!match) {
+  bad('no upcoming U8 match to post — run scripts/refresh-demo.mjs')
+  process.exit(1)
+}
+const MATCH = match.id
+console.log(`  (using "${match.title}")`)
 await admin.from('messages').delete().eq('event_id', MATCH)
 
 head('1. A coach posts a fixture into the channel')

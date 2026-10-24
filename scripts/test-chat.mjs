@@ -23,7 +23,12 @@ async function sess(email){
   // connection with its own auth, and without this it connects as anon -
   // RLS then filters every change away and the subscription silently
   // receives nothing. The browser client does this itself on sign-in.
-  client.realtime.setAuth(s.session.access_token)
+  //
+  // AWAITED, because setAuth is async in supabase-js and this was a race: the
+  // socket could reach SUBSCRIBED with the token not yet applied, bind the
+  // subscription as anon, and receive nothing. Step 8 failed about one run in
+  // two and blamed the publication.
+  await client.realtime.setAuth(s.session.access_token)
   return { client, id: s.user.id }
 }
 
@@ -96,24 +101,39 @@ head('8. Realtime actually delivers to another person')
 // The publication being empty is invisible from the sending side: the insert
 // succeeds and the subscription reports SUBSCRIBED. Only a second listener
 // proves it.
-const delivered = await new Promise(async (resolve) => {
-  const timer = setTimeout(() => resolve(null), 8000)
-  const sub = parent.client
-    .channel(`test:${u8.id}`)
+let failure = null
+const delivered = await new Promise((resolve) => {
+  const timer = setTimeout(() => resolve(null), 15000)
+  parent.client
+    .channel(`test:${u8.id}:${Date.now()}`)
     .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${u8.id}` },
         (payload) => { clearTimeout(timer); resolve(payload.new) })
-    .subscribe(async (status) => {
+    .subscribe(async (status, err) => {
+      // A socket that never opens looks exactly like a message that never
+      // arrives, and the two have nothing to do with each other.
+      if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
+        failure = `the socket reported ${status}${err ? ': ' + err.message : ''}`
+        clearTimeout(timer)
+        return resolve(null)
+      }
       if (status !== 'SUBSCRIBED') return
-      await coach.client.from('messages').insert({
+      // And so does an insert that was refused. Not checking this is how the
+      // original version of this step could blame realtime for an RLS denial.
+      const { error } = await coach.client.from('messages').insert({
         academy_id: NRIFA, channel_id: u8.id, sender_id: coach.id,
         body: 'TEST::realtime ping',
       })
+      if (error) {
+        failure = `the coach could not post at all: ${error.message}`
+        clearTimeout(timer)
+        resolve(null)
+      }
     })
 })
 delivered?.body === 'TEST::realtime ping'
   ? ok('a message sent by the coach reached the parent live')
-  : bad('nothing arrived within 8s — the table is not in supabase_realtime')
+  : bad(failure ?? 'nothing arrived within 15s — run scripts/check-realtime.mjs, which separates a missing publication from an RLS denial')
 
 await admin.from('messages').delete().like('body','TEST::%')
 await admin.from('message_reactions').delete().eq('profile_id', parent.id).eq('emoji','🔥')
