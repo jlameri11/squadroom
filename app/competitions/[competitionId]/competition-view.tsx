@@ -36,11 +36,14 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, mode, isOrganiser, divisions, fixtures, ladders, entries,
+  competitionId, mode, isOrganiser, name, publication, divisions, fixtures, ladders, entries,
 }: {
   competitionId: string
   mode: string
   isOrganiser: boolean
+  name: string
+  /** Null until 0079 is applied, which is how the control stays hidden. */
+  publication: { slug: string | null; publishedAt: string | null } | null
   divisions: string[]
   fixtures: Fixture[]
   ladders: Record<string, LadderRow[]>
@@ -109,7 +112,19 @@ export function CompetitionView({
         />
       )}
       {tab === 'ladder' && <Ladder rows={ladders[division] ?? []} />}
-      {tab === 'clubs' && <Clubs entries={entries} />}
+      {tab === 'clubs' && (
+        <>
+          {isOrganiser && publication && (
+            <PublishPublicly
+              competitionId={competitionId}
+              name={name}
+              slug={publication.slug}
+              publishedAt={publication.publishedAt}
+            />
+          )}
+          <Clubs entries={entries} />
+        </>
+      )}
       {tab === 'send' && <Broadcast competitionId={competitionId} isOrganiser={isOrganiser} />}
     </div>
   )
@@ -519,6 +534,153 @@ function Ladder({ rows }: { rows: LadderRow[] }) {
       </p>
     </div>
   )
+}
+
+/**
+ * Publish the draw, the results and the ladder where anybody can read them.
+ *
+ * This is how a child sees whether their team won, because children do not
+ * get accounts (0078). It is also how twenty visiting clubs' parents see the
+ * gala day draw without anyone installing anything — which is the acquisition
+ * channel the whole tournament feature exists for.
+ *
+ * Opt-in per competition, and the warning is above the button rather than
+ * after it: publishing is the one action in this product that puts something
+ * on the open internet, and the organiser should read that before pressing it
+ * and not afterwards.
+ */
+function PublishPublicly({
+  competitionId, name, slug, publishedAt,
+}: {
+  competitionId: string
+  name: string
+  slug: string | null
+  publishedAt: string | null
+}) {
+  const router = useRouter()
+  const [value, setValue] = useState(slug ?? suggestSlug(name))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const live = Boolean(slug && publishedAt)
+  const url = typeof window === 'undefined' ? '' : `${window.location.origin}/c/${slug}`
+
+  async function publish() {
+    setBusy(true)
+    setError(null)
+    const clean = suggestSlug(value)
+    const { error } = await createClient()
+      .from('competitions')
+      // @ts-expect-error — columns arrive with 0079.
+      .update({ public_slug: clean, published_at: new Date().toISOString() })
+      .eq('id', competitionId)
+    setBusy(false)
+    if (error) {
+      // A taken slug is the one failure worth translating. Everything else is
+      // rarer than the cost of guessing at it.
+      return setError(
+        /duplicate|unique/i.test(error.message)
+          ? `"${clean}" is taken. Try adding the year.`
+          : error.message
+      )
+    }
+    router.refresh()
+  }
+
+  async function unpublish() {
+    setBusy(true)
+    await createClient()
+      .from('competitions')
+      // @ts-expect-error — columns arrive with 0079.
+      .update({ published_at: null })
+      .eq('id', competitionId)
+    setBusy(false)
+    router.refresh()
+  }
+
+  if (live) {
+    return (
+      <div className="m-3.5 rounded-xl border p-3.5" style={{ borderColor: 'var(--line)' }}>
+        <h3 className="text-sm font-semibold">Public page is live</h3>
+        <p className="mt-0.5 text-xs text-ink-2">
+          Anyone with this link can see the draw, the results and the ladder. No player names
+          appear on it.
+        </p>
+        <p className="mt-2 break-all rounded-lg p-2 font-mono text-xs"
+           style={{ background: 'var(--surface-2)' }}>
+          {url}
+        </p>
+        <div className="mt-2.5 flex gap-2">
+          <button
+            onClick={async () => {
+              await navigator.clipboard.writeText(url)
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            }}
+            className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+            style={{ background: 'var(--brand)' }}
+          >
+            {copied ? 'Copied' : 'Copy link'}
+          </button>
+          <a
+            href={`/c/${slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl border px-4 py-2.5 text-sm"
+            style={{ borderColor: 'var(--line)' }}
+          >
+            Open
+          </a>
+        </div>
+        <button onClick={unpublish} disabled={busy}
+                className="mt-2 text-xs underline underline-offset-4 text-ink-2">
+          {busy ? 'Working…' : 'Take it down'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="m-3.5 rounded-xl border p-3.5" style={{ borderColor: 'var(--line)' }}>
+      <h3 className="text-sm font-semibold">Share this competition publicly</h3>
+      <p className="mt-0.5 text-xs text-ink-2">
+        A page with the draw, results and ladder that needs no account — for players, and for
+        visiting clubs who are not on Squadroom. It shows clubs and scores, never a player&apos;s
+        name.
+      </p>
+      <div className="mt-2.5 flex items-center gap-1.5">
+        <span className="flex-none text-xs text-ink-3">/c/</span>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="min-w-0 flex-1 rounded-lg border px-2.5 py-2 text-sm"
+          style={{ borderColor: 'var(--line)' }}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+      </div>
+      {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
+      <button
+        onClick={publish}
+        disabled={busy || !suggestSlug(value)}
+        className="mt-2.5 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        style={{ background: 'var(--brand)' }}
+      >
+        {busy ? 'Publishing…' : 'Publish'}
+      </button>
+    </div>
+  )
+}
+
+/** The name, as a URL. Matches the check constraint 0079 puts on the column. */
+function suggestSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/, '')
 }
 
 function Clubs({ entries }: { entries: Entry[] }) {

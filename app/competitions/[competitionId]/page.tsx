@@ -40,6 +40,25 @@ export default async function CompetitionPage(props: {
   const isOrganiser = me?.role === 'owner' || me?.role === 'admin'
   const divisions = [...new Set((entries ?? []).map((e) => e.division))]
 
+  // Asked for separately, and allowed to fail.
+  //
+  // public_slug and published_at arrive with 0079. Adding them to the select
+  // above would make the whole page a PostgREST error on any database that
+  // does not have them yet — the publish control is worth having, and not at
+  // the cost of the screen it lives on.
+  // The cast is because lib/database.types.ts is generated from the DEPLOYED
+  // schema, which does not have these columns yet, so the typed client turns
+  // the select into a compile error about a column it has never heard of.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const loose = supabase as any
+  const { data: publication } = (await loose
+    .from('competitions')
+    .select('public_slug, published_at')
+    .eq('id', competitionId)
+    .maybeSingle()) as {
+    data: { public_slug: string | null; published_at: string | null } | null
+  }
+
   // One ladder per division, computed rather than stored.
   const ladders: Record<string, LadderRow[]> = {}
   for (const d of divisions) {
@@ -64,6 +83,12 @@ export default async function CompetitionPage(props: {
         competitionId={comp.id}
         mode={comp.mode}
         isOrganiser={isOrganiser}
+        name={comp.name}
+        publication={
+          publication
+            ? { slug: publication.public_slug, publishedAt: publication.published_at }
+            : null
+        }
         divisions={divisions}
         fixtures={(sheet ?? []) as Fixture[]}
         ladders={ladders}
