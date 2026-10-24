@@ -25,28 +25,30 @@ import { readdirSync, readFileSync } from 'node:fs'
 import pg from 'pg'
 
 const DRY = process.argv.includes('--dry')
+
+// CLAUDE.md's first rule is that only squadroom-dev may be touched, and a
+// connection string is exactly the kind of thing that gets pasted from the
+// wrong tab. The ref is hard-coded here rather than read from the
+// environment, so there is nothing to get wrong.
+const REF = 'rnykncrdcywmetuvslvw'
+
+const TOKEN = process.env.SUPABASE_ACCESS_TOKEN
 const URL_ = process.env.SUPABASE_DB_URL
 
-if (!URL_) {
+if (!TOKEN && !URL_) {
   console.error(`
-  SUPABASE_DB_URL is not set.
+  No database credential.
 
-  Supabase dashboard → the "Connect" button at the top of the project (the
-  strings are no longer under Settings → Database) → Session pooler → copy
-  the URI, put your database password in it, and add it to .env.local:
+  Run  npm run db:setup
 
-    SUPABASE_DB_URL=postgresql://postgres.<ref>:<password>@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres
+  It asks for one thing, works out the rest and checks it before saving.
 `)
   process.exit(1)
 }
 
-// Guard against ever pointing this at the wrong project. CLAUDE.md's first
-// rule is that only squadroom-dev may be touched, and a connection string is
-// exactly the kind of thing that gets pasted from the wrong tab.
-const EXPECTED_REF = 'rnykncrdcywmetuvslvw'
-if (!URL_.includes(EXPECTED_REF)) {
+if (URL_ && !URL_.includes(REF)) {
   console.error(`
-  That connection string is not squadroom-dev (${EXPECTED_REF}).
+  That connection string is not squadroom-dev (${REF}).
 
   Refusing to run. Only ever touch squadroom-dev.
 `)
@@ -57,22 +59,86 @@ const green = (s) => `\x1b[32m${s}\x1b[0m`
 const red = (s) => `\x1b[31m${s}\x1b[0m`
 const dim = (s) => `\x1b[2m${s}\x1b[0m`
 
-const client = new pg.Client({
-  connectionString: URL_,
-  // The pooler terminates TLS with a certificate this client does not have a
-  // root for. The connection is still encrypted.
-  ssl: { rejectUnauthorized: false },
-  // A long migration should not be cut off mid-DDL.
-  statement_timeout: 300_000,
-})
+/**
+ * Two ways in, one interface.
+ *
+ * A direct Postgres connection is the better one: it has real transactions,
+ * so a migration that fails rolls back cleanly. The Management API is the
+ * EASIER one to set up — a token takes one click, where a database password
+ * usually has to be reset before anybody can find it — and for a project
+ * where the alternative is eight stranded migrations, easier wins.
+ *
+ * The API path cannot wrap a file in a transaction from the outside, so it
+ * wraps it on the inside instead: the SQL is sent as one statement beginning
+ * with BEGIN and ending with COMMIT. Postgres treats the whole string as a
+ * single implicit transaction either way, which is the property that matters
+ * — a half-applied migration is the thing to avoid.
+ */
+const db = TOKEN ? apiTransport(TOKEN) : pgTransport(URL_)
 
-await client.connect()
+function pgTransport(url) {
+  const client = new pg.Client({
+    connectionString: url,
+    // The pooler terminates TLS with a certificate this client has no root
+    // for. The connection is still encrypted.
+    ssl: { rejectUnauthorized: false },
+    // A long migration must not be cut off mid-DDL.
+    statement_timeout: 300_000,
+  })
+  return {
+    name: 'direct connection',
+    atomic: true,
+    open: () => client.connect(),
+    query: async (sql, params) => (await client.query(sql, params)).rows,
+    close: () => client.end(),
+  }
+}
 
-const { rows: version } = await client.query('select current_database() as db, version()')
-console.log(`\nConnected to ${version[0].db}\n`)
+function apiTransport(token) {
+  const endpoint = `https://api.supabase.com/v1/projects/${REF}/database/query`
+  return {
+    name: 'management API',
+    atomic: false,
+    open: async () => {},
+    query: async (sql, params) => {
+      // The endpoint takes no parameters, so the one parameterised call in
+      // this script is inlined with proper quoting rather than concatenated.
+      const text = params?.length
+        ? sql.replace(/\$(\d+)/g, (_, n) => quote(params[Number(n) - 1]))
+        : sql
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ query: text }),
+      })
+      const body = await response.text()
+      if (!response.ok) {
+        let message = body
+        try {
+          const parsed = JSON.parse(body)
+          message = parsed.message ?? parsed.error ?? body
+        } catch {}
+        throw new Error(message.slice(0, 2000))
+      }
+      return body ? JSON.parse(body) : []
+    },
+    close: async () => {},
+  }
+}
+
+/** Single-quoted SQL literal, doubling any quote inside it. */
+function quote(value) {
+  if (value === null || value === undefined) return 'null'
+  return `'${String(value).replace(/'/g, "''")}'`
+}
+
+await db.open()
+
+const version = await db.query('select current_database() as db')
+console.log(`\nConnected to ${version[0]?.db ?? REF} over the ${db.name}\n`)
 
 // The table the Supabase CLI uses, so the two agree about history.
-await client.query(`
+await db.query(`
   create schema if not exists supabase_migrations;
   create table if not exists supabase_migrations.schema_migrations (
     version text primary key,
@@ -81,9 +147,7 @@ await client.query(`
   );
 `)
 
-const { rows: done } = await client.query(
-  'select version from supabase_migrations.schema_migrations'
-)
+const done = await db.query('select version from supabase_migrations.schema_migrations')
 const applied = new Set(done.map((r) => r.version))
 
 const files = readdirSync('supabase/migrations')
@@ -105,7 +169,7 @@ for (const file of files) {
 
 if (pending.length === 0) {
   console.log(green(`  Up to date — all ${files.length} migrations applied.\n`))
-  await client.end()
+  await db.close()
   process.exit(0)
 }
 
@@ -115,7 +179,7 @@ console.log('')
 
 if (DRY) {
   console.log(dim('  --dry, so nothing was run.\n'))
-  await client.end()
+  await db.close()
   process.exit(0)
 }
 
@@ -124,17 +188,23 @@ for (const { version, file } of pending) {
   const sql = readFileSync(`supabase/migrations/${file}`, 'utf8')
   process.stdout.write(`  ${file} … `)
   try {
-    await client.query('begin')
-    await client.query(sql)
-    await client.query(
-      'insert into supabase_migrations.schema_migrations (version, name) values ($1, $2)',
-      [version, file]
-    )
-    await client.query('commit')
+    if (db.atomic) {
+      await db.query('begin')
+      await db.query(sql)
+      await db.query(
+        'insert into supabase_migrations.schema_migrations (version, name) values ($1, $2)',
+        [version, file]
+      )
+      await db.query('commit')
+    } else {
+      // One request, wrapped on the inside. Sent as separate requests the
+      // BEGIN would be in a different session from the DDL and do nothing.
+      await db.query(`begin;\n${sql}\n${recordSql(version, file)}\ncommit;`)
+    }
     console.log(green('applied'))
     count++
   } catch (error) {
-    await client.query('rollback').catch(() => {})
+    if (db.atomic) await db.query('rollback').catch(() => {})
     console.log(red('failed'))
     console.error(`\n  ${red(error.message)}`)
     if (error.position) {
@@ -149,11 +219,18 @@ for (const { version, file } of pending) {
       `\n  ${red('Stopped.')} ${count} applied, ${pending.length - count} left. The database is` +
         '\n  exactly as it was before this file — the transaction rolled back.\n'
     )
-    await client.end()
+    await db.close()
     process.exit(1)
   }
 }
 
-await client.end()
+await db.close()
 console.log(green(`\n  ${count} migrations applied.\n`))
-console.log(dim('  Next: node --env-file=.env.local scripts/test-all.mjs\n'))
+console.log(dim('  Next: npm run test:all\n'))
+
+function recordSql(version, file) {
+  return (
+    'insert into supabase_migrations.schema_migrations (version, name) values (' +
+    `${quote(version)}, ${quote(file)});`
+  )
+}

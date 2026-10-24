@@ -11,7 +11,10 @@
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "cap:android": "cap open android",
-    "test:parsing": "node --experimental-strip-types scripts/test-import-parsing.ts"
+    "test:parsing": "node --experimental-strip-types scripts/test-import-parsing.ts",
+    "db:setup": "node scripts/setup-db.mjs",
+    "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
+    "test:all": "node --env-file=.env.local scripts/test-all.mjs"
   },
   "dependencies": {
     "@capacitor-community/contacts": "^8.0.0",
