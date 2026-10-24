@@ -1,0 +1,343 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import { AppBar, Screen } from '@/components/app-shell'
+import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { createClient } from '@/lib/supabase/client'
+import { createUntypedClient } from '@/lib/supabase/untyped'
+
+type Registration = {
+  id: string
+  status: 'pending' | 'approved' | 'rejected' | 'waitlisted' | 'withdrawn'
+  waitlist_position: number | null
+  created_at: string
+  note: string | null
+  decision_note: string | null
+  player: { id: string; full_name: string; dob: string | null } | null
+}
+
+type Program = {
+  id: string
+  academy_id: string
+  name: string
+  kind: string
+  status: 'draft' | 'open' | 'closed'
+  capacity: number | null
+  born_from_year: number | null
+  born_to_year: number | null
+  team_id: string | null
+  closes_at: string | null
+}
+
+/**
+ * The queue.
+ *
+ * Deliberately the same shape as the join-request queue at /admin/requests,
+ * because it is the same job and a coach should not have to learn it twice:
+ * a list, who is waiting longest at the top, and one tap per decision.
+ *
+ * Approving can also put the child straight into a team, and the existing
+ * triggers on team_members then add the family to the team channel and the
+ * calendar. That is why approval assigns a team rather than doing any of that
+ * itself.
+ */
+export function ProgramScreen({ programId }: { programId: string }) {
+  const [program, setProgram] = useState<Program | null>(null)
+  const [rows, setRows] = useState<Registration[] | null>(null)
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    // programs and program_registrations arrive with 0083, so they are not in
+    // the generated types yet. See lib/supabase/untyped.ts.
+    const supabase = createUntypedClient()
+    const { data: p } = await supabase
+      .from('programs')
+      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at')
+      .eq('id', programId)
+      .maybeSingle()
+    if (!p) return setProgram(null)
+    setProgram(p as Program)
+
+    const [{ data: regs }, { data: ts }] = await Promise.all([
+      supabase
+        .from('program_registrations')
+        .select('id, status, waitlist_position, created_at, note, decision_note, player:players(id, full_name, dob)')
+        .eq('program_id', programId)
+        .order('created_at'),
+      supabase
+        .from('teams')
+        .select('id, name')
+        .eq('academy_id', (p as Program).academy_id)
+        .eq('status', 'active')
+        .order('name'),
+    ])
+    setRows((regs ?? []) as unknown as Registration[])
+    setTeams(ts ?? [])
+  }, [programId])
+
+  useEffect(() => {
+    // Inside an async call rather than `void load()`, which reads to the
+    // linter as setState straight from the effect body — the same shape the
+    // other admin screens use.
+    ;(async () => {
+      await load()
+    })()
+  }, [load])
+
+  async function decide(id: string, status: Registration['status'], teamId?: string) {
+    setBusy(id)
+    setError(null)
+    const supabase = createUntypedClient()
+    const { error } = await supabase.from('program_registrations').update({ status }).eq('id', id)
+
+    if (!error && status === 'approved' && teamId) {
+      const row = rows?.find((r) => r.id === id)
+      if (row?.player) {
+        // Assigning the team is what sets everything else off: the triggers on
+        // team_members add the family to the team channel and the calendar.
+        const { error: teamError } = await createClient()
+          .from('players')
+          .update({ team_id: teamId })
+          .eq('id', row.player.id)
+        if (teamError) setError(`Approved, but could not assign the team: ${teamError.message}`)
+      }
+    }
+
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
+  }
+
+  async function setStatus(status: Program['status']) {
+    if (!program) return
+    setBusy('program')
+    await createUntypedClient().from('programs').update({ status }).eq('id', program.id)
+    setBusy(null)
+    await load()
+  }
+
+  if (program === null && rows === null) return <ScreenSkeleton />
+  if (!program) {
+    return (
+      <>
+        <AppBar title="Not found" back="/admin/programs" />
+        <Screen>
+          <p className="card m-4 p-6 text-center text-sm text-ink-2">
+            That program isn&apos;t here any more.
+          </p>
+        </Screen>
+      </>
+    )
+  }
+
+  const pending = (rows ?? []).filter((r) => r.status === 'pending')
+  const approved = (rows ?? []).filter((r) => r.status === 'approved')
+  const waitlisted = (rows ?? []).filter((r) => r.status === 'waitlisted')
+  const closed = (rows ?? []).filter((r) => ['rejected', 'withdrawn'].includes(r.status))
+
+  return (
+    <>
+      <AppBar
+        title={program.name}
+        meta={
+          program.capacity
+            ? `${approved.length} of ${program.capacity} places`
+            : `${approved.length} registered`
+        }
+        back="/admin/programs"
+      />
+
+      <Screen>
+        <div className="p-3.5">
+          {/* Open and closed are the two states that change what a family can
+              do, so they are one tap and not buried in a settings sheet. */}
+          <div className="card mb-4 flex items-center gap-3 p-3.5">
+            <span className="min-w-0 flex-1 text-sm">
+              <b>{program.status === 'open' ? 'Open for registrations' : program.status === 'draft' ? 'Draft — nobody can see it' : 'Closed'}</b>
+              {program.closes_at && program.status === 'open' && (
+                <span className="block text-ink-3">
+                  Closes {new Date(program.closes_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                </span>
+              )}
+            </span>
+            <button
+              onClick={() => setStatus(program.status === 'open' ? 'closed' : 'open')}
+              disabled={busy === 'program'}
+              className="flex-none rounded-xl px-3.5 py-2 text-sm font-semibold"
+              style={
+                program.status === 'open'
+                  ? { background: 'var(--surface-2)', color: 'var(--ink-2)' }
+                  : { background: 'var(--brand)', color: '#fff' }
+              }
+            >
+              {program.status === 'open' ? 'Close' : 'Open it'}
+            </button>
+          </div>
+
+          {error && (
+            <p className="mb-3.5 rounded-lg p-2.5 text-sm" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>
+              {error}
+            </p>
+          )}
+
+          <Group title={pending.length ? `${pending.length} waiting` : 'Nobody waiting'} rows={pending}>
+            {(r) => (
+              <Decide
+                row={r}
+                teams={teams}
+                defaultTeam={program.team_id}
+                busy={busy === r.id}
+                onDecide={decide}
+              />
+            )}
+          </Group>
+
+          {waitlisted.length > 0 && (
+            <Group title="Waitlist" rows={waitlisted} hint="In the order they applied.">
+              {(r) => (
+                <div className="flex flex-none items-center gap-2">
+                  <span className="text-xs tabular-nums text-ink-3">#{r.waitlist_position}</span>
+                  <button
+                    onClick={() => decide(r.id, 'approved', program.team_id ?? undefined)}
+                    disabled={busy === r.id}
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
+                    style={{ background: 'var(--brand)' }}
+                  >
+                    Offer a place
+                  </button>
+                </div>
+              )}
+            </Group>
+          )}
+
+          {approved.length > 0 && (
+            <Group title={`In — ${approved.length}`} rows={approved}>
+              {(r) => (
+                <button
+                  onClick={() => decide(r.id, 'pending')}
+                  disabled={busy === r.id}
+                  className="flex-none text-xs underline underline-offset-4 text-ink-3"
+                >
+                  Undo
+                </button>
+              )}
+            </Group>
+          )}
+
+          {closed.length > 0 && (
+            <Group title="Rejected and withdrawn" rows={closed}>
+              {(r) => <span className="flex-none text-xs text-ink-3">{r.status}</span>}
+            </Group>
+          )}
+        </div>
+      </Screen>
+    </>
+  )
+}
+
+function Group({
+  title,
+  hint,
+  rows,
+  children,
+}: {
+  title: string
+  hint?: string
+  rows: Registration[]
+  children: (r: Registration) => React.ReactNode
+}) {
+  return (
+    <section className="mb-5">
+      <h2 className="eyebrow px-1 pb-2">{title}</h2>
+      {hint && <p className="px-1 pb-2 text-xs text-ink-3">{hint}</p>}
+      {rows.length === 0 ? (
+        <p className="card p-5 text-center text-sm text-ink-3">Nothing here.</p>
+      ) : (
+        <ul className="card overflow-hidden">
+          {rows.map((r) => (
+            <li key={r.id} className="row justify-between">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">
+                  {r.player?.full_name ?? 'Unknown player'}
+                </span>
+                <span className="block truncate text-sm text-ink-3">
+                  {[
+                    r.player?.dob ? `born ${new Date(r.player.dob).getFullYear()}` : null,
+                    `applied ${new Date(r.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+                {r.note && <span className="block truncate text-sm text-ink-2">“{r.note}”</span>}
+              </span>
+              {children(r)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+/**
+ * One decision, and the team it puts them in.
+ *
+ * The team picker is on the approve button rather than a separate step,
+ * because approving without assigning a team leaves the family approved and
+ * still seeing nothing — which is the state the whole approval queue exists
+ * to get them out of.
+ */
+function Decide({
+  row,
+  teams,
+  defaultTeam,
+  busy,
+  onDecide,
+}: {
+  row: Registration
+  teams: { id: string; name: string }[]
+  defaultTeam: string | null
+  busy: boolean
+  onDecide: (id: string, status: Registration['status'], teamId?: string) => void
+}) {
+  const [team, setTeam] = useState(defaultTeam ?? '')
+
+  return (
+    <div className="flex flex-none items-center gap-1.5">
+      {teams.length > 0 && (
+        <select
+          value={team}
+          onChange={(e) => setTeam(e.target.value)}
+          className="max-w-[100px] rounded-lg border px-1.5 py-1.5 text-xs"
+          style={{ borderColor: 'var(--line)' }}
+          aria-label="Team"
+        >
+          <option value="">No team</option>
+          {teams.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      )}
+      <button
+        onClick={() => onDecide(row.id, 'approved', team || undefined)}
+        disabled={busy}
+        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+        style={{ background: 'var(--yes)' }}
+      >
+        {busy ? '…' : 'In'}
+      </button>
+      <button
+        onClick={() => onDecide(row.id, 'rejected')}
+        disabled={busy}
+        className="rounded-lg border px-2.5 py-1.5 text-xs disabled:opacity-50"
+        style={{ borderColor: 'var(--line)' }}
+      >
+        No
+      </button>
+    </div>
+  )
+}

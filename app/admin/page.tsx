@@ -79,6 +79,7 @@ export default async function AdminHub() {
         <ul className="card mb-5 overflow-hidden">
           <Row href="/admin/teams" label="Teams and players" hint="Squads, seasons, join links" />
           <Row href="/admin/requests" label="Join requests" hint="Approve new families" />
+          <Row href="/admin/programs" label="Programs and registrations" hint="Squads, camps, trials, tours" />
           <Row href="/admin/import" label="Import a draw" hint="From a Dribl export" />
           <Row href="/scan" label="Scan a draw" hint="From a screenshot" />
         </ul>
