@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useScreen } from '@/lib/hooks/use-screen'
+import { useOrg, useReconcileOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
@@ -58,7 +59,13 @@ type HomeData = {
 }
 
 export function Home() {
-  const { data, failed } = useScreen<HomeData>('home_screen')
+  const org = useOrg()
+  const { data, failed } = useScreen<HomeData>('home_screen', { p_academy: org })
+
+  // The server says which organisation it actually served. If that is not the
+  // one we asked for, the remembered choice belongs to somewhere this person
+  // has left.
+  useReconcileOrg(data?.academy?.id)
 
   if (failed) {
     return (

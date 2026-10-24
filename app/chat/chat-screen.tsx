@@ -5,6 +5,7 @@ import { NewChat } from './new-chat'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { useScreen } from '@/lib/hooks/use-screen'
+import { useOrg } from '@/lib/org'
 
 type Data = {
   academy: { id: string; name: string } | null
@@ -13,7 +14,8 @@ type Data = {
 }
 
 export function ChatScreen() {
-  const { data, failed } = useScreen<Data>('chat_screen')
+  const org = useOrg()
+  const { data, failed } = useScreen<Data>('chat_screen', { p_academy: org })
 
   if (failed || (data && !data.academy)) {
     if (typeof window !== 'undefined' && data && !data.academy) window.location.replace('/start')

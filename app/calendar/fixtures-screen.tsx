@@ -4,6 +4,7 @@ import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { useScreen } from '@/lib/hooks/use-screen'
+import { useOrg } from '@/lib/org'
 
 type Data = {
   academy: { id: string; name: string } | null
@@ -12,7 +13,8 @@ type Data = {
 }
 
 export function FixturesScreen() {
-  const { data, failed } = useScreen<Data>('fixtures_screen', { p_days: 60 })
+  const org = useOrg()
+  const { data, failed } = useScreen<Data>('fixtures_screen', { p_days: 60, p_academy: org })
 
   if (failed) {
     return (

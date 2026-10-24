@@ -157,10 +157,28 @@ function RunSheet({
     )
   }
 
-  // Grouped by kick-off, which is how a run sheet is read on the day.
+  // A gala day and a league season are read differently, so they are grouped
+  // differently.
+  //
+  // A one-day competition is read by TIME: "what is on at 9:20, and on which
+  // field" is the only question anyone asks while standing at a ground.
+  //
+  // A season is read by ROUND. Grouping it by kick-off produced ten sections
+  // all headed "9:00 am" — every Sunday of an SPL division has the same
+  // kick-off time, so the header distinguished nothing and the whole season
+  // looked like one morning of 30 games.
+  const dates = new Set(
+    fixtures
+      .filter((f) => f.starts_at)
+      .map((f) => new Date(f.starts_at as string).toLocaleDateString('en-CA', { timeZone: SYDNEY }))
+  )
+  const byRound = dates.size > 1
+
   const slots = new Map<string, Fixture[]>()
   for (const f of fixtures) {
-    const key = f.starts_at ?? 'unscheduled'
+    const key = byRound
+      ? (f.round ?? 'Not scheduled')
+      : (f.starts_at ?? 'unscheduled')
     slots.set(key, [...(slots.get(key) ?? []), f])
   }
 
@@ -170,16 +188,41 @@ function RunSheet({
 
       {[...slots.entries()].map(([slot, games]) => (
         <section key={slot}>
-          <h2 className="sticky top-0 border-b border-[var(--line-2)] bg-[var(--surface-3)]/95 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-2 backdrop-blur">
-            {slot === 'unscheduled'
-              ? 'Not scheduled'
-              : new Date(slot).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', timeZone: 'Australia/Sydney' })}
+          <h2 className="sticky top-0 flex items-baseline gap-2 border-b border-[var(--line-2)] bg-[var(--surface-3)]/95 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-ink-2 backdrop-blur">
+            {byRound ? (
+              <>
+                <span>{slot}</span>
+                {/* The weekend it is played on. A round number alone does not
+                    tell anyone whether it has happened. */}
+                <span className="font-normal normal-case tracking-normal text-ink-3">
+                  {dayOf(games)}
+                </span>
+              </>
+            ) : (
+              <span>
+                {slot === 'unscheduled'
+                  ? 'Not scheduled'
+                  : new Date(slot).toLocaleTimeString('en-AU', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      timeZone: SYDNEY,
+                    })}
+              </span>
+            )}
           </h2>
 
           {games.map((f) => (
             <div key={f.fixture_id} className="border-b border-[var(--line-2)] px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <span className="w-14 flex-none text-xs text-ink-2">{f.field_label}</span>
+                <span className="w-14 flex-none text-xs tabular-nums text-ink-2">
+                  {byRound && f.starts_at
+                    ? new Date(f.starts_at).toLocaleTimeString('en-AU', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        timeZone: SYDNEY,
+                      })
+                    : f.field_label}
+                </span>
                 <span className="min-w-0 flex-1 text-sm">
                   <span className={f.status === 'final' && (f.home_score ?? 0) > (f.away_score ?? 0) ? 'font-semibold' : ''}>
                     {f.home_name}
@@ -230,6 +273,27 @@ function RunSheet({
       ))}
     </div>
   )
+}
+
+/**
+ * Every time on this screen is the competition's local time.
+ *
+ * Hard-coded to Sydney, as the rest of this screen already was. It is wrong
+ * for a competition run from another state and that is a separate fix —
+ * competitions have no timezone column, only academies do.
+ */
+const SYDNEY = 'Australia/Sydney'
+
+/** "Sun 30 Aug" — the weekend a round is played on. */
+function dayOf(games: Fixture[]) {
+  const when = games.find((g) => g.starts_at)?.starts_at
+  if (!when) return ''
+  return new Date(when).toLocaleDateString('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: SYDNEY,
+  })
 }
 
 function Broadcast({ competitionId, isOrganiser }: { competitionId: string; isOrganiser: boolean }) {

@@ -44,9 +44,28 @@ export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
     // different instance of the component than the one that fetched it.
     const cached = cache.get(key)
     if (cached !== undefined) setData(cached as T)
-    createClient()
+    const call = async () => {
+      const client = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .rpc(fn as any, args as any)
+      const first = await client.rpc(fn as any, args as any)
+
+      // PGRST202 is "no function with that argument list". It happens when a
+      // screen passes p_academy and 0080 — which adds the parameter — has not
+      // been applied to this database yet. Dropping the argument and asking
+      // again gets the person their default organisation, which is exactly
+      // what the app did before the switcher existed.
+      //
+      // Deletable in one block once every environment is past 0080.
+      if (first.error?.code === 'PGRST202' && args && 'p_academy' in args) {
+        const rest = { ...args }
+        delete rest.p_academy
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return client.rpc(fn as any, rest as any)
+      }
+      return first
+    }
+
+    call()
       .then(({ data, error }: { data: unknown; error: { code?: string } | null }) => {
         if (!live) return
 

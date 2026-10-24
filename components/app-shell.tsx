@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { OrgSwitcher } from '@/components/org-switcher'
+import { getOrg } from '@/lib/org'
 
 /**
  * The navy bar at the top and the tab bar at the bottom.
@@ -34,6 +36,15 @@ export function AppBar({
   back?: string
   action?: React.ReactNode
 }) {
+  // The crest doubles as the organisation switcher for anyone who belongs to
+  // more than one. Deciding that here rather than per screen is what makes it
+  // appear on all of them without a prop being threaded through twenty-seven
+  // pages — and the count comes from the same nav_badges call the tab bar
+  // already makes, so it costs no extra request.
+  const badges = useNavBadges()
+  const [switching, setSwitching] = useState(false)
+  const canSwitch = (badges?.org_count ?? 1) > 1
+
   return (
     <header
       className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3"
@@ -49,15 +60,36 @@ export function AppBar({
           ‹
         </Link>
       ) : (
-        crest && (
+        crest &&
+        (canSwitch ? (
+          <button
+            onClick={() => setSwitching(true)}
+            aria-label="Switch organisation"
+            className="relative -ml-0.5 grid h-9 w-9 flex-none place-items-center rounded-[10px]"
+            style={{ background: crestColour === 'var(--brand)' ? '#ffffff26' : crestColour }}
+          >
+            <span className="display text-[15px]">{crest}</span>
+            {/* A chevron on the crest, because a crest that does nothing on
+                every other account looks identical to one that does. */}
+            <span
+              className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] leading-none"
+              style={{ background: 'var(--gold)', color: '#202842' }}
+              aria-hidden
+            >
+              ▾
+            </span>
+          </button>
+        ) : (
           <span
             className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[15px]"
             style={{ background: crestColour === 'var(--brand)' ? '#ffffff26' : crestColour }}
           >
             {crest}
           </span>
-        )
+        ))
       )}
+
+      {switching && <OrgSwitcher onClose={() => setSwitching(false)} />}
 
       <span className="min-w-0 flex-1">
         <span className="display block truncate text-[21px] leading-tight">{title}</span>
@@ -147,7 +179,17 @@ const TABS: TabDef[] = [
   },
 ]
 
-type Badges = { unread: number; pending: number; is_staff: boolean }
+type Badges = {
+  unread: number
+  pending: number
+  is_staff: boolean
+  // Both arrive with 0080. Until it is applied they are undefined, and the
+  // switcher stays hidden rather than offering a choice the server would
+  // ignore — a switcher that silently keeps showing the same organisation is
+  // worse than no switcher.
+  org_count?: number
+  academy_id?: string
+}
 
 /**
  * The bar asks for its own counts rather than being told.
@@ -177,32 +219,73 @@ const BARE = [
 // Counts live outside the component, so moving between tabs does not throw
 // them away and ask for them again.
 let lastBadges: Badges | null = null
+let inFlight: Promise<Badges | null> | null = null
+const badgeListeners = new Set<(b: Badges | null) => void>()
+
+/**
+ * The counts, fetched once however many components ask.
+ *
+ * The app bar and the tab bar both want them — the bar for the organisation
+ * switcher, the tab bar for the unread dot — and they are rendered separately,
+ * the tab bar at the root layout and the app bar inside each page. Sharing one
+ * in-flight promise means two subscribers still make one request.
+ */
+function useNavBadges(): Badges | null {
+  const pathname = usePathname()
+  const [badges, setBadges] = useState<Badges | null>(lastBadges)
+
+  useEffect(() => {
+    // Nobody is signed in on the sign-in, join or public pages, so asking
+    // would spend a request to be told null.
+    if (BARE.some((p) => pathname === p || pathname.startsWith(p + '/'))) return
+
+    const fn = (b: Badges | null) => setBadges(b)
+    badgeListeners.add(fn)
+
+    if (!inFlight) {
+      // The generated types are produced from the deployed schema, which does
+      // not yet have 0080's p_academy. Cast at the call rather than hand-
+      // editing lib/database.types.ts, which is regenerated.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rpc = createClient().rpc as any
+      inFlight = (async () => {
+        // The organisation the browser remembers. Pre-0080 the function takes
+        // no argument and PostgREST rejects the call, so fall back to asking
+        // without it — the app then behaves exactly as it did before.
+        const { data, error } = await rpc('nav_badges', { p_academy: getOrg() })
+        if (error?.code === 'PGRST202') {
+          const retry = await rpc('nav_badges')
+          return (retry.data ?? null) as Badges | null
+        }
+        return (data ?? null) as Badges | null
+      })().then((b) => {
+        lastBadges = b ?? lastBadges
+        inFlight = null
+        for (const l of badgeListeners) l(lastBadges)
+        return lastBadges
+      })
+    }
+    void inFlight
+
+    return () => {
+      badgeListeners.delete(fn)
+    }
+    // Refreshed on every navigation, but the previous answer stays on display
+    // while it does — so nothing empties and rebuilds.
+  }, [pathname])
+
+  return badges
+}
 
 export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number }) {
   const pathname = usePathname()
-  const [badges, setBadges] = useState<Badges | null>(lastBadges)
 
   const hidden =
     BARE.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
     // A channel is full screen. /chat itself keeps its bar.
     /^\/chat\/[^/]+$/.test(pathname)
 
-  useEffect(() => {
-    if (hidden) return
-    let live = true
-    createClient()
-      .rpc('nav_badges')
-      .then(({ data }) => {
-        if (!live || !data) return
-        lastBadges = data as unknown as Badges
-        setBadges(lastBadges)
-      })
-    return () => {
-      live = false
-    }
-    // Refreshed on every navigation, but the previous answer stays on display
-    // while it does — so the bar never empties and rebuilds.
-  }, [pathname, hidden])
+  const badges = useNavBadges()
 
   if (hidden) return null
 
