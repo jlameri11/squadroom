@@ -1029,6 +1029,91 @@ export type Database = {
           },
         ]
       }
+      event_series: {
+        Row: {
+          academy_id: string
+          address: string | null
+          arrive_mins: number | null
+          at_time: string
+          created_at: string
+          created_by: string | null
+          days: number[]
+          duration_mins: number
+          ends_on: string
+          id: string
+          kit_colour: string | null
+          notes: string | null
+          starts_on: string
+          team_id: string | null
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          academy_id: string
+          address?: string | null
+          arrive_mins?: number | null
+          at_time: string
+          created_at?: string
+          created_by?: string | null
+          days: number[]
+          duration_mins?: number
+          ends_on: string
+          id?: string
+          kit_colour?: string | null
+          notes?: string | null
+          starts_on: string
+          team_id?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          academy_id?: string
+          address?: string | null
+          arrive_mins?: number | null
+          at_time?: string
+          created_at?: string
+          created_by?: string | null
+          days?: number[]
+          duration_mins?: number
+          ends_on?: string
+          id?: string
+          kit_colour?: string | null
+          notes?: string | null
+          starts_on?: string
+          team_id?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_series_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_series_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_series_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       events: {
         Row: {
           academy_id: string
@@ -1052,6 +1137,7 @@ export type Database = {
           opponent: string | null
           private_to: string | null
           round: string | null
+          series_id: string | null
           source: string
           source_scan_id: string | null
           starts_at: string
@@ -1083,6 +1169,7 @@ export type Database = {
           opponent?: string | null
           private_to?: string | null
           round?: string | null
+          series_id?: string | null
           source?: string
           source_scan_id?: string | null
           starts_at: string
@@ -1114,6 +1201,7 @@ export type Database = {
           opponent?: string | null
           private_to?: string | null
           round?: string | null
+          series_id?: string | null
           source?: string
           source_scan_id?: string | null
           starts_at?: string
@@ -1171,6 +1259,13 @@ export type Database = {
             columns: ["source_scan_id", "academy_id"]
             isOneToOne: false
             referencedRelation: "event_scans"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "events_series_fkey"
+            columns: ["series_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "event_series"
             referencedColumns: ["id", "academy_id"]
           },
           {
@@ -3171,6 +3266,25 @@ export type Database = {
         }
         Returns: string
       }
+      create_event_series: {
+        Args: {
+          p_academy: string
+          p_address?: string
+          p_arrive?: number
+          p_days: number[]
+          p_duration?: number
+          p_from: string
+          p_kit_colour?: string
+          p_notes?: string
+          p_team?: string
+          p_time: string
+          p_title: string
+          p_type?: Database["public"]["Enums"]["event_type"]
+          p_until: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
       create_finals: {
         Args: {
           p_competition: string
@@ -3205,6 +3319,15 @@ export type Database = {
           points: number
           team_name: string
         }[]
+      }
+      end_event_series: {
+        Args: {
+          p_delete?: boolean
+          p_from?: string
+          p_reason?: string
+          p_series: string
+        }
+        Returns: Json
       }
       enqueue_event_reminders: { Args: never; Returns: number }
       ensure_system_channel: {
