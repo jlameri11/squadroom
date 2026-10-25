@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { joinLinkFilter } from '@/lib/join'
 import { JoinForm } from './join-form'
 
 /**
@@ -25,10 +26,15 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
   const { token } = await props.params
   const admin = createAdminClient()
 
+  // The route segment may be a 24-character token from a QR or a six-character
+  // code somebody typed. One resolver decides which, shared with the request
+  // route so the two cannot disagree about a revoked link.
+  const { column, value } = joinLinkFilter(token)
+
   const { data: link } = await admin
     .from('join_links')
     .select('id, role, max_uses, use_count, expires_at, revoked_at, academies(name), teams(name)')
-    .eq('token', token)
+    .eq(column, value)
     .maybeSingle()
 
   const dead =

@@ -49,3 +49,30 @@ export function toE164(raw: string, defaultCountry = '61'): string | null {
 export function syntheticEmail(phoneE164: string): string {
   return `p${phoneE164.replace(/\D/g, '')}@squadroom.invalid`
 }
+
+/**
+ * A join link can be named two ways, and this is the only place that knows it.
+ *
+ * `token` is 24 hex characters — right for a QR code and for a link pasted
+ * into WhatsApp. `code` is six dictatable characters (0089) — right for being
+ * read out at the end of training, written on a whiteboard, or printed on a
+ * flyer at the school gate. They point at the same row and carry the same
+ * expiry, use limit, revocation and coach approval.
+ *
+ * Both the join page and the request route resolve the same way, through this,
+ * so they cannot drift into disagreeing about what a code means — which is the
+ * sort of difference that lets a revoked link still work down one path.
+ *
+ * Codes are stored upper case and compared upper case, so a parent typing
+ * lower case is not told their coach gave them a bad code.
+ */
+export function joinLinkFilter(raw: string): { column: 'token' | 'code'; value: string } {
+  const trimmed = raw.trim()
+  // Six of the code alphabet, in any case, with optional spaces or dashes
+  // from however it was written down.
+  const asCode = trimmed.toUpperCase().replace(/[\s-]/g, '')
+  if (/^[ABCDEFGHJKMNPQRSTVWXYZ23456789]{6}$/.test(asCode)) {
+    return { column: 'code', value: asCode }
+  }
+  return { column: 'token', value: trimmed }
+}

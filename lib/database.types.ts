@@ -1484,6 +1484,7 @@ export type Database = {
       join_links: {
         Row: {
           academy_id: string
+          code: string
           created_at: string
           created_by: string
           expires_at: string
@@ -1498,6 +1499,7 @@ export type Database = {
         }
         Insert: {
           academy_id: string
+          code?: string
           created_at?: string
           created_by: string
           expires_at?: string
@@ -1512,6 +1514,7 @@ export type Database = {
         }
         Update: {
           academy_id?: string
+          code?: string
           created_at?: string
           created_by?: string
           expires_at?: string
@@ -3245,12 +3248,13 @@ export type Database = {
         Args: {
           p_competition: string
           p_division: string
-          p_fields: string[]
-          p_game_mins: number
-          p_gap_mins: number
-          p_replace: boolean
+          p_fields?: string[]
+          p_game_mins?: number
+          p_gap_mins?: number
+          p_replace?: boolean
+          p_round_every_days?: number
           p_start_at: string
-          p_venue_label: string
+          p_venue_label?: string
         }
         Returns: number
       }

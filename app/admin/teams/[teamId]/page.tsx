@@ -32,7 +32,7 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
   const [{ data: link }, { data: members }, { data: players }] = await Promise.all([
     supabase
       .from('join_links')
-      .select('id, token, role, max_uses, use_count, expires_at')
+      .select('id, token, code, role, max_uses, use_count, expires_at')
       .eq('team_id', teamId)
       .is('revoked_at', null)
       .gt('expires_at', new Date().toISOString())
@@ -77,7 +77,7 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       <JoinLinkPanel
         teamId={team.id}
         academyId={team.academy_id}
-        link={link ? { id: link.id, url: joinUrl!, useCount: link.use_count, maxUses: link.max_uses, expiresAt: link.expires_at } : null}
+        link={link ? { id: link.id, url: joinUrl!, code: link.code, useCount: link.use_count, maxUses: link.max_uses, expiresAt: link.expires_at } : null}
         qrSvg={qrSvg}
       />
 

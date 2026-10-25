@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { generateSecret, hashSecret, toE164 } from '@/lib/join'
+import { generateSecret, hashSecret, toE164, joinLinkFilter } from '@/lib/join'
 
 /**
  * Hashed, never stored raw. This is a spam control, not a record of who
@@ -46,10 +46,13 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
 
+  // Token or typed code — resolved the same way the join page resolved it.
+  const { column, value } = joinLinkFilter(token)
+
   const { data: link } = await admin
     .from('join_links')
     .select('id, academy_id, team_id, role, max_uses, use_count, expires_at, revoked_at')
-    .eq('token', token)
+    .eq(column, value)
     .maybeSingle()
 
   // One message for every failure. Distinguishing "revoked" from "never

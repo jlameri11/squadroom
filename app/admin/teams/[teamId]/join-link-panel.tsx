@@ -7,14 +7,21 @@ import { createClient } from '@/lib/supabase/client'
 export type ActiveLink = {
   id: string
   url: string
+  code: string
   useCount: number
   maxUses: number | null
   expiresAt: string
 }
 
 /**
- * The team's way in: a link to paste into the group parents already use, and
- * a QR to hold up at training.
+ * The team's three ways in, for three ways a coach actually recruits.
+ *
+ * A LINK to paste into the group parents already use. A QR to hold up at
+ * training. And a CODE to say out loud, write on a whiteboard or print on a
+ * flyer — the one that works when the coach is not holding anybody's phone.
+ *
+ * All three are the same join link underneath, with the same expiry, the same
+ * use limit, the same revocation and the same coach approval at the end.
  */
 export function JoinLinkPanel({
   teamId,
@@ -32,6 +39,7 @@ export function JoinLinkPanel({
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showQr, setShowQr] = useState(false)
+  const [copiedCode, setCopiedCode] = useState(false)
 
   async function create() {
     setBusy(true)
@@ -99,8 +107,40 @@ export function JoinLinkPanel({
 
   return (
     <section className="rounded-xl border border-[var(--line)] p-4">
-      <h2 className="font-semibold">Join link</h2>
-      <p className="mt-1 break-all text-sm" style={{ color: 'var(--brand)' }}>{link.url}</p>
+      <h2 className="font-semibold">How parents join</h2>
+
+      {/*
+        The code first, and big. It is the only one of the three a coach can
+        use without a device in their hand, and the one they will read out at
+        the end of training on Saturday.
+      */}
+      <div
+        className="mt-2.5 rounded-xl p-3 text-center"
+        style={{ background: 'var(--surface-2)' }}
+      >
+        <p className="eyebrow">Join code</p>
+        <p
+          className="display mt-0.5 text-[30px] leading-none tabular-nums"
+          style={{ color: 'var(--brand)', letterSpacing: '0.12em' }}
+        >
+          {link.code}
+        </p>
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(link.code)
+            setCopiedCode(true)
+            setTimeout(() => setCopiedCode(false), 2000)
+          }}
+          className="mt-1.5 text-xs underline underline-offset-4 text-ink-2"
+        >
+          {copiedCode ? 'Copied' : 'Copy code'}
+        </button>
+        <p className="mt-1.5 text-xs text-ink-3">
+          They enter it at {origin()}/join
+        </p>
+      </div>
+
+      <p className="mt-3 break-all text-sm" style={{ color: 'var(--brand)' }}>{link.url}</p>
       <p className="mt-1 text-sm text-ink-2">
         Used {link.useCount}{link.maxUses ? ` of ${link.maxUses}` : ' times'} · expires {expires}
       </p>
@@ -141,4 +181,10 @@ export function JoinLinkPanel({
       )}
     </section>
   )
+}
+
+/** The site's own origin, for telling a parent where to type the code. */
+function origin() {
+  if (typeof window === 'undefined') return 'squadroom.app'
+  return window.location.host
 }

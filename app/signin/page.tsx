@@ -16,7 +16,18 @@ import { createClient } from '@/lib/supabase/client'
  * hundreds.
  */
 export default function SignIn() {
-  const [email, setEmail] = useState('')
+  // Read in the initialiser rather than set from an effect. Setting state
+  // synchronously inside an effect costs a second render of the whole form,
+  // and localStorage answers immediately — the guard is only because these
+  // components also render on the server to produce the shell.
+  const [email, setEmail] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    try {
+      return localStorage.getItem('squadroom.lastEmail') ?? ''
+    } catch {
+      return ''
+    }
+  })
   const [password, setPassword] = useState('')
   // Password first. A magic link is the right door for a coach arriving for
   // the first time; it is the wrong one for anybody who signs in regularly —
@@ -36,13 +47,6 @@ export default function SignIn() {
     // already signing that person in, so showing the form for the moment it
     // takes would flash a login screen at somebody who just logged in.
     if (window.location.hash.includes('access_token=')) return
-
-    // Last address used on this device. Saves retyping it every time, and
-    // it is not a secret — the password still is.
-    try {
-      const last = localStorage.getItem('squadroom.lastEmail')
-      if (last) setEmail(last)
-    } catch {}
 
     const supabase = createClient()
     supabase.auth.getClaims().then(({ data }) => {
@@ -187,8 +191,12 @@ export default function SignIn() {
         than them failing to make one.
       */}
       <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>
-        For coaches and club admins. Parents don&apos;t need an account — your coach sends you a
-        link.
+        For coaches and club admins. Parents don&apos;t need an account yet — tap your coach&apos;s
+        link, or{' '}
+        <Link href="/join" className="underline underline-offset-4" style={{ color: '#fff' }}>
+          enter their join code
+        </Link>
+        .
       </p>
 
       <form
@@ -258,8 +266,19 @@ export default function SignIn() {
           {mode === 'password' ? 'Email me a link instead' : 'Use a password instead'}
         </button>
 
+        {/*
+          The two doors, named for what the person is rather than what they
+          will do: somebody joining a club, and somebody running one. "Sign up"
+          alone has always sent parents to found an academy by mistake.
+        */}
         <p className="pt-1 text-center text-sm" style={{ color: '#ffffff99' }}>
-          New here?{' '}
+          Joining a club?{' '}
+          <Link href="/join" className="underline underline-offset-4" style={{ color: '#fff' }}>
+            Use your join code
+          </Link>
+        </p>
+        <p className="text-center text-sm" style={{ color: '#ffffff99' }}>
+          Running one?{' '}
           <Link href="/signup" className="underline underline-offset-4" style={{ color: '#fff' }}>
             Set up an academy, club or league
           </Link>
