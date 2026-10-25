@@ -29,6 +29,10 @@ const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, {
 })
 
 const WAIT = 7000
+// --trials N measures how OFTEN delivery works, not just whether it can.
+// test-chat's realtime step fails about one run in three, and an
+// intermittent realtime is a different problem from a broken one.
+const TRIALS = Number(process.argv.find((a) => a.startsWith('--trials='))?.split('=')[1] ?? 0)
 const green = (s) => `\x1b[32m${s}\x1b[0m`
 const red = (s) => `\x1b[31m${s}\x1b[0m`
 
@@ -60,18 +64,58 @@ const { data: authUser } = await admin.auth.admin.getUserById(member.profile_id)
 const email = authUser?.user?.email
 
 /**
+ * The broadcast path (0088), as a real channel member.
+ *
+ * Measured next to postgres_changes rather than instead of it, because the
+ * only reason to add a second transport is that it is more reliable than the
+ * first — and that is a number, not an opinion.
+ */
+async function listenBroadcast(client, label, cause) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve('silent'), WAIT)
+    const sub = client
+      .channel(`channel:${channel.id}`, { config: { private: true } })
+      .on('broadcast', { event: 'new_message' }, () => {
+        clearTimeout(timer)
+        resolve('delivered')
+      })
+      .subscribe(async (status, err) => {
+        if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
+          clearTimeout(timer)
+          return resolve(`${status.toLowerCase()}${err ? ': ' + err.message : ''}`)
+        }
+        if (status !== 'SUBSCRIBED') return
+        const problem = await cause()
+        if (problem) {
+          clearTimeout(timer)
+          resolve(`could not cause a change: ${problem}`)
+        }
+      })
+    setTimeout(() => {
+      sub.unsubscribe()
+      client.removeChannel(sub)
+    }, WAIT + 1000)
+  })
+}
+
+/**
  * Subscribe, cause a change, and report what arrived.
  *
  * The insert happens inside the SUBSCRIBED callback deliberately. Firing it
  * before the socket is ready is the single most common way to write a realtime
  * test that fails for a reason that has nothing to do with realtime.
  */
-async function listen(client, label, cause) {
+async function listen(client, label, cause, filter) {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve('silent'), WAIT)
+    const on = { event: 'INSERT', schema: 'public', table: 'messages' }
+    // The app's own hook subscribes WITH a channel_id filter
+    // (lib/hooks/use-channel-messages.ts), so an unfiltered check can pass
+    // while every real user's subscription is the flaky one.
+    if (filter) on.filter = `channel_id=eq.${channel.id}`
     const sub = client
       .channel(`check:${label}:${Date.now()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      .on('postgres_changes', on, () => {
         clearTimeout(timer)
         resolve('delivered')
       })
@@ -103,11 +147,12 @@ const send = async () => {
 
 console.log('\nChecking realtime on public.messages\n')
 
-const asService = await listen(admin, 'service', send)
+const asService = await listen(admin, 'service', send, false)
 console.log(`  service role (no RLS)  ${asService === 'delivered' ? green('delivered') : red(asService)}`)
 
 // The same listen, as a real person who is in the channel.
 let asMember = 'skipped'
+let memberClient = null
 if (!email) {
   console.log(red(`  ${profile.full_name} has no email address — cannot test as them`))
   process.exit(1)
@@ -125,11 +170,12 @@ if (otpError) {
   asMember = `could not sign in: ${otpError.message}`
 } else {
   const asPerson = createClient(URL_, PUB, { auth: { persistSession: false } })
+  memberClient = asPerson
   // Realtime authorises the SOCKET, which reads the access token from the
   // auth state rather than from a header — setting an Authorization header
   // would be invisible to it.
   await asPerson.realtime.setAuth(session.session.access_token)
-  asMember = await listen(asPerson, 'member', send)
+  asMember = await listen(asPerson, 'member', send, false)
 }
 console.log(
   `  ${(profile.full_name ?? 'a member').padEnd(22)} ${asMember === 'delivered' ? green('delivered') : red(asMember)}`
@@ -137,8 +183,45 @@ console.log(
 
 await admin.from('messages').delete().like('body', 'REALTIMECHECK::%')
 
+// --trials: the same subscription, over and over, filtered and not.
+if (TRIALS > 0) {
+  console.log(`\n  Measuring over ${TRIALS} trials each\n`)
+
+  // As a real member, not the service role: that is who the app is, and
+  // broadcast authorisation goes through a policy on realtime.messages.
+  const member = asMember === 'delivered' ? memberClient : admin
+
+  const runs = [
+    ['postgres_changes, no filter', (i) => listen(admin, `t${i}`, send, false)],
+    ['postgres_changes, filtered', (i) => listen(admin, `t${i}`, send, true)],
+    ['broadcast (0088)', (i) => listenBroadcast(member, `b${i}`, send)],
+  ]
+
+  for (const [label, run] of runs) {
+    let delivered = 0
+    const failures = []
+    for (let i = 0; i < TRIALS; i++) {
+      const got = await run(i)
+      if (got === 'delivered') delivered++
+      else failures.push(got)
+      await admin.from('messages').delete().like('body', 'REALTIMECHECK::%')
+    }
+    const rate = Math.round((delivered / TRIALS) * 100)
+    console.log(
+      `  ${label.padEnd(30)} ${delivered}/${TRIALS} delivered (${rate}%)` +
+        (failures.length ? `  ${dimmed([...new Set(failures)].join(', '))}` : '')
+    )
+  }
+  console.log('')
+  process.exit(0)
+}
+
 console.log('\n' + verdict(asService, asMember) + '\n')
 process.exit(asService === 'delivered' && asMember === 'delivered' ? 0 : 1)
+
+function dimmed(s) {
+  return `\x1b[2m${s}\x1b[0m`
+}
 
 function verdict(service, person) {
   if (service === 'delivered' && person === 'delivered') {

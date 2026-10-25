@@ -45,11 +45,18 @@ export default async function AdminHub() {
     )
   }
 
-  const { count: pending } = await supabase
-    .from('join_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('academy_id', academy.id)
-    .eq('status', 'pending')
+  const [{ count: pending }, { count: pendingRegistrations }] = await Promise.all([
+    supabase
+      .from('join_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('academy_id', academy.id)
+      .eq('status', 'pending'),
+    supabase
+      .from('program_registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('academy_id', academy.id)
+      .eq('status', 'pending'),
+  ])
 
   return (
     <AppShellPage
@@ -75,11 +82,45 @@ export default async function AdminHub() {
           </Link>
         ) : null}
 
+        {/* Two queues, two prompts. One combined "5 things waiting" would
+            make a coach open Admin to find out which, which is the trip this
+            is here to save. */}
+        {pendingRegistrations ? (
+          <Link
+            href="/admin/programs"
+            className="mb-4 flex items-center gap-3 rounded-[14px] p-3.5 text-sm text-white"
+            style={{ background: 'var(--accent)', boxShadow: 'var(--shadow)' }}
+          >
+            <span className="display grid h-8 w-8 flex-none place-items-center rounded-full bg-white/25 text-base">
+              {pendingRegistrations}
+            </span>
+            <span>
+              <b>
+                {pendingRegistrations === 1
+                  ? 'A registration is'
+                  : `${pendingRegistrations} registrations are`}{' '}
+                waiting
+              </b>
+              <span className="block opacity-90">
+                Families see &ldquo;pending&rdquo; until somebody decides.
+              </span>
+            </span>
+          </Link>
+        ) : null}
+
         <h2 className="eyebrow px-1 pb-2">The team</h2>
         <ul className="card mb-5 overflow-hidden">
           <Row href="/admin/teams" label="Teams and players" hint="Squads, seasons, join links" />
           <Row href="/admin/requests" label="Join requests" hint="Approve new families" />
-          <Row href="/admin/programs" label="Programs and registrations" hint="Squads, camps, trials, tours" />
+          <Row
+            href="/admin/programs"
+            label="Programs and registrations"
+            hint={
+              pendingRegistrations
+                ? `${pendingRegistrations} waiting · squads, camps, trials, tours`
+                : 'Squads, camps, trials, tours'
+            }
+          />
           <Row href="/admin/import" label="Import a draw" hint="From a Dribl export" />
           <Row href="/scan" label="Scan a draw" hint="From a screenshot" />
         </ul>

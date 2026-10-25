@@ -138,6 +138,21 @@ delivered?.body === 'TEST::realtime ping'
 await admin.from('messages').delete().like('body','TEST::%')
 await admin.from('message_reactions').delete().eq('profile_id', parent.id).eq('emoji','🔥')
 await admin.from('channels').update({ posting_mode:'open' }).eq('id', u8.id)
+
+// Hand the realtime sockets back.
+//
+// Every client built by sess() opens one, and this suite used to exit without
+// closing any — as did every other suite. CLAUDE.md already names Realtime
+// CONCURRENT CONNECTIONS as the ceiling this product hits first, and a test
+// run that leaks two sockets a suite walks towards it. The realtime step here
+// failed about one run in three while a fresh subscription measured 16 out of
+// 16, which is what a connection limit looks like from the inside.
+await Promise.all([
+  coach.client.removeAllChannels(),
+  parent.client.removeAllChannels(),
+])
+coach.client.realtime.disconnect()
+parent.client.realtime.disconnect()
 console.log(process.exitCode ? '\n\x1b[31mCHAT RULES BROKEN\x1b[0m\n' : '\n\x1b[32mCHAT RULES HOLD\x1b[0m\n')
 // The realtime socket keeps the event loop alive, so exit deliberately
 // rather than leaving the runner hanging on a healthy connection.

@@ -357,9 +357,15 @@ const { data: doc, error: docError } = await owner.client
   .from('consent_documents')
   .insert({
     academy_id: NRIFA,
-    kind: 'code_of_conduct',
+    // 'other' with a high version, not code_of_conduct v1.
+    //
+    // The unique key is (academy_id, kind, version), and seed-registration
+    // publishes a real code_of_conduct v1 for this academy — so the test and
+    // the demo data collided. A test that needs its own row should ask for one
+    // nobody else would choose rather than delete the academy's real consent.
+    kind: 'other',
     title: 'TESTREG Code of Conduct',
-    version: 1,
+    version: 9901,
     body: 'Be kind. Version one.',
     required: true,
     published_at: new Date().toISOString(),
