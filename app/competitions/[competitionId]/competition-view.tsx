@@ -571,7 +571,6 @@ function PublishPublicly({
     const clean = suggestSlug(value)
     const { error } = await createClient()
       .from('competitions')
-      // @ts-expect-error — columns arrive with 0079.
       .update({ public_slug: clean, published_at: new Date().toISOString() })
       .eq('id', competitionId)
     setBusy(false)
@@ -591,7 +590,6 @@ function PublishPublicly({
     setBusy(true)
     await createClient()
       .from('competitions')
-      // @ts-expect-error — columns arrive with 0079.
       .update({ published_at: null })
       .eq('id', competitionId)
     setBusy(false)

@@ -5,7 +5,6 @@ import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
 import { createClient } from '@/lib/supabase/client'
-import { createUntypedClient } from '@/lib/supabase/untyped'
 import { getOrg } from '@/lib/org'
 
 type Program = {
@@ -52,9 +51,7 @@ export function ProgramsParent() {
   const [chosen, setChosen] = useState<Program | null>(null)
 
   const load = useCallback(async (academyId: string, me: string) => {
-    // programs and program_registrations arrive with 0083, and players.gender
-    // with 0082. See lib/supabase/untyped.ts.
-    const supabase = createUntypedClient()
+    const supabase = createClient()
     const [{ data: progs, error }, { data: links }] = await Promise.all([
       supabase
         .from('programs')
@@ -226,9 +223,13 @@ function Register({
   async function submit() {
     setBusy(true)
     setError(null)
-    const supabase = createUntypedClient()
+    const supabase = createClient()
     const { data: claims } = await supabase.auth.getClaims()
     const me = claims?.claims?.sub
+    if (!me) {
+      setBusy(false)
+      return setError('Your session has expired. Sign in again.')
+    }
 
     // One row per child rather than one row for the family, because each
     // child is approved, waitlisted or refused on their own.

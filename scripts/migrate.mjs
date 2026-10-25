@@ -23,14 +23,9 @@
 // the ones that add a trigger and then backfill with it disabled.
 import { readdirSync, readFileSync } from 'node:fs'
 import pg from 'pg'
+import { PROJECT_REF, PROJECT_NAME, endpoint, assertOurs, confirmProject } from './_project.mjs'
 
 const DRY = process.argv.includes('--dry')
-
-// CLAUDE.md's first rule is that only squadroom-dev may be touched, and a
-// connection string is exactly the kind of thing that gets pasted from the
-// wrong tab. The ref is hard-coded here rather than read from the
-// environment, so there is nothing to get wrong.
-const REF = 'rnykncrdcywmetuvslvw'
 
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN
 const URL_ = process.env.SUPABASE_DB_URL
@@ -46,13 +41,16 @@ if (!TOKEN && !URL_) {
   process.exit(1)
 }
 
-if (URL_ && !URL_.includes(REF)) {
-  console.error(`
-  That connection string is not squadroom-dev (${REF}).
-
-  Refusing to run. Only ever touch squadroom-dev.
-`)
-  process.exit(1)
+// A personal access token is account-wide — Supabase has no per-project
+// scoping — so the restriction to squadroom-dev lives in scripts/_project.mjs
+// and nowhere else. Proven by scripts/test-project-guard.mjs.
+if (URL_) {
+  try {
+    assertOurs(URL_)
+  } catch (error) {
+    console.error(`\n  ${error.message}\n`)
+    process.exit(1)
+  }
 }
 
 const green = (s) => `\x1b[32m${s}\x1b[0m`
@@ -95,7 +93,7 @@ function pgTransport(url) {
 }
 
 function apiTransport(token) {
-  const endpoint = `https://api.supabase.com/v1/projects/${REF}/database/query`
+  const query = endpoint('database/query')
   return {
     name: 'management API',
     atomic: false,
@@ -106,7 +104,7 @@ function apiTransport(token) {
       const text = params?.length
         ? sql.replace(/\$(\d+)/g, (_, n) => quote(params[Number(n) - 1]))
         : sql
-      const response = await fetch(endpoint, {
+      const response = await fetch(query, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
         body: JSON.stringify({ query: text }),
@@ -132,10 +130,23 @@ function quote(value) {
   return `'${String(value).replace(/'/g, "''")}'`
 }
 
+// Ask the API which project this is before writing anything to it. The URL
+// already cannot name another project; this closes the gap between "the URL
+// says ours" and "the thing that answered IS ours".
+if (TOKEN) {
+  try {
+    const project = await confirmProject(TOKEN)
+    console.log(`\nConfirmed project ${project.name} (${PROJECT_REF}) in ${project.region}`)
+  } catch (error) {
+    console.error(`\n  ${red('Refusing to run.')} ${error.message}\n`)
+    process.exit(1)
+  }
+}
+
 await db.open()
 
 const version = await db.query('select current_database() as db')
-console.log(`\nConnected to ${version[0]?.db ?? REF} over the ${db.name}\n`)
+console.log(`Connected to ${version[0]?.db ?? PROJECT_NAME} over the ${db.name}\n`)
 
 // The table the Supabase CLI uses, so the two agree about history.
 await db.query(`
@@ -147,24 +158,47 @@ await db.query(`
   );
 `)
 
-const done = await db.query('select version from supabase_migrations.schema_migrations')
-const applied = new Set(done.map((r) => r.version))
+const done = await db.query('select version, name from supabase_migrations.schema_migrations')
+
+/**
+ * The name of a migration, without whatever prefix the tool of the day used.
+ *
+ * Three different things have written this table. The Supabase CLI records a
+ * timestamp version with the file's name; the MCP server recorded the name
+ * with the numeric prefix STRIPPED, so 0056_screenshot_scans went in as
+ * "screenshot_scans"; and one row went in fully prefixed. Comparing raw names
+ * said 31 migrations were unapplied when only 11 were — and re-running
+ * 0056 onwards against a built database is not a mistake you get to undo.
+ *
+ * So both sides are normalised to the part that actually identifies the
+ * migration.
+ */
+const identity = (name) => name.replace(/\.sql$/, '').replace(/^\d+[a-z]?_/, '')
+
+const applied = new Set()
+for (const row of done) {
+  if (row.name) applied.add(identity(row.name))
+  if (row.version) applied.add(row.version)
+}
 
 const files = readdirSync('supabase/migrations')
   .filter((f) => f.endsWith('.sql'))
   .sort()
 
-// The leading number is the version, so 0080_x.sql is version "0080". Files
-// are named consistently in this repo; anything else is a mistake worth
-// stopping for rather than guessing at.
+// The leading number is the version, so 0080_x.sql is version "0080".
+//
+// A trailing letter is allowed — 0073a_channel_type_custom.sql exists,
+// because a migration had to be inserted after 0073 once 0074 was already
+// written. Lexicographic sort puts 0073a after 0073 and before 0074, which is
+// exactly where it belongs.
 const pending = []
 for (const file of files) {
-  const version = file.match(/^(\d+)_/)?.[1]
+  const version = file.match(/^(\d+[a-z]?)_/)?.[1]
   if (!version) {
     console.error(red(`  ${file} does not start with a number — cannot order it`))
     process.exit(1)
   }
-  if (!applied.has(version)) pending.push({ version, file })
+  if (!applied.has(version) && !applied.has(identity(file))) pending.push({ version, file })
 }
 
 if (pending.length === 0) {
@@ -183,23 +217,53 @@ if (DRY) {
   process.exit(0)
 }
 
+/**
+ * A version in the shape the Supabase CLI writes, so it keeps agreeing with
+ * this table: a UTC timestamp, unique per row because it is the primary key.
+ */
+let stamp = Date.now()
+const nextVersion = () => {
+  const d = new Date(stamp)
+  stamp += 1000
+  return (
+    d.getUTCFullYear().toString() +
+    String(d.getUTCMonth() + 1).padStart(2, '0') +
+    String(d.getUTCDate()).padStart(2, '0') +
+    String(d.getUTCHours()).padStart(2, '0') +
+    String(d.getUTCMinutes()).padStart(2, '0') +
+    String(d.getUTCSeconds()).padStart(2, '0')
+  )
+}
+
 let count = 0
-for (const { version, file } of pending) {
+for (const { file } of pending) {
   const sql = readFileSync(`supabase/migrations/${file}`, 'utf8')
+  const version = nextVersion()
+  const name = file.replace(/\.sql$/, '')
+
+  // ALTER TYPE ... ADD VALUE cannot be wrapped here. In older Postgres it
+  // cannot run in a transaction at all, and 0073a exists precisely because it
+  // has to be separated from the code that then uses the new label. Run it
+  // bare; it is a single idempotent statement, so there is nothing a
+  // transaction would protect.
+  const bare = /alter\s+type\s+[^;]*add\s+value/i.test(sql)
   process.stdout.write(`  ${file} … `)
   try {
-    if (db.atomic) {
+    if (bare) {
+      await db.query(sql)
+      await db.query(recordSql(version, name))
+    } else if (db.atomic) {
       await db.query('begin')
       await db.query(sql)
       await db.query(
         'insert into supabase_migrations.schema_migrations (version, name) values ($1, $2)',
-        [version, file]
+        [version, name]
       )
       await db.query('commit')
     } else {
       // One request, wrapped on the inside. Sent as separate requests the
       // BEGIN would be in a different session from the DDL and do nothing.
-      await db.query(`begin;\n${sql}\n${recordSql(version, file)}\ncommit;`)
+      await db.query(`begin;\n${sql}\n${recordSql(version, name)}\ncommit;`)
     }
     console.log(green('applied'))
     count++

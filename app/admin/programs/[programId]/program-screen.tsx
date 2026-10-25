@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
-import { createUntypedClient } from '@/lib/supabase/untyped'
 
 type Registration = {
   id: string
@@ -49,9 +48,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    // programs and program_registrations arrive with 0083, so they are not in
-    // the generated types yet. See lib/supabase/untyped.ts.
-    const supabase = createUntypedClient()
+    const supabase = createClient()
     const { data: p } = await supabase
       .from('programs')
       .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at')
@@ -89,7 +86,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
   async function decide(id: string, status: Registration['status'], teamId?: string) {
     setBusy(id)
     setError(null)
-    const supabase = createUntypedClient()
+    const supabase = createClient()
     const { error } = await supabase.from('program_registrations').update({ status }).eq('id', id)
 
     if (!error && status === 'approved' && teamId) {
@@ -113,7 +110,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
   async function setStatus(status: Program['status']) {
     if (!program) return
     setBusy('program')
-    await createUntypedClient().from('programs').update({ status }).eq('id', program.id)
+    await createClient().from('programs').update({ status }).eq('id', program.id)
     setBusy(null)
     await load()
   }

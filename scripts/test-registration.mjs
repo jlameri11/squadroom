@@ -301,6 +301,15 @@ otherParent?.length === 0
   : bad('another parent read a child’s medical record')
 
 head('8. But the coach still learns what they need at the ground')
+// A coach of THIS team, which is the rule — is_team_coach wants a
+// team_members row, not merely the academy-wide coach role. Marcus has the
+// academy role and is not on the U8 team, so without this he reads nothing,
+// which is correct and not what step 8 is testing.
+await admin
+  .from('team_members')
+  .upsert({ academy_id: NRIFA, team_id: U8, profile_id: coach.id, role: 'coach' },
+          { onConflict: 'team_id,profile_id' })
+
 const { data: alerts, error: alertError } = await coach.client.rpc('team_coach_alerts', {
   p_team: U8,
 })
@@ -322,6 +331,26 @@ const { data: strangerAlerts } = await other.client.rpc('team_coach_alerts', { p
 strangerAlerts?.length === 0
   ? ok('a parent gets nothing from it at all')
   : bad(`a parent read ${strangerAlerts?.length} coach notes`)
+
+// And a coach of a DIFFERENT team gets nothing, which is the other half of
+// the rule: the note reaches the people standing at that child's game, not
+// every coach in the club.
+const { data: otherTeam } = await admin
+  .from('teams')
+  .select('id')
+  .eq('academy_id', NRIFA)
+  .neq('id', U8)
+  .limit(1)
+  .maybeSingle()
+if (otherTeam) {
+  await admin.from('team_members').delete().eq('team_id', otherTeam.id).eq('profile_id', coach.id)
+  const { data: elsewhereAlerts } = await coach.client.rpc('team_coach_alerts', {
+    p_team: otherTeam.id,
+  })
+  elsewhereAlerts?.length === 0
+    ? ok("and a coach reads nothing for a team they are not on")
+    : bad(`a coach read ${elsewhereAlerts?.length} notes for another team`)
+}
 
 head('9. A signed consent cannot be edited, only superseded')
 const { data: doc, error: docError } = await owner.client
@@ -454,6 +483,7 @@ if (ravens) {
 }
 
 await clean()
+await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', coach.id)
 await admin.from('player_medical').delete().eq('player_id', leo.id)
 await admin.from('programs').delete().eq('id', draft.id)
 

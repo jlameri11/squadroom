@@ -24,8 +24,9 @@
 import { createInterface } from 'node:readline'
 import { appendFileSync, readFileSync, existsSync } from 'node:fs'
 import pg from 'pg'
+import { PROJECT_REF, endpoint } from './_project.mjs'
 
-const REF = 'rnykncrdcywmetuvslvw'
+const REF = PROJECT_REF
 const ENV = '.env.local'
 
 const green = (s) => `\x1b[32m${s}\x1b[0m`
@@ -88,7 +89,7 @@ if (existsSync(ENV)) {
 
 if (secret.startsWith('sbp_')) {
   process.stdout.write('  Checking the token … ')
-  const response = await fetch(`https://api.supabase.com/v1/projects/${REF}`, {
+  const response = await fetch(endpoint(), {
     headers: { Authorization: `Bearer ${secret}` },
   })
 
@@ -123,7 +124,7 @@ if (secret.startsWith('sbp_')) {
   // that reads project metadata but cannot query is no use here, and finding
   // that out now is better than finding it out mid-migration.
   process.stdout.write('  Checking it can run SQL … ')
-  const query = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
+  const query = await fetch(endpoint('database/query'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
     body: JSON.stringify({ query: 'select 1 as ok' }),

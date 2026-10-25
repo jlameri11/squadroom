@@ -6,13 +6,12 @@ import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
 import { createClient } from '@/lib/supabase/client'
-import { createUntypedClient } from '@/lib/supabase/untyped'
 import { getOrg } from '@/lib/org'
 
 export type Program = {
   id: string
   name: string
-  kind: string
+  kind: 'squad' | 'development' | 'trial' | 'camp' | 'term_class' | 'tournament' | 'tour' | 'other'
   status: 'draft' | 'open' | 'closed'
   season: string | null
   born_from_year: number | null
@@ -23,7 +22,9 @@ export type Program = {
   counts: { pending: number; approved: number; waitlisted: number }
 }
 
-const KINDS: { value: string; label: string; hint: string }[] = [
+type Kind = Program['kind']
+
+const KINDS: { value: Kind; label: string; hint: string }[] = [
   { value: 'squad', label: 'Squad', hint: 'A season in a team' },
   { value: 'development', label: 'Development', hint: 'Weekly skills program' },
   { value: 'trial', label: 'Trials', hint: 'Selection for a squad' },
@@ -48,8 +49,7 @@ export function ProgramsScreen() {
   const [creating, setCreating] = useState(false)
 
   const load = useCallback(async (academyId: string) => {
-    // programs arrives with 0083. See lib/supabase/untyped.ts.
-    const { data, error } = await createUntypedClient()
+    const { data, error } = await createClient()
       .from('programs')
       .select('*, program_registrations(status)')
       .eq('academy_id', academyId)
@@ -257,7 +257,7 @@ function NewProgram({
   onCreated: () => void
 }) {
   const [name, setName] = useState('')
-  const [kind, setKind] = useState('camp')
+  const [kind, setKind] = useState<Kind>('camp')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [capacity, setCapacity] = useState('')
@@ -270,7 +270,7 @@ function NewProgram({
   async function create(status: 'draft' | 'open') {
     setBusy(true)
     setError(null)
-    const supabase = createUntypedClient()
+    const supabase = createClient()
     const { data: claims } = await supabase.auth.getClaims()
     const { error } = await supabase.from('programs').insert({
       academy_id: academyId,
@@ -313,7 +313,7 @@ function NewProgram({
             <span className="eyebrow">Kind</span>
             <select
               value={kind}
-              onChange={(e) => setKind(e.target.value)}
+              onChange={(e) => setKind(e.target.value as Kind)}
               className="rounded-xl border px-3.5 py-3 text-base"
               style={{ borderColor: 'var(--line)' }}
             >
