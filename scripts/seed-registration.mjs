@@ -165,17 +165,35 @@ for (const r of toApprove ?? []) {
 say(`${(toApprove ?? []).length} already approved`)
 
 // Trials, which has questions — so the answers show in the queue.
+//
+// Checked, not fired and forgotten. The first version of this loop ignored
+// the error and reported "5 trial registrations" while writing three: the
+// trials program runs from a different birth year to the camp, so children
+// picked for one are not all eligible for the other and the trigger correctly
+// refused them. A seed script that lies about what it wrote is how the
+// player_guardians bug survived for weeks.
 const trials = made[`SPL Squad Trials ${year + 1}`]
-for (const child of withGuardian.slice(0, 5)) {
-  await admin.from('program_registrations').insert({
+const trialYears = PROGRAMS.find((p) => p.kind === 'trial')
+const eligibleForTrials = withGuardian.filter((c) => {
+  const y = new Date(c.dob).getFullYear()
+  return y >= trialYears.born_from_year && y <= trialYears.born_to_year
+})
+
+const POSITIONS = ['Goalkeeper', 'Centre back', 'Winger', 'Striker', 'Midfield']
+let trialCount = 0
+for (const [i, child] of eligibleForTrials.slice(0, 5).entries()) {
+  const { error } = await admin.from('program_registrations').insert({
     academy_id: NRIFA,
     program_id: trials.id,
     player_id: child.id,
     submitted_by: child.player_guardians[0].profile_id,
-    answers: { position: ['Goalkeeper', 'Centre back', 'Winger', 'Striker', 'Midfield'][Math.floor(Math.random() * 5)] },
+    answers: { position: POSITIONS[i % POSITIONS.length] },
   })
+  if (error) die(`registering ${child.full_name} for trials: ${error.message}`)
+  trialCount++
 }
-say('5 trial registrations with answers')
+if (trialCount === 0) die('no child is eligible for trials — check the birth years')
+say(`${trialCount} trial registrations with answers`)
 
 // --- a code of conduct, versioned -----------------------------------------
 await admin.from('consent_documents').delete().eq('academy_id', NRIFA)
