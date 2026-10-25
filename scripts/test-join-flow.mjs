@@ -81,7 +81,23 @@ const wrong = await post('/api/join/claim', { requestId: reqBody.requestId, secr
 wrong.status === 404 ? ok('404, indistinguishable from a missing request') : bad(`expected 404, got ${wrong.status}`)
 
 head('Coach signs in and approves')
-const { data: cl } = await admin.auth.admin.generateLink({ type: 'magiclink', email: 'p61400000001@squadroom.invalid' })
+// The coach's address is LOOKED UP from their id, never hard-coded.
+//
+// It used to name p61400000001@squadroom.invalid, the synthetic address the
+// seed gave this coach. Joey's auth email was later changed to his real one,
+// which left that address unclaimed — and generateLink SIGNS UP an unknown
+// email rather than failing, so a past run created a brand-new user on it.
+// From then on this test signed in as a stranger who is a member of nothing,
+// and the failure read like an RLS bug.
+//
+// The guard below caught it, which is why it is there. But a test that
+// resolves the identity it means cannot drift in the first place.
+const { data: coachUser } = await admin.auth.admin.getUserById(COACH)
+if (!coachUser?.user?.email) {
+  bad(`the coach ${COACH} has no email address to sign in with`)
+  process.exit(1)
+}
+const { data: cl } = await admin.auth.admin.generateLink({ type: 'magiclink', email: coachUser.user.email })
 const { data: cs, error: csErr } = await anon.auth.verifyOtp({ token_hash: cl.properties.hashed_token, type: 'email' })
 if (csErr) { bad(`coach session: ${csErr.message}`); process.exit(1) }
 
