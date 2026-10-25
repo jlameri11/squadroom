@@ -30,17 +30,20 @@ const PRESETS = [
 
 export function AcademySettings({
   academyId, dmPolicy, directoryVisibility, primaryColour = '#202842', academyName = 'Your club',
+  publicPlayerNames = 'off',
 }: {
   academyId: string
   dmPolicy: string
   directoryVisibility: string
   primaryColour?: string
   academyName?: string
+  publicPlayerNames?: 'off' | 'initials' | 'full'
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
   const [dir, setDir] = useState(directoryVisibility)
   const [colour, setColour] = useState(primaryColour)
+  const [names, setNames] = useState(publicPlayerNames)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,6 +53,7 @@ export function AcademySettings({
     | { directory_visibility: 'staff_only' | 'all' }
     | { dm_policy: 'staff_only' | 'open' }
     | { primary_colour: string }
+    | { public_player_names: 'off' | 'initials' | 'full' }
 
   async function update(patch: Patch) {
     setBusy(true)
@@ -64,6 +68,67 @@ export function AcademySettings({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {error && <p className="text-sm ">{error}</p>}
+
+      <section>
+        <h2 className="font-semibold">Player names on public pages</h2>
+        <p className="mt-1 text-sm text-ink-2">
+          A published competition page can be opened by anyone with the link — that is what makes
+          it useful to players, grandparents and visiting clubs. This decides whether your players
+          are named on it.
+        </p>
+
+        <div className="mt-3 flex flex-col gap-2">
+          {([
+            {
+              value: 'off' as const,
+              label: 'Not at all',
+              hint: 'Clubs and scores only. Nobody is named.',
+            },
+            {
+              value: 'initials' as const,
+              label: 'First name and initial',
+              hint: '“Leo W.” — enough to read a team sheet, not a child’s full name on an indexable page.',
+            },
+            {
+              value: 'full' as const,
+              label: 'Full names',
+              hint: 'What Dribl publishes. Choose this if your competition expects team sheets.',
+            },
+          ]).map((o) => (
+            <button
+              key={o.value}
+              onClick={() => { setNames(o.value); void update({ public_player_names: o.value }) }}
+              aria-pressed={names === o.value}
+              disabled={busy}
+              className="flex items-start gap-3 rounded-xl border p-3 text-left"
+              style={{
+                borderColor: names === o.value ? 'var(--brand)' : 'var(--line)',
+                background: names === o.value ? 'var(--surface-2)' : 'var(--surface)',
+              }}
+            >
+              <span
+                className="mt-0.5 grid h-4 w-4 flex-none place-items-center rounded-full border"
+                style={{
+                  borderColor: names === o.value ? 'var(--brand)' : 'var(--line)',
+                  background: names === o.value ? 'var(--brand)' : 'transparent',
+                }}
+              />
+              <span className="min-w-0">
+                <span className="block font-medium">{o.label}</span>
+                <span className="block text-sm text-ink-3">{o.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Said here rather than buried, because it is the sentence that makes
+            the whole setting defensible to a family who asks. */}
+        <p className="mt-2 text-xs text-ink-3">
+          Any family can ask to be left off, whatever is set here, and that always wins. Only your
+          own academy&apos;s players are affected — a competition you run never publishes another
+          club&apos;s children.
+        </p>
+      </section>
 
       <section>
         <h2 className="font-semibold">Club colours</h2>

@@ -58,7 +58,13 @@ for (const file of suites) {
   // returns `{ session: null }` with no error, so the next line dies reading
   // access_token of null — in fifteen suites at once, which looks exactly
   // like the database falling over.
-  const rateLimited = /reading 'access_token'/.test(out)
+  // Two spellings of the same thing: a suite that dies on the null session
+  // (TypeError), and one that notices and exits gracefully. test-tenant-guards
+  // does the latter and was being reported as "crashed" — which for a
+  // cross-tenant SECURITY test is the worst possible thing to be wrong about,
+  // because it reads as the guards being broken.
+  const rateLimited =
+    /reading 'access_token'/.test(out) || /auth rate limit/i.test(out)
   // test-join-flow drives real HTTP routes and needs the app running.
   const noServer = /ECONNREFUSED/.test(out)
 

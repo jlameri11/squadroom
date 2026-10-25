@@ -25,6 +25,7 @@ export type Database = {
           name: string
           plan: string
           primary_colour: string
+          public_player_names: Database["public"]["Enums"]["public_names_mode"]
           slug: string
           timezone: string
           type: Database["public"]["Enums"]["org_type"]
@@ -40,6 +41,7 @@ export type Database = {
           name: string
           plan?: string
           primary_colour?: string
+          public_player_names?: Database["public"]["Enums"]["public_names_mode"]
           slug: string
           timezone?: string
           type?: Database["public"]["Enums"]["org_type"]
@@ -55,6 +57,7 @@ export type Database = {
           name?: string
           plan?: string
           primary_colour?: string
+          public_player_names?: Database["public"]["Enums"]["public_names_mode"]
           slug?: string
           timezone?: string
           type?: Database["public"]["Enums"]["org_type"]
@@ -2332,6 +2335,7 @@ export type Database = {
           photo_url: string | null
           preferred_name: string | null
           profile_id: string | null
+          public_name_hidden: boolean
           school: string | null
           team_id: string | null
           updated_at: string
@@ -2348,6 +2352,7 @@ export type Database = {
           photo_url?: string | null
           preferred_name?: string | null
           profile_id?: string | null
+          public_name_hidden?: boolean
           school?: string | null
           team_id?: string | null
           updated_at?: string
@@ -2364,6 +2369,7 @@ export type Database = {
           photo_url?: string | null
           preferred_name?: string | null
           profile_id?: string | null
+          public_name_hidden?: boolean
           school?: string | null
           team_id?: string | null
           updated_at?: string
@@ -3674,6 +3680,10 @@ export type Database = {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
       }
+      set_public_name_hidden: {
+        Args: { p_hidden: boolean; p_player: string }
+        Returns: boolean
+      }
       set_push_wake_config: {
         Args: { p_secret: string; p_url: string }
         Returns: undefined
@@ -3749,6 +3759,7 @@ export type Database = {
         | "tour"
         | "other"
       program_status: "draft" | "open" | "closed"
+      public_names_mode: "off" | "initials" | "full"
       registration_status:
         | "pending"
         | "approved"
@@ -3943,6 +3954,7 @@ export const Constants = {
         "other",
       ],
       program_status: ["draft", "open", "closed"],
+      public_names_mode: ["off", "initials", "full"],
       registration_status: [
         "pending",
         "approved",

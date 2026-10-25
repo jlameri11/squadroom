@@ -4,6 +4,8 @@ import { useState } from 'react'
 
 export type Fixture = {
   id: string
+  home_entry_id: string | null
+  away_entry_id: string | null
   starts_at: string | null
   round: string | null
   division: string | null
@@ -31,14 +33,28 @@ export type LadderRow = {
   points: number
 }
 
+export type SquadPlayer = { name: string; number: number | null }
+
 export type Centre = {
   competition: { name: string; season: string | null; organiser: string }
   fixtures: Fixture[]
   ladder: Record<string, LadderRow[]>
   divisions: string[]
+  /**
+   * Team sheets, keyed by competition entry. Absent for a club that is only a
+   * name on the draw, and absent for any club whose own academy has not opted
+   * into publishing names — each player's own academy decides, never the
+   * organiser's.
+   */
+  squads?: Record<string, SquadPlayer[]>
 }
 
 const SYDNEY = 'Australia/Sydney'
+
+// A `const` assertion cannot be applied to a conditional expression, so the
+// list is declared once and filtered rather than built inline.
+const TABS = ['fixtures', 'ladder', 'squads'] as const
+type Tab = (typeof TABS)[number]
 
 /**
  * The public page.
@@ -55,9 +71,12 @@ const SYDNEY = 'Australia/Sydney'
 export function MatchCentre({ centre }: { centre: Centre }) {
   const { competition, fixtures, ladder, divisions } = centre
   const [division, setDivision] = useState(divisions[0] ?? '')
-  const [tab, setTab] = useState<'fixtures' | 'ladder'>('fixtures')
+  const [tab, setTab] = useState<Tab>('fixtures')
 
   const mine = divisions.length > 1 ? fixtures.filter((f) => f.division === division) : fixtures
+  // Only offered when there is something to show. A Squads tab that opens on
+  // "no squads published" is worse than no tab.
+  const hasSquads = Object.keys(centre.squads ?? {}).length > 0
 
   return (
     <main className="mx-auto w-full max-w-lg pb-12">
@@ -96,7 +115,7 @@ export function MatchCentre({ centre }: { centre: Centre }) {
       )}
 
       <div className="flex gap-1.5 px-3.5 py-2.5">
-        {(['fixtures', 'ladder'] as const).map((t) => (
+        {TABS.filter((t) => t !== 'squads' || hasSquads).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -107,21 +126,95 @@ export function MatchCentre({ centre }: { centre: Centre }) {
                 : { background: 'transparent', color: 'var(--ink-3)' }
             }
           >
-            {t === 'fixtures' ? 'Fixtures & results' : 'Ladder'}
+            {t === 'fixtures' ? 'Fixtures' : t === 'ladder' ? 'Ladder' : 'Squads'}
           </button>
         ))}
       </div>
 
       {tab === 'fixtures' ? (
         <Fixtures fixtures={mine} />
-      ) : (
+      ) : tab === 'ladder' ? (
         <Ladder rows={ladder[division] ?? ladder[divisions[0] ?? ''] ?? []} />
+      ) : (
+        <Squads
+          squads={centre.squads ?? {}}
+          entries={entriesIn(mine)}
+        />
       )}
 
       <p className="px-6 pt-6 text-center text-xs text-ink-3">
-        Clubs and scores only. No player names are published here.
+        {hasSquads
+          ? 'Squads are published by each club. Any family can ask to be left off.'
+          : 'Clubs and scores only. No player names are published here.'}
       </p>
     </main>
+  )
+}
+
+/**
+ * Which clubs are in view, and what they are called.
+ *
+ * The squads come back keyed by competition entry id, and the fixtures are
+ * where those ids are paired with club names — so the division filter the
+ * reader already chose decides which squads they see, without a second
+ * lookup.
+ */
+function entriesIn(fixtures: Fixture[]) {
+  const seen = new Map<string, string>()
+  for (const f of fixtures) {
+    if (f.home_entry_id && f.home) seen.set(f.home_entry_id, f.home)
+    if (f.away_entry_id && f.away) seen.set(f.away_entry_id, f.away)
+  }
+  return [...seen.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function Squads({
+  squads,
+  entries,
+}: {
+  squads: Record<string, SquadPlayer[]>
+  entries: { id: string; name: string }[]
+}) {
+  const withSquads = entries.filter((e) => (squads[e.id] ?? []).length > 0)
+
+  if (withSquads.length === 0) {
+    return <Empty>No squads published for this division yet.</Empty>
+  }
+
+  return (
+    <div className="px-3.5">
+      {withSquads.map((e) => {
+        const players = squads[e.id]
+        return (
+          <section key={e.id} className="mb-4">
+            <h3 className="eyebrow px-1 pb-1.5">
+              {e.name} · {players.length}
+            </h3>
+            <div className="card overflow-hidden">
+              {players.map((p, i) => (
+                <div
+                  key={`${e.id}-${i}`}
+                  className="flex items-center gap-3 border-t px-3.5 py-2.5 text-sm first:border-t-0"
+                  style={{ borderColor: 'var(--line-2)' }}
+                >
+                  {/* The number gets its own column even when unset, so the
+                      names stay on one left edge down the list. */}
+                  <span
+                    className="w-6 flex-none text-right text-xs tabular-nums"
+                    style={{ color: 'var(--ink-3)' }}
+                  >
+                    {p.number ?? ''}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      })}
+    </div>
   )
 }
 

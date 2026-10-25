@@ -68,7 +68,7 @@
 | R-13 | **Trials → offer → paid registration** | MISSING | P2 |
 | R-14 | **Official PlayFootball rego status** per player (done/pending) with reminders. Squadroom never does official registration | MISSING | P2 |
 | R-15 | Withdraw/deregister with full or partial refund before a cut-off | MISSING | P2 |
-| R-16 | Hide a player's name or photo on public tournament pages | MISSING | P2 |
+| R-16 | Hide a player's name or photo on public tournament pages | **DONE** (0093–0096). Three controls: an academy setting (off / "Leo W." / full name), a per-child opt-out that always wins, and the rule that each player's OWN academy decides — a competition you run never publishes a visiting club's children. Proven by test-public-squads, which also asserts the payload carries nothing but a name and a number: no date of birth, no phone number, no medical note | P2 |
 
 ### B. Safeguarding & compliance
 | ID | Feature | Status | Pri |
