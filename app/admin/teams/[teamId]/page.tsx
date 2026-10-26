@@ -1,4 +1,5 @@
 import { headers } from 'next/headers'
+import { AttendancePanel } from './attendance-panel'
 import { redirect, notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createClient, getUserId } from '@/lib/supabase/server'
@@ -82,6 +83,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       />
 
       <BulkInvite teamId={team.id} academyId={team.academy_id} />
+
+      <AttendancePanel academyId={team.academy_id} teamId={team.id} />
 
       <section className="mt-7">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-2">
