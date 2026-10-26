@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { SignOut } from '@/components/sign-out'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
@@ -30,6 +31,12 @@ export default async function SettingsPage() {
       />
       <PushToggle />
       <CalendarFeed />
+
+      {/* The proper home for it, as well as the home screen's footer — this
+          is where somebody looks for it. */}
+      <section className="mt-8 border-t pt-4" style={{ borderColor: 'var(--line-2)' }}>
+        <SignOut variant="button" />
+      </section>
     </div>
     </AppShellPage>
   )

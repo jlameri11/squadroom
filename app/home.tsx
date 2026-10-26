@@ -6,6 +6,7 @@ import { useOrg, useReconcileOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
+import { SignOut } from '@/components/sign-out'
 import { createClient } from '@/lib/supabase/client'
 
 export type HomeEvent = {
@@ -48,7 +49,7 @@ type Academy = {
 }
 
 type HomeData = {
-  profile: { phone: string | null } | null
+  profile: { phone: string | null; full_name: string | null } | null
   academy: Academy | null
   role: string | null
   other_academies: { id: string; name: string; type: string }[]
@@ -90,6 +91,7 @@ export function Home() {
       role={data.role ?? 'parent'}
       isPlatformAdmin={data.is_platform_admin}
       needsPhone={!data.profile?.phone}
+      me={data.profile?.full_name ?? null}
       pendingRequests={data.pending_requests ?? 0}
       events={data.events ?? []}
       channels={data.channels ?? []}
@@ -123,6 +125,7 @@ function HomeScreen({
   role,
   isPlatformAdmin,
   needsPhone,
+  me,
   pendingRequests,
   events,
   channels,
@@ -132,6 +135,8 @@ function HomeScreen({
   role: string
   isPlatformAdmin: boolean
   needsPhone: boolean
+  /** Whose account this is, for the footer. */
+  me: string | null
   pendingRequests: number
   events: HomeEvent[]
   channels: HomeChannel[]
@@ -255,7 +260,22 @@ function HomeScreen({
         an admin list, "elsewhere") was the screen listing the tab bar back at
         the person looking at it. Running the club now lives on the Admin tab,
         where a coach goes when that is what they came to do.
+
+        The exception below is a FOOTER, not a tile. It says who you are
+        signed in as and lets you leave — and until now there was no way out
+        of an account anywhere in the product, which meant a coach could not
+        hand their phone to a colleague and nobody could hold two accounts on
+        one device.
       */}
+      <footer className="mt-8 border-t px-4 pb-2 pt-4" style={{ borderColor: 'var(--line-2)' }}>
+        <p className="px-1 text-xs text-ink-3">
+          Signed in as <b>{me ?? 'you'}</b>
+          {role ? ` · ${role}` : ''} at {academy.name}
+        </p>
+        <div className="mt-1.5">
+          <SignOut />
+        </div>
+      </footer>
       </Screen>
     </div>
   )
