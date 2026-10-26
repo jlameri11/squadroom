@@ -97,7 +97,7 @@ await clean()
 // Sam's children.
 const { data: kids } = await admin
   .from('players')
-  .select('id, full_name, dob')
+  .select('id, full_name, dob, team_id')
   .eq('academy_id', NRIFA)
   .in(
     'id',
@@ -419,7 +419,98 @@ if (docError) {
   forgeError ? ok('nobody can accept on another adult’s behalf') : bad('a consent was forged')
 }
 
-head('10. One shirt number per season, across every age group')
+head('10. Approving a child into a team puts their family in the team chat')
+// The chain 0083's comment claimed worked and did not: the approval sets
+// players.team_id, and the trigger that joins the team and age-group channels
+// fires on team_members, which is about ADULTS. So a coach approved a child
+// and left the parent outside the conversation — approved, and still seeing
+// nothing, which is the state the queue exists to end. 0098 made the
+// guardians follow the child.
+{
+  const { data: spareTeam } = await admin
+    .from('teams')
+    .select('id, name')
+    .eq('academy_id', NRIFA)
+    .eq('status', 'active')
+    .neq('id', U8)
+    .limit(1)
+    .maybeSingle()
+
+  if (!spareTeam) {
+    bad('no second active team to move a child into')
+  } else {
+    const before = leo.team_id
+    // Move Leo, as a coach would when approving him into a different squad.
+    const { error: moveError } = await owner.client
+      .from('players')
+      .update({ team_id: spareTeam.id })
+      .eq('id', leo.id)
+    if (moveError) {
+      bad(`could not assign the team: ${moveError.message}`)
+    } else {
+      const { data: tm } = await admin
+        .from('team_members')
+        .select('role')
+        .eq('team_id', spareTeam.id)
+        .eq('profile_id', sam.id)
+        .maybeSingle()
+      tm
+        ? ok(`${spareTeam.name}: Sam is a team member, so the trigger fired`)
+        : bad('the guardian was not added to the team — they are outside the team chat')
+
+      const { data: chan } = await admin
+        .from('channels')
+        .select('id, name')
+        .eq('team_id', spareTeam.id)
+        .eq('type', 'team')
+        .maybeSingle()
+      if (chan) {
+        const { data: cm } = await admin
+          .from('channel_members')
+          .select('profile_id')
+          .eq('channel_id', chan.id)
+          .eq('profile_id', sam.id)
+          .maybeSingle()
+        cm
+          ? ok(`and is in the "${chan.name}" conversation`)
+          : bad('the guardian is a team member but not in the team channel')
+      }
+    }
+    // Put him back where he was.
+    await admin.from('players').update({ team_id: before }).eq('id', leo.id)
+    await admin.from('team_members').delete().eq('team_id', spareTeam.id).eq('profile_id', sam.id)
+  }
+}
+
+head('11. And a guardian linked afterwards still joins their child’s squad')
+// The other order of events, and just as common: the child is on the roster
+// first and the parent arrives later, through a join code or as a second
+// guardian.
+{
+  const { data: child } = await admin
+    .from('players')
+    .insert({ academy_id: NRIFA, team_id: U8, full_name: 'TESTREG Late Child', dob: '2018-04-01' })
+    .select('id')
+    .single()
+  const { error: linkError } = await admin
+    .from('player_guardians')
+    .insert({ academy_id: NRIFA, player_id: child.id, profile_id: other.id, relationship: 'parent' })
+  if (linkError) {
+    bad(`linking a guardian: ${linkError.message}`)
+  } else {
+    const { data: tm } = await admin
+      .from('team_members')
+      .select('role')
+      .eq('team_id', U8)
+      .eq('profile_id', other.id)
+      .maybeSingle()
+    tm ? ok('linked afterwards, and in the squad') : bad('a guardian linked later is not in the squad')
+  }
+  await admin.from('player_guardians').delete().eq('player_id', child.id)
+  await admin.from('players').delete().eq('id', child.id)
+}
+
+head('12. One shirt number per season, across every age group')
 const { data: n1, error: numError } = await coach.client
   .from('squad_numbers')
   .insert({ academy_id: NRIFA, player_id: leo.id, season: SEASON, number: 7, assigned_by: coach.id })
@@ -469,7 +560,7 @@ unchanged.number === 7
   ? ok(`a parent cannot reassign it${parentNumber ? '' : ' (silently filtered)'}`)
   : bad('a parent changed a squad number')
 
-head('11. Nothing of this leaked to another academy')
+head('13. Nothing of this leaked to another academy')
 const { data: ravens } = await admin
   .from('academy_members')
   .select('profile_id')
