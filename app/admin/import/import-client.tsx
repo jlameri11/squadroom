@@ -11,7 +11,10 @@ import {
 } from '@/lib/import/columns'
 
 type Row = Record<string, unknown>
-type Mapping = Partial<Record<FieldKey, string>>
+// Keyed by string rather than FieldKey, so the same screen can serve the
+// player field set as well as the fixture one. The REQUIRED-field check below
+// is what enforces correctness, not the key type.
+type Mapping = Partial<Record<string, string>>
 
 type Prepared = {
   index: number

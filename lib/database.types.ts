@@ -3486,6 +3486,15 @@ export type Database = {
         }[]
       }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
+      import_players: {
+        Args: {
+          p_academy: string
+          p_rows: Json
+          p_season?: string
+          p_team: string
+        }
+        Returns: Json
+      }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       member_contact: {

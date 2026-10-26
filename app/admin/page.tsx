@@ -122,6 +122,7 @@ export default async function AdminHub() {
             }
           />
           <Row href="/admin/import" label="Import a draw" hint="From a Dribl export" />
+          <Row href="/admin/import/players" label="Import a roster" hint="A spreadsheet of players" />
           <Row href="/scan" label="Scan a draw" hint="From a screenshot" />
         </ul>
 

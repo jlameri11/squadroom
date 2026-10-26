@@ -220,6 +220,57 @@ head('Programs and registrations')
   byStatus.waitlisted > 0 ? ok('and a waitlist to show') : warn('no waitlist to demo')
 }
 
+head('Attendance')
+{
+  const { data: teams } = await coach
+    .from('teams')
+    .select('id, name')
+    .eq('academy_id', NRIFA)
+    .eq('status', 'active')
+    .order('name')
+  let anyMarked = false
+  for (const t of teams ?? []) {
+    const { data, error } = await coach.rpc('attendance_summary', {
+      p_academy: NRIFA,
+      p_team: t.id,
+    })
+    if (error) {
+      fail(`attendance_summary ${t.name}: ${error.message}`)
+      continue
+    }
+    const rated = (data ?? []).filter((r) => r.rate !== null)
+    if (rated.length === 0) {
+      warn(`${t.name}: no registers taken`)
+      continue
+    }
+    anyMarked = true
+    const avg = Math.round(rated.reduce((n, r) => n + Number(r.rate), 0) / rated.length)
+    const worst = rated.slice().sort((a, b) => Number(a.rate) - Number(b.rate))[0]
+    ok(`${t.name}: ${rated.length} players, ${avg}% average, lowest ${worst.player_name} on ${worst.rate}%`)
+  }
+  if (!anyMarked) fail('no attendance anywhere — the panel will be empty on every squad')
+
+  // And a register a coach could take right now.
+  const { data: past } = await coach
+    .from('events')
+    .select('id, title')
+    .eq('academy_id', NRIFA)
+    .not('team_id', 'is', null)
+    .is('cancelled_at', null)
+    .lt('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (past) {
+    const { data: register, error } = await coach.rpc('event_register', { p_event: past.id })
+    error
+      ? fail(`event_register: ${error.message}`)
+      : (register ?? []).length > 0
+        ? ok(`"${past.title}" has a register of ${register.length}`)
+        : fail('the most recent session has an empty register')
+  }
+}
+
 head('Admin queues')
 {
   const { data: badges } = await coach.rpc('nav_badges', {})
