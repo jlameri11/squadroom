@@ -143,6 +143,19 @@ export function DirectoryList({
                   </a>
                 </>
               )}
+              {/* Save to the phone's own address book.
+                  A plain link, not a fetch: iOS Safari offers "Add to
+                  Contacts" for a real text/vcard response and buries a blob
+                  in Files. Shown even when no number came back, because the
+                  card still carries their name, squad and club. */}
+              <a
+                href={`/api/contacts/${p.id}`}
+                className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)]"
+                aria-label={`Save ${p.name} to your phone`}
+                title="Save to your phone"
+              >
+                👤
+              </a>
               {canMessage(p) && (
                 <button
                   onClick={() => message(p)}

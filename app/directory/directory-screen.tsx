@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { AddContact } from './add-contact'
 import { DirectoryList } from './directory-list'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
@@ -29,8 +30,10 @@ export function DirectoryScreen() {
     me: string
     isStaff: boolean
     people: Person[]
+    teams: { id: string; name: string }[]
   } | null>(null)
   const [failed, setFailed] = useState(false)
+  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -54,9 +57,18 @@ export function DirectoryScreen() {
         return
       }
 
-      const [{ data: people }, { data: badges }] = await Promise.all([
+      // Real team rows, because adding somebody to a squad needs its id —
+      // the names already in the directory are not ids, and passing one
+      // would fail a foreign key at the end of a form somebody has filled in.
+      const [{ data: people }, { data: badges }, { data: teams }] = await Promise.all([
         supabase.rpc('member_directory', { p_academy: academy.id }),
         supabase.rpc('nav_badges'),
+        supabase
+          .from('teams')
+          .select('id, name')
+          .eq('academy_id', academy.id)
+          .eq('status', 'active')
+          .order('name'),
       ])
 
       if (!live) return
@@ -67,6 +79,7 @@ export function DirectoryScreen() {
         me,
         isStaff: (badges as { is_staff?: boolean } | null)?.is_staff ?? false,
         people: people as Person[],
+        teams: teams ?? [],
       })
     })()
 
@@ -86,7 +99,21 @@ export function DirectoryScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-      <AppBar title="Directory" meta={`${state.people.length} people · ${state.academy.name}`} />
+      <AppBar
+        title="Directory"
+        meta={`${state.people.length} people · ${state.academy.name}`}
+        action={
+          state.isStaff && (
+            <button
+              onClick={() => setAdding(true)}
+              className="flex-none rounded-[10px] px-3 py-1.5 text-sm font-semibold"
+              style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+            >
+              Add
+            </button>
+          )
+        }
+      />
       <Screen>
         <div className="p-4">
           <DirectoryList
@@ -105,6 +132,16 @@ export function DirectoryScreen() {
           />
         </div>
       </Screen>
+
+      {adding && (
+        <AddContact
+          academyId={state.academy.id}
+          teams={state.teams}
+          canAddStaff={state.isStaff}
+          onClose={() => setAdding(false)}
+          onAdded={() => window.location.reload()}
+        />
+      )}
     </div>
   )
 }
