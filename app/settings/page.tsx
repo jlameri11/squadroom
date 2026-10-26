@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { SetPassword } from './set-password'
 import { SignOut } from '@/components/sign-out'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
@@ -29,6 +30,10 @@ export default async function SettingsPage() {
         initialPhone={me?.phone ?? ''}
         email={email}
       />
+      {/* Before push and the calendar feed, because somebody who has just
+          arrived by emailed link has no way back in until they do this. */}
+      <SetPassword />
+
       <PushToggle />
       <CalendarFeed />
 

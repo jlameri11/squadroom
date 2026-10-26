@@ -67,7 +67,22 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
   }
 
   return (
-    <div className="flex gap-2 p-3">
+    <div className="p-3">
+      {/*
+        Asked here because this is the moment it matters. Somebody who
+        arrived by emailed link has no password, and the only way back in is
+        another email — Supabase's own mailer allows about two an hour for the
+        whole project, and a join-code parent has no address that can receive
+        one at all. Better to say so before they leave than after.
+      */}
+      <p className="mb-2 text-xs text-ink-3">
+        Make sure you&apos;ve set a password in{' '}
+        <a href="/settings" className="underline underline-offset-2">
+          Your details
+        </a>
+        , or you&apos;ll need another emailed link to get back in.
+      </p>
+      <div className="flex gap-2">
       <button
         onClick={out}
         disabled={busy}
@@ -83,6 +98,7 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
       >
         Stay
       </button>
+      </div>
     </div>
   )
 }
