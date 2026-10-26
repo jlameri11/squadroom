@@ -1,13 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useScreen } from '@/lib/hooks/use-screen'
-import { useOrg, useReconcileOrg } from '@/lib/org'
+import { useOrg, useReconcileOrg, getOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { SignOut } from '@/components/sign-out'
 import { NeedsYou } from './needs-you'
+import { HomeCalendar } from './home-calendar'
+import { HomeCompetitions } from './home-competitions'
+import { HomeOwing } from './home-owing'
+import { EditHome } from './edit-home'
+import { type SectionId } from '@/lib/home-sections'
 import { createClient } from '@/lib/supabase/client'
 
 export type HomeEvent = {
@@ -144,6 +149,111 @@ function HomeScreen({
   const isCoach = isStaff || role === 'coach'
   const tint = academy.primary_colour || 'var(--brand)'
 
+
+  // The layout, resolved by the database so the client never holds a second
+  // opinion about what a new person sees. Falls back to the two sections the
+  // screen has always had, so a failed fetch is a plain home screen rather
+  // than an empty one.
+  const [layoutState, setLayoutState] = useState<{
+    sections: SectionId[]
+    available: SectionId[]
+    customised: boolean
+  }>({ sections: ['needs', 'upcoming', 'chats'], available: [], customised: false })
+  const [editing, setEditing] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().rpc('home_layout', {
+        p_academy: getOrg() ?? undefined,
+      })
+      if (!live || !data) return
+      const l = data as unknown as {
+        sections: SectionId[]
+        available: SectionId[]
+        customised: boolean
+      }
+      setLayoutState(l)
+    })()
+    return () => {
+      live = false
+    }
+  }, [editing])
+
+  const layout = layoutState.sections
+
+  // Each section, keyed by the id the database stores. Every one renders
+  // nothing when it has nothing, so a section somebody has turned on but has
+  // no data for costs them no space.
+  const panels: Record<SectionId, React.ReactNode> = {
+    needs: <NeedsYou />,
+    upcoming: (
+          <section className="px-3.5 pb-5 pt-4">
+            <div className="sect">
+              <span className="eyebrow">Upcoming · next 3 weeks</span>
+              <Link href="/calendar" className="text-xs text-ink-3 underline underline-offset-2">
+                All fixtures
+              </Link>
+            </div>
+
+            {events.length === 0 ? (
+              <p className="card p-6 text-center text-sm text-ink-3">
+                Nothing in the next three weeks.
+              </p>
+            ) : (
+              <div className="stack">
+                {events.map((e) => (
+                  <EventCard key={e.id} event={e} isCoach={isCoach} academyId={academy.id} />
+                ))}
+              </div>
+            )}
+          </section>
+    ),
+    calendar: <HomeCalendar />,
+    chats: (
+          <section className="px-3.5 pb-5">
+            <div className="sect">
+              <span className="eyebrow">Channels</span>
+              {unread > 0 ? (
+                <span className="pill">{unread}</span>
+              ) : (
+                <Link href="/chat" className="text-xs text-ink-3 underline underline-offset-2">
+                  All chats
+                </Link>
+              )}
+            </div>
+
+            {channels.length === 0 ? (
+              <p className="card p-6 text-center text-sm text-ink-3">You&apos;re not in any chats yet.</p>
+            ) : (
+              <div className="card overflow-hidden">
+                {channels.slice(0, 5).map((c) => (
+                  <Link key={c.channel_id} href={`/chat/${c.channel_id}`} className="chan">
+                    <span className={`av ${c.unread_count > 0 ? '' : 'alt'}`}>
+                      {initials(c.name)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold">{c.name}</span>
+                        {c.muted && <span className="badge">muted</span>}
+                      </span>
+                      <span className="block truncate text-xs text-ink-2">
+                        {c.last_message_body
+                          ? `${c.last_sender_name ? `${c.last_sender_name.split(' ')[0]}: ` : ''}${c.last_message_body}`
+                          : 'No messages yet'}
+                      </span>
+                    </span>
+                    {c.unread_count > 0 && <span className="pill flex-none">{c.unread_count}</span>}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+    ),
+    competitions: <HomeCompetitions />,
+    owing: <HomeOwing />,
+  }
+
   return (
     <div
       className="mx-auto flex w-full max-w-md flex-1 flex-col"
@@ -153,6 +263,18 @@ function HomeScreen({
         title={academy.name}
         meta={`${role[0].toUpperCase()}${role.slice(1)} · ${todayLabel()}`}
         crest={academy.name.slice(0, 2).toUpperCase()}
+        action={
+          layoutState.available.length > 0 && (
+            <button
+              onClick={() => setEditing(true)}
+              className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-base"
+              style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+              aria-label="Choose what you see on this screen"
+            >
+              ☰
+            </button>
+          )
+        }
       />
 
       <Screen>
@@ -175,67 +297,36 @@ function HomeScreen({
         telling a coach the same number is one too many, and the strip
         covers registrations, registers, fees and consents as well.
       */}
-      <NeedsYou />
 
-      <section className="px-3.5 pb-5 pt-4">
-        <div className="sect">
-          <span className="eyebrow">Upcoming · next 3 weeks</span>
-          <Link href="/calendar" className="text-xs text-ink-3 underline underline-offset-2">
-            All fixtures
-          </Link>
-        </div>
+      {/*
+        The home screen is now ARRANGED BY THE PERSON LOOKING AT IT.
 
-        {events.length === 0 ? (
-          <p className="card p-6 text-center text-sm text-ink-3">
-            Nothing in the next three weeks.
-          </p>
-        ) : (
-          <div className="stack">
-            {events.map((e) => (
-              <EventCard key={e.id} event={e} isCoach={isCoach} academyId={academy.id} />
-            ))}
-          </div>
-        )}
-      </section>
+        It was two things on principle, and that principle was right while
+        the product had two things worth showing. It now has competitions
+        with live ladders, a month of fixtures, what the club is owed and the
+        Needs You strip — and a coach and a parent want different ones of
+        those at the top. The defaults still come from the database by role
+        (0106), so somebody who never opens the editor never notices it
+        exists.
 
-      <section className="px-3.5 pb-5">
-        <div className="sect">
-          <span className="eyebrow">Channels</span>
-          {unread > 0 ? (
-            <span className="pill">{unread}</span>
-          ) : (
-            <Link href="/chat" className="text-xs text-ink-3 underline underline-offset-2">
-              All chats
-            </Link>
-          )}
-        </div>
+        Rendered in the saved order rather than a fixed one. Each section is
+        responsible for showing nothing when it has nothing, so an empty one
+        costs a person no space.
+      */}
+      {layout.map((id) => (
+        <Fragment key={id}>{panels[id]}</Fragment>
+      ))}
 
-        {channels.length === 0 ? (
-          <p className="card p-6 text-center text-sm text-ink-3">You&apos;re not in any chats yet.</p>
-        ) : (
-          <div className="card overflow-hidden">
-            {channels.slice(0, 5).map((c) => (
-              <Link key={c.channel_id} href={`/chat/${c.channel_id}`} className="chan">
-                <span className={`av ${c.unread_count > 0 ? '' : 'alt'}`}>
-                  {initials(c.name)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-semibold">{c.name}</span>
-                    {c.muted && <span className="badge">muted</span>}
-                  </span>
-                  <span className="block truncate text-xs text-ink-2">
-                    {c.last_message_body
-                      ? `${c.last_sender_name ? `${c.last_sender_name.split(' ')[0]}: ` : ''}${c.last_message_body}`
-                      : 'No messages yet'}
-                  </span>
-                </span>
-                {c.unread_count > 0 && <span className="pill flex-none">{c.unread_count}</span>}
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+      {editing && (
+        <EditHome
+          sections={layout}
+          available={layoutState.available}
+          customised={layoutState.customised}
+          onClose={() => setEditing(false)}
+          onSaved={() => setEditing(false)}
+        />
+      )}
+
 
       {/*
         Nothing else belongs here.

@@ -3061,6 +3061,7 @@ export type Database = {
           compact_lists: boolean
           created_at: string
           home_order: string
+          home_sections: Json | null
           notify_announcements: boolean
           notify_messages: boolean
           notify_reminder_24h: boolean
@@ -3078,6 +3079,7 @@ export type Database = {
           compact_lists?: boolean
           created_at?: string
           home_order?: string
+          home_sections?: Json | null
           notify_announcements?: boolean
           notify_messages?: boolean
           notify_reminder_24h?: boolean
@@ -3095,6 +3097,7 @@ export type Database = {
           compact_lists?: boolean
           created_at?: string
           home_order?: string
+          home_sections?: Json | null
           notify_announcements?: boolean
           notify_messages?: boolean
           notify_reminder_24h?: boolean
@@ -3508,6 +3511,7 @@ export type Database = {
           profile_id: string
         }[]
       }
+      home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
       import_players: {
         Args: {
@@ -3544,6 +3548,14 @@ export type Database = {
         }[]
       }
       mirror_fixture: { Args: { p_fixture: string }; Returns: undefined }
+      month_dots: {
+        Args: { p_academy?: string; p_month?: string }
+        Returns: {
+          events: number
+          has_match: boolean
+          on_date: string
+        }[]
+      }
       my_calendar_token: { Args: { p_rotate?: boolean }; Returns: string }
       my_channels: {
         Args: { p_academy: string }
@@ -3819,6 +3831,7 @@ export type Database = {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
         Returns: Json
       }
+      set_home_sections: { Args: { p_sections: Json }; Returns: Json }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
