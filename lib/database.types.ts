@@ -26,6 +26,7 @@ export type Database = {
           plan: string
           primary_colour: string
           public_player_names: Database["public"]["Enums"]["public_names_mode"]
+          sibling_discount_bps: number[]
           slug: string
           timezone: string
           type: Database["public"]["Enums"]["org_type"]
@@ -42,6 +43,7 @@ export type Database = {
           plan?: string
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          sibling_discount_bps?: number[]
           slug: string
           timezone?: string
           type?: Database["public"]["Enums"]["org_type"]
@@ -58,6 +60,7 @@ export type Database = {
           plan?: string
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          sibling_discount_bps?: number[]
           slug?: string
           timezone?: string
           type?: Database["public"]["Enums"]["org_type"]
@@ -2074,6 +2077,8 @@ export type Database = {
           description: string | null
           due_on: string | null
           id: string
+          instalment_every_days: number
+          instalments: number
           per_player: boolean
           team_id: string | null
           title: string
@@ -2091,6 +2096,8 @@ export type Database = {
           description?: string | null
           due_on?: string | null
           id?: string
+          instalment_every_days?: number
+          instalments?: number
           per_player?: boolean
           team_id?: string | null
           title: string
@@ -2108,6 +2115,8 @@ export type Database = {
           description?: string | null
           due_on?: string | null
           id?: string
+          instalment_every_days?: number
+          instalments?: number
           per_player?: boolean
           team_id?: string | null
           title?: string
@@ -2151,6 +2160,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          instalment_seq: number
           paid_at: string | null
           player_id: string | null
           profile_id: string
@@ -2167,6 +2177,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          instalment_seq?: number
           paid_at?: string | null
           player_id?: string | null
           profile_id: string
@@ -2183,6 +2194,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          instalment_seq?: number
           paid_at?: string | null
           player_id?: string | null
           profile_id?: string
@@ -3655,6 +3667,22 @@ export type Database = {
           version: number
         }[]
       }
+      outstanding_fees: {
+        Args: { p_academy: string }
+        Returns: {
+          days_overdue: number
+          guardian_name: string
+          guardian_phone: string
+          net_cents: number
+          next_due: string
+          outstanding_cents: number
+          paid_cents: number
+          player_id: string
+          player_name: string
+          request_id: string
+          title: string
+        }[]
+      }
       payment_register: {
         Args: { p_request: string }
         Returns: {
@@ -3745,6 +3773,10 @@ export type Database = {
       }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       purge_expired_message_archive: { Args: never; Returns: number }
+      quote_payment: {
+        Args: { p_player?: string; p_request: string }
+        Returns: Json
+      }
       reaction_counts: {
         Args: { p_message_ids: string[] }
         Returns: {

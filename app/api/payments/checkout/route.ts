@@ -76,17 +76,42 @@ export async function POST(request: Request) {
     )
   }
 
-  // Already settled? Say so rather than taking the money twice.
-  // `.is(null)` and `.eq(id)` are different filters, so this branches rather
-  // than trying to write one query that means both.
-  const settled = admin.from('payments').select('id, status').eq('request_id', requestId)
-  const { data: already } = await (
-    playerId ? settled.eq('player_id', playerId) : settled.is('player_id', null)
-  ).maybeSingle()
+  // THE PRICE COMES FROM THE DATABASE, through the one function that knows
+  // how to work it out.
+  //
+  // 0102 added sibling discounts and instalments, so `amount_cents` is no
+  // longer the price — it is the input to one. Asked through the CALLER's
+  // session rather than the service role, because quote_payment checks that
+  // this person is a guardian of this child, and under the service role
+  // auth.uid() is null and that check cannot mean anything.
+  //
+  // A discount the parent's screen shows and this route ignores would charge
+  // a family the wrong amount, which is worse than having no discount at
+  // all — so both ask the same function.
+  const { data: quote, error: quoteError } = await supabase.rpc('quote_payment', {
+    p_request: requestId,
+    p_player: playerId ?? undefined,
+  })
 
-  if (already?.status === 'paid') {
+  if (quoteError || !quote) {
+    return NextResponse.json({ error: 'Could not work out what is owed.' }, { status: 500 })
+  }
+
+  const schedule = (quote as { schedule: { seq: number; amount_cents: number; status: string }[] })
+    .schedule
+  // The next part that has not been paid. One instalment per checkout: a
+  // parent paying a term fee in four presses this four times over four
+  // months, and each press must charge one part rather than the lot.
+  const next = schedule.find((s) => s.status !== 'paid')
+
+  if (!next) {
     return NextResponse.json({ error: 'This is already paid.' }, { status: 409 })
   }
+
+  const amountCents = next.amount_cents
+  const instalmentSeq = next.seq
+  const partLabel =
+    schedule.length > 1 ? ` — part ${instalmentSeq} of ${schedule.length}` : ''
 
   // No application fee, and no code path that could add one. Squadroom
   // charges clubs a plan; it takes nothing from a parent's payment. The
@@ -101,9 +126,9 @@ export async function POST(request: Request) {
           quantity: 1,
           price_data: {
             currency: req.currency,
-            unit_amount: req.amount_cents,
+            unit_amount: amountCents,
             product_data: {
-              name: req.title,
+              name: `${req.title}${partLabel}`,
               description: req.description ?? undefined,
             },
           },
@@ -118,6 +143,7 @@ export async function POST(request: Request) {
         request_id: requestId,
         player_id: playerId ?? '',
         profile_id: auth.user.id,
+        instalment_seq: String(instalmentSeq),
       },
     },
     { stripeAccount: billing.stripe_account_id }
@@ -132,11 +158,12 @@ export async function POST(request: Request) {
       profile_id: auth.user.id,
       player_id: playerId ?? null,
       stripe_session_id: session.id,
-      amount_cents: req.amount_cents,
+      amount_cents: amountCents,
       currency: req.currency,
       status: 'pending',
+      instalment_seq: instalmentSeq,
     },
-    { onConflict: 'request_id,player_id' }
+    { onConflict: 'request_id,player_id,instalment_seq' }
   )
 
   return NextResponse.json({ url: session.url })
