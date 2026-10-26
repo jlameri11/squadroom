@@ -15,6 +15,7 @@
 // to it. DEV ONLY: this is demo data on squadroom-dev, and the password is
 // deliberately obvious. Never run it anywhere with real families in it.
 import { createClient } from '@supabase/supabase-js'
+import { PROJECT_REF, PROJECT_NAME } from './_project.mjs'
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -25,8 +26,12 @@ const admin = createClient(
 const PASSWORD = process.env.DEMO_PASSWORD ?? 'squadroom-demo'
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('rnykncrdcywmetuvslvw')) {
-  console.error('\n  Refusing to run: this is not squadroom-dev.\n')
+// The ref comes from _project.mjs, which is the only place in scripts/ that
+// names a project. test-project-guard.mjs scans the whole directory for a
+// second copy and failed this file, correctly — a guard that can be bypassed
+// by retyping a constant is a guard that will be.
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(PROJECT_REF)) {
+  console.error(`\n  Refusing to run: this is not ${PROJECT_NAME}.\n`)
   process.exit(1)
 }
 
