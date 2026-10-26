@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { NewSessions } from './new-sessions'
+import { CallOffDay } from './call-off-day'
 import { createClient } from '@/lib/supabase/client'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
@@ -19,6 +20,7 @@ export function FixturesScreen() {
   const org = useOrg()
   const { data, failed } = useScreen<Data>('fixtures_screen', { p_days: 60, p_academy: org })
   const [adding, setAdding] = useState(false)
+  const [callingOff, setCallingOff] = useState(false)
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
 
   // Only fetched once a coach opens the sheet — a parent never needs the team
@@ -80,10 +82,26 @@ export function FixturesScreen() {
             >
               Add games from a screenshot
             </a>
+            {/* Wet weather does not arrive one fixture at a time. */}
+            <button
+              onClick={() => setCallingOff(true)}
+              className="text-sm underline underline-offset-4"
+              style={{ color: 'var(--no)' }}
+            >
+              Call off a day
+            </button>
           </div>
         )}
         <CalendarList academyId={data.academy.id} events={data.events ?? []} />
       </Screen>
+
+      {callingOff && data.academy && (
+        <CallOffDay
+          academyId={data.academy.id}
+          onClose={() => setCallingOff(false)}
+          onDone={() => window.location.reload()}
+        />
+      )}
 
       {adding && data.academy && (
         <NewSessions

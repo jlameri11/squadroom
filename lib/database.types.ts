@@ -3210,6 +3210,17 @@ export type Database = {
           venue: string
         }[]
       }
+      call_off_day: {
+        Args: {
+          p_academy: string
+          p_date: string
+          p_note?: string
+          p_reason?: string
+          p_team?: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
       cast_poll_vote: {
         Args: {
           p_note?: string
@@ -3804,6 +3815,19 @@ export type Database = {
       to_e164: {
         Args: { p_default_country?: string; p_raw: string }
         Returns: string
+      }
+      whats_on: {
+        Args: { p_academy: string; p_date: string }
+        Returns: {
+          cancelled: boolean
+          event_id: string
+          started: boolean
+          starts_at: string
+          team_name: string
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          venue: string
+        }[]
       }
       zone_time: { Args: { p_zone: string }; Returns: string }
     }
