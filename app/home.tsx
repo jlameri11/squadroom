@@ -7,6 +7,7 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { SignOut } from '@/components/sign-out'
+import { NeedsYou } from './needs-you'
 import { createClient } from '@/lib/supabase/client'
 
 export type HomeEvent = {
@@ -92,7 +93,6 @@ export function Home() {
       isPlatformAdmin={data.is_platform_admin}
       needsPhone={!data.profile?.phone}
       me={data.profile?.full_name ?? null}
-      pendingRequests={data.pending_requests ?? 0}
       events={data.events ?? []}
       channels={data.channels ?? []}
     />
@@ -126,7 +126,6 @@ function HomeScreen({
   isPlatformAdmin,
   needsPhone,
   me,
-  pendingRequests,
   events,
   channels,
 }: {
@@ -137,7 +136,6 @@ function HomeScreen({
   needsPhone: boolean
   /** Whose account this is, for the footer. */
   me: string | null
-  pendingRequests: number
   events: HomeEvent[]
   channels: HomeChannel[]
 }) {
@@ -172,25 +170,12 @@ function HomeScreen({
       )}
 
       {/*
-        A coach with families waiting cannot see anything else until they have
-        dealt with it — nobody joins the app until this is tapped, so a badge
-        buried in a menu would strand people.
+        Everything waiting on this person, in one strip. It replaced a
+        bespoke card that only ever counted join requests — two things
+        telling a coach the same number is one too many, and the strip
+        covers registrations, registers, fees and consents as well.
       */}
-      {isCoach && pendingRequests > 0 && (
-        <Link
-          href="/admin/requests"
-          className="mx-4 mb-4 flex items-center gap-3 rounded-[14px] p-3.5 text-sm text-white"
-          style={{ background: 'var(--accent)', boxShadow: 'var(--shadow)' }}
-        >
-          <span className="display grid h-8 w-8 flex-none place-items-center rounded-full bg-[var(--surface)]/25 text-base">
-            {pendingRequests}
-          </span>
-          <span>
-            <b>{pendingRequests === 1 ? 'A family is' : `${pendingRequests} families are`} waiting</b>
-            <span className="block opacity-90">They can&apos;t see anything until you approve them.</span>
-          </span>
-        </Link>
-      )}
+      <NeedsYou />
 
       <section className="px-3.5 pb-5 pt-4">
         <div className="sect">

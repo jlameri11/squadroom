@@ -3647,6 +3647,7 @@ export type Database = {
         }[]
       }
       nav_badges: { Args: { p_academy?: string }; Returns: Json }
+      needs_you: { Args: { p_academy?: string }; Returns: Json }
       next_squad_number: {
         Args: { p_academy: string; p_preferred?: number; p_season: string }
         Returns: number
