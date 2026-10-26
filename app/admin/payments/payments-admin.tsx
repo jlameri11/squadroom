@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Outstanding } from './outstanding'
 import { createClient } from '@/lib/supabase/client'
 
 export type BillingStatus = {
@@ -123,6 +124,11 @@ export function PaymentsAdmin({
 
         {error && <p className="mt-3 text-sm ">{error}</p>}
       </section>
+
+      {/* Before "what you're collecting", because an owner opening this
+          screen is more often asking who has NOT paid than what the fees
+          are. */}
+      <Outstanding academyId={academyId} />
 
       <NewRequest academyId={academyId} teams={teams} disabled={!ready} />
 
