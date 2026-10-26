@@ -106,10 +106,11 @@ export function DirectoryScreen() {
           state.isStaff && (
             <button
               onClick={() => setAdding(true)}
-              className="flex-none rounded-[10px] px-3 py-1.5 text-sm font-semibold"
+              className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
               style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+              aria-label="Add someone"
             >
-              Add
+              ＋
             </button>
           )
         }
