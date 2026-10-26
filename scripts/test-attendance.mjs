@@ -64,8 +64,28 @@ async function clean() {
     .like('title', `${TAG}%`)
   for (const e of evs ?? []) await admin.from('event_attendance').delete().eq('event_id', e.id)
   await admin.from('events').delete().eq('academy_id', NRIFA).like('title', `${TAG}%`)
+
+  const { data: mine } = await admin
+    .from('players')
+    .select('id')
+    .eq('academy_id', NRIFA)
+    .like('full_name', `${TAG}%`)
+  for (const p of mine ?? []) await admin.from('event_attendance').delete().eq('player_id', p.id)
+  await admin.from('players').delete().eq('academy_id', NRIFA).like('full_name', `${TAG}%`)
+  await admin.from('teams').delete().eq('academy_id', NRIFA).like('name', `${TAG}%`)
 }
 await clean()
+
+// A squad of its own, so nothing else in the academy is in the window.
+const { data: team, error: teamError } = await admin
+  .from('teams')
+  .insert({ academy_id: NRIFA, name: `${TAG} Squad`, age_group: 'U10', season: 'TESTATT' })
+  .select('id')
+  .single()
+if (teamError) {
+  bad(`could not create a test team: ${teamError.message}`)
+  process.exit(1)
+}
 
 // Three sessions in the past: two that happened, one called off.
 const day = 864e5
@@ -74,7 +94,7 @@ async function makeSession(title, daysAgo, cancelled = false) {
     .from('events')
     .insert({
       academy_id: NRIFA,
-      team_id: U8,
+      team_id: team.id,
       type: 'training',
       title: `${TAG} ${title}`,
       starts_at: new Date(Date.now() - daysAgo * day).toISOString(),
@@ -93,14 +113,26 @@ const first = await makeSession('Tuesday', 7)
 const second = await makeSession('Thursday', 5)
 const washout = await makeSession('Washout', 3, true)
 
+// Its OWN squad, not the U8s.
+//
+// The first version marked real U8 players, and then seed-attendance.mjs
+// filled in 483 marks across the academy's 49 past sessions — so "the two I
+// took the register for are marked" became sixteen, and a child's rate
+// stopped being the one this test had set. A test that depends on the academy
+// having no attendance is a test that breaks the moment the demo has any.
 const { data: squad } = await admin
   .from('players')
+  .insert(
+    ['Ana', 'Bo', 'Cai', 'Dee'].map((n) => ({
+      academy_id: NRIFA,
+      team_id: team.id,
+      full_name: `${TAG} ${n}`,
+      dob: '2016-06-01',
+    }))
+  )
   .select('id, full_name')
-  .eq('academy_id', NRIFA)
-  .eq('team_id', U8)
-  .order('full_name')
-if ((squad ?? []).length < 4) {
-  bad(`only ${squad?.length} players in the U8s — need at least 4`)
+if (!squad || squad.length < 4) {
+  bad('could not create a test squad')
   process.exit(1)
 }
 
@@ -168,7 +200,7 @@ head('4. A coach cannot mark a child from another squad')
     .from('players')
     .select('id')
     .eq('academy_id', NRIFA)
-    .neq('team_id', U8)
+    .neq('team_id', team.id)
     .not('team_id', 'is', null)
     .limit(1)
     .maybeSingle()
@@ -221,7 +253,7 @@ head('6. A called-off session is not an absence')
   const { data, error } = await coach.client.rpc('attendance_summary', {
     p_academy: NRIFA,
     p_from: new Date(Date.now() - 30 * day).toISOString().slice(0, 10),
-    p_team: U8,
+    p_team: team.id,
   })
   if (error) {
     bad(error.message)
@@ -247,7 +279,7 @@ head('6. A called-off session is not an absence')
       const { data: withWashout } = await coach.client.rpc('attendance_summary', {
         p_academy: NRIFA,
         p_from: new Date(Date.now() - 30 * day).toISOString().slice(0, 10),
-        p_team: U8,
+        p_team: team.id,
       })
       const afterRow = (withWashout ?? []).find((r) => r.player_id === squad[1].id)
       await admin
