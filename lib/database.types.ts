@@ -894,6 +894,71 @@ export type Database = {
           },
         ]
       }
+      event_attendance: {
+        Row: {
+          academy_id: string
+          event_id: string
+          id: string
+          marked_at: string
+          marked_by: string | null
+          note: string | null
+          player_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          event_id: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+          player_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          event_id?: string
+          id?: string
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+          player_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendance_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_event_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_attendance_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       event_rsvps: {
         Row: {
           academy_id: string
@@ -3103,6 +3168,20 @@ export type Database = {
         Returns: undefined
       }
       applied_migration: { Args: { p_name: string }; Returns: string }
+      attendance_summary: {
+        Args: { p_academy: string; p_from?: string; p_team?: string }
+        Returns: {
+          absent: number
+          excused: number
+          late: number
+          player_id: string
+          player_name: string
+          present: number
+          rate: number
+          sessions: number
+          unmarked: number
+        }[]
+      }
       broadcast_to_competition: {
         Args: { p_body: string; p_competition: string; p_urgent?: boolean }
         Returns: number
@@ -3344,6 +3423,17 @@ export type Database = {
           p_type: Database["public"]["Enums"]["channel_type"]
         }
         Returns: string
+      }
+      event_register: {
+        Args: { p_event: string }
+        Returns: {
+          note: string
+          player_id: string
+          player_name: string
+          rsvp: string
+          squad_number: number
+          status: Database["public"]["Enums"]["attendance_status"]
+        }[]
       }
       event_rsvp_summary: {
         Args: { p_event: string }
@@ -3673,7 +3763,7 @@ export type Database = {
         }[]
       }
       search_chat: {
-        Args: { p_limit?: number; p_query: string }
+        Args: { p_academy?: string; p_limit?: number; p_query: string }
         Returns: Json
       }
       set_my_profile: {
@@ -3690,6 +3780,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      take_register: {
+        Args: { p_event: string; p_marks: Json }
+        Returns: number
+      }
       team_coach_alerts: {
         Args: { p_team: string }
         Returns: {
@@ -3706,6 +3800,7 @@ export type Database = {
     }
     Enums: {
       academy_role: "owner" | "admin" | "coach" | "parent" | "player"
+      attendance_status: "present" | "absent" | "late" | "excused"
       channel_member_role: "host" | "co_host" | "member"
       channel_status: "active" | "archived"
       channel_type:
@@ -3896,6 +3991,7 @@ export const Constants = {
   public: {
     Enums: {
       academy_role: ["owner", "admin", "coach", "parent", "player"],
+      attendance_status: ["present", "absent", "late", "excused"],
       channel_member_role: ["host", "co_host", "member"],
       channel_status: ["active", "archived"],
       channel_type: [

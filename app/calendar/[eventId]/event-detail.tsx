@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Register } from './register'
 import { createClient } from '@/lib/supabase/client'
 
 type Mine = { playerId: string | null; playerName: string | null; status: string | null; note: string | null }
@@ -141,6 +142,13 @@ export function EventDetail({
             ))}
           </div>
         </section>
+      )}
+
+      {/* Before the tally, because once a session has started the register is
+          what a coach came here to do — the RSVP summary is what they looked
+          at beforehand. */}
+      {isCoach && (
+        <Register eventId={event.id} started={new Date(event.starts_at) <= new Date()} />
       )}
 
       {isCoach && summary && (
