@@ -417,22 +417,30 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
   const [fields, setFields] = useState('Field 1, Field 2, Field 3, Field 4')
   const [gameMins, setGameMins] = useState('20')
   const [gapMins, setGapMins] = useState('5')
+  // One day, or a round a week. 0081 added the second shape and nothing
+  // exposed it, so a league season could only be built by a script.
+  const [shape, setShape] = useState<'day' | 'weekly'>('day')
+  const [madeCount, setMadeCount] = useState<number | null>(null)
 
   async function build() {
     if (!date) return setError('Pick a start time.')
     setBusy(true)
     setError(null)
     const supabase = createClient()
-    const { error } = await supabase.rpc('generate_fixtures', {
+    const { data, error } = await supabase.rpc('generate_fixtures', {
       p_competition: competitionId,
       p_division: division,
       p_start_at: new Date(date).toISOString(),
       p_game_mins: Number(gameMins),
       p_gap_mins: Number(gapMins),
       p_fields: fields.split(',').map((f) => f.trim()).filter(Boolean),
+      // 7 puts each round a week after the last; 0 packs everything into one
+      // block of play, which is what a gala day is.
+      p_round_every_days: shape === 'weekly' ? 7 : 0,
     })
     setBusy(false)
     if (error) return setError(error.message)
+    setMadeCount(typeof data === 'number' ? data : null)
     router.refresh()
   }
 
@@ -440,19 +448,53 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
     <div className="mt-4 rounded-xl border border-[var(--line)] p-4">
       <h3 className="font-semibold">Build the draw</h3>
       <p className="mt-0.5 text-sm text-ink-2">
-        Every team plays every other in its group. Nobody is scheduled twice at once.
+        Every team plays every other in its group. Nobody is scheduled twice at once, and no field
+        is double-booked — including by another division you drew earlier.
       </p>
 
+      {/* The two shapes a competition comes in. A gala day and a season are
+          the same round robin laid out differently, and the generator could
+          only ever do the first. */}
+      <div className="mt-3 flex gap-2">
+        {([
+          { value: 'day' as const, label: 'One day', hint: 'Gala day, cup, trials' },
+          { value: 'weekly' as const, label: 'A round a week', hint: 'League season' },
+        ]).map((o) => (
+          <button
+            key={o.value}
+            onClick={() => setShape(o.value)}
+            aria-pressed={shape === o.value}
+            className="min-w-0 flex-1 rounded-xl border p-2.5 text-left"
+            style={{
+              borderColor: shape === o.value ? 'var(--brand)' : 'var(--line)',
+              background: shape === o.value ? 'var(--surface-2)' : 'var(--surface)',
+            }}
+          >
+            <span className="block text-sm font-medium">{o.label}</span>
+            <span className="block text-xs text-ink-3">{o.hint}</span>
+          </button>
+        ))}
+      </div>
+
       <label className="mt-3 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">First kick-off</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+          {shape === 'weekly' ? 'First round kicks off' : 'First kick-off'}
+        </span>
         <input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)}
                className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5" />
       </label>
 
       <label className="mt-3 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Fields</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+          {shape === 'weekly' ? 'Grounds in use each week' : 'Fields'}
+        </span>
         <input value={fields} onChange={(e) => setFields(e.target.value)}
                className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm" />
+        <span className="mt-1 block text-xs text-ink-3">
+          {shape === 'weekly'
+            ? 'Each round is laid out across these, a week after the last.'
+            : 'Games fill these in parallel, back to back.'}
+        </span>
       </label>
 
       <div className="mt-3 flex gap-3">
@@ -468,12 +510,24 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
         </label>
       </div>
 
-      {error && <p className="mt-2 text-sm ">{error}</p>}
+      {error && (
+        <p className="mt-2 rounded-lg p-2.5 text-sm"
+           style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>
+          {error}
+        </p>
+      )}
+
+      {madeCount !== null && !error && (
+        <p className="mt-2 rounded-lg p-2.5 text-sm"
+           style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}>
+          {madeCount} {madeCount === 1 ? 'game' : 'games'} drawn.
+        </p>
+      )}
 
       <button onClick={build} disabled={busy}
               className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
               style={{ background: 'var(--brand)' }}>
-        {busy ? 'Building…' : 'Build the draw'}
+        {busy ? 'Building…' : shape === 'weekly' ? 'Build the season' : 'Build the draw'}
       </button>
     </div>
   )
