@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useScreen } from '@/lib/hooks/use-screen'
+import { useOrg } from '@/lib/org'
+import { ScreenSkeleton } from '@/components/screen-skeleton'
 import {
   FIELDS,
   suggestMapping,
@@ -35,11 +38,57 @@ type Prepared = {
   problem: string | null
   /** Both sides are this club's — imported once, named with both teams. */
   derby: boolean
+  /** The squad this row belongs to, matched on what the league calls it. */
+  team_id: string | null
+  team_name: string | null
 }
 
 const NAVY = 'var(--brand)'
 
-export function ImportClient({
+type Team = {
+  id: string
+  name: string
+  /** What the league calls this squad, so a row can be routed to it. */
+  external_ref: string | null
+  skip_import: boolean
+}
+
+type Screen = {
+  academy: { id: string; name: string; timezone: string } | null
+  teams: Team[]
+}
+
+export function ImportClient() {
+  const org = useOrg()
+  const { data, failed } = useScreen<Screen>('import_screen', { p_academy: org })
+
+  if (failed) {
+    return (
+      <main className="mx-auto grid min-h-dvh w-full max-w-md place-items-center p-6">
+        <p className="text-center text-sm text-ink-2">Couldn&apos;t load.</p>
+      </main>
+    )
+  }
+  if (!data) return <ScreenSkeleton />
+  if (!data.academy) {
+    return (
+      <main className="mx-auto max-w-md p-6">
+        <p className="text-center text-sm text-ink-2">Only a coach can import a draw.</p>
+      </main>
+    )
+  }
+
+  return (
+    <Importer
+      academyId={data.academy.id}
+      academyName={data.academy.name}
+      timezone={data.academy.timezone}
+      teams={data.teams ?? []}
+    />
+  )
+}
+
+function Importer({
   academyId,
   academyName,
   timezone,
@@ -48,7 +97,7 @@ export function ImportClient({
   academyId: string
   academyName: string
   timezone: string
-  teams: { id: string; name: string }[]
+  teams: Team[]
 }) {
   const [headers, setHeaders] = useState<string[]>([])
   const [rows, setRows] = useState<Row[]>([])
@@ -103,6 +152,18 @@ export function ImportClient({
     }
   }
 
+  // What the league calls each of our squads, matched loosely — a trailing
+  // space from a league secretary must not break routing, while the stored
+  // value stays exactly as the club typed it. Mirrors
+  // app_private.team_for_external_ref so the screen and the database route a
+  // row the same way.
+  const byLeagueName = useMemo(() => {
+    const key = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase()
+    const m = new Map<string, Team>()
+    for (const t of teams) if (t.external_ref) m.set(key(t.external_ref), t)
+    return m
+  }, [teams])
+
   const prepared: Prepared[] = useMemo(() => {
     const cell = (row: Row, key: FieldKey) => {
       const column = mapping[key]
@@ -120,13 +181,35 @@ export function ImportClient({
       // Which side is the opposition depends on which club is ours, so it is
       // worked out rather than mapped — the old guess of "Away Team" would
       // have imported a game against ourselves.
-      const sides = resolveSides(
-        ourClub,
-        text(row, 'home_club'),
-        text(row, 'away_club'),
-        text(row, 'home_team'),
-        text(row, 'away_team')
-      )
+      const homeTeam = text(row, 'home_team')
+      const awayTeam = text(row, 'away_team')
+      const key = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase()
+
+      // A squad that has recorded its league name answers the question the
+      // file otherwise cannot: a row whose home team is one of ours was
+      // played at home. Once the names are in, nobody is asked anything.
+      const mineHome = byLeagueName.get(key(homeTeam))
+      const mineAway = byLeagueName.get(key(awayTeam))
+
+      const sides =
+        mineHome || mineAway
+          ? {
+              opponent: mineHome ? awayTeam || null : homeTeam || null,
+              wasHome: Boolean(mineHome),
+              // Both ours by league name. Routed to the home side, because
+              // that is the squad the fixture is listed under.
+              derby: Boolean(mineHome && mineAway),
+              foreign: false,
+            }
+          : resolveSides(
+              ourClub,
+              text(row, 'home_club'),
+              text(row, 'away_club'),
+              homeTeam,
+              awayTeam
+            )
+
+      const team = mineHome ?? mineAway ?? null
       const opponent = text(row, 'opponent') || sides.opponent || ''
 
       // Ground and field are separate columns, and the field number is the
@@ -141,6 +224,7 @@ export function ImportClient({
       else if (!local_date) problem = 'Could not read the date'
       else if (!local_time) problem = 'Could not read the time'
       else if (sides.foreign) problem = 'Neither team is yours'
+      else if (team?.skip_import) problem = `${team.name} is set to be left out of imports`
 
       const bothTeams = [text(row, 'home_team'), text(row, 'away_team')].filter(Boolean)
 
@@ -166,9 +250,11 @@ export function ImportClient({
         was_home: sides.wasHome,
         problem,
         derby: sides.derby,
+        team_id: team?.id ?? null,
+        team_name: team?.name ?? null,
       }
     })
-  }, [rows, mapping, ourClub])
+  }, [rows, mapping, ourClub, byLeagueName])
 
   const good = prepared.filter((p) => !p.problem)
   const bad = prepared.filter((p) => p.problem)
@@ -198,7 +284,11 @@ export function ImportClient({
   // Only when the file actually has home/away clubs AND names more than one.
   // A single-club file needs no question, and a file with no club columns is
   // one where the opponent is mapped directly.
-  const needsClub = clubsInFile.length > 1 && !ourClub
+  // Not asked when the file routes itself. Every row that matched a squad by
+  // its league name already knows which side was ours, so the question would
+  // be asked and then ignored.
+  const routed = prepared.filter((p) => p.team_id).length
+  const needsClub = clubsInFile.length > 1 && !ourClub && routed < rows.length
 
   const ready =
     good.length > 0 &&
@@ -224,6 +314,9 @@ export function ImportClient({
       round: p.round,
       external_ref: p.external_ref,
       was_home: p.was_home,
+      // Per row, so one export of the whole club lands in the right squads.
+      // Null falls back to the squad chosen for the file.
+      team_id: p.team_id,
     }))
   }
 

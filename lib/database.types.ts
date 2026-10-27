@@ -3222,36 +3222,51 @@ export type Database = {
         Row: {
           academy_id: string
           age_group: string
+          capacity: number | null
           created_at: string
           created_by: string | null
           ended_at: string | null
+          external_ref: string | null
           id: string
+          kit_away: string | null
+          kit_home: string | null
           name: string
           season: string
+          skip_import: boolean
           status: Database["public"]["Enums"]["team_status"]
           updated_at: string
         }
         Insert: {
           academy_id: string
           age_group: string
+          capacity?: number | null
           created_at?: string
           created_by?: string | null
           ended_at?: string | null
+          external_ref?: string | null
           id?: string
+          kit_away?: string | null
+          kit_home?: string | null
           name: string
           season?: string
+          skip_import?: boolean
           status?: Database["public"]["Enums"]["team_status"]
           updated_at?: string
         }
         Update: {
           academy_id?: string
           age_group?: string
+          capacity?: number | null
           created_at?: string
           created_by?: string | null
           ended_at?: string | null
+          external_ref?: string | null
           id?: string
+          kit_away?: string | null
+          kit_home?: string | null
           name?: string
           season?: string
+          skip_import?: boolean
           status?: Database["public"]["Enums"]["team_status"]
           updated_at?: string
         }
@@ -3776,6 +3791,7 @@ export type Database = {
         }
         Returns: Json
       }
+      import_screen: { Args: { p_academy?: string }; Returns: Json }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       member_contact: {

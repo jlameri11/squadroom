@@ -8,6 +8,7 @@ import { AddPlayers } from './add-players'
 import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
 import { SeasonControl } from './season-control'
+import { LeagueName } from './league-name'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -24,7 +25,7 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
 
   const { data: team } = await supabase
     .from('teams')
-    .select('id, academy_id, name, age_group, season, status')
+    .select('id, academy_id, name, age_group, season, status, external_ref, skip_import')
     .eq('id', teamId)
     .maybeSingle()
 
@@ -118,6 +119,13 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
           ))}
         </div>
       </section>
+
+      <LeagueName
+        teamId={team.id}
+        name={team.name}
+        externalRef={team.external_ref}
+        skipImport={team.skip_import}
+      />
 
       <SeasonControl teamId={team.id} status={team.status} />
       </div>

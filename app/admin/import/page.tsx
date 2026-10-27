@@ -1,32 +1,14 @@
-import { redirect } from 'next/navigation'
-import { createClient, getUserId } from '@/lib/supabase/server'
 import { ImportClient } from './import-client'
 
-export default async function ImportPage() {
-  const supabase = await createClient()
-  const userId = await getUserId()
-  if (!userId) redirect('/signin')
-
-  const { data: academies } = await supabase
-    .from('academies')
-    .select('id, name, timezone')
-    .order('name')
-  const academy = academies?.[0]
-  if (!academy) redirect('/start')
-
-  const { data: teams } = await supabase
-    .from('teams')
-    .select('id, name')
-    .eq('academy_id', academy.id)
-    .eq('status', 'active')
-    .order('name')
-
-  return (
-    <ImportClient
-      academyId={academy.id}
-      academyName={academy.name}
-      timezone={academy.timezone}
-      teams={teams ?? []}
-    />
-  )
+/**
+ * A static shell; the browser fetches.
+ *
+ * This page used to resolve the academy server-side as `academies[0]` ordered
+ * by name, which ignored the organisation switcher completely — a coach at two
+ * clubs would import a draw into whichever came first alphabetically. The same
+ * defect 0105 fixed for the home screen, unnoticed here because nothing linked
+ * the two. The choice lives in the browser (see 0080), so the page has to ask.
+ */
+export default function ImportPage() {
+  return <ImportClient />
 }

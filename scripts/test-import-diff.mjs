@@ -107,6 +107,15 @@ const preview = async (events, team = U8, who = coach) => {
   if (error) throw new Error(error.message)
   return data
 }
+const commitAs = async (who, events, { team = U8, cancelMissing = false } = {}) => {
+  const { data, error } = await who.client.rpc('create_imported_events', {
+    p_academy: NRIFA,
+    p_team: team,
+    p_events: events,
+    p_cancel_missing: cancelMissing,
+  })
+  return { data: data?.[0], error }
+}
 const commit = async (events, { team = U8, cancelMissing = false } = {}) => {
   const { data, error } = await coach.client.rpc('create_imported_events', {
     p_academy: NRIFA,
@@ -322,6 +331,158 @@ head('9. A parent cannot preview somebody\'s draw')
   }
   refused ? ok('refused') : bad('a parent previewed an import')
 }
+
+// ---------------------------------------------------------------------------
+// 0121: one export of the whole club, routed by what the league calls each
+// squad.
+// ---------------------------------------------------------------------------
+
+const LEAGUE_U8 = `${TAG} NRFA U7  navy` // two spaces, as a real export has
+const LEAGUE_U12 = `${TAG} NRFA U12 navy`
+
+async function setLeagueNames(u8, u12, skipU12 = false) {
+  await admin.from('teams').update({ external_ref: u8, skip_import: false }).eq('id', U8)
+  await admin.from('teams').update({ external_ref: u12, skip_import: skipU12 }).eq('id', U12)
+}
+async function clearLeagueNames() {
+  await admin.from('teams').update({ external_ref: null, skip_import: false }).in('id', [U8, U12])
+}
+await clearLeagueNames()
+
+head('10. A row names its own squad, so one file serves the whole club')
+{
+  await clean()
+  await setLeagueNames(LEAGUE_U8, LEAGUE_U12)
+
+  // p_team is deliberately null: the rows carry their own squads, which is
+  // what a club-wide export looks like.
+  const file = [
+    { ...row('r8', DAY1, '09:00'), team_id: U8 },
+    { ...row('r12', DAY1, '13:00'), team_id: U12 },
+  ]
+
+  const p = await preview(file, null)
+  count(p, 'new') === 2
+    ? ok('2 new across two squads')
+    : bad(`verdicts: ${JSON.stringify(p.rows.map((r) => r.verdict))}`)
+  p.rows.every((r) => r.team)
+    ? ok(`and each says where it is going (${p.rows.map((r) => r.team).join(', ')})`)
+    : bad(`a row does not name its squad: ${JSON.stringify(p.rows)}`)
+
+  const r = await commit(file, { team: null })
+  r.created === 2 ? ok('both created') : bad(`created ${r.created}`)
+
+  const { data: landed } = await admin
+    .from('events')
+    .select('external_ref, team_id')
+    .like('external_ref', `${TAG}%`)
+  const map = new Map(landed.map((e) => [e.external_ref, e.team_id]))
+  map.get(`${TAG}:r8`) === U8 && map.get(`${TAG}:r12`) === U12
+    ? ok('and each landed with the right squad')
+    : bad(`routing: ${JSON.stringify([...map])}`)
+}
+
+head('11. A squad set to be left out is left out')
+{
+  await clean()
+  await setLeagueNames(LEAGUE_U8, LEAGUE_U12, true)
+
+  const file = [
+    { ...row('keep', DAY1, '09:00'), team_id: U8 },
+    { ...row('drop', DAY1, '13:00'), team_id: U12 },
+  ]
+
+  const p = await preview(file, null)
+  const skipped = p.rows.filter((r) => r.verdict === 'skipped')
+  skipped.length === 1 && /left out of imports/.test(skipped[0].reason ?? '')
+    ? ok(`the preview says why ("${skipped[0].reason}")`)
+    : bad(`verdicts: ${JSON.stringify(p.rows)}`)
+
+  const r = await commit(file, { team: null })
+  r.created === 1 && r.skipped === 1
+    ? ok('1 created, 1 skipped')
+    : bad(`created ${r.created}, skipped ${r.skipped}`)
+
+  const { count: dropped } = await admin
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('external_ref', `${TAG}:drop`)
+  dropped === 0
+    ? ok("and nothing landed in that squad's families' calendars")
+    : bad('the excluded squad got a fixture')
+}
+
+head('12. A coach cannot import into a squad they do not coach')
+{
+  // The authorisation used to be done ONCE, on the p_team argument, while the
+  // rows went wherever they said. A coach of the U8s could have written
+  // fixtures into the U12s by naming them in the payload.
+  await clean()
+  await clearLeagueNames()
+
+  const marcus = await sess('p61400000002@squadroom.invalid')
+  await admin.from('team_members').delete().eq('profile_id', marcus.id).eq('team_id', U12)
+  // 0120: a team coach needs a current clearance, so one is recorded to set
+  // this up — and removed again at the end.
+  await admin.from('staff_clearances').insert({
+    academy_id: NRIFA,
+    profile_id: marcus.id,
+    number: `${TAG}-WWC`,
+    outcome: 'cleared',
+    expires_on: new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10),
+    verified_by: '00000000-0000-0000-0000-0000000000a1',
+  })
+  await admin
+    .from('team_members')
+    .insert({ academy_id: NRIFA, team_id: U8, profile_id: marcus.id, role: 'coach' })
+
+  const sneaky = [{ ...row('sneak', DAY1, '09:00'), team_id: U12 }]
+  const { error } = await commitAs(marcus, sneaky, { team: U8 })
+  error ? ok(`refused per row (${error.code})`) : bad('a U8 coach wrote a fixture into the U12s')
+
+  // Their own squad still works, so the check is about the squad and not
+  // about being a lesser kind of coach.
+  const own = [{ ...row('own', DAY1, '09:00'), team_id: U8 }]
+  const { data: fine, error: ownError } = await commitAs(marcus, own, { team: U8 })
+  if (ownError) bad(ownError.message)
+  else
+    fine?.created === 1
+      ? ok('and their own squad still imports')
+      : bad(`created ${fine?.created}`)
+
+  await admin.from('team_members').delete().eq('profile_id', marcus.id).eq('team_id', U8)
+  await admin.from('staff_clearances').delete().eq('number', `${TAG}-WWC`)
+}
+
+head('13. A squad in the file is not a licence to cancel another one')
+{
+  // "Missing" is scoped to the squads the FILE mentions. With per-row routing
+  // there is no single p_team, and falling back to every squad in the window
+  // would call off the U12s' game because the U8s' file did not mention it.
+  await clean()
+  await clearLeagueNames()
+
+  await commit([{ ...row('u8keep', DAY1, '09:00'), team_id: U8 }], { team: null })
+  await commit([{ ...row('u12keep', DAY1, '13:00'), team_id: U12 }], { team: null })
+
+  // A U8-only file, same day, mentioning neither existing game.
+  const r = await commit([{ ...row('u8new', DAY1, '15:00'), team_id: U8 }], {
+    team: null,
+    cancelMissing: true,
+  })
+  r.cancelled === 1 ? ok("the U8s' own missing game is called off") : bad(`cancelled ${r.cancelled}`)
+
+  const { data: u12 } = await admin
+    .from('events')
+    .select('cancelled_at')
+    .eq('external_ref', `${TAG}:u12keep`)
+    .maybeSingle()
+  !u12?.cancelled_at
+    ? ok("and the U12s' game, on the same day, is untouched")
+    : bad("another squad's game was called off by a file that never mentioned it")
+}
+
+await clearLeagueNames()
 
 await clean()
 console.log(
