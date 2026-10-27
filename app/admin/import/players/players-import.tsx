@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { createClient } from '@/lib/supabase/client'
-import { PLAYER_FIELDS, suggestMapping } from '@/lib/import/columns'
+import { PLAYER_FIELDS, suggestMapping, toKitSize, toSockSize } from '@/lib/import/columns'
 
 type Row = Record<string, unknown>
 type Mapping = Partial<Record<string, string>>
@@ -18,6 +18,12 @@ type Prepared = {
   ff_number: string
   squad_number: string
   school: string
+  // Null, not '', because an unrecognised size is DROPPED rather than
+  // guessed at — "10Y" probably means 10 and a product that quietly decides
+  // that is a product that orders the wrong shirt.
+  shirt_size: string | null
+  shorts_size: string | null
+  socks_size: string | null
   problem?: string
 }
 
@@ -116,6 +122,13 @@ export function PlayersImport({
         ff_number: text(row, 'ff_number'),
         squad_number: text(row, 'squad_number').replace(/\D/g, ''),
         school: text(row, 'school'),
+        // Dropped rather than guessed at. "10Y" probably means 10 and "med"
+        // probably means M, and a product that quietly decides either is a
+        // product that orders the wrong shirt — so an unrecognised size
+        // becomes a blank, which is a question a club can ask.
+        shirt_size: toKitSize(text(row, 'shirt_size')),
+        shorts_size: toKitSize(text(row, 'shorts_size')),
+        socks_size: toSockSize(text(row, 'socks_size')),
         problem,
       }
     })
@@ -143,6 +156,9 @@ export function PlayersImport({
         ff_number: p.ff_number || undefined,
         squad_number: p.squad_number || undefined,
         school: p.school || undefined,
+        shirt_size: p.shirt_size || undefined,
+        shorts_size: p.shorts_size || undefined,
+        socks_size: p.socks_size || undefined,
       })),
     })
     setBusy(null)

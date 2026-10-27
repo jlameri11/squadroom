@@ -2520,6 +2520,9 @@ export type Database = {
           profile_id: string | null
           public_name_hidden: boolean
           school: string | null
+          shirt_size: Database["public"]["Enums"]["kit_size"] | null
+          shorts_size: Database["public"]["Enums"]["kit_size"] | null
+          socks_size: Database["public"]["Enums"]["sock_size"] | null
           team_id: string | null
           updated_at: string
         }
@@ -2537,6 +2540,9 @@ export type Database = {
           profile_id?: string | null
           public_name_hidden?: boolean
           school?: string | null
+          shirt_size?: Database["public"]["Enums"]["kit_size"] | null
+          shorts_size?: Database["public"]["Enums"]["kit_size"] | null
+          socks_size?: Database["public"]["Enums"]["sock_size"] | null
           team_id?: string | null
           updated_at?: string
         }
@@ -2554,6 +2560,9 @@ export type Database = {
           profile_id?: string | null
           public_name_hidden?: boolean
           school?: string | null
+          shirt_size?: Database["public"]["Enums"]["kit_size"] | null
+          shorts_size?: Database["public"]["Enums"]["kit_size"] | null
+          socks_size?: Database["public"]["Enums"]["sock_size"] | null
           team_id?: string | null
           updated_at?: string
         }
@@ -3938,6 +3947,7 @@ export type Database = {
         Returns: Json
       }
       import_screen: { Args: { p_academy?: string }; Returns: Json }
+      kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       member_contact: {
@@ -4338,6 +4348,15 @@ export type Database = {
         Returns: undefined
       }
       set_home_sections: { Args: { p_sections: Json }; Returns: Json }
+      set_kit_sizes: {
+        Args: {
+          p_player: string
+          p_shirt?: Database["public"]["Enums"]["kit_size"]
+          p_shorts?: Database["public"]["Enums"]["kit_size"]
+          p_socks?: Database["public"]["Enums"]["sock_size"]
+        }
+        Returns: undefined
+      }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
@@ -4435,6 +4454,24 @@ export type Database = {
         | "cancelled"
       invite_status: "pending" | "accepted" | "declined" | "revoked" | "expired"
       join_request_status: "pending" | "approved" | "declined" | "expired"
+      kit_size:
+        | "4"
+        | "6"
+        | "8"
+        | "10"
+        | "12"
+        | "14"
+        | "16"
+        | "YXS"
+        | "YS"
+        | "YM"
+        | "YL"
+        | "S"
+        | "M"
+        | "L"
+        | "XL"
+        | "2XL"
+        | "3XL"
       member_status: "invited" | "active" | "removed"
       message_status: "published" | "pending" | "rejected"
       org_type: "academy" | "club" | "league" | "school" | "other"
@@ -4467,6 +4504,7 @@ export type Database = {
         | "other"
       report_status: "open" | "actioned" | "dismissed"
       rsvp_status: "yes" | "no" | "maybe"
+      sock_size: "K9-12" | "K13-3" | "2-7" | "7-11" | "11-14"
       team_status: "active" | "ended"
     }
     CompositeTypes: {
@@ -4640,6 +4678,25 @@ export const Constants = {
       ],
       invite_status: ["pending", "accepted", "declined", "revoked", "expired"],
       join_request_status: ["pending", "approved", "declined", "expired"],
+      kit_size: [
+        "4",
+        "6",
+        "8",
+        "10",
+        "12",
+        "14",
+        "16",
+        "YXS",
+        "YS",
+        "YM",
+        "YL",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "2XL",
+        "3XL",
+      ],
       member_status: ["invited", "active", "removed"],
       message_status: ["published", "pending", "rejected"],
       org_type: ["academy", "club", "league", "school", "other"],
@@ -4675,6 +4732,7 @@ export const Constants = {
       ],
       report_status: ["open", "actioned", "dismissed"],
       rsvp_status: ["yes", "no", "maybe"],
+      sock_size: ["K9-12", "K13-3", "2-7", "7-11", "11-14"],
       team_status: ["active", "ended"],
     },
   },

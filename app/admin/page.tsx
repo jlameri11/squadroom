@@ -153,6 +153,7 @@ export default async function AdminHub() {
                 label="Registrations"
                 hint="Families who signed up through your public link"
               />
+              <Row href="/admin/kit" label="Kit list" hint="What to order, and who has not been asked" />
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
             </ul>
           </>

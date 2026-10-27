@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "types": "supabase gen types typescript --project-id rnykncrdcywmetuvslvw > lib/database.types.ts",
+    "types": "node --env-file=.env.local scripts/gen-types.mjs",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "cap:android": "cap open android",

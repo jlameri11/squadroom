@@ -393,7 +393,66 @@ export const PLAYER_FIELDS: FieldSpec[] = [
     required: false,
     matches: ['school'],
   },
+  // 0123. A club that already keeps sizes in a spreadsheet should not have to
+  // retype them one child at a time to get a kit list — which is the only
+  // other way they can arrive for a roster that predates the feature.
+  {
+    key: 'shirt_size',
+    label: 'Shirt size',
+    hint: 'Only recognised values are kept — 10, YM, L',
+    required: false,
+    matches: ['shirt size', 'shirt', 'top size', 'jersey size'],
+    excludes: ['number', 'colour', 'color'],
+  },
+  {
+    key: 'shorts_size',
+    label: 'Shorts size',
+    hint: '',
+    required: false,
+    matches: ['shorts size', 'shorts', 'short size'],
+    excludes: ['number', 'colour', 'color'],
+  },
+  {
+    key: 'socks_size',
+    label: 'Socks size',
+    hint: 'By shoe size — K13-3, 2-7',
+    required: false,
+    matches: ['socks size', 'socks', 'sock size'],
+    excludes: ['number', 'colour', 'color'],
+  },
 ]
+
+/**
+ * The sizes the database will accept, and nothing else.
+ *
+ * A spreadsheet column of sizes is somebody's own shorthand: "10", "Size 10",
+ * "10Y", "med". The enum refuses all but the first, and an import that passed
+ * them straight through would fail the whole row over a field nobody needs.
+ * So an unrecognised size is DROPPED rather than guessed at or fatal — the
+ * child still imports, with a blank where the size would be, and a blank is a
+ * question a club can ask.
+ *
+ * Deliberately not a fuzzy mapper. "10Y" probably means 10, and "med"
+ * probably means M, and a product that quietly decides either is a product
+ * that orders the wrong shirt.
+ */
+export const SHIRT_SIZES = [
+  '4', '6', '8', '10', '12', '14', '16',
+  'YXS', 'YS', 'YM', 'YL',
+  'S', 'M', 'L', 'XL', '2XL', '3XL',
+] as const
+
+export const SOCK_SIZES = ['K9-12', 'K13-3', '2-7', '7-11', '11-14'] as const
+
+export function toKitSize(value: unknown): string | null {
+  const v = String(value ?? '').trim().toUpperCase()
+  return (SHIRT_SIZES as readonly string[]).includes(v) ? v : null
+}
+
+export function toSockSize(value: unknown): string | null {
+  const v = String(value ?? '').trim().toUpperCase()
+  return (SOCK_SIZES as readonly string[]).includes(v) ? v : null
+}
 
 /**
  * How long a game runs, from whatever the file calls it.

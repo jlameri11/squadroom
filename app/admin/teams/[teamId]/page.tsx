@@ -9,6 +9,7 @@ import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
 import { SeasonControl } from './season-control'
 import { LeagueName } from './league-name'
+import { KitSizes } from './kit-sizes'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -47,7 +48,9 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       .eq('team_id', teamId),
     supabase
       .from('players')
-      .select('id, full_name, player_guardians(profiles(full_name))')
+      .select(
+        'id, full_name, shirt_size, shorts_size, socks_size, player_guardians(profiles(full_name))'
+      )
       .eq('team_id', teamId)
       .order('full_name'),
   ])
@@ -96,6 +99,16 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
             <div key={p.id} className={`p-3 ${i > 0 ? 'border-t border-[var(--line-2)]' : ''}`}>
               <div className="font-medium">{p.full_name}</div>
               <div className="text-sm text-ink-2">{guardianNames(p.player_guardians) || 'No guardian linked'}</div>
+              {/* Here because there is no player screen to put it behind,
+                  and a size nobody can record is a size nobody can count. */}
+              <KitSizes
+                playerId={p.id}
+                sizes={{
+                  shirt_size: p.shirt_size,
+                  shorts_size: p.shorts_size,
+                  socks_size: p.socks_size,
+                }}
+              />
             </div>
           ))}
           {(players ?? []).length === 0 && (
