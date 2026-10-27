@@ -63,8 +63,17 @@ re ? bad(re.message) : mine.length === 2
 
 head('4. Answering from the card')
 const leo = mine.find(r => r.player_name.startsWith('Leo'))
+// Since 0111 an "Out" from a card has to say why, the same as everywhere
+// else. Asserted here as well as in test-labels-and-reasons, because the card
+// in a chat thread is its own write path and this is the suite that owns it.
+const { error: bare } = await parent.client.from('event_rsvps').upsert({
+  academy_id: NRIFA, event_id: MATCH, profile_id: parent.id, player_id: leo.player_id, status: 'no',
+}, { onConflict: 'event_id,profile_id,player_id' })
+bare ? ok('a bare "Out" from the card is refused') : bad('the card saved a "no" with no reason')
+
 const { error: ue } = await parent.client.from('event_rsvps').upsert({
   academy_id: NRIFA, event_id: MATCH, profile_id: parent.id, player_id: leo.player_id, status: 'no',
+  note: 'Family away that weekend',
 }, { onConflict: 'event_id,profile_id,player_id' })
 ue ? bad(ue.message) : ok('RSVP saved')
 const { data: after } = await parent.client.rpc('my_rsvps_for_event', { p_event: MATCH })

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { WhyOut } from '@/components/why-out'
 
 export type CardEvent = {
   id: string
@@ -43,6 +44,8 @@ export function EventCard({
   const [rsvps, setRsvps] = useState<Rsvp[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [saving, setSaving] = useState<string | null>(null)
+  const [asking, setAsking] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -59,19 +62,39 @@ export function EventCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id, isCoach])
 
-  async function answer(playerId: string, status: string) {
+  async function answer(playerId: string, status: string, note?: string) {
+    // 0111 requires a reason on 'no'. Asked here rather than let the database
+    // refuse it, because "Say why they cannot play" arriving as a red error
+    // after the button has already moved reads like a fault.
+    if (status === 'no' && !note?.trim()) {
+      setAsking(playerId)
+      return
+    }
+    setAsking(null)
     setSaving(playerId)
-    setRsvps((prev) => prev.map((r) => (r.player_id === playerId ? { ...r, status } : r)))
+    setError(null)
+    setRsvps((prev) =>
+      prev.map((r) => (r.player_id === playerId ? { ...r, status, note: note ?? null } : r))
+    )
 
     const { data: auth } = await supabase.auth.getUser()
-    await supabase.from('event_rsvps').upsert(
+    const { error } = await supabase.from('event_rsvps').upsert(
       {
         academy_id: academyId, event_id: event.id, profile_id: auth.user!.id,
         player_id: playerId, status: status as 'yes' | 'no' | 'maybe',
+        note: note?.trim() || null,
       },
       { onConflict: 'event_id,profile_id,player_id' }
     )
     setSaving(null)
+    if (error) {
+      setError(error.message)
+      // Put the old answer back. A chip showing "Out" for something that was
+      // never saved is worse than no answer at all.
+      supabase.rpc('my_rsvps_for_event', { p_event: event.id }).then(({ data }) => {
+        setRsvps((data ?? []) as Rsvp[])
+      })
+    }
   }
 
   const when = new Date(event.starts_at)
@@ -137,33 +160,56 @@ export function EventCard({
         {!cancelled && rsvps.length > 0 && (
           <div className="mt-3 flex flex-col gap-2">
             {rsvps.map((r) => (
-              <div key={r.player_id} className="flex items-center gap-2">
-                <span className="w-14 flex-none truncate text-sm font-medium text-ink-2">
-                  {r.player_name.split(' ')[0]}
-                </span>
-                <div className="flex flex-1 gap-1">
-                  {CHOICES.map((c) => {
-                    const on = r.status === c.value
-                    return (
-                      <button
-                        key={c.value}
-                        onClick={() => answer(r.player_id, c.value)}
-                        disabled={saving === r.player_id}
-                        className="flex-1 rounded-lg border py-1.5 text-xs font-semibold disabled:opacity-60"
-                        style={
-                          on
-                            ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
-                            : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
-                        }
-                      >
-                        {c.label}
-                      </button>
-                    )
-                  })}
+              <div key={r.player_id} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-14 flex-none truncate text-sm font-medium text-ink-2">
+                    {r.player_name.split(' ')[0]}
+                  </span>
+                  <div className="flex flex-1 gap-1">
+                    {CHOICES.map((c) => {
+                      const on = r.status === c.value
+                      return (
+                        <button
+                          key={c.value}
+                          onClick={() => answer(r.player_id, c.value)}
+                          disabled={saving === r.player_id}
+                          className="flex-1 rounded-lg border py-1.5 text-xs font-semibold disabled:opacity-60"
+                          style={
+                            on
+                              ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
+                              : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
+                          }
+                        >
+                          {c.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
+
+                {asking === r.player_id && (
+                  <WhyOut
+                    childName={r.player_name.split(' ')[0]}
+                    busy={saving === r.player_id}
+                    onSave={(note) => answer(r.player_id, 'no', note)}
+                    onCancel={() => setAsking(null)}
+                  />
+                )}
+
+                {/* The reason they gave, so a parent can see what the coach
+                    was told without having to remember it. */}
+                {asking !== r.player_id && r.status === 'no' && r.note && (
+                  <p className="pl-16 text-xs text-ink-3">{r.note}</p>
+                )}
               </div>
             ))}
           </div>
+        )}
+
+        {error && (
+          <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>
+            {error}
+          </p>
         )}
 
         {!cancelled && (

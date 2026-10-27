@@ -11,3 +11,6 @@ build/
 next-env.d.ts
 *.tsbuildinfo
 .netlify
+
+# Local Claude Code permissions
+.claude/settings.local.json

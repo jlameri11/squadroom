@@ -10,6 +10,13 @@ export type ChatMessage = {
   sender_id: string | null
   sender_name: string | null
   sender_role: string | null
+  /**
+   * Who this person is in this conversation — "Leo & Zoe's dad", "Coach".
+   * Worked out by the database per CHANNEL, because what may be said about
+   * somebody depends on who is listening: a team chat names the children in
+   * that squad, an academy-wide one names none. See 0111.
+   */
+  sender_label?: string | null
   reply_to_id: string | null
   reply_to_body: string | null
   reply_to_name: string | null

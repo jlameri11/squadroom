@@ -122,8 +122,25 @@ export function MessageBubble({
             className="mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-ink-2 underline-offset-2 hover:underline"
           >
             {message.sender_name ?? 'Unknown'}
-            {message.sender_role && message.sender_role !== 'parent' && (
-              <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[10px] capitalize">{message.sender_role}</span>
+            {/*
+              "Leo & Zoe's dad" rather than the bare role. A team chat is
+              twenty adults whose names mean nothing to each other, and the
+              label is the thing that makes it a club rather than a list of
+              phone numbers. Falls back to the role when there is no label —
+              a coach with no children in the squad, or somebody not on the
+              roster yet.
+            */}
+            {message.sender_label ? (
+              <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[10px]">
+                {message.sender_label}
+              </span>
+            ) : (
+              message.sender_role &&
+              message.sender_role !== 'parent' && (
+                <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[10px] capitalize">
+                  {message.sender_role}
+                </span>
+              )
             )}
           </button>
         )}

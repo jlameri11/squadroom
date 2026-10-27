@@ -14,6 +14,7 @@ import { HomeOwing } from './home-owing'
 import { EditHome } from './edit-home'
 import { type SectionId } from '@/lib/home-sections'
 import { createClient } from '@/lib/supabase/client'
+import { WhyOut } from '@/components/why-out'
 
 export type HomeEvent = {
   id: string
@@ -380,28 +381,49 @@ function EventCard({
   academyId: string
 }) {
   const [answers, setAnswers] = useState(event.rsvps ?? [])
+  const [asking, setAsking] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const when = new Date(event.starts_at)
   const cancelled = Boolean(event.cancelled_at)
 
-  async function answer(playerId: string, status: string) {
+  async function answer(playerId: string, status: string, note?: string) {
+    // 0111 requires a reason on 'no', so ask before saving rather than let the
+    // database refuse it. This is the only button on the home screen that
+    // cannot be a single tap, and it earns that by being the one answer a
+    // coach has to act on.
+    if (status === 'no' && !note?.trim()) {
+      setAsking(playerId)
+      return
+    }
+    setAsking(null)
+
     // Optimistic. A parent standing in a car park should see the button move
     // the instant they press it, not after a round trip across the Pacific.
+    const before = answers
     setAnswers((prev) =>
       prev.map((a) => (a.player_id === playerId ? { ...a, status } : a))
     )
     const supabase = createClient()
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user) return
-    await supabase.from('event_rsvps').upsert(
+    const { error } = await supabase.from('event_rsvps').upsert(
       {
         academy_id: academyId,
         event_id: event.id,
         profile_id: auth.user.id,
         player_id: playerId,
         status: status as 'yes' | 'no' | 'maybe',
+        note: note?.trim() || null,
       },
       { onConflict: 'event_id,profile_id,player_id' }
     )
+    // Optimism has to be undone when it turns out to be wrong. A chip reading
+    // "Out" for an answer that never saved sends a coach into Saturday
+    // believing something untrue.
+    if (error) {
+      setAnswers(before)
+      setError(error.message)
+    }
   }
 
   return (
@@ -452,22 +474,40 @@ function EventCard({
       {!isCoach && !cancelled && answers.length > 0 && (
         <div className="stack">
           {answers.map((a) => (
-            <div key={a.player_id} className="kidrow">
-              <span className="who truncate">{a.player_name.split(' ')[0]}</span>
-              <div className="rsvp">
-                {(['yes', 'maybe', 'no'] as const).map((v) => (
-                  <button
-                    key={v}
-                    data-v={v}
-                    aria-pressed={a.status === v}
-                    onClick={() => answer(a.player_id, v)}
-                  >
-                    {v === 'yes' ? 'Going' : v === 'maybe' ? 'Maybe' : 'Out'}
-                  </button>
-                ))}
+            <div key={a.player_id}>
+              <div className="kidrow">
+                <span className="who truncate">{a.player_name.split(' ')[0]}</span>
+                <div className="rsvp">
+                  {(['yes', 'maybe', 'no'] as const).map((v) => (
+                    <button
+                      key={v}
+                      data-v={v}
+                      aria-pressed={a.status === v}
+                      onClick={() => answer(a.player_id, v)}
+                    >
+                      {v === 'yes' ? 'Going' : v === 'maybe' ? 'Maybe' : 'Out'}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {asking === a.player_id && (
+                <div className="mt-2">
+                  <WhyOut
+                    childName={a.player_name.split(' ')[0]}
+                    onSave={(note) => answer(a.player_id, 'no', note)}
+                    onCancel={() => setAsking(null)}
+                  />
+                </div>
+              )}
             </div>
           ))}
+
+          {error && (
+            <p className="text-xs" style={{ color: 'var(--no)' }}>
+              {error}
+            </p>
+          )}
         </div>
       )}
     </article>

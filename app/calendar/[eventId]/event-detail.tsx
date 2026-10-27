@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Chase } from './chase'
+import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { createClient } from '@/lib/supabase/client'
 
@@ -33,21 +34,55 @@ export function EventDetail({
   const [answers, setAnswers] = useState(mine)
   const [busy, setBusy] = useState<string | null>(null)
   const supabase = createClient()
+  const [asking, setAsking] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const cancelled = Boolean(event.cancelled_at)
   const when = new Date(event.starts_at)
 
-  async function answer(playerId: string, status: string) {
+  /**
+   * "Out" asks why; the other two save straight away.
+   *
+   * 0111 requires a reason on 'no', because a coach looking at "4 out" cannot
+   * tell a wedding from a sulk and that is the one fact that changes what
+   * they do on Saturday. Asking is the whole point — so the tap opens a box
+   * rather than failing at the database, which is what would happen if the
+   * screen just sent it.
+   *
+   * Nothing is asked for turning UP. A reason to be available is an
+   * interrogation, and a product that asks for one is a product parents start
+   * lying to.
+   */
+  async function answer(playerId: string, status: string, note?: string) {
+    if (status === 'no' && !note?.trim()) {
+      setAsking(playerId)
+      return
+    }
     setBusy(playerId)
-    setAnswers((prev) => prev.map((a) => (a.playerId === playerId ? { ...a, status } : a)))
+    setError(null)
+    const before = answers
+    setAnswers((prev) =>
+      prev.map((a) => (a.playerId === playerId ? { ...a, status, note: note?.trim() || null } : a))
+    )
     const { data: auth } = await supabase.auth.getUser()
-    await supabase.from('event_rsvps').upsert(
+    const { error } = await supabase.from('event_rsvps').upsert(
       {
         academy_id: event.academy_id, event_id: event.id, profile_id: auth.user!.id,
         player_id: playerId, status: status as 'yes' | 'no' | 'maybe',
+        note: note?.trim() || null,
       },
       { onConflict: 'event_id,profile_id,player_id' }
     )
     setBusy(null)
+    if (error) {
+      setError(error.message)
+      // Put the buttons back where they were rather than showing an answer
+      // that was not saved. This has to restore the state captured BEFORE the
+      // optimistic update — mapping over `prev` can only ever copy what is
+      // already on screen, which is the wrong answer.
+      setAnswers(before)
+      return
+    }
+    setAsking(null)
   }
 
   return (
@@ -141,6 +176,21 @@ export function EventDetail({
                 </div>
               </div>
             ))}
+
+            {asking && (
+              <WhyOut
+                childName={answers.find((a) => a.playerId === asking)?.playerName ?? null}
+                busy={busy === asking}
+                onSave={(note) => void answer(asking, 'no', note)}
+                onCancel={() => setAsking(null)}
+              />
+            )}
+
+            {error && (
+              <p className="text-sm" style={{ color: 'var(--no)' }}>
+                {error}
+              </p>
+            )}
           </div>
         </section>
       )}
