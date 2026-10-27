@@ -283,6 +283,42 @@ head('6. Changing away from "out" does not leave the reason behind')
   }
 }
 
+head('6b. A note that is NOT about being absent survives (0116)')
+{
+  // 0113 cleared every note on anything but a 'no', which also threw away
+  // "leaving at half time" on a maybe — a thing a parent types once and a
+  // coach actually uses. test-polls caught it on an assertion written long
+  // before any of this existed.
+  await rsvp('maybe', 'Leaving at half time')
+  const row = await stored()
+  row?.note === 'Leaving at half time'
+    ? ok('a note on "maybe" is kept')
+    : bad(`stored ${JSON.stringify(row)}`)
+
+  await rsvp('yes', 'Here for the morning games only')
+  const y = await stored()
+  y?.note === 'Here for the morning games only'
+    ? ok('and on "yes"')
+    : bad(`stored ${JSON.stringify(y)}`)
+
+  // The distinction 0116 draws: cleared because it was about ABSENCE, not
+  // because of what the new status is.
+  await rsvp('no', 'Injured')
+  const { error } = await parent.client
+    .from('event_rsvps')
+    .update({ status: 'maybe', note: 'Might make the second half' })
+    .eq('event_id', event.id)
+    .eq('player_id', LEO)
+  if (error) {
+    bad(error.message)
+  } else {
+    const after = await stored()
+    after?.note === 'Might make the second half'
+      ? ok('a new note supplied in the same write wins over clearing')
+      : bad(`stored ${JSON.stringify(after)}`)
+  }
+}
+
 head('7. Converting a poll still works (0112)')
 {
   const { data: poll, error: pollError } = await admin

@@ -112,8 +112,26 @@ await coach.client.from('messages').insert({ academy_id: NRIFA, channel_id: u8.i
 const { data: queued } = await admin.from('notification_queue')
   .select('id, attempts, scheduled_for').eq('kind','message')
   .order('created_at', { ascending: false }).limit(1).single()
-const { data: c1 } = await admin.rpc('claim_notifications', { p_limit: 100 })
-await admin.rpc('claim_notifications', { p_limit: 100 })
+// The limit has to clear the whole backlog, not a round 100.
+//
+// claim_notifications takes the OLDEST due rows first, which is right — a
+// notification queue is FIFO and a new message must not jump ahead of one
+// enqueued ten minutes ago. But it means the row this test just created is
+// LAST, and with 300-odd undrained rows sitting in a dev database (nothing
+// has a push subscription, so nothing ever gets sent) two claims of 100
+// never reached it. attempts stayed 0 and the test reported a counter that
+// was working perfectly — the same failure as the unordered `limit 1` above,
+// one layer out.
+const { count: due } = await admin
+  .from('notification_queue')
+  .select('id', { count: 'exact', head: true })
+  .is('sent_at', null)
+  .lt('attempts', 5)
+  .lte('scheduled_for', new Date().toISOString())
+const deep = (due ?? 100) + 50
+
+const { data: c1 } = await admin.rpc('claim_notifications', { p_limit: deep })
+await admin.rpc('claim_notifications', { p_limit: deep })
 ok(`first claim returned ${c1?.length ?? 0} deliverable (nobody has a device registered yet)`)
 const { data: attempts } = await admin.from('notification_queue')
   .select('attempts').eq('id', queued.id).single()
