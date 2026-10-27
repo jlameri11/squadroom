@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Chase } from './chase'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
+import { Result } from './result'
 import { createClient } from '@/lib/supabase/client'
 
 type Mine = { playerId: string | null; playerName: string | null; status: string | null; note: string | null }
@@ -25,6 +26,7 @@ export function EventDetail({
     opponent: string | null; kit_colour: string | null; round: string | null
     notes: string | null; cancelled_at: string | null
     cancellation_reason: string | null; cancellation_note: string | null
+    competition_id: string | null; fixture_id: string | null
   }
   mine: Mine[]
   isCoach: boolean
@@ -144,6 +146,20 @@ export function EventDetail({
       >
         Add to your phone&apos;s calendar
       </a>
+
+      {/* Above the RSVP block on purpose. Before kick-off this renders
+          nothing; after it, the result is the only reason anybody opens this
+          screen, and an answer about whether a child was available is
+          history. */}
+      {!cancelled && (
+        <Result
+          eventId={event.id}
+          opponent={event.opponent}
+          isCoach={isCoach}
+          played={new Date(event.starts_at) <= new Date()}
+          inCompetition={Boolean(event.fixture_id)}
+        />
+      )}
 
       {isCoach && <CallItOff event={event} />}
 

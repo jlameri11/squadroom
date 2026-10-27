@@ -63,8 +63,17 @@ for (const file of suites) {
   // does the latter and was being reported as "crashed" — which for a
   // cross-tenant SECURITY test is the worst possible thing to be wrong about,
   // because it reads as the guards being broken.
+  //
+  // Every suite now guards both halves of the sign-in and SAYS "auth rate
+  // limit", so the phrase is the real signal and the TypeError spellings are
+  // belt and braces for anything written later that forgets. Both halves
+  // matter: generateLink is rate limited as well as verifyOtp, and when IT
+  // trips the link comes back null — a crash on 'hashed_token' that used to
+  // be reported as a product failure.
   const rateLimited =
-    /reading 'access_token'/.test(out) || /auth rate limit/i.test(out)
+    /auth rate limit/i.test(out) ||
+    /reading 'access_token'/.test(out) ||
+    /reading 'hashed_token'/.test(out)
   // test-join-flow drives real HTTP routes and needs the app running.
   const noServer = /ECONNREFUSED/.test(out)
 

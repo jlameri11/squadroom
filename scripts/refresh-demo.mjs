@@ -225,7 +225,7 @@ say('a $45 gala day fee to collect')
 //
 // Re-dated rather than re-created, so the codes a coach may have written down
 // keep working.
-const { data: links, error: linkError } = await admin
+const { data: joinLinks, error: linkError } = await admin
   .from('join_links')
   .update({ expires_at: new Date(Date.now() + 365 * day).toISOString() })
   .eq('academy_id', NRIFA)
@@ -235,12 +235,12 @@ if (linkError) throw new Error(`refreshing join links: ${linkError.message}`)
 
 // Named, because the whole point is that somebody can read one out.
 const named = []
-for (const l of links ?? []) {
+for (const l of joinLinks ?? []) {
   if (!l.team_id) continue
   const { data: t } = await admin.from('teams').select('name').eq('id', l.team_id).maybeSingle()
   if (t) named.push(`${t.name}: ${l.code}`)
 }
-say(`${links?.length ?? 0} join links live for a year`)
+say(`${joinLinks?.length ?? 0} join links live for a year`)
 for (const n of named.slice(0, 6)) say(`  ${n}`)
 
 console.log('\nDone. The season now straddles today.\n')

@@ -7,6 +7,14 @@ const head=m=>console.log(`\n${m}`)
 
 async function sess(email){
   const { data:l } = await admin.auth.admin.generateLink({type:'magiclink', email})
+  // generateLink is rate limited per project as well as verifyOtp, and
+  // returns null when it trips — so this property read throws before any
+  // session check runs, and the runner reports a crash that is really the
+  // auth budget.
+  if (!l?.properties?.hashed_token) {
+    console.log("  could not issue a magic link — the project's auth rate limit, not a failure")
+    process.exit(2)
+  }
   const { data:s } = await anon.auth.verifyOtp({token_hash:l.properties.hashed_token, type:'email'})
   return { client: createClient(URL, PUB, {auth:{persistSession:false},
     global:{headers:{Authorization:`Bearer ${s.session.access_token}`}}}), id: s.user.id }

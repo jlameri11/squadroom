@@ -98,6 +98,14 @@ if (!coachUser?.user?.email) {
   process.exit(1)
 }
 const { data: cl } = await admin.auth.admin.generateLink({ type: 'magiclink', email: coachUser.user.email })
+// generateLink is rate limited per project as well as verifyOtp, and
+// returns null when it trips — so this property read throws before any
+// session check runs, and the runner reports a crash that is really the
+// auth budget.
+if (!cl?.properties?.hashed_token) {
+  console.log("  could not issue a magic link — the project's auth rate limit, not a failure")
+  process.exit(2)
+}
 const { data: cs, error: csErr } = await anon.auth.verifyOtp({ token_hash: cl.properties.hashed_token, type: 'email' })
 if (csErr) { bad(`coach session: ${csErr.message}`); process.exit(1) }
 

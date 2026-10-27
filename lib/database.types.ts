@@ -1206,17 +1206,23 @@ export type Database = {
           kit_colour: string | null
           notes: string | null
           opponent: string | null
+          our_score: number | null
           private_to: string | null
+          result_note: string | null
           round: string | null
+          score_entered_at: string | null
+          score_entered_by: string | null
           series_id: string | null
           source: string
           source_scan_id: string | null
           starts_at: string
           team_id: string | null
+          their_score: number | null
           title: string
           type: Database["public"]["Enums"]["event_type"]
           updated_at: string
           venue: string | null
+          was_home: boolean | null
         }
         Insert: {
           academy_id: string
@@ -1238,17 +1244,23 @@ export type Database = {
           kit_colour?: string | null
           notes?: string | null
           opponent?: string | null
+          our_score?: number | null
           private_to?: string | null
+          result_note?: string | null
           round?: string | null
+          score_entered_at?: string | null
+          score_entered_by?: string | null
           series_id?: string | null
           source?: string
           source_scan_id?: string | null
           starts_at: string
           team_id?: string | null
+          their_score?: number | null
           title: string
           type?: Database["public"]["Enums"]["event_type"]
           updated_at?: string
           venue?: string | null
+          was_home?: boolean | null
         }
         Update: {
           academy_id?: string
@@ -1270,17 +1282,23 @@ export type Database = {
           kit_colour?: string | null
           notes?: string | null
           opponent?: string | null
+          our_score?: number | null
           private_to?: string | null
+          result_note?: string | null
           round?: string | null
+          score_entered_at?: string | null
+          score_entered_by?: string | null
           series_id?: string | null
           source?: string
           source_scan_id?: string | null
           starts_at?: string
           team_id?: string | null
+          their_score?: number | null
           title?: string
           type?: Database["public"]["Enums"]["event_type"]
           updated_at?: string
           venue?: string | null
+          was_home?: boolean | null
         }
         Relationships: [
           {
@@ -1331,6 +1349,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "event_scans"
             referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "events_score_entered_by_fkey"
+            columns: ["score_entered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_series_fkey"
@@ -3593,6 +3618,19 @@ export type Database = {
           status: Database["public"]["Enums"]["attendance_status"]
         }[]
       }
+      event_result: {
+        Args: { p_event: string }
+        Returns: {
+          entered_at: string
+          entered_by: string
+          note: string
+          ours: number
+          outcome: string
+          source: string
+          theirs: number
+          was_home: boolean
+        }[]
+      }
       event_rsvp_summary: {
         Args: { p_event: string }
         Returns: {
@@ -4005,6 +4043,16 @@ export type Database = {
       search_chat: {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
         Returns: Json
+      }
+      set_event_result: {
+        Args: {
+          p_event: string
+          p_home?: boolean
+          p_note?: string
+          p_ours?: number
+          p_theirs?: number
+        }
+        Returns: undefined
       }
       set_home_sections: { Args: { p_sections: Json }; Returns: Json }
       set_my_profile: {

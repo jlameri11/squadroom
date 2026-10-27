@@ -12,7 +12,7 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, academy_id, team_id, type, title, description, starts_at, ends_at, arrive_at, venue, address, opponent, kit_colour, round, notes, cancelled_at, cancellation_reason, cancellation_note, competition_id')
+    .select('id, academy_id, team_id, type, title, description, starts_at, ends_at, arrive_at, venue, address, opponent, kit_colour, round, notes, cancelled_at, cancellation_reason, cancellation_note, competition_id, fixture_id')
     .eq('id', eventId)
     .maybeSingle()
 

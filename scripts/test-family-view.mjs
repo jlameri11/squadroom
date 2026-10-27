@@ -34,6 +34,14 @@ const ARJUN = '00000000-0000-0000-0000-0000000e0002'
 
 async function sess(email) {
   const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
+  // generateLink is rate limited per project as well as verifyOtp, and
+  // returns null when it trips — so the property read below throws
+  // before any session check runs, and the runner reports a crash
+  // that is really the auth budget.
+  if (!link?.properties?.hashed_token) {
+    console.log(`  could not issue a link for ${email} — the project's auth rate limit, not a failure`)
+    process.exit(2)
+  }
   const { data: s } = await anon.auth.verifyOtp({
     token_hash: link.properties.hashed_token,
     type: 'email',

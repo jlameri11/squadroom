@@ -10,6 +10,14 @@ const ok=m=>console.log(`  \x1b[32m✓\x1b[0m ${m}`), bad=m=>{console.log(`  \x1
 const head=m=>console.log(`\n${m}`)
 
 const { data:l } = await admin.auth.admin.generateLink({type:'magiclink', email:'p61400000301@squadroom.invalid'})
+// generateLink is rate limited per project as well as verifyOtp, and
+// returns null when it trips — so this property read throws before any
+// session check runs, and the runner reports a crash that is really the
+// auth budget.
+if (!l?.properties?.hashed_token) {
+  console.log("  could not issue a magic link — the project's auth rate limit, not a failure")
+  process.exit(2)
+}
 const { data:s } = await anon.auth.verifyOtp({token_hash:l.properties.hashed_token, type:'email'})
 const spl = createClient(URL, PUB, {auth:{persistSession:false},
   global:{headers:{Authorization:`Bearer ${s.session.access_token}`}}})
@@ -97,6 +105,14 @@ ladder[0].points >= ladder[1].points ? ok(`top of the table: ${ladder[0].team_na
 
 head('7. A visiting club sees the draw but not the organiser’s people')
 const { data:l2 } = await admin.auth.admin.generateLink({type:'magiclink', email:'p61400000011@squadroom.invalid'})
+// generateLink is rate limited per project as well as verifyOtp, and
+// returns null when it trips — so this property read throws before any
+// session check runs, and the runner reports a crash that is really the
+// auth budget.
+if (!l2?.properties?.hashed_token) {
+  console.log("  could not issue a magic link — the project's auth rate limit, not a failure")
+  process.exit(2)
+}
 const { data:s2 } = await anon.auth.verifyOtp({token_hash:l2.properties.hashed_token, type:'email'})
 const nrifaParent = createClient(URL, PUB, {auth:{persistSession:false},
   global:{headers:{Authorization:`Bearer ${s2.session.access_token}`}}})
