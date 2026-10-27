@@ -148,6 +148,11 @@ export default async function AdminHub() {
                 label="Working With Children Checks"
                 hint="Who is cleared, and who is running out"
               />
+              <Row
+                href="/admin/registrations"
+                label="Registrations"
+                hint="Families who signed up through your public link"
+              />
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
             </ul>
           </>
