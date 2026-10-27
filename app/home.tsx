@@ -15,6 +15,7 @@ import { EditHome } from './edit-home'
 import { type SectionId } from '@/lib/home-sections'
 import { createClient } from '@/lib/supabase/client'
 import { WhyOut } from '@/components/why-out'
+import { ChildChips, childColour, type Child } from './child-chips'
 
 export type HomeEvent = {
   id: string
@@ -62,6 +63,7 @@ type HomeData = {
   other_academies: { id: string; name: string; type: string }[]
   is_platform_admin: boolean
   pending_requests: number
+  children: Child[]
   events: HomeEvent[]
   channels: HomeChannel[]
 }
@@ -98,6 +100,7 @@ export function Home() {
       role={data.role ?? 'parent'}
       isPlatformAdmin={data.is_platform_admin}
       needsPhone={!data.profile?.phone}
+      childList={data.children ?? []}
       me={data.profile?.full_name ?? null}
       events={data.events ?? []}
       channels={data.channels ?? []}
@@ -132,6 +135,7 @@ function HomeScreen({
   isPlatformAdmin,
   needsPhone,
   me,
+  childList,
   events,
   channels,
 }: {
@@ -142,6 +146,8 @@ function HomeScreen({
   needsPhone: boolean
   /** Whose account this is, for the footer. */
   me: string | null
+  /** This person's own children in this academy, for the filter chips. */
+  childList: Child[]
   events: HomeEvent[]
   channels: HomeChannel[]
 }) {
@@ -149,6 +155,20 @@ function HomeScreen({
   const isStaff = role === 'owner' || role === 'admin'
   const isCoach = isStaff || role === 'coach'
   const tint = academy.primary_colour || 'var(--brand)'
+
+  // Which child's Saturday this is. Null is everyone, which is the default
+  // and what a parent getting the family out the door wants; filtering is for
+  // checking one thing. Deliberately NOT remembered between visits — a
+  // narrowed home screen a parent does not remember narrowing is a home
+  // screen that is quietly hiding a fixture.
+  const [onlyChild, setOnlyChild] = useState<string | null>(null)
+
+  // An academy-wide event has no team, so every child is asked about it and
+  // it survives any filter. A team fixture survives only if the selected
+  // child is one of the people being asked.
+  const shownEvents = onlyChild
+    ? events.filter((e) => (e.rsvps ?? []).some((r) => r.player_id === onlyChild))
+    : events
 
 
   // The layout, resolved by the database so the client never holds a second
@@ -197,14 +217,27 @@ function HomeScreen({
               </Link>
             </div>
 
-            {events.length === 0 ? (
+            <ChildChips children={childList} selected={onlyChild} onSelect={setOnlyChild} />
+
+            {shownEvents.length === 0 ? (
               <p className="card p-6 text-center text-sm text-ink-3">
-                Nothing in the next three weeks.
+                {onlyChild
+                  ? `Nothing in the next three weeks for ${
+                      childList.find((c) => c.id === onlyChild)?.short_name ?? 'them'
+                    }.`
+                  : 'Nothing in the next three weeks.'}
               </p>
             ) : (
               <div className="stack">
-                {events.map((e) => (
-                  <EventCard key={e.id} event={e} isCoach={isCoach} academyId={academy.id} />
+                {shownEvents.map((e) => (
+                  <EventCard
+                    key={e.id}
+                    event={e}
+                    isCoach={isCoach}
+                    academyId={academy.id}
+                    onlyChild={onlyChild}
+                    colourChildren={childList.length > 1}
+                  />
                 ))}
               </div>
             )}
@@ -375,10 +408,16 @@ function EventCard({
   event,
   isCoach,
   academyId,
+  onlyChild,
+  colourChildren,
 }: {
   event: HomeEvent
   isCoach: boolean
   academyId: string
+  /** When a chip is selected, only this child's row is offered. */
+  onlyChild?: string | null
+  /** A single child needs no colour — there is nothing to tell apart. */
+  colourChildren?: boolean
 }) {
   const [answers, setAnswers] = useState(event.rsvps ?? [])
   const [asking, setAsking] = useState<string | null>(null)
@@ -473,10 +512,19 @@ function EventCard({
 
       {!isCoach && !cancelled && answers.length > 0 && (
         <div className="stack">
-          {answers.map((a) => (
+          {(onlyChild ? answers.filter((a) => a.player_id === onlyChild) : answers).map((a) => (
             <div key={a.player_id}>
               <div className="kidrow">
-                <span className="who truncate">{a.player_name.split(' ')[0]}</span>
+                <span className="flex flex-none items-center gap-1.5">
+                  {colourChildren && (
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 flex-none rounded-full"
+                      style={{ background: childColour(a.player_id) }}
+                    />
+                  )}
+                  <span className="who truncate">{a.player_name.split(' ')[0]}</span>
+                </span>
                 <div className="rsvp">
                   {(['yes', 'maybe', 'no'] as const).map((v) => (
                     <button

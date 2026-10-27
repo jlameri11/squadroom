@@ -45,6 +45,14 @@
   --maybe: #9C6B06;  --maybe-bg: #9C6B0618;
   --no: #8E3020;     --no-bg: #8E302018;
 
+  /* One colour per child, so a parent with three in two age groups can tell
+     whose Saturday they are looking at. Picked to stay clear of the RSVP
+     hues above — a child's colour must never read as an answer. Assigned by
+     hashing the player id in the client, so there is no column, no default
+     and no settings screen for a preference nobody asked to set. */
+  --kid-1: #2F62C4;  --kid-2: #7A4BB8;  --kid-3: #0C6B72;
+  --kid-4: #AB3577;  --kid-5: #3F5C75;  --kid-6: #566274;
+
   --bubble-in: #ffffff;
   --bubble-out: #DCE7F2;
 
@@ -95,6 +103,9 @@
     --maybe: #D0A03C;  --maybe-bg: #D0A03C22;
     --no: #D9755F;     --no-bg: #D9755F22;
 
+    --kid-1: #7FA6F0;  --kid-2: #B894E8;  --kid-3: #4FBFC6;
+    --kid-4: #E888BC;  --kid-5: #9BB3CC;  --kid-6: #A8B4C2;
+
     --bubble-in: #1B2637;
     --bubble-out: #23405C;
 
@@ -127,6 +138,9 @@
   --yes: #4FB587;    --yes-bg: #4FB58722;
   --maybe: #D0A03C;  --maybe-bg: #D0A03C22;
   --no: #D9755F;     --no-bg: #D9755F22;
+
+  --kid-1: #7FA6F0;  --kid-2: #B894E8;  --kid-3: #4FBFC6;
+  --kid-4: #E888BC;  --kid-5: #9BB3CC;  --kid-6: #A8B4C2;
 
   --bubble-in: #1B2637;
   --bubble-out: #23405C;

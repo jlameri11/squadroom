@@ -83,8 +83,8 @@
 ### C. Chat (close the gap with WhatsApp)
 | ID | Feature | Status | Pri |
 |---|---|---|---|
-| C-01 | **"Seen by 41/56"** on announcements, from `channel_members.last_read_at`, plus a one-tap re-ping of unread members | MISSING | P1 |
-| C-02 | **Automatic member labels** from roster links: "Anna's Dad · U9 Navy", "Coach", "Manager" | MISSING | P1 |
+| C-01 | **"Seen by 41/56"** on announcements, from `channel_members.last_read_at`, plus a one-tap re-ping of unread members | **DONE** (0109). `announcement_reach` and `reping_unread`; the re-ping is rate limited in the database, so pressing it twice tells nobody twice | — |
+| C-02 | **Automatic member labels** from roster links: "Anna's Dad · U9 Navy", "Coach", "Manager" | **DONE** (0111). `app_private.channel_member_label` takes the CHANNEL, not the academy, because what may be said about a person depends on who is listening: a team channel names that person's children in THAT squad (everyone there can already read the roster), an academy-wide channel names no child at all — only the role and the squads. Proven by test-labels-and-reasons, which checks every child's first name in the academy against every academy-wide label | — |
 | C-03 | @mentions | MISSING | P2 |
 | C-04 | Scheduled messages | MISSING | P2 |
 | C-05 | Voice notes + short video | MISSING | P2 |
@@ -96,9 +96,9 @@
 | ID | Feature | Status | Pri |
 |---|---|---|---|
 | E-01 | **Recurring training series**: every Tue/Thu for a term; edit one or all | **DONE** (0090–0092) — see X-20. Materialised as real events, built from a local time so daylight saving does not move training. "End the series" cancels only the future and keeps answered sessions. Editing ONE occurrence's details is still to do | **P1** |
-| E-02 | **Reason required when RSVP = no**, labelled "Can't play" (already visible to coaches) | PARTIAL (a free-text note exists on the event screen; not required, not labelled) | P1 |
-| E-03 | **Chase non-responders**: "12 haven't answered" → one-tap nudge, plus an optional automatic nudge 48h before | PARTIAL (reminders exist) | P1 |
-| E-04 | **Family view**: all kids across teams (and later across academies) in one home feed, colour-coded per child | PARTIAL (home shows a row per child across the academy; no per-child colour or filter, no cross-academy) | P1 |
+| E-02 | **Reason required when RSVP = no**, labelled "Can't play" (already visible to coaches) | **DONE** (0111–0113). Required on 'no' and nothing else — a reason for turning UP is an interrogation. Enforced by trigger, because three screens and two functions write an RSVP; `components/why-out.tsx` asks inline on all three so the tap never fails at the database. 0113 fixed 0111's own clearing logic, which left "Injured" sitting next to "Going" | — |
+| E-03 | **Chase non-responders**: "12 haven't answered" → one-tap nudge, plus an optional automatic nudge 48h before | **DONE** (0109, 0110). `who_hasnt_answered` lists per CHILD with the number to ring; `nudge_non_responders` is rate limited to one per person per day, so a coach who is not sure it worked can press it again. The automatic 48h nudge is still to do | **P2** |
+| E-04 | **Family view**: all kids across teams (and later across academies) in one home feed, colour-coded per child | **DONE within one academy** (0114). Filter chips on home, one colour per child derived from their id — stable on every device with no column, no default and no settings screen. The chips render only for a family with two or more children. Cross-academy is still to do, and needs the switcher to stop scoping the screen | **P2** |
 | E-05 | Availability grid for coaches (players × upcoming events) | MISSING | P2 |
 | E-06 | Squad selection from availability → notify the selected players, with position/meet time/kit | MISSING | P2 |
 | E-07 | One-tap attendance at training + attendance % | MISSING | P2 |
@@ -157,7 +157,7 @@ Dribl's weak spots here:
 | X-10 | **Accessibility + languages**: Dynamic Type/VoiceOver labels; strings ready for translation (Italian, Arabic, Chinese, Greek, Vietnamese are common among Sydney football families) | MISSING | P3 |
 | X-11 | **Post-match parent pulse**: a one-tap "How was today?" that only coaches see | MISSING | P3 |
 | X-12 | **Ground view for tournaments**: games by field/time for organisers on the day (Dribl added this in Apr 2025) | **DONE** — the run sheet groups by kick-off time for a one-day competition and by round for a season (X-17) | P3 |
-| X-13 | **One-tap wet-weather call for a whole venue/day**: cancels every affected event across all squads, uses the existing cancellation push and SMS | PARTIAL (per event) | P1 |
+| X-13 | **One-tap wet-weather call for a whole venue/day**: cancels every affected event across all squads, uses the existing cancellation push and SMS | **DONE**. `app/calendar/call-off-day.tsx` + `call_off_day`; it shows what it is about to cancel before it does, skips what is already cancelled so a second press tells nobody twice, and each event goes through the existing 0064 trigger so the reason travels with it. Proven by test-call-off-day, including the Sydney-timezone edge where an early-morning game falls on the previous UTC day | — |
 | X-14 | **The draw builder double-booked fields across divisions.** `generate_fixtures` (0047) tracks which TEAMS are busy in a slot, never which FIELDS, and each call assumes it owns the fields it is handed. Drawing three age groups onto the same four fields — which is what a gala day *is* — produced three games kicking off on Field 1 at nine. Found while seeding the Spring Gala Day, worked around there by giving each division its own fields | **DONE** (0081, applied 25 Oct 2026; proven by test-league-draw) | P0 |
 | X-15 | **The draw builder could only build ONE DAY**, so Squadroom could run a tournament and not a league season — half of what Dribl is for. Pass 2 of 0047 walks consecutive slots from a single start time and places any game whose teams are free: there is no way to say "Round 1 this Sunday, Round 2 next Sunday", and greedy placement puts Round 1 and Round 2 games in the same slot. 0081 adds `p_round_every_days`, defaulting to 0 so a gala day draws exactly as before | **DONE** (0081, applied 25 Oct 2026; proven by test-league-draw) | P0 |
 | X-16 | **Organisation switcher.** One person can run a league and coach at a club — `academies` means ORGANISATION and a `league` row has existed since 0021 — but every screen resolved it with `my_first_academy()`, the alphabetically first, with no way to reach the other. 0080 parameterises `home_screen`/`chat_screen`/`fixtures_screen`/`nav_badges`; the choice lives in the browser (two tabs can be two organisations) and the server validates it against active membership | **DONE** (0080, applied 25 Oct 2026; proven by test-organisations, including that an academy you are not in leaks nothing) | P0 |
@@ -246,7 +246,10 @@ REGISTRATION ──► PLAYER (+ guardians, consents, kit, number)
    - Apply 0076 and run `test-minor-dms.mjs` + `test-rls.sql` (S-01).
    - Then S-02 and S-03. These are small and non-negotiable.
 3. **Registration core:** R-01 → R-10, B-01, plus the Settings → My family screen.
-4. **Engagement:** E-01, E-02, E-03, C-01, C-02, X-13, the Home "Needs you" strip + child chips, F-02, F-03, then the F-04 switchover.
+4. **Engagement:** E-01, E-02, E-03, C-01, C-02, X-13, the Home "Needs you" strip
+   and child chips are **DONE**. What is left in this phase: **F-02** (club-wide
+   draw view — day tabs, team filter, public link), **F-03** (import diff
+   preview), then the **F-04** switchover.
 5. **Match centre & stats:** X-05, X-01, X-02, X-03, X-06, X-04, X-09.
 6. **Before the second academy:** the P2 items, the legal review (S-05), the prod Supabase project, Stripe live, the App Store build.
 

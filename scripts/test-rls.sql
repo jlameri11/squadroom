@@ -24,9 +24,31 @@ declare
   OUTSIDER constant uuid := '00000000-0000-0000-0000-0000000000c2'; -- other tenant
   ANNO     constant uuid := '00000000-0000-0000-0000-00000000c001';
   v_u8 uuid; v_rv uuid; n int; b bool; foreign_rows int;
+  v_ev uuid; v_ev_total int; v_msg uuid;
 begin
   select id into v_u8 from public.channels where team_id = '00000000-0000-0000-0000-0000000d0008' and type='team';
   select id into v_rv from public.channels where team_id = '00000000-0000-0000-0000-0000000d0099' and type='team';
+
+  -- Check 22 needs a fixture that HAS a register, and it used to name one by
+  -- id. That id was a seeded event, the event was deleted at some point in a
+  -- demo, and the check then failed reporting 0 of an expected 5 — which
+  -- reads exactly like a coach losing sight of their own team sheet. A
+  -- policy test must fail for policy reasons only.
+  --
+  -- So the fixture is chosen, and the truth is read HERE, before any role
+  -- switch, where RLS is bypassed and the count is the real one.
+  select r.event_id, count(*) into v_ev, v_ev_total
+    from public.event_rsvps r
+    join public.events e on e.id = r.event_id
+   where e.academy_id = ACAD_A
+     and e.team_id = '00000000-0000-0000-0000-0000000d0008'
+   group by r.event_id
+   order by count(*) desc, r.event_id
+   limit 1;
+
+  select id into v_msg from public.messages
+   where channel_id = v_u8 and status = 'published'
+   order by created_at limit 1;
 
   -- ======================= tenant isolation, reads =======================
   perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
@@ -168,13 +190,84 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
   execute 'set local role authenticated';
 
-  select count(*) into n from public.event_rsvps where event_id='00000000-0000-0000-0000-0000000f0003';
-  insert into rls_results values (22,'coach sees the full register', case when n=5 then 'PASS (5)' else 'FAIL ('||n||')' end);
+  -- No fixture with a register at all is a FAIL, not a pass: a check that
+  -- quietly stops checking is worse than one that breaks loudly.
+  if v_ev is null then
+    insert into rls_results values (22,'coach sees the full register',
+      'FAIL (no U8 fixture has a register — reseed)');
+  else
+    select count(*) into n from public.event_rsvps where event_id = v_ev;
+    insert into rls_results values (22,'coach sees the full register',
+      case when n = v_ev_total then 'PASS ('||n||' of '||v_ev_total||')'
+           else 'FAIL ('||n||' of '||v_ev_total||')' end);
+  end if;
 
   select count(*) into n from public.messages where academy_id = ACAD_B;
   insert into rls_results values (23,'even an owner cannot cross tenants', case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   execute 'reset role';
+
+  -- ================== safeguarding reports (0108) ==================
+  -- A report is the one record in the product that is deliberately readable
+  -- by almost nobody: the person who made it, so they know it arrived, and
+  -- the appointed officer. Not a coach, and not an owner who has not
+  -- appointed themselves — a club where the person complained about can read
+  -- the complaint has no reporting channel at all.
+  insert into public.message_reports (academy_id, channel_id, message_id, reported_by, reason, note)
+  values (ACAD_A, v_u8, v_msg, PARENT, 'other', 'rls probe');
+
+  perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+
+  select count(*) into n from public.message_reports where note = 'rls probe';
+  insert into rls_results values (24,'a coach cannot read a safeguarding report',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+
+  -- Insert is `with check (false)` for everyone: reports are written by the
+  -- RPC, which takes the channel and academy from the MESSAGE rather than
+  -- from the caller, so one cannot be filed against another academy's.
+  -- Literal values, not an insert..select. A select that returns no rows
+  -- inserts nothing and raises nothing, so the first version of this check
+  -- passed on a coach who simply could not read the message — it was
+  -- measuring its own setup, not the policy.
+  b := false;
+  begin
+    insert into public.message_reports (academy_id, channel_id, message_id, reported_by, reason, note)
+    values (ACAD_A, v_u8, v_msg, MARCUS, 'other', 'direct insert');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (25,'reports cannot be inserted directly',
+    case when b then 'PASS' else 'FAIL' end);
+
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+
+  select count(*) into n from public.message_reports where note = 'rls probe';
+  insert into rls_results values (26,'the person who reported can see their own report',
+    case when n=1 then 'PASS' else 'FAIL ('||n||')' end);
+
+  -- A record a club can delete is not a record.
+  delete from public.message_reports where note = 'rls probe';
+  select count(*) into n from public.message_reports where note = 'rls probe';
+  insert into rls_results values (27,'nobody can delete a report',
+    case when n=1 then 'PASS' else 'FAIL (deleted)' end);
+
+  select count(*) into n from public.safeguarding_officers where academy_id = ACAD_B;
+  insert into rls_results values (28,'another academy''s officers are invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+
+  b := false;
+  begin
+    insert into public.safeguarding_officers (academy_id, profile_id) values (ACAD_A, PARENT);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (29,'a parent cannot appoint a safeguarding officer',
+    case when b then 'PASS' else 'FAIL' end);
+
+  execute 'reset role';
+  delete from public.message_reports where note in ('rls probe', 'direct insert');
+  delete from public.safeguarding_officers where academy_id = ACAD_A and profile_id = PARENT;
 
   -- Leave the database as we found it, so the suite can be run repeatedly.
   -- Without this the pending-invite unique index makes check 21 fail on a
