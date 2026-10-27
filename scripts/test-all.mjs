@@ -20,8 +20,15 @@ import { readdirSync } from 'node:fs'
 const PAUSE_MS = Number(process.env.TEST_PAUSE_MS ?? 1500)
 const only = process.argv.slice(2)
 
+// .ts as well as .mjs. test-import-parsing.ts has existed for months and
+// this runner never looked at it — it only ran when somebody remembered
+// `npm run test:parsing`, and nobody did. It was asserting that the opponent
+// column is the away team, which a real Dribl export later disproved.
 const suites = readdirSync('scripts')
-  .filter((f) => f.startsWith('test-') && f.endsWith('.mjs') && f !== 'test-all.mjs')
+  .filter(
+    (f) =>
+      f.startsWith('test-') && (f.endsWith('.mjs') || f.endsWith('.ts')) && f !== 'test-all.mjs'
+  )
   .filter((f) => only.length === 0 || only.some((o) => f.includes(o)))
   .sort()
 
@@ -31,7 +38,13 @@ const dim = (s) => `\x1b[2m${s}\x1b[0m`
 
 function run(file) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [`scripts/${file}`], {
+    // TypeScript suites need the stripper; plain ones must not get the flag,
+    // because it is still experimental and prints a warning that lands in the
+    // captured output.
+    const args = file.endsWith('.ts')
+      ? ['--experimental-strip-types', '--no-warnings', `scripts/${file}`]
+      : [`scripts/${file}`]
+    const child = spawn(process.execPath, args, {
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -44,7 +57,7 @@ function run(file) {
 
 const results = []
 for (const file of suites) {
-  const name = file.replace(/^test-|\.mjs$/g, '')
+  const name = file.replace(/^test-|\.mjs$|\.ts$/g, '')
   const { code, out } = await run(file)
   const passed = (out.match(/✓/g) ?? []).length
   const failed = (out.match(/✗/g) ?? []).length

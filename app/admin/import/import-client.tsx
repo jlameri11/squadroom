@@ -7,6 +7,8 @@ import {
   suggestMapping,
   toLocalDate,
   toLocalTime,
+  toDurationMins,
+  resolveSides,
   type FieldKey,
 } from '@/lib/import/columns'
 import { ImportDiff, type Diff } from './import-diff'
@@ -22,12 +24,17 @@ type Prepared = {
   local_date: string | null
   local_time: string | null
   end_time: string | null
+  duration_mins: number | null
   title: string
   opponent: string
   venue: string
   round: string
   external_ref: string
+  was_home: boolean | null
+  /** Why this row will not be imported. */
   problem: string | null
+  /** Both sides are this club's — imported once, named with both teams. */
+  derby: boolean
 }
 
 const NAVY = 'var(--brand)'
@@ -57,6 +64,11 @@ export function ImportClient({
   // looking authoritative.
   const [diff, setDiff] = useState<Diff | null>(null)
   const [cancelMissing, setCancelMissing] = useState(false)
+  // Which club in the file is this one. Asked rather than matched: a real
+  // export calls this academy "NRFA" while the app calls it "NRIFA", and a
+  // fuzzy match that got that right would get the next club wrong. One tap,
+  // exact after that.
+  const [ourClub, setOurClub] = useState<string | null>(null)
 
   async function readFile(file: File) {
     setError(null)
@@ -101,47 +113,117 @@ export function ImportClient({
     return rows.map((row, index) => {
       const local_date = toLocalDate(cell(row, 'local_date'))
       const local_time = toLocalTime(cell(row, 'local_time'))
-      const opponent = text(row, 'opponent')
-      const round = text(row, 'round')
+      const rawRound = text(row, 'round')
       const explicitTitle = text(row, 'title')
 
+      // A real export gives Home Team and Away Team and no opponent column.
+      // Which side is the opposition depends on which club is ours, so it is
+      // worked out rather than mapped — the old guess of "Away Team" would
+      // have imported a game against ourselves.
+      const sides = resolveSides(
+        ourClub,
+        text(row, 'home_club'),
+        text(row, 'away_club'),
+        text(row, 'home_team'),
+        text(row, 'away_team')
+      )
+      const opponent = text(row, 'opponent') || sides.opponent || ''
+
+      // Ground and field are separate columns, and the field number is the
+      // half a parent standing in a car park actually needs.
+      const venue = [text(row, 'venue'), text(row, 'field')].filter(Boolean).join(' · ')
+
+      // "7" on its own is not a round, it is a number. The file means Round 7.
+      const round = /^\d+$/.test(rawRound) ? `Round ${rawRound}` : rawRound
+
       let problem: string | null = null
-      if (!local_date) problem = 'Could not read the date'
+      if (isBye(text(row, 'bye'))) problem = 'Marked as a bye — not a game'
+      else if (!local_date) problem = 'Could not read the date'
       else if (!local_time) problem = 'Could not read the time'
+      else if (sides.foreign) problem = 'Neither team is yours'
+
+      const bothTeams = [text(row, 'home_team'), text(row, 'away_team')].filter(Boolean)
 
       return {
         index,
         local_date,
         local_time,
         end_time: toLocalTime(cell(row, 'end_time')),
+        duration_mins: toDurationMins(cell(row, 'duration')),
         // A name built from what is there, rather than "Match" forty times.
-        title: explicitTitle || [round, opponent && `vs ${opponent}`].filter(Boolean).join(' ') || 'Match',
+        // A derby names both sides, because there is no "opponent" when both
+        // teams are yours and "Round 8" alone tells a family nothing.
+        title:
+          explicitTitle ||
+          (sides.derby && bothTeams.length === 2
+            ? [round, `${bothTeams[0]} v ${bothTeams[1]}`].filter(Boolean).join(' · ')
+            : [round, opponent && `vs ${opponent}`].filter(Boolean).join(' ')) ||
+          'Match',
         opponent,
-        venue: text(row, 'venue'),
+        venue,
         round,
         external_ref: text(row, 'external_ref'),
+        was_home: sides.wasHome,
         problem,
+        derby: sides.derby,
       }
     })
-  }, [rows, mapping])
+  }, [rows, mapping, ourClub])
 
   const good = prepared.filter((p) => !p.problem)
   const bad = prepared.filter((p) => p.problem)
-  const ready = good.length > 0 && Boolean(mapping.local_date) && Boolean(mapping.local_time)
+
+  // The clubs named in the file, so the coach can say which one is them.
+  // Taken from the rows rather than a list of clubs we know about, because
+  // the file is the only place the file's spelling exists.
+  const clubsInFile = useMemo(() => {
+    const collect = (keys: readonly string[]) => {
+      const seen = new Set<string>()
+      for (const row of rows) {
+        for (const key of keys) {
+          const col = mapping[key]
+          const v = col ? String(row[col] ?? '').trim() : ''
+          if (v) seen.add(v)
+        }
+      }
+      return [...seen].sort()
+    }
+    // Clubs when the file names them, team names when it does not. Some
+    // exports have Home Team and Away Team and nothing else, and then the
+    // team name is the only thing there is to pick.
+    const clubs = collect(['home_club', 'away_club'])
+    return clubs.length > 0 ? clubs : collect(['home_team', 'away_team'])
+  }, [rows, mapping])
+
+  // Only when the file actually has home/away clubs AND names more than one.
+  // A single-club file needs no question, and a file with no club columns is
+  // one where the opponent is mapped directly.
+  const needsClub = clubsInFile.length > 1 && !ourClub
+
+  const ready =
+    good.length > 0 &&
+    Boolean(mapping.local_date) &&
+    Boolean(mapping.local_time) &&
+    !needsClub
 
   // One definition of the payload, used by the preview and the write. Two
   // would be two descriptions of the import, and the preview's job is to be
   // the same import.
   function payload() {
-    return prepared.map((p) => ({
+    // Only the rows that will actually be imported. Sending a bye or another
+    // club's game and letting the database decide would make the preview
+    // describe an import nobody asked for.
+    return good.map((p) => ({
       local_date: p.local_date,
       local_time: p.local_time,
       end_time: p.end_time,
+      duration_mins: p.duration_mins,
       title: p.title,
       opponent: p.opponent,
       venue: p.venue,
       round: p.round,
       external_ref: p.external_ref,
+      was_home: p.was_home,
     }))
   }
 
@@ -280,6 +362,46 @@ export function ImportClient({
             </div>
           </section>
 
+          {clubsInFile.length > 1 && (
+            <section className="mt-4 rounded-xl border p-4" style={{ borderColor: 'var(--line)' }}>
+              <h2 className="font-semibold">Which of these is you?</h2>
+              {/*
+                Asked, never matched. This export calls the academy "NRFA"
+                while the app calls it "NRIFA" — a fuzzy match that got that
+                right would get the next club wrong, and the cost of being
+                wrong is importing a game against yourself.
+              */}
+              <p className="mt-1 text-xs text-ink-2">
+                The file has Home Team and Away Team, so I need to know which side you are
+                before I can tell who you played.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {clubsInFile.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      setOurClub(c === ourClub ? null : c)
+                      setDiff(null)
+                    }}
+                    aria-pressed={c === ourClub}
+                    className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                    style={
+                      c === ourClub
+                        ? {
+                            borderColor: NAVY,
+                            background: 'var(--brand-faint)',
+                            color: NAVY,
+                          }
+                        : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
+                    }
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           <label className="mt-4 block">
             <span className="text-sm font-medium">Which team is this draw for?</span>
             <select
@@ -317,12 +439,38 @@ export function ImportClient({
             <section className="mt-5">
               <h2 className="font-semibold" style={{ color: NAVY }}>
                 {good.length} {good.length === 1 ? 'game' : 'games'} read
-                {bad.length > 0 && `, ${bad.length} unreadable`}
+                {bad.length > 0 && `, ${bad.length} left out`}
               </h2>
               <p className="mt-0.5 text-xs text-ink-2">
                 Times are read exactly as written and set in {timezone}. Check the changes
                 before anything is created or anyone is told.
               </p>
+              {/*
+                Shown before the import, not after. A coach who exported forty
+                games and imported thirty-eight needs to know which two went
+                missing and why, or they find out on a Saturday.
+              */}
+              {bad.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-ink-2">
+                  {Object.entries(
+                    bad.reduce<Record<string, number>>((acc, p) => {
+                      acc[p.problem!] = (acc[p.problem!] ?? 0) + 1
+                      return acc
+                    }, {})
+                  ).map(([reason, n]) => (
+                    <li key={reason}>
+                      {n} × {reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {good.some((p) => p.derby) && (
+                <p className="mt-2 text-xs text-ink-2">
+                  {good.filter((p) => p.derby).length} of these are between two of your own
+                  teams. They are imported once, named with both sides — the file does not say
+                  which of them this draw is for.
+                </p>
+              )}
             </section>
           )}
 
@@ -334,11 +482,13 @@ export function ImportClient({
               style={{ background: diff ? NAVY : 'var(--mid, #3D4A6D)' }}
             >
               {busy ??
-                (!ready
-                  ? 'Map the date and time first'
-                  : diff
-                    ? importLabel(diff, cancelMissing)
-                    : 'Check the changes')}
+                (needsClub
+                  ? 'Say which club is you first'
+                  : !ready
+                    ? 'Map the date and time first'
+                    : diff
+                      ? importLabel(diff, cancelMissing)
+                      : 'Check the changes')}
             </button>
             <button
               onClick={() => {
@@ -384,4 +534,14 @@ function importLabel(diff: Diff, cancelMissing: boolean) {
   if (writes) parts.push(`${writes} ${writes === 1 ? 'change' : 'changes'}`)
   if (offs) parts.push(`call off ${offs}`)
   return `Apply ${parts.join(' and ')}`
+}
+
+
+/**
+ * Dribl writes this column as the text "True" / "False", not a boolean, so
+ * `Boolean(value)` is true for both. A bye is not a game and importing one
+ * puts a fixture in a family's calendar for a weekend off.
+ */
+function isBye(value: string) {
+  return ['true', 'yes', '1', 'y'].includes(value.trim().toLowerCase())
 }

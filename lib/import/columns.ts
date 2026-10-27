@@ -13,10 +13,17 @@ export type FieldKey =
   | 'local_date'
   | 'local_time'
   | 'end_time'
+  | 'duration'
   | 'opponent'
+  | 'home_team'
+  | 'away_team'
+  | 'home_club'
+  | 'away_club'
   | 'venue'
+  | 'field'
   | 'round'
   | 'title'
+  | 'bye'
   | 'external_ref'
 
 export type FieldSpec = {
@@ -33,6 +40,17 @@ export type FieldSpec = {
   required: boolean
   /** Lowercase fragments that suggest this column, best first. */
   matches: string[]
+  /**
+   * Fragments that DISQUALIFY a column, however well it otherwise scores.
+   *
+   * Added because a real Dribl export titled every game "Pending": `title`
+   * matched "match" inside "Matchsheet Status" and claimed it. That is the
+   * second time this exact shape has bitten — CLAUDE.md already records
+   * `title` stealing "Match Id" from `external_ref` — and a positive-only
+   * scorer cannot express "a status column is never a name", which is the
+   * thing that is actually true.
+   */
+  excludes?: string[]
 }
 
 export const FIELDS: FieldSpec[] = [
@@ -53,16 +71,71 @@ export const FIELDS: FieldSpec[] = [
   {
     key: 'opponent',
     label: 'Opponent',
-    hint: 'The other team',
+    hint: 'Only if the file names the opposition directly',
     required: false,
-    matches: ['opponent', 'away team', 'versus', 'vs', 'against', 'opposition'],
+    // 'away team' is gone from here. A real export has Home Team AND Away
+    // Team, and which one is the OPPONENT depends on which side your club
+    // is on — it was the away team in one row of a two-row file and the home
+    // team in the other. Guessing meant importing a game against ourselves.
+    matches: ['opponent', 'opposition', 'versus', 'against'],
+    excludes: ['code', 'group', 'club'],
+  },
+  {
+    key: 'home_team',
+    label: 'Home team',
+    hint: 'Used with the away team to work out who you played',
+    required: false,
+    matches: ['home team', 'home'],
+    excludes: ['code', 'group', 'club', 'score'],
+  },
+  {
+    key: 'away_team',
+    label: 'Away team',
+    hint: 'Used with the home team to work out who you played',
+    required: false,
+    matches: ['away team', 'away'],
+    excludes: ['code', 'group', 'club', 'score'],
+  },
+  {
+    key: 'home_club',
+    label: 'Home club',
+    hint: 'So the importer can tell which side is you',
+    required: false,
+    matches: ['home club name', 'home club'],
+    excludes: ['code'],
+  },
+  {
+    key: 'away_club',
+    label: 'Away club',
+    hint: 'So the importer can tell which side is you',
+    required: false,
+    matches: ['away club name', 'away club'],
+    excludes: ['code'],
+  },
+  {
+    key: 'bye',
+    label: 'Bye',
+    hint: 'Rows marked as a bye are not games and are left out',
+    required: false,
+    matches: ['bye'],
   },
   {
     key: 'venue',
     label: 'Ground',
-    hint: 'Where it is played, and the field number if there is one',
+    hint: 'The complex or park',
     required: false,
-    matches: ['venue', 'ground', 'field', 'pitch', 'location', 'facility'],
+    // 'field' moved to its own entry: a real export has Ground
+    // ("Blacktown Football Park") AND Field ("7v7 Field 3"), and folding
+    // them together lost the field number — which is the half a parent
+    // standing in a car park actually needs.
+    matches: ['venue', 'ground', 'location', 'facility', 'complex'],
+  },
+  {
+    key: 'field',
+    label: 'Field',
+    hint: 'Field or pitch number, if it is in its own column',
+    required: false,
+    matches: ['field', 'pitch', 'court'],
   },
   {
     key: 'round',
@@ -74,16 +147,30 @@ export const FIELDS: FieldSpec[] = [
   {
     key: 'end_time',
     label: 'Finish',
-    hint: 'Only if the file has one',
+    hint: 'Only if the file has a finish TIME',
     required: false,
-    matches: ['end time', 'finish', 'end'],
+    matches: ['end time', 'finish time', 'finish', 'end'],
+    excludes: ['duration'],
+  },
+  {
+    key: 'duration',
+    label: 'Length',
+    hint: 'How long the game runs — "30 min", "50", "1:30"',
+    required: false,
+    // A real export gives Duration, not a finish time, so every game was
+    // silently getting the 90-minute default. A U7 game is 30 minutes.
+    matches: ['duration', 'minutes', 'mins', 'length', 'period'],
   },
   {
     key: 'title',
     label: 'Name',
     hint: 'Left blank, a name is built from the round and the opponent',
     required: false,
-    matches: ['title', 'name', 'description', 'match'],
+    // 'match' is gone. In a spreadsheet about matches it matches everything
+    // and means nothing: a real export has "Matchsheet Status", "Match Id"
+    // and "Match Date", and not one of them is a name.
+    matches: ['title', 'name', 'description'],
+    excludes: ['status', 'code', 'id', 'reference', 'type', 'group', 'club'],
   },
   {
     key: 'external_ref',
@@ -129,6 +216,11 @@ export function suggestMapping(
 
   for (const field of fields) {
     for (const header of headers) {
+      // A disqualified column is out however well it scores. Checked before
+      // scoring, not after, so a 100-point exact match cannot sneak past.
+      const h = header.trim().toLowerCase().replace(/[_-]+/g, ' ')
+      if (field.excludes?.some((bad) => h.includes(bad))) continue
+
       for (let i = 0; i < field.matches.length; i++) {
         // Earlier fragments are stronger signals, so later ones are damped.
         const s = score(header, field.matches[i]) - i
@@ -302,3 +394,118 @@ export const PLAYER_FIELDS: FieldSpec[] = [
     matches: ['school'],
   },
 ]
+
+/**
+ * How long a game runs, from whatever the file calls it.
+ *
+ * A real Dribl export says "30 min". The importer used to look for a FINISH
+ * TIME, found none, and silently gave every game the 90-minute default — so
+ * a U7 game that runs half an hour sat in a parent's calendar for an hour
+ * and a half, and the one after it looked like a clash.
+ *
+ * Returns minutes, or null when there is nothing usable. Null means "use the
+ * default", which is a decision the database makes, not this function.
+ */
+export function toDurationMins(value: unknown): number | null {
+  if (value == null || value === '') return null
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return sane(Math.round(value))
+  }
+
+  const text = String(value).trim().toLowerCase()
+
+  // "1:30" and "0:45" — a duration written as a clock.
+  const clock = text.match(/^(\d{1,2}):(\d{2})$/)
+  if (clock) return sane(Number(clock[1]) * 60 + Number(clock[2]))
+
+  // "1h 30", "1 hr 30m", "2 hours".
+  const hours = text.match(/^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b\s*(\d+)?/)
+  if (hours) return sane(Math.round(Number(hours[1]) * 60) + Number(hours[2] ?? 0))
+
+  // "30 min", "30mins", "30 minutes", "30".
+  const mins = text.match(/^(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)?$/)
+  if (mins) return sane(Math.round(Number(mins[1])))
+
+  return null
+}
+
+/**
+ * Bounds rather than a bare number, because a mis-read duration is worse
+ * than none: it puts a wrong finish time in every family's calendar. Five
+ * minutes is not a game and eight hours is not a game either — both mean
+ * the column was misunderstood, and the default is the honest answer.
+ */
+function sane(mins: number): number | null {
+  return mins >= 10 && mins <= 300 ? mins : null
+}
+
+export type Sides = {
+  /** The team we played. Null when it cannot be worked out. */
+  opponent: string | null
+  /** True, false, or null for genuinely unknown — never a guess. */
+  wasHome: boolean | null
+  /** Both sides belong to the chosen club. */
+  derby: boolean
+  /** Neither side belongs to the chosen club. */
+  foreign: boolean
+}
+
+/**
+ * Which side of a fixture is us.
+ *
+ * A real export has Home Team and Away Team and no "opponent" column at all,
+ * and which one is the opposition depends on which side your club is on — in
+ * a two-row file it was the away team in one row and the home team in the
+ * other. Mapping "opponent" straight to "Away Team" meant importing a game
+ * against ourselves.
+ *
+ * It takes the club name the COACH CHOSE rather than matching the academy's
+ * own name against the file. "NRIFA" in the app is "NRFA" in the export, and
+ * a fuzzy match that got that right would get the next club wrong — this is
+ * precisely the guess CLAUDE.md says not to make. One tap, exact after that.
+ *
+ * A derby is reported, not resolved. When both teams are yours there is no
+ * fact in the file about which one this import is for, so `wasHome` stays
+ * null and the screen says so.
+ */
+export function resolveSides(
+  /**
+   * The club OR team name the coach picked out of the file. Either works,
+   * and a file that names clubs separately is not the only shape there is —
+   * some exports have Home Team and Away Team and nothing else, and then the
+   * team name is the only thing there is to pick.
+   */
+  ourSide: string | null,
+  homeClub: string,
+  awayClub: string,
+  homeTeam: string,
+  awayTeam: string
+): Sides {
+  const same = (a: string, b: string) =>
+    a.trim().toLowerCase().replace(/\s+/g, ' ') === b.trim().toLowerCase().replace(/\s+/g, ' ')
+
+  const home = homeTeam.trim()
+  const away = awayTeam.trim()
+
+  if (!ourSide || (!home && !away && !homeClub.trim() && !awayClub.trim())) {
+    return { opponent: null, wasHome: null, derby: false, foreign: false }
+  }
+
+  // Club first, then team. Picking a CLUB in a file that also names teams is
+  // what makes a derby a derby; picking a TEAM resolves one exactly, which
+  // is why both are allowed rather than one being the "right" way.
+  const weAreHome = same(homeClub, ourSide) || same(home, ourSide)
+  const weAreAway = same(awayClub, ourSide) || same(away, ourSide)
+
+  if (weAreHome && weAreAway) {
+    return { opponent: null, wasHome: null, derby: true, foreign: false }
+  }
+  if (weAreHome) return { opponent: away || null, wasHome: true, derby: false, foreign: false }
+  if (weAreAway) return { opponent: home || null, wasHome: false, derby: false, foreign: false }
+
+  // Neither side is ours. A game between two other clubs that came along in
+  // the export — reported rather than imported, because an event nobody at
+  // this academy is playing in is noise in every family's calendar.
+  return { opponent: null, wasHome: null, derby: false, foreign: true }
+}

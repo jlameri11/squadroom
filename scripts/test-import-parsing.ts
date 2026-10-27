@@ -1,4 +1,11 @@
-import { suggestMapping, toLocalDate, toLocalTime, FIELDS } from '../lib/import/columns.ts'
+import {
+  suggestMapping,
+  toLocalDate,
+  toLocalTime,
+  toDurationMins,
+  resolveSides,
+  FIELDS,
+} from '../lib/import/columns.ts'
 
 const ok = (m: string) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m: string) => { console.log(`  \x1b[31m✗\x1b[0m ${m}`); process.exitCode = 1 }
@@ -6,16 +13,23 @@ const head = (m: string) => console.log(`\n${m}`)
 const eq = (got: unknown, want: unknown, label: string) =>
   got === want ? ok(`${label} → ${got}`) : bad(`${label} → got ${got}, wanted ${want}`)
 
-head('1. Column names as Dribl and league secretaries actually write them')
+head('1. Column names as league secretaries write them')
 const dribl = suggestMapping([
   'Match Id', 'Match Date', 'Kick Off', 'Home Team', 'Away Team', 'Venue', 'Match Round', 'Status',
 ])
 eq(dribl.local_date, 'Match Date', 'date')
 eq(dribl.local_time, 'Kick Off', 'kick-off')
-eq(dribl.opponent, 'Away Team', 'opponent')
 eq(dribl.venue, 'Venue', 'venue')
 eq(dribl.round, 'Match Round', 'round')
 eq(dribl.external_ref, 'Match Id', 'reference')
+// This used to assert `opponent → Away Team`, and a real export proved it
+// wrong: our club was the AWAY team in one row and the HOME team in the
+// next, so mapping the opponent to the away team imported a game against
+// ourselves. Home and away are mapped; which one is the opposition is
+// worked out per row from the club the coach picked.
+eq(dribl.home_team, 'Home Team', 'home team')
+eq(dribl.away_team, 'Away Team', 'away team')
+eq(dribl.opponent, undefined, 'opponent is NOT guessed from away team')
 
 head('2. "Date" beats "Date Created" — exact match wins over contains')
 const tricky = suggestMapping(['Date Created', 'Date', 'Time', 'Opposition', 'Ground'])
@@ -64,4 +78,77 @@ FIELDS.every((f) => f.hint.length > 0 && f.label.length > 0)
   ? ok(`${FIELDS.length} fields, all explained`)
   : bad('a field has no hint')
 
-console.log(process.exitCode ? '\n\x1b[31mBROKEN\x1b[0m\n' : '\n\x1b[32mPARSING HOLDS\x1b[0m\n')
+
+
+head('9. The headers a real Dribl export actually has')
+// Taken from an SPL Season 3 2026 export. The VALUES below are invented —
+// only the column names are real, because the shape is the thing that broke
+// and nobody's draw belongs in a test fixture.
+const real = suggestMapping([
+  'Identifier', 'Event Status', 'Matchsheet Status', 'Competition', 'Round', 'Date', 'Day',
+  'Start', 'Duration', 'Ground', 'Field', 'League', 'Age Group', 'Division', 'Gender',
+  'Home Club Code', 'Home Club Name', 'Home Team Code', 'Home Team Group', 'Home Team',
+  'Away Club Code', 'Away Club Name', 'Away Team Code', 'Away Team Group', 'Away Team',
+  'Status', 'Bye', 'Fixture Reference', 'Fixture Type', 'Allocated Referees',
+  'Accepted Referees', 'Present Referees',
+])
+eq(real.local_date, 'Date', 'date beats the "Day" column')
+eq(real.local_time, 'Start', 'kick-off')
+eq(real.duration, 'Duration', 'length')
+eq(real.venue, 'Ground', 'ground')
+eq(real.field, 'Field', 'field, kept separate from the ground')
+eq(real.round, 'Round', 'round')
+eq(real.home_team, 'Home Team', 'home team beats "Home Team Code" and "Home Team Group"')
+eq(real.away_team, 'Away Team', 'away team')
+eq(real.home_club, 'Home Club Name', 'home club')
+eq(real.away_club, 'Away Club Name', 'away club')
+eq(real.bye, 'Bye', 'bye')
+eq(real.external_ref, 'Identifier', 'reference')
+// The bug this file was bought with: every game came out titled "Pending".
+eq(real.title, undefined, '"Matchsheet Status" is NOT a name')
+eq(real.end_time, undefined, 'and "Duration" is NOT a finish time')
+
+head('10. "30 min" is half an hour, not an hour and a half')
+// The old importer looked for a finish time, found none, and gave every game
+// the 90-minute default — so a U7 game that runs 30 minutes sat in a
+// parent's calendar for 90 and the next one looked like a clash.
+eq(toDurationMins('30 min'), 30, '"30 min"')
+eq(toDurationMins('50'), 50, '"50"')
+eq(toDurationMins('1:30'), 90, '"1:30"')
+eq(toDurationMins('2 hours'), 120, '"2 hours"')
+eq(toDurationMins('1 hr 15'), 75, '"1 hr 15"')
+eq(toDurationMins(45), 45, 'a bare number')
+eq(toDurationMins(''), null, 'blank → the default, not zero')
+eq(toDurationMins('TBC'), null, 'nonsense → the default')
+// Bounds, because a mis-read duration is worse than none: it puts a wrong
+// finish time in every family's calendar.
+eq(toDurationMins('5'), null, '5 minutes is not a game')
+eq(toDurationMins('480'), null, 'and neither is eight hours')
+
+head('11. Which side of the fixture is us')
+const away = resolveSides('NRFA', 'Rilevare Football', 'NRFA', 'Rilevare Football U7', 'NRFA U7 navy')
+eq(away.opponent, 'Rilevare Football U7', 'we were away → the opponent is the home team')
+eq(away.wasHome, false, 'and was_home is false')
+
+const home = resolveSides('NRFA', 'NRFA', 'Mosman', 'NRFA U7 navy', 'Mosman U7')
+eq(home.opponent, 'Mosman U7', 'we were home → the opponent is the away team')
+eq(home.wasHome, true, 'and was_home is true')
+
+// Both sides ours. There is no fact in the file about which one this import
+// is for, so nothing is invented.
+const derby = resolveSides('NRFA', 'NRFA', 'NRFA', 'NRFA U7 navy', 'NRFA U7 sky blue')
+eq(derby.derby, true, 'a derby is reported')
+eq(derby.wasHome, null, 'and was_home stays unknown rather than guessed')
+eq(derby.opponent, null, 'with no opponent claimed')
+
+// Picking a TEAM instead of a club resolves the same derby exactly.
+const picked = resolveSides('NRFA U7 navy', 'NRFA', 'NRFA', 'NRFA U7 navy', 'NRFA U7 sky blue')
+eq(picked.opponent, 'NRFA U7 sky blue', 'picking the team resolves it')
+eq(picked.wasHome, true, 'and knows which end')
+
+const other = resolveSides('NRFA', 'Mosman', 'Manly', 'Mosman U7', 'Manly U7')
+eq(other.foreign, true, 'a game between two other clubs is flagged, not imported')
+
+eq(resolveSides(null, 'NRFA', 'Mosman', 'a', 'b').opponent, null, 'nothing claimed before you say who you are')
+
+console.log(process.exitCode ? '\n\x1b[31mBROKEN\x1b[0m' : '\n\x1b[32mPARSING HOLDS\x1b[0m')
