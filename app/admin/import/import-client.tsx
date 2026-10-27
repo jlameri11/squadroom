@@ -9,6 +9,7 @@ import {
   toLocalTime,
   type FieldKey,
 } from '@/lib/import/columns'
+import { ImportDiff, type Diff } from './import-diff'
 
 type Row = Record<string, unknown>
 // Keyed by string rather than FieldKey, so the same screen can serve the
@@ -50,6 +51,12 @@ export function ImportClient({
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
+  // The diff is the database's answer about THIS mapping and THIS team. Any
+  // change to either makes it a statement about an import that is no longer
+  // the one being made, so it is thrown away rather than left on screen
+  // looking authoritative.
+  const [diff, setDiff] = useState<Diff | null>(null)
+  const [cancelMissing, setCancelMissing] = useState(false)
 
   async function readFile(file: File) {
     setError(null)
@@ -122,34 +129,61 @@ export function ImportClient({
   const bad = prepared.filter((p) => p.problem)
   const ready = good.length > 0 && Boolean(mapping.local_date) && Boolean(mapping.local_time)
 
-  async function commit() {
-    setBusy('Importing…')
+  // One definition of the payload, used by the preview and the write. Two
+  // would be two descriptions of the import, and the preview's job is to be
+  // the same import.
+  function payload() {
+    return prepared.map((p) => ({
+      local_date: p.local_date,
+      local_time: p.local_time,
+      end_time: p.end_time,
+      title: p.title,
+      opponent: p.opponent,
+      venue: p.venue,
+      round: p.round,
+      external_ref: p.external_ref,
+    }))
+  }
+
+  async function check() {
+    setBusy('Working out what changes…')
     setError(null)
-    const supabase = createClient()
-    const { data, error } = await supabase.rpc('create_imported_events', {
+    const { data, error } = await createClient().rpc('preview_imported_events', {
       p_academy: academyId,
       p_team: (teamId || null) as unknown as string,
-      p_events: good.map((p) => ({
-        local_date: p.local_date,
-        local_time: p.local_time,
-        end_time: p.end_time,
-        title: p.title,
-        opponent: p.opponent,
-        venue: p.venue,
-        round: p.round,
-        external_ref: p.external_ref,
-      })) as never,
+      p_events: payload() as never,
     })
     setBusy(null)
     if (error) return setError(error.message)
-    const summary = data?.[0]
+    setDiff(data as unknown as Diff)
+  }
+
+  async function commit() {
+    setBusy('Importing…')
+    setError(null)
+    const { data, error } = await createClient().rpc('create_imported_events', {
+      p_academy: academyId,
+      p_team: (teamId || null) as unknown as string,
+      p_events: payload() as never,
+      p_cancel_missing: cancelMissing,
+    })
+    setBusy(null)
+    if (error) return setError(error.message)
+    const r = data?.[0]
     setResult(
-      `${summary?.created ?? 0} added, ${summary?.updated ?? 0} updated${
-        bad.length ? `, ${bad.length} skipped` : ''
-      }.`
+      [
+        r?.created ? `${r.created} added` : null,
+        r?.updated ? `${r.updated} updated` : null,
+        r?.cancelled ? `${r.cancelled} called off` : null,
+        r?.skipped ? `${r.skipped} skipped` : null,
+      ]
+        .filter(Boolean)
+        .join(', ') + '.' || 'Nothing to do.'
     )
     setRows([])
     setHeaders([])
+    setDiff(null)
+    setCancelMissing(false)
   }
 
   return (
@@ -226,7 +260,10 @@ export function ImportClient({
                   <select
                     value={mapping[field.key] ?? ''}
                     onChange={(e) =>
+                      {
                       setMapping({ ...mapping, [field.key]: e.target.value || undefined })
+                      setDiff(null)
+                    }
                     }
                     className="mt-0.5 w-full rounded-lg border border-[var(--line)] p-2"
                   >
@@ -247,7 +284,11 @@ export function ImportClient({
             <span className="text-sm font-medium">Which team is this draw for?</span>
             <select
               value={teamId}
-              onChange={(e) => setTeamId(e.target.value)}
+              onChange={(e) => {
+                setTeamId(e.target.value)
+                setDiff(null)
+                setCancelMissing(false)
+              }}
               className="mt-1 w-full rounded-lg border border-[var(--line)] p-2.5 text-sm"
             >
               <option value="">Everyone at {academyName}</option>
@@ -259,66 +300,52 @@ export function ImportClient({
             </select>
           </label>
 
-          <section className="mt-5">
-            <h2 className="font-semibold" style={{ color: NAVY }}>
-              {good.length} {good.length === 1 ? 'game' : 'games'} ready
-            </h2>
-            <p className="mt-0.5 text-xs text-ink-2">
-              Times are read exactly as written and set in {timezone}.
-            </p>
-
-            <ul className="mt-2 flex flex-col gap-1">
-              {good.slice(0, 8).map((p) => (
-                <li key={p.index} className="flex justify-between gap-3 border-b border-[var(--line-2)] py-1.5 text-sm">
-                  <span className="min-w-0 truncate">{p.title}</span>
-                  <span className="flex-none tabular-nums text-ink-2">
-                    {formatWhen(p.local_date!, p.local_time!)}
-                  </span>
-                </li>
-              ))}
-              {good.length > 8 && (
-                <li className="py-1 text-xs text-ink-3">…and {good.length - 8} more</li>
-              )}
-            </ul>
-
-            {/*
-              Bad rows are shown, never silently dropped. A coach who exported
-              forty games and imported thirty-eight needs to know which two are
-              missing, or they find out on a Saturday.
-            */}
-            {bad.length > 0 && (
-              <div className="mt-4 rounded-lg border   p-3">
-                <p className="text-sm font-medium ">
-                  {bad.length} {bad.length === 1 ? 'row' : 'rows'} will be skipped
-                </p>
-                <ul className="mt-1 flex flex-col gap-0.5 text-xs ">
-                  {bad.slice(0, 5).map((p) => (
-                    <li key={p.index}>
-                      Row {p.index + 2}: {p.problem}
-                    </li>
-                  ))}
-                  {bad.length > 5 && <li>…and {bad.length - 5} more</li>}
-                </ul>
-                <p className="mt-2 text-xs ">
-                  Usually the Date or Kick-off dropdown is pointing at the wrong column.
-                </p>
-              </div>
-            )}
-          </section>
+          {/*
+            The old screen listed the rows it was about to send and reported
+            what happened afterwards. "12 added, 3 updated" after the fact is
+            the wrong end of the decision — by then forty families have been
+            notified about a draw nobody checked.
+          */}
+          {diff ? (
+            <ImportDiff
+              diff={diff}
+              timezone={timezone}
+              cancelMissing={cancelMissing}
+              onCancelMissing={setCancelMissing}
+            />
+          ) : (
+            <section className="mt-5">
+              <h2 className="font-semibold" style={{ color: NAVY }}>
+                {good.length} {good.length === 1 ? 'game' : 'games'} read
+                {bad.length > 0 && `, ${bad.length} unreadable`}
+              </h2>
+              <p className="mt-0.5 text-xs text-ink-2">
+                Times are read exactly as written and set in {timezone}. Check the changes
+                before anything is created or anyone is told.
+              </p>
+            </section>
+          )}
 
           <div className="mt-5 flex gap-2">
             <button
-              onClick={commit}
+              onClick={diff ? commit : check}
               disabled={!ready || !!busy}
               className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: NAVY }}
+              style={{ background: diff ? NAVY : 'var(--mid, #3D4A6D)' }}
             >
-              {busy ?? (ready ? `Import ${good.length}` : 'Map the date and time first')}
+              {busy ??
+                (!ready
+                  ? 'Map the date and time first'
+                  : diff
+                    ? importLabel(diff, cancelMissing)
+                    : 'Check the changes')}
             </button>
             <button
               onClick={() => {
                 setHeaders([])
                 setRows([])
+                setDiff(null)
+                setCancelMissing(false)
               }}
               className="rounded-xl border border-[var(--line)] px-4 py-3 text-sm"
             >
@@ -345,4 +372,16 @@ function formatWhen(date: string, time: string) {
     hour: 'numeric',
     minute: '2-digit',
   })
+}
+
+function importLabel(diff: Diff, cancelMissing: boolean) {
+  const writes = diff.rows.filter(
+    (r) => r.verdict === 'new' || r.verdict === 'moved' || r.verdict === 'changed'
+  ).length
+  const offs = cancelMissing ? diff.missing.length : 0
+  if (writes === 0 && offs === 0) return 'Nothing to import'
+  const parts = []
+  if (writes) parts.push(`${writes} ${writes === 1 ? 'change' : 'changes'}`)
+  if (offs) parts.push(`call off ${offs}`)
+  return `Apply ${parts.join(' and ')}`
 }

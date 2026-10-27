@@ -3389,6 +3389,7 @@ export type Database = {
           reply_to_id: string
           reply_to_name: string
           sender_id: string
+          sender_label: string
           sender_name: string
           sender_role: Database["public"]["Enums"]["academy_role"]
         }[]
@@ -3534,8 +3535,14 @@ export type Database = {
         Returns: number
       }
       create_imported_events: {
-        Args: { p_academy: string; p_events: Json; p_team: string }
+        Args: {
+          p_academy: string
+          p_cancel_missing?: boolean
+          p_events: Json
+          p_team: string
+        }
         Returns: {
+          cancelled: number
           created: number
           skipped: number
           updated: number
@@ -3909,6 +3916,10 @@ export type Database = {
           voted_by_me: boolean
           votes: number
         }[]
+      }
+      preview_imported_events: {
+        Args: { p_academy: string; p_events: Json; p_team: string }
+        Returns: Json
       }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       purge_expired_message_archive: { Args: never; Returns: number }
