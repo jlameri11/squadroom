@@ -1859,6 +1859,87 @@ export type Database = {
           },
         ]
       }
+      message_reports: {
+        Row: {
+          academy_id: string
+          channel_id: string
+          created_at: string
+          id: string
+          message_id: string
+          note: string | null
+          outcome: string | null
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          academy_id: string
+          channel_id: string
+          created_at?: string
+          id?: string
+          message_id: string
+          note?: string | null
+          outcome?: string | null
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          academy_id?: string
+          channel_id?: string
+          created_at?: string
+          id?: string
+          message_id?: string
+          note?: string | null
+          outcome?: string | null
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reports_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reports_channel_fkey"
+            columns: ["channel_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "message_reports_message_fkey"
+            columns: ["message_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "message_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           academy_id: string
@@ -2901,6 +2982,49 @@ export type Database = {
           },
         ]
       }
+      safeguarding_officers: {
+        Row: {
+          academy_id: string
+          appointed_at: string
+          appointed_by: string | null
+          profile_id: string
+        }
+        Insert: {
+          academy_id: string
+          appointed_at?: string
+          appointed_by?: string | null
+          profile_id: string
+        }
+        Update: {
+          academy_id?: string
+          appointed_at?: string
+          appointed_by?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safeguarding_officers_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safeguarding_officers_appointed_by_fkey"
+            columns: ["appointed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safeguarding_officers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squad_numbers: {
         Row: {
           academy_id: string
@@ -3808,6 +3932,14 @@ export type Database = {
           status_code: number
         }[]
       }
+      report_message: {
+        Args: {
+          p_message: string
+          p_note?: string
+          p_reason: Database["public"]["Enums"]["report_reason"]
+        }
+        Returns: string
+      }
       resolve_finals: {
         Args: { p_competition: string; p_division: string }
         Returns: number
@@ -3816,9 +3948,38 @@ export type Database = {
         Args: { p_competition: string; p_division: string; p_source: string }
         Returns: string
       }
+      review_report: {
+        Args: {
+          p_outcome: string
+          p_report: string
+          p_status: Database["public"]["Enums"]["report_status"]
+        }
+        Returns: boolean
+      }
       revoke_member_tree: {
         Args: { p_academy: string; p_profile: string }
         Returns: number
+      }
+      safeguarding_queue: {
+        Args: {
+          p_academy?: string
+          p_status?: Database["public"]["Enums"]["report_status"]
+        }
+        Returns: {
+          body: string
+          channel_name: string
+          created_at: string
+          deleted: boolean
+          note: string
+          outcome: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          report_id: string
+          reporter: string
+          reviewed_at: string
+          reviewed_by: string
+          sender_name: string
+          status: Database["public"]["Enums"]["report_status"]
+        }[]
       }
       scans_due_for_purge: {
         Args: never
@@ -3940,6 +4101,14 @@ export type Database = {
         | "rejected"
         | "waitlisted"
         | "withdrawn"
+      report_reason:
+        | "inappropriate"
+        | "bullying"
+        | "safeguarding"
+        | "spam"
+        | "wrong_channel"
+        | "other"
+      report_status: "open" | "actioned" | "dismissed"
       rsvp_status: "yes" | "no" | "maybe"
       team_status: "active" | "ended"
     }
@@ -4137,6 +4306,15 @@ export const Constants = {
         "waitlisted",
         "withdrawn",
       ],
+      report_reason: [
+        "inappropriate",
+        "bullying",
+        "safeguarding",
+        "spam",
+        "wrong_channel",
+        "other",
+      ],
+      report_status: ["open", "actioned", "dismissed"],
       rsvp_status: ["yes", "no", "maybe"],
       team_status: ["active", "ended"],
     },

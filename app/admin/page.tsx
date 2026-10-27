@@ -139,6 +139,7 @@ export default async function AdminHub() {
               <Row href="/admin/payments" label="Collect payments" hint="Fees and entries" />
               <Row href="/admin/members" label="Members" hint="And who invited whom" />
               <Row href="/admin/invites" label="Invites" />
+              <Row href="/admin/safeguarding" label="Safeguarding reports" hint="Messages families have reported" />
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
             </ul>
           </>

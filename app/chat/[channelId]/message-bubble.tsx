@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ReportMessage } from './report-message'
 import { createClient } from '@/lib/supabase/client'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 import { MessageAttachments } from './attachments'
@@ -26,6 +27,7 @@ export function MessageBubble({
   const [counts, setCounts] = useState<Count[]>([])
   const [picking, setPicking] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const [reporting, setReporting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [voters, setVoters] = useState<string | null>(null)
   const [showContact, setShowContact] = useState(false)
@@ -258,6 +260,20 @@ export function MessageBubble({
             </button>
           )}
 
+          {/* Reporting is for somebody ELSE's message. Quiet, because most
+              messages never need it and a loud Report on every bubble reads
+              as an accusation waiting to happen — and findable, because
+              somebody who needs it is already uncomfortable and should not
+              have to hunt. */}
+          {!message.deleted_at && !mine && (
+            <button
+              onClick={() => setReporting(true)}
+              className="px-1 text-xs text-ink-3"
+            >
+              Report
+            </button>
+          )}
+
           {!message.deleted_at && (mine || isHost) && (
             <button
               onClick={() => {
@@ -273,6 +289,14 @@ export function MessageBubble({
             </button>
           )}
         </div>
+
+        {reporting && (
+          <ReportMessage
+            messageId={message.id}
+            senderName={message.sender_name}
+            onClose={() => setReporting(false)}
+          />
+        )}
 
         {picking && (
           <div className="mt-1 flex gap-1 rounded-full border border-[var(--line)] bg-[var(--surface)] p-1 shadow-sm">
