@@ -315,6 +315,68 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   execute 'reset role';
+
+  -- ================== public registrations (0122) ==================
+  -- The only table in the schema written by anonymous strangers. A row holds
+  -- a child's date of birth and a family's phone number before anybody has
+  -- agreed to anything, and before a club has decided whether it wants them.
+  insert into public.registration_requests
+    (academy_id, program_id, guardian_name, guardian_phone,
+     child_name, child_dob, secret_hash)
+  select ACAD_A, p.id, 'RLS Probe Parent', '+61400009999',
+         'RLS Probe Child', '2016-06-15', 'nothashedreally'
+    from public.programs p where p.academy_id = ACAD_A limit 1;
+
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.registration_requests where child_name = 'RLS Probe Child';
+  insert into rls_results values (35,'a parent cannot read another family''s registration',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+
+  -- Insert is `with check (false)` for everyone: submission goes through the
+  -- route that holds the rate limit, the eligibility rules and the consent
+  -- check. A policy allowing it would be a policy skipping all three.
+  b := false;
+  begin
+    insert into public.registration_requests
+      (academy_id, program_id, guardian_name, child_name, child_dob, secret_hash)
+    select ACAD_A, p.id, 'Direct', 'Direct', '2016-01-01', 'x'
+      from public.programs p where p.academy_id = ACAD_A limit 1;
+  exception when others then b := true;
+  end;
+  insert into rls_results values (36,'and cannot submit one directly',
+    case when b then 'PASS' else 'FAIL' end);
+
+  -- Hashed addresses. Nobody but the service role has any business here.
+  select count(*) into n from public.registration_attempts;
+  insert into rls_results values (37,'the rate-limit table is invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' rows)' end);
+
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.registration_requests where child_name = 'RLS Probe Child';
+  insert into rls_results values (38,'a coach at the club can, which is the point',
+    case when n=1 then 'PASS' else 'FAIL ('||n||')' end);
+
+  -- A decision has to go through the route that creates the account, so even
+  -- a coach cannot move the status by hand.
+  update public.registration_requests set status = 'approved'
+   where child_name = 'RLS Probe Child';
+  select count(*) into n from public.registration_requests
+   where child_name = 'RLS Probe Child' and status = 'pending';
+  insert into rls_results values (39,'nor decide one by hand',
+    case when n=1 then 'PASS' else 'FAIL (status moved)' end);
+
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.registration_requests where academy_id = ACAD_A;
+  insert into rls_results values (40,'another academy''s registrations are invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+
+  execute 'reset role';
+  delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');
   delete from public.safeguarding_officers where academy_id = ACAD_A and profile_id = PARENT;

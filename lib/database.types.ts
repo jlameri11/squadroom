@@ -3007,6 +3007,138 @@ export type Database = {
           },
         ]
       }
+      registration_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          program_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          ip_hash: string
+          program_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          ip_hash?: string
+          program_id?: string | null
+        }
+        Relationships: []
+      }
+      registration_requests: {
+        Row: {
+          academy_id: string
+          answers: Json
+          child_dob: string
+          child_gender: string | null
+          child_name: string
+          claimed_at: string | null
+          consents: Json
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          expires_at: string
+          guardian_email: string | null
+          guardian_name: string
+          guardian_phone: string | null
+          id: string
+          player_id: string | null
+          profile_id: string | null
+          program_id: string
+          registration_id: string | null
+          secret_hash: string
+          status: string
+        }
+        Insert: {
+          academy_id: string
+          answers?: Json
+          child_dob: string
+          child_gender?: string | null
+          child_name: string
+          claimed_at?: string | null
+          consents?: Json
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          expires_at?: string
+          guardian_email?: string | null
+          guardian_name: string
+          guardian_phone?: string | null
+          id?: string
+          player_id?: string | null
+          profile_id?: string | null
+          program_id: string
+          registration_id?: string | null
+          secret_hash: string
+          status?: string
+        }
+        Update: {
+          academy_id?: string
+          answers?: Json
+          child_dob?: string
+          child_gender?: string | null
+          child_name?: string
+          claimed_at?: string | null
+          consents?: Json
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          expires_at?: string
+          guardian_email?: string | null
+          guardian_name?: string
+          guardian_phone?: string | null
+          id?: string
+          player_id?: string | null
+          profile_id?: string | null
+          program_id?: string
+          registration_id?: string | null
+          secret_hash?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_requests_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_program_fk"
+            columns: ["program_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       safeguarding_officers: {
         Row: {
           academy_id: string
@@ -3506,6 +3638,19 @@ export type Database = {
         Args: { p_ip_hash: string; p_link: string }
         Returns: boolean
       }
+      check_registration: {
+        Args: {
+          p_academy_slug: string
+          p_child_dob: string
+          p_consents: Json
+          p_program: string
+        }
+        Returns: string
+      }
+      check_registration_rate: {
+        Args: { p_ip_hash: string; p_program: string }
+        Returns: boolean
+      }
       claim_competition_invite: {
         Args: { p_academy: string; p_team?: string; p_token: string }
         Returns: string
@@ -3740,6 +3885,7 @@ export type Database = {
         }[]
       }
       expire_stale_join_requests: { Args: never; Returns: number }
+      expire_stale_registrations: { Args: never; Returns: number }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json
@@ -4060,6 +4206,7 @@ export type Database = {
         Returns: Json
       }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
+      public_programs: { Args: { p_slug: string }; Returns: Json }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       quote_payment: {
@@ -4095,6 +4242,29 @@ export type Database = {
           p_profile: string
         }
         Returns: string
+      }
+      registration_queue: {
+        Args: { p_academy?: string; p_status?: string }
+        Returns: {
+          answers: Json
+          child_dob: string
+          child_gender: string
+          child_name: string
+          consents: Json
+          created_at: string
+          decided_at: string
+          decided_by: string
+          decision_note: string
+          existing_player_id: string
+          guardian_email: string
+          guardian_name: string
+          guardian_phone: string
+          program_id: string
+          program_name: string
+          request_id: string
+          spots_left: number
+          status: string
+        }[]
       }
       reping_unread: { Args: { p_message: string }; Returns: Json }
       report_message: {
