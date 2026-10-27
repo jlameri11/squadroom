@@ -313,10 +313,32 @@ head('8. But the coach still learns what they need at the ground')
 // team_members row, not merely the academy-wide coach role. Marcus has the
 // academy role and is not on the U8 team, so without this he reads nothing,
 // which is correct and not what step 8 is testing.
-await admin
-  .from('team_members')
-  .upsert({ academy_id: NRIFA, team_id: U8, profile_id: coach.id, role: 'coach' },
-          { onConflict: 'team_id,profile_id' })
+const beCoach = () =>
+  admin
+    .from('team_members')
+    .upsert({ academy_id: NRIFA, team_id: U8, profile_id: coach.id, role: 'coach' },
+            { onConflict: 'team_id,profile_id' })
+
+// Since 0120 a team coach needs a current Working With Children Check, and
+// this upsert used to go unchecked — so when the gate arrived the step failed
+// three assertions later with "the coach_note did not come through", which
+// says nothing about the real cause. Asserted on the way past instead.
+await admin.from('staff_clearances').delete().eq('academy_id', NRIFA).eq('profile_id', coach.id)
+const { error: ungated } = await beCoach()
+ungated
+  ? ok('a team coach with no WWCC recorded is refused (0120)')
+  : bad('an unverified adult was assigned to a squad')
+
+await admin.from('staff_clearances').insert({
+  academy_id: NRIFA,
+  profile_id: coach.id,
+  number: 'TESTREG-WWC',
+  outcome: 'cleared',
+  expires_on: new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10),
+  verified_by: coach.id,
+})
+const { error: gated } = await beCoach()
+gated ? bad(`still refused after recording one: ${gated.message}`) : ok('and goes through once it is recorded')
 
 const { data: alerts, error: alertError } = await coach.client.rpc('team_coach_alerts', {
   p_team: U8,
@@ -591,6 +613,9 @@ await clean()
 await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', coach.id)
 await admin.from('player_medical').delete().eq('player_id', leo.id)
 await admin.from('programs').delete().eq('id', draft.id)
+
+// The clearance this suite recorded to get past the 0120 gate.
+await admin.from('staff_clearances').delete().eq('academy_id', NRIFA).eq('number', 'TESTREG-WWC')
 
 console.log(
   process.exitCode

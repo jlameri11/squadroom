@@ -266,6 +266,56 @@ begin
     case when b then 'PASS' else 'FAIL' end);
 
   execute 'reset role';
+
+  -- ================== clearances (0120) ==================
+  -- A clearance number is a government identifier attached to a named adult.
+  -- Club OWNERS and ADMINS need it to do the verification; a coach does not,
+  -- and a parent certainly does not — "the coach is verified" is a fact the
+  -- directory can show without the number.
+  insert into public.staff_clearances
+    (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+  values (ACAD_A, MARCUS, 'wwcc', 'RLSPROBE', 'cleared', current_date + 200, COACH);
+
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.staff_clearances where number = 'RLSPROBE';
+  insert into rls_results values (30,'a parent cannot read a clearance number',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  -- The subject of the record is a coach, not an admin. Even their own row is
+  -- not theirs to read, which is the same reasoning as the safeguarding
+  -- queue: the person a check protects children from must not be the person
+  -- who can see or change it.
+  select count(*) into n from public.staff_clearances where number = 'RLSPROBE';
+  insert into rls_results values (31,'nor can a coach, not even their own',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+
+  b := false;
+  begin
+    insert into public.staff_clearances
+      (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+    values (ACAD_A, MARCUS, 'wwcc', 'SELF', 'cleared', current_date + 900, MARCUS);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (32,'and cannot write one directly',
+    case when b then 'PASS' else 'FAIL' end);
+
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.staff_clearances where number = 'RLSPROBE';
+  insert into rls_results values (33,'an owner can read it, which is the point',
+    case when n=1 then 'PASS' else 'FAIL ('||n||')' end);
+
+  select count(*) into n from public.staff_clearances where academy_id = ACAD_B;
+  insert into rls_results values (34,'another academy''s clearances are invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+
+  execute 'reset role';
+  delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');
   delete from public.safeguarding_officers where academy_id = ACAD_A and profile_id = PARENT;
 

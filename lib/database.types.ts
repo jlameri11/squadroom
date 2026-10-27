@@ -3102,6 +3102,73 @@ export type Database = {
           },
         ]
       }
+      staff_clearances: {
+        Row: {
+          academy_id: string
+          created_at: string
+          expires_on: string
+          id: string
+          kind: Database["public"]["Enums"]["clearance_kind"]
+          note: string | null
+          number: string
+          outcome: Database["public"]["Enums"]["clearance_outcome"]
+          profile_id: string
+          updated_at: string
+          verified_at: string
+          verified_by: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          expires_on: string
+          id?: string
+          kind?: Database["public"]["Enums"]["clearance_kind"]
+          note?: string | null
+          number: string
+          outcome: Database["public"]["Enums"]["clearance_outcome"]
+          profile_id: string
+          updated_at?: string
+          verified_at?: string
+          verified_by: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          expires_on?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["clearance_kind"]
+          note?: string | null
+          number?: string
+          outcome?: Database["public"]["Enums"]["clearance_outcome"]
+          profile_id?: string
+          updated_at?: string
+          verified_at?: string
+          verified_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_clearances_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_clearances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_clearances_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           academy_id: string
@@ -3452,6 +3519,23 @@ export type Database = {
           phone: string
           profile_id: string
           title: string
+        }[]
+      }
+      clearance_board: {
+        Args: { p_academy?: string }
+        Returns: {
+          academy_role: Database["public"]["Enums"]["academy_role"]
+          coaches: string
+          days_left: number
+          expires_on: string
+          full_name: string
+          kind: Database["public"]["Enums"]["clearance_kind"]
+          number: string
+          outcome: Database["public"]["Enums"]["clearance_outcome"]
+          profile_id: string
+          state: string
+          verified_at: string
+          verified_by: string
         }[]
       }
       competition_contacts: {
@@ -3961,6 +4045,7 @@ export type Database = {
       }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       purge_expired_message_archive: { Args: never; Returns: number }
+      queue_clearance_warnings: { Args: never; Returns: number }
       quote_payment: {
         Args: { p_player?: string; p_request: string }
         Returns: Json
@@ -3982,6 +4067,18 @@ export type Database = {
           ms: number
           status_code: number
         }[]
+      }
+      record_clearance: {
+        Args: {
+          p_academy: string
+          p_expires_on: string
+          p_kind?: Database["public"]["Enums"]["clearance_kind"]
+          p_note?: string
+          p_number: string
+          p_outcome: Database["public"]["Enums"]["clearance_outcome"]
+          p_profile: string
+        }
+        Returns: string
       }
       reping_unread: { Args: { p_message: string }; Returns: Json }
       report_message: {
@@ -4122,6 +4219,8 @@ export type Database = {
         | "academy_wide"
         | "direct"
         | "custom"
+      clearance_kind: "wwcc" | "exemption"
+      clearance_outcome: "cleared" | "applied" | "barred" | "not_found"
       competition_mode: "managed" | "comms_only"
       competition_type:
         | "season"
@@ -4322,6 +4421,8 @@ export const Constants = {
         "direct",
         "custom",
       ],
+      clearance_kind: ["wwcc", "exemption"],
+      clearance_outcome: ["cleared", "applied", "barred", "not_found"],
       competition_mode: ["managed", "comms_only"],
       competition_type: [
         "season",

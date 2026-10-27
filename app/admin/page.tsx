@@ -140,6 +140,14 @@ export default async function AdminHub() {
               <Row href="/admin/members" label="Members" hint="And who invited whom" />
               <Row href="/admin/invites" label="Invites" />
               <Row href="/admin/safeguarding" label="Safeguarding reports" hint="Messages families have reported" />
+              {/* Linked from here deliberately. A compliance screen nothing
+                  points at is a compliance screen nobody opens — /programs
+                  and /payments were both built and reachable from nowhere. */}
+              <Row
+                href="/admin/clearances"
+                label="Working With Children Checks"
+                hint="Who is cleared, and who is running out"
+              />
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
             </ul>
           </>
