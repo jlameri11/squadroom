@@ -2296,6 +2296,7 @@ export type Database = {
           instalment_every_days: number
           instalments: number
           per_player: boolean
+          program_id: string | null
           team_id: string | null
           title: string
           updated_at: string
@@ -2315,6 +2316,7 @@ export type Database = {
           instalment_every_days?: number
           instalments?: number
           per_player?: boolean
+          program_id?: string | null
           team_id?: string | null
           title: string
           updated_at?: string
@@ -2334,6 +2336,7 @@ export type Database = {
           instalment_every_days?: number
           instalments?: number
           per_player?: boolean
+          program_id?: string | null
           team_id?: string | null
           title?: string
           updated_at?: string
@@ -2359,6 +2362,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_program_fk"
+            columns: ["program_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id", "academy_id"]
           },
           {
             foreignKeyName: "payment_requests_team_fkey"
@@ -4484,6 +4494,17 @@ export type Database = {
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
+      }
+      set_program_fee: {
+        Args: {
+          p_amount_cents: number
+          p_due_on?: string
+          p_every_days?: number
+          p_instalments?: number
+          p_program: string
+          p_title?: string
+        }
+        Returns: string
       }
       set_public_name_hidden: {
         Args: { p_hidden: boolean; p_player: string }

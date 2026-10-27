@@ -118,7 +118,7 @@
 ### F. Academy billing (on top of existing Connect)
 | ID | Feature | Status | Pri |
 |---|---|---|---|
-| B-01 | Pay at registration (R-02) | MISSING | P1 |
+| B-01 | Pay at registration (R-02) | **DONE, bar the card hop** (0126). The repo's plan said this "becomes wiring" and it did: nothing here touches Stripe, because CLAUDE.md is blunt that platform billing and academy collections must never share a code path. `payment_requests.program_id` is the one missing relationship — a fee owed by the children with an APPROVED registration in that program, rather than by a team (which bills eighteen children who never registered) or the academy (which bills everybody). A fee is scoped by a team OR a program, never both, because two scopes is two answers to "who owes this". The fee is deliberately NOT taken at the form: a registration is a request a club has not accepted, and charging before a human says yes means refunding everyone they turn away — a second money path for a signal coach approval already gives. The public page shows the fee so nobody is surprised; the charge goes through the existing checkout once the child is on the roster. Proven by test-program-fees (27), with test-payments and test-fees unchanged | — |
 | B-02 | Instalment plans + recurring term fees, with Stripe retry on failure | MISSING | P2 |
 | B-03 | Sibling discounts, promo codes | MISSING | P2 |
 | B-04 | Refunds (R-15) and overdue reminders | MISSING | P2 |
