@@ -51,16 +51,29 @@ ${bold('Squadroom — connect to the database')}
   ${dim('Nothing is echoed as you type, and nothing is printed back.')}
 `)
 
-/** A prompt that does not echo, so the secret is not left on screen. */
+/**
+ * A prompt that does not echo, so the secret is not left on screen.
+ *
+ * It shows a dot per character rather than nothing at all. "Nothing is
+ * echoed" sounds reassuring and reads, to the person at the keyboard, exactly
+ * like a frozen program — which is what happened: somebody pasted, pressed
+ * return, saw no change at all, and reasonably concluded it had hung. A
+ * hidden prompt still has to prove it is listening.
+ */
 function askHidden(question) {
   return new Promise((resolve) => {
     const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true })
     const stdout = process.stdout
-    // readline writes each keystroke; muting the output stream while it is
-    // open is what turns the prompt into a password field.
     const write = stdout.write.bind(stdout)
     let muted = false
-    stdout.write = (chunk, ...rest) => (muted ? true : write(chunk, ...rest))
+    stdout.write = (chunk, ...rest) => {
+      if (!muted) return write(chunk, ...rest)
+      // A dot for whatever readline was about to echo, so a paste visibly
+      // lands and a keystroke visibly registers.
+      const text = typeof chunk === 'string' ? chunk : String(chunk)
+      if (text === '\r' || text === '\n' || text === '\r\n') return true
+      return write('\u2022'.repeat(Math.max(text.length, 1)))
+    }
     rl.question(question, (answer) => {
       stdout.write = write
       stdout.write('\n')
@@ -71,10 +84,35 @@ function askHidden(question) {
   })
 }
 
-const secret = await askHidden('  Paste it here, then press return: ')
+// The environment first, so there is a way through that does not depend on a
+// terminal delivering keystrokes to a muted prompt at all:
+//
+//   SUPABASE_ACCESS_TOKEN=sbp_... npm run db:setup
+//
+// The same secret going to the same place, skipping the prompt. Added because
+// the prompt silently swallowed a paste on a real machine and the only
+// visible symptom was a program that looked frozen.
+const fromEnv = process.env.SUPABASE_ACCESS_TOKEN?.trim()
+if (fromEnv) console.log(dim('  Using SUPABASE_ACCESS_TOKEN from the environment.\n'))
+
+const secret = fromEnv || (await askHidden('  Paste it here, then press return: '))
 
 if (!secret) {
-  console.log(red('\n  Nothing pasted. Run it again when you have the token.\n'))
+  console.log(
+    red('\n  Nothing arrived.') +
+      `
+
+  If no dots appeared as you pasted, this terminal is not passing
+  keystrokes to the prompt. Two ways round it:
+
+    ${bold('1. Put it in the file yourself')}
+       Open ${bold(ENV)} and add one line:
+         SUPABASE_ACCESS_TOKEN=sbp_yourtoken
+
+    ${bold('2. Pass it in and skip the prompt')}
+         SUPABASE_ACCESS_TOKEN=sbp_yourtoken npm run db:setup
+`
+  )
   process.exit(1)
 }
 
