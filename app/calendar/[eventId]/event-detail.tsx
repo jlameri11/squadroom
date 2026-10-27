@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Chase } from './chase'
 import { Register } from './register'
 import { createClient } from '@/lib/supabase/client'
 
@@ -160,6 +161,14 @@ export function EventDetail({
             <b style={{ color: 'var(--yes)' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
             {summary.out_count} out · {summary.no_reply} no reply
           </p>
+
+          {/* Right under the tally, because "12 no reply" is the number a
+              coach reads and chasing them is what they want to do about it. */}
+          <Chase
+            eventId={event.id}
+            outstanding={summary.no_reply}
+            canChase={!event.cancelled_at && new Date(event.starts_at) > new Date()}
+          />
 
           <div className="mt-2 rounded-xl border border-[var(--line)]">
             {roster.map((r, i) => (

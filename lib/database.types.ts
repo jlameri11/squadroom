@@ -3306,6 +3306,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      announcement_reach: { Args: { p_message: string }; Returns: Json }
       applied_migration: { Args: { p_name: string }; Returns: string }
       attendance_summary: {
         Args: { p_academy: string; p_from?: string; p_team?: string }
@@ -3789,6 +3790,7 @@ export type Database = {
         Returns: number
       }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
+      nudge_non_responders: { Args: { p_event: string }; Returns: Json }
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
         Returns: string
@@ -3932,6 +3934,7 @@ export type Database = {
           status_code: number
         }[]
       }
+      reping_unread: { Args: { p_message: string }; Returns: Json }
       report_message: {
         Args: {
           p_message: string
@@ -4034,6 +4037,16 @@ export type Database = {
           title: string
           type: Database["public"]["Enums"]["event_type"]
           venue: string
+        }[]
+      }
+      who_hasnt_answered: {
+        Args: { p_event: string }
+        Returns: {
+          guardian_id: string
+          guardian_name: string
+          guardian_phone: string
+          player_id: string
+          player_name: string
         }[]
       }
       zone_time: { Args: { p_zone: string }; Returns: string }
