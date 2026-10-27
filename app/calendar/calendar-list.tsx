@@ -31,7 +31,19 @@ const TYPE_TINT: Record<string, string> = {
   other: 'var(--ink-2)',
 }
 
-export function CalendarList({ academyId, events }: { academyId: string; events: UpcomingEvent[] }) {
+export function CalendarList({
+  academyId,
+  events,
+  stickyTop = 0,
+}: {
+  academyId: string
+  events: UpcomingEvent[]
+  /** How far down to stick the day headings — the height of whatever is
+   *  sticking above them. Screen is the scroll container, so without this
+   *  they stick at the same top as the draw filter bar and disappear behind
+   *  it. */
+  stickyTop?: number
+}) {
   if (events.length === 0) {
     return (
       <p className="card m-4 p-6 text-center text-sm text-ink-3">
@@ -52,8 +64,12 @@ export function CalendarList({ academyId, events }: { academyId: string; events:
       {[...days.entries()].map(([day, list]) => (
         <section key={day}>
           <h2
-            className="eyebrow sticky top-0 z-10 border-b px-4 py-2 backdrop-blur"
-            style={{ background: 'var(--paper-blur)', borderColor: 'var(--line-2)' }}
+            className="eyebrow sticky z-10 border-b px-4 py-2 backdrop-blur"
+            style={{
+              top: stickyTop,
+              background: 'var(--paper-blur)',
+              borderColor: 'var(--line-2)',
+            }}
           >
             {dayLabel(day)}
           </h2>

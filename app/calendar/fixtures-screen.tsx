@@ -1,18 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { NewSessions } from './new-sessions'
 import { CallOffDay } from './call-off-day'
-import { createClient } from '@/lib/supabase/client'
+import { DrawFilters, applyDrawFilter, type DrawFilter } from './draw-filters'
+import { ShareDraw } from './share-draw'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { useScreen } from '@/lib/hooks/use-screen'
 import { useOrg } from '@/lib/org'
 
 type Data = {
-  academy: { id: string; name: string } | null
+  academy: { id: string; name: string; slug: string } | null
   is_staff: boolean
+  teams: { id: string; name: string }[]
   events: UpcomingEvent[]
 }
 
@@ -21,20 +23,27 @@ export function FixturesScreen() {
   const { data, failed } = useScreen<Data>('fixtures_screen', { p_days: 60, p_academy: org })
   const [adding, setAdding] = useState(false)
   const [callingOff, setCallingOff] = useState(false)
-  const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
+  // Not remembered between visits. A fixtures screen that opens already
+  // narrowed is a fixtures screen with somebody's game missing from it, and
+  // the person who would notice last is the one who set the filter weeks ago.
+  const [filter, setFilter] = useState<DrawFilter>({ day: null, team: null })
 
-  // Only fetched once a coach opens the sheet — a parent never needs the team
-  // list, and this screen is the most-opened one in the product.
+  // Screen is the scroll container, so everything sticky inside it sticks to
+  // the SAME top. The filter bar and the day headings both did, and the day
+  // heading sat invisibly behind the filter bar — a draw with no dates on it.
+  // So the bar is measured and the headings stick below it. Measured rather
+  // than hardcoded because the bar is one row for a single-squad club and two
+  // for everybody else, and it changes height when the squad row appears.
+  const barRef = useRef<HTMLDivElement>(null)
+  const [barHeight, setBarHeight] = useState(0)
   useEffect(() => {
-    if (!adding || !data?.academy || teams.length > 0) return
-    createClient()
-      .from('teams')
-      .select('id, name')
-      .eq('academy_id', data.academy.id)
-      .eq('status', 'active')
-      .order('name')
-      .then(({ data: rows }) => setTeams(rows ?? []))
-  }, [adding, data?.academy, teams.length])
+    const el = barRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setBarHeight(el.offsetHeight))
+    ro.observe(el)
+    setBarHeight(el.offsetHeight)
+    return () => ro.disconnect()
+  }, [data])
 
   if (failed) {
     return (
@@ -45,11 +54,19 @@ export function FixturesScreen() {
   }
   if (!data?.academy) return <ScreenSkeleton />
 
+  const all = data.events ?? []
+  const shown = applyDrawFilter(all, filter)
+  const narrowed = shown.length !== all.length
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <AppBar
         title="Fixtures"
-        meta={`${data.academy.name} · next 60 days`}
+        meta={
+          narrowed
+            ? `${shown.length} of ${all.length} · next 60 days`
+            : `${data.academy.name} · next 60 days`
+        }
         action={
           data.is_staff && (
             <button
@@ -93,7 +110,26 @@ export function FixturesScreen() {
             </button>
           </div>
         )}
-        <CalendarList academyId={data.academy.id} events={data.events ?? []} />
+        {data.is_staff && <ShareDraw slug={data.academy.slug} />}
+
+        <div ref={barRef} className="sticky top-0 z-20">
+          <DrawFilters events={all} filter={filter} onChange={setFilter} />
+        </div>
+
+        {narrowed && shown.length === 0 ? (
+          <div className="p-6 text-center">
+            <p className="text-sm text-ink-3">Nothing matches that.</p>
+            <button
+              onClick={() => setFilter({ day: null, team: null })}
+              className="mt-2 text-sm underline underline-offset-4"
+              style={{ color: 'var(--brand)' }}
+            >
+              Clear the filter
+            </button>
+          </div>
+        ) : (
+          <CalendarList academyId={data.academy.id} events={shown} stickyTop={barHeight} />
+        )}
       </Screen>
 
       {callingOff && data.academy && (
@@ -107,7 +143,7 @@ export function FixturesScreen() {
       {adding && data.academy && (
         <NewSessions
           academyId={data.academy.id}
-          teams={teams}
+          teams={data.teams ?? []}
           onClose={() => setAdding(false)}
         />
       )}

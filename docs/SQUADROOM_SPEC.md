@@ -108,7 +108,7 @@
 | ID | Feature | Status | Pri |
 |---|---|---|---|
 | F-01 | Dribl Events export importer | **DONE** | — |
-| F-02 | **Club-wide draw view**: all teams, Saturday/Sunday tabs, filter by team, shareable public link. Replaces the fixturefeed site | PARTIAL (/calendar shows the club&rsquo;s fixtures to a coach; no day tabs, team filter or public link) | P1 |
+| F-02 | **Club-wide draw view**: all teams, Saturday/Sunday tabs, filter by team, shareable public link. Replaces the fixturefeed site | **DONE** (0115 + `app/calendar/draw-filters.tsx`, `share-draw.tsx`). The data layer needed nothing — `my_upcoming_events` already lets `is_academy_coach` past the team filter, so a coach has always read every fixture. Both chip rows are derived from the fixtures IN VIEW, never from a list of days or squads, so every chip has something behind it and an ended squad with a game still in the window is offered while a full squad with no games is not. The public link is the existing `/c/{slug}` match centre. Proven by test-draw-view, including that a parent still reads only their own children's fixtures and is offered only their own squad | — |
 | F-03 | Import diff preview: "3 games moved, 1 new, 1 removed" before confirming. Moved games already alert families via the 0064 trigger | PARTIAL | P1 |
 | F-04 | Retire fixturefeed: once Joey has club-admin export access, the weekly routine becomes "export → drop into /admin/import" (Fri 3pm + Sat/Sun morning). Keep fixturefeed running until then | TODO | P1 |
 | F-05 | Results/ladder import for official comps (if the export carries scores) | MISSING | P2 |
@@ -247,9 +247,8 @@ REGISTRATION ──► PLAYER (+ guardians, consents, kit, number)
    - Then S-02 and S-03. These are small and non-negotiable.
 3. **Registration core:** R-01 → R-10, B-01, plus the Settings → My family screen.
 4. **Engagement:** E-01, E-02, E-03, C-01, C-02, X-13, the Home "Needs you" strip
-   and child chips are **DONE**. What is left in this phase: **F-02** (club-wide
-   draw view — day tabs, team filter, public link), **F-03** (import diff
-   preview), then the **F-04** switchover.
+   and child chips are **DONE**, and so is **F-02**. What is left in this
+   phase: **F-03** (import diff preview), then the **F-04** switchover.
 5. **Match centre & stats:** X-05, X-01, X-02, X-03, X-06, X-04, X-09.
 6. **Before the second academy:** the P2 items, the legal review (S-05), the prod Supabase project, Stripe live, the App Store build.
 
