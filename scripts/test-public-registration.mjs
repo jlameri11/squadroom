@@ -25,6 +25,20 @@ const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, {
 // The anon key alone — exactly what a stranger's browser holds.
 const anon = createClient(URL_, PUB, { auth: { persistSession: false } })
 
+/**
+ * A client that has never signed in, and never will.
+ *
+ * `anon` is the client every suite here hands to verifyOtp, which means that
+ * after the first sign-in it holds a SESSION and is not anonymous any more.
+ * Every "as a stranger" assertion made through it after that point was
+ * really being made as whoever signed in last — passing, in at least one
+ * case, for entirely the wrong reason.
+ *
+ * So the stranger gets their own client, used for nothing else.
+ */
+const stranger = createClient(URL_, PUB, { auth: { persistSession: false } })
+
+
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m) => {
   console.log(`  \x1b[31m✗\x1b[0m ${m}`)
@@ -172,7 +186,7 @@ const submit = (over = {}) =>
 
 head('1. What a stranger may read')
 {
-  const { data, error } = await anon.rpc('public_programs', { p_slug: SLUG })
+  const { data, error } = await stranger.rpc('public_programs', { p_slug: SLUG })
   if (error) {
     bad(error.message)
   } else {
@@ -198,19 +212,19 @@ head('1. What a stranger may read')
   }
 
   // A club that does not exist answers the same as one that does not publish.
-  const { data: nobody } = await anon.rpc('public_programs', { p_slug: 'no-such-club-here' })
+  const { data: nobody } = await stranger.rpc('public_programs', { p_slug: 'no-such-club-here' })
   nobody === null ? ok('an unknown slug returns nothing') : bad(`returned ${JSON.stringify(nobody)}`)
 }
 
 head('2. What a stranger may NOT read')
 {
-  const { data: q } = await anon.from('registration_requests').select('child_name')
+  const { data: q } = await stranger.from('registration_requests').select('child_name')
   ;(q ?? []).length === 0 ? ok('the queue is invisible') : bad(`read ${q.length} requests`)
 
-  const { data: attempts } = await anon.from('registration_attempts').select('ip_hash')
+  const { data: attempts } = await stranger.from('registration_attempts').select('ip_hash')
   ;(attempts ?? []).length === 0 ? ok('and so is the rate-limit table') : bad('read the IP hashes')
 
-  const { error: fn } = await anon.rpc('check_registration', {
+  const { error: fn } = await stranger.rpc('check_registration', {
     p_academy_slug: SLUG,
     p_program: program.id,
     p_child_dob: eligible,
@@ -300,7 +314,7 @@ head('5. The secret cannot be used before a club decides')
 
 head('6. A pending request takes a place, so a club cannot oversell')
 {
-  const { data: after } = await anon.rpc('public_programs', { p_slug: SLUG })
+  const { data: after } = await stranger.rpc('public_programs', { p_slug: SLUG })
   const mine = after.programs.find((p) => p.name.startsWith(TAG))
   // Capacity 2, one pending.
   mine.spots_left === 1
@@ -447,7 +461,7 @@ head('9. The family comes back and collects their session, once')
 
 head('10. An approved registration takes its place off the board')
 {
-  const { data: after } = await anon.rpc('public_programs', { p_slug: SLUG })
+  const { data: after } = await stranger.rpc('public_programs', { p_slug: SLUG })
   const mine = after.programs.find((p) => p.name.startsWith(TAG))
   // Still 1 left: the pending request became an approved registration, and
   // the count must not drop twice for one child.

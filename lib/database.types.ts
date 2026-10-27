@@ -962,6 +962,116 @@ export type Database = {
           },
         ]
       }
+      event_lineup_players: {
+        Row: {
+          academy_id: string
+          id: string
+          lineup_id: string
+          player_id: string
+          position: string | null
+          role: Database["public"]["Enums"]["lineup_role"]
+          sort_order: number
+        }
+        Insert: {
+          academy_id: string
+          id?: string
+          lineup_id: string
+          player_id: string
+          position?: string | null
+          role?: Database["public"]["Enums"]["lineup_role"]
+          sort_order?: number
+        }
+        Update: {
+          academy_id?: string
+          id?: string
+          lineup_id?: string
+          player_id?: string
+          position?: string | null
+          role?: Database["public"]["Enums"]["lineup_role"]
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_lineup_players_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lineup_players_lineup_fk"
+            columns: ["lineup_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "event_lineups"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_lineup_players_player_fk"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      event_lineups: {
+        Row: {
+          academy_id: string
+          created_at: string
+          created_by: string | null
+          event_id: string
+          formation: string | null
+          id: string
+          note: string | null
+          published_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          formation?: string | null
+          id?: string
+          note?: string | null
+          published_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          formation?: string | null
+          id?: string
+          note?: string | null
+          published_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_lineups_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lineups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lineups_event_fk"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       event_rsvps: {
         Row: {
           academy_id: string
@@ -3860,6 +3970,7 @@ export type Database = {
         }
         Returns: string
       }
+      event_lineup: { Args: { p_event: string }; Returns: Json }
       event_register: {
         Args: { p_event: string }
         Returns: {
@@ -4217,6 +4328,10 @@ export type Database = {
       }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
+      publish_lineup: {
+        Args: { p_event: string; p_published?: boolean }
+        Returns: undefined
+      }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       quote_payment: {
@@ -4357,6 +4472,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_lineup: {
+        Args: {
+          p_event: string
+          p_formation?: string
+          p_note?: string
+          p_players: Json
+        }
+        Returns: string
+      }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
@@ -4472,6 +4596,7 @@ export type Database = {
         | "XL"
         | "2XL"
         | "3XL"
+      lineup_role: "starting" | "bench" | "out"
       member_status: "invited" | "active" | "removed"
       message_status: "published" | "pending" | "rejected"
       org_type: "academy" | "club" | "league" | "school" | "other"
@@ -4697,6 +4822,7 @@ export const Constants = {
         "2XL",
         "3XL",
       ],
+      lineup_role: ["starting", "bench", "out"],
       member_status: ["invited", "active", "removed"],
       message_status: ["published", "pending", "rejected"],
       org_type: ["academy", "club", "league", "school", "other"],

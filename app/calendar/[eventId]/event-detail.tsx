@@ -5,6 +5,7 @@ import { Chase } from './chase'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
+import { Lineup } from './lineup'
 import { createClient } from '@/lib/supabase/client'
 
 type Mine = { playerId: string | null; playerName: string | null; status: string | null; note: string | null }
@@ -151,6 +152,14 @@ export function EventDetail({
           nothing; after it, the result is the only reason anybody opens this
           screen, and an answer about whether a child was available is
           history. */}
+      {/* Before the result and after the details, which is the order of a
+          match day: who is playing, then what happened. Renders nothing for a
+          parent until the coach publishes, and nothing at all for a training
+          session. */}
+      {!cancelled && (event.type === 'match' || event.type === 'tournament') && (
+        <Lineup eventId={event.id} canSee={isCoach} />
+      )}
+
       {!cancelled && (
         <Result
           eventId={event.id}

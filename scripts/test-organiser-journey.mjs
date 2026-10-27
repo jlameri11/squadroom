@@ -2,6 +2,18 @@ import { createClient } from '@supabase/supabase-js'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
+
+/**
+ * A client that has never signed in, and never will.
+ *
+ * `anon` is the client this suite hands to verifyOtp, so after the first
+ * sign-in it holds a SESSION and is not anonymous any more. An "as a
+ * stranger" assertion made through it after that point is really made as
+ * whoever signed in last — which is how a safeguarding check can pass for
+ * entirely the wrong reason.
+ */
+const stranger = createClient(URL, PUB, { auth: { persistSession: false } })
+
 const ok=m=>console.log(`  \x1b[32m✓\x1b[0m ${m}`), bad=m=>{console.log(`  \x1b[31m✗\x1b[0m ${m}`);process.exitCode=1}
 const head=m=>console.log(`\n${m}`)
 
@@ -65,7 +77,7 @@ e4 ? bad(e4.message) : ok('fixture scheduled between two clubs that do not exist
 
 head('4. A club owner claims their invite')
 const jogaInvite = invites.find(i=>i.club_name==='Joga Bonito FC')
-const peek = await anon.rpc('peek_competition_invite', { p_token: jogaInvite.token })
+const peek = await stranger.rpc('peek_competition_invite', { p_token: jogaInvite.token })
 peek.data?.[0]?.competition_name==='SPL Season 4'
   ? ok(`invite previewable without an account: "${peek.data[0].club_name}" in ${peek.data[0].competition_name}`)
   : bad('peek failed: '+JSON.stringify(peek.error ?? peek.data))

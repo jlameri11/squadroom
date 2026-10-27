@@ -20,6 +20,20 @@ const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, {
 })
 const anon = createClient(URL_, PUB, { auth: { persistSession: false } })
 
+/**
+ * A client that has never signed in, and never will.
+ *
+ * `anon` is the client every suite here hands to verifyOtp, which means that
+ * after the first sign-in it holds a SESSION and is not anonymous any more.
+ * Every "as a stranger" assertion made through it after that point was
+ * really being made as whoever signed in last — passing, in at least one
+ * case, for entirely the wrong reason.
+ *
+ * So the stranger gets their own client, used for nothing else.
+ */
+const stranger = createClient(URL_, PUB, { auth: { persistSession: false } })
+
+
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m) => {
   console.log(`  \x1b[31m✗\x1b[0m ${m}`)
@@ -210,7 +224,7 @@ head('4. A kit list is the whole roster with a measurement beside each name')
   const { data: asParent } = await parent.client.rpc('kit_list', { p_academy: NRIFA })
   asParent === null ? ok('a parent gets nothing') : bad(`a parent read ${JSON.stringify(asParent).length} bytes`)
 
-  const { data: asAnon } = await anon.rpc('kit_list', { p_academy: NRIFA })
+  const { data: asAnon } = await stranger.rpc('kit_list', { p_academy: NRIFA })
   asAnon === null ? ok('and a stranger gets nothing') : bad('anon read the kit list')
 }
 

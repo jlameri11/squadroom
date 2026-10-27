@@ -24,6 +24,18 @@ const anon = createClient(URL_, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   auth: { persistSession: false },
 })
 
+/**
+ * A client that has never signed in, and never will.
+ *
+ * `anon` is the client this suite hands to verifyOtp, so after the first
+ * sign-in it holds a SESSION and is not anonymous any more. An "as a
+ * stranger" assertion made through it after that point is really made as
+ * whoever signed in last — which is how a safeguarding check can pass for
+ * entirely the wrong reason.
+ */
+const stranger = createClient(URL_, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } })
+
+
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m) => {
   console.log(`  \x1b[31m✗\x1b[0m ${m}`)
@@ -51,7 +63,7 @@ async function setMode(mode) {
 
 /** Every name the public page would publish, flattened. */
 async function published() {
-  const { data, error } = await anon.rpc('public_match_centre', { p_slug: SLUG })
+  const { data, error } = await stranger.rpc('public_match_centre', { p_slug: SLUG })
   if (error) throw new Error(error.message)
   if (!data) throw new Error(`nothing published at /c/${SLUG} — run scripts/seed-registration.mjs`)
   return Object.values(data.squads ?? {})
@@ -158,7 +170,7 @@ if (!s?.session) {
 
 head('6. Nothing else about a child reaches the page')
 await setMode('full')
-const { data: page } = await anon.rpc('public_match_centre', { p_slug: SLUG })
+const { data: page } = await stranger.rpc('public_match_centre', { p_slug: SLUG })
 const body = JSON.stringify(page)
 // The squad entries carry a name and a number. Anything else about a child —
 // a birthday, a phone number, a medical note, a guardian — must not be here.

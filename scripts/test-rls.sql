@@ -376,6 +376,51 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   execute 'reset role';
+
+  -- ================== team sheets (0125) ==================
+  -- A team sheet is a list of children's names with their positions. The
+  -- draft rule lives in `event_lineup()`, so the TABLES must be unreadable
+  -- to a parent — otherwise a published-only rule is a rule anybody can read
+  -- around by querying the table instead of calling the function.
+  select id into v_ev from public.events
+   where academy_id = ACAD_A and type = 'match' and team_id = '00000000-0000-0000-0000-0000000d0008'
+   limit 1;
+
+  if v_ev is not null then
+    insert into public.event_lineups (academy_id, event_id, created_by)
+    values (ACAD_A, v_ev, COACH)
+    on conflict (event_id) do update set updated_at = now();
+
+    insert into public.event_lineup_players (academy_id, lineup_id, player_id, role)
+    select ACAD_A, l.id, pl.id, 'starting'
+      from public.event_lineups l, public.players pl
+     where l.event_id = v_ev and pl.id = '00000000-0000-0000-0000-0000000e0001'
+    on conflict (lineup_id, player_id) do nothing;
+
+    perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+
+    select count(*) into n from public.event_lineups where event_id = v_ev;
+    insert into rls_results values (41,'a parent cannot read a team sheet directly',
+      case when n=0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+
+    select count(*) into n from public.event_lineup_players;
+    insert into rls_results values (42,'nor the names on one',
+      case when n=0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+
+    b := false;
+    begin
+      insert into public.event_lineups (academy_id, event_id, created_by)
+      values (ACAD_A, v_ev, PARENT);
+    exception when others then b := true;
+    end;
+    insert into rls_results values (43,'and cannot write one',
+      case when b then 'PASS' else 'FAIL' end);
+
+    execute 'reset role';
+    delete from public.event_lineups where event_id = v_ev;
+  end if;
+
   delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');
