@@ -238,8 +238,15 @@ function ChannelRow({ c }: { c: Row }) {
           // from me" — a parent who muted the U10s still wants to know there
           // are fourteen messages waiting.
           <span
-            className="grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-bold text-white"
-            style={{ background: c.muted ? 'var(--ink-3)' : 'var(--accent)' }}
+            className="grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-bold"
+            style={{
+              background: c.muted ? 'var(--ink-3)' : 'var(--accent)',
+              // --accent-ink, not white. In dark the accent is a light
+              // orange so it reads on a dark ground, which left white on it
+              // at 2.59:1 — the count was the least readable text here. The
+              // muted badge keeps white, which --ink-3 carries at 5:1.
+              color: c.muted ? '#fff' : 'var(--accent-ink)',
+            }}
           >
             {c.unread_count > 99 ? '99+' : c.unread_count}
           </span>

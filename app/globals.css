@@ -44,12 +44,21 @@
 
   --ink: #0E1726;
   --ink-2: #4C5A6D;
-  --ink-3: #8391A3;
+  /* Darkened from #8391A3, which measured 2.89:1 against the page — below
+     even the large-text floor, on the colour that carries every eyebrow,
+     hint and secondary label in the product. CLAUDE.md says where this app
+     is used: "a small screen in sunlight". 4.74:1 clears AA for small text
+     and is still clearly tertiary beside --ink and --ink-2.
+
+     Found by scripts/test-screens.mjs, which measures this now rather than
+     leaving it to whoever remembers to look. */
+  --ink-3: #5F6D80;
 
   --line: #D9E0E9;
   --line-2: #EAEEF3;
 
   --accent: #DD5620;
+  --accent-ink: #ffffff;
   --gold: #EFBD5B;
 
   /* RSVP states, and the tints behind them. Semantic, not decorative — these
@@ -111,6 +120,7 @@
     --line-2: #1A2434;
 
     --accent: #FF7A45;
+    --accent-ink: #0E1726;
     --gold: #EFBD5B;
 
     --yes: #4FB587;    --yes-bg: #4FB58722;
@@ -148,6 +158,7 @@
   --line-2: #1A2434;
 
   --accent: #FF7A45;
+  --accent-ink: #0E1726;
   --gold: #EFBD5B;
 
   --yes: #4FB587;    --yes-bg: #4FB58722;
@@ -348,7 +359,12 @@ body {
     padding: 2px 7px;
     border-radius: 999px;
     background: var(--accent);
-    color: #fff;
+    /* Not #fff. In dark the accent is a light orange so that it reads on a
+       dark ground, which leaves white-on-it at 2.59:1 — the count on the
+       badge was the least readable text in the product. --accent-ink is
+       white in light and near-black in dark, so the pill is legible in
+       both rather than in the one somebody was looking at. */
+    color: var(--accent-ink);
     font-size: 11px;
     font-weight: 700;
     text-align: center;

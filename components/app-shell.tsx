@@ -343,8 +343,8 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
 
               {count > 0 && (
                 <span
-                  className="absolute -right-2.5 -top-1.5 grid h-[17px] min-w-[17px] place-items-center rounded-full px-1 text-[10px] font-bold text-white"
-                  style={{ background: 'var(--accent)' }}
+                  className="absolute -right-2.5 -top-1.5 grid h-[17px] min-w-[17px] place-items-center rounded-full px-1 text-[10px] font-bold"
+                  style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
                 >
                   {count > 99 ? '99+' : count}
                 </span>
