@@ -104,15 +104,13 @@ say(`${FAMILIES.length} families, ${links} children linked to a parent`)
 // --- fixtures --------------------------------------------------------------
 // Only rows this script owns. source='manual' and a Round title is the seed's
 // own signature; anything imported or scanned carries a different source.
-// A fixture posted into a channel leaves a card behind, and the card's only
-// content IS the event. Deleting the event sets its event_id to null, which
-// leaves a message with no body, no attachments and no event — and
-// messages_not_empty refuses it, so the whole delete fails.
-//
-// This is a real product bug, not just a seeding one: a coach who posts a
-// fixture to the team can never afterwards delete it. Fixing it properly
-// needs a trigger that takes the card with the event. Until then, take the
-// cards out first.
+// The card-clearing this used to do by hand is now 0129's trigger: a card
+// whose only content is the event goes with the event, and a message a
+// coach actually typed keeps its words. This comment used to say the
+// workaround was papering over "a real product bug, not just a seeding
+// one" — it was, and a workaround in a seeding script did nothing for the
+// coach who hit it. The function is kept because it still has to take the
+// cards out of ITS OWN rows in the right order for the counts it prints.
 const clearCards = async (titleFilter) => {
   const q = admin.from('events').select('id').eq('academy_id', NRIFA).eq('source', 'manual')
   const { data: doomed } = await (titleFilter.like
