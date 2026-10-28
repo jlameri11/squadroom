@@ -77,6 +77,17 @@
 
   --bubble-in: #ffffff;
   --bubble-out: #DCE7F2;
+  /* The timestamp and the "message deleted" line inside your OWN bubble.
+     They were `text-white/60`, which on a light blue bubble measures
+     1.25:1 — the least readable thing in the product, and invisible rather
+     than merely faint. --ink-3 is no use either: it fails the other way on
+     the dark bubble at 2.79:1. So the muted ink for a bubble is its own
+     token, dark on the light bubble and light on the dark one.
+
+     Not caught by scripts/test-screens.mjs, and it could not be: that walks
+     computed background colours, and a timestamp sitting over a PHOTO has
+     no computed background to measure. Some things still need an eye. */
+  --bubble-out-ink-2: #56636F;
 
   --shadow: 0 1px 2px #0e17260f, 0 8px 24px #0e172614;
   --radius: 14px;
@@ -132,6 +143,7 @@
 
     --bubble-in: #1B2637;
     --bubble-out: #23405C;
+    --bubble-out-ink-2: #A8BAD0;
 
     --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
     color-scheme: dark;
@@ -170,6 +182,7 @@
 
   --bubble-in: #1B2637;
   --bubble-out: #23405C;
+  --bubble-out-ink-2: #A8BAD0;
 
   --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
   color-scheme: dark;

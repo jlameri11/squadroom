@@ -67,12 +67,26 @@ export function MessageAttachments({ attachments }: { attachments: unknown }) {
                 alt={a.name}
                 loading="lazy"
                 className="w-full rounded-lg object-cover"
-                style={{ aspectRatio: list.length > 1 ? '1 / 1' : String(ratio) }}
+                style={{
+                  aspectRatio: list.length > 1 ? '1 / 1' : String(ratio),
+                  // A single portrait photo filled the entire phone screen —
+                  // one picture, and the conversation either side of it was
+                  // gone. The aspect ratio is kept, so nothing is distorted;
+                  // it simply stops growing. Tapping still opens the full
+                  // image.
+                  maxHeight: list.length > 1 ? undefined : '60vh',
+                  objectPosition: 'center',
+                }}
               />
             ) : (
               <div
                 className="w-full animate-pulse rounded-lg bg-[var(--surface-2)]"
-                style={{ aspectRatio: list.length > 1 ? '1 / 1' : String(ratio) }}
+                // The placeholder is capped the same way, or the message
+                // jumps by half a screen when the picture arrives.
+                style={{
+                  aspectRatio: list.length > 1 ? '1 / 1' : String(ratio),
+                  maxHeight: list.length > 1 ? undefined : '60vh',
+                }}
               />
             )}
           </a>

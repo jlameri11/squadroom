@@ -54,9 +54,16 @@ const SCREENS = [
 ]
 
 const wanted = process.argv.slice(2)
-const screens = wanted.length
-  ? SCREENS.filter(([name]) => wanted.some((w) => name.includes(w)))
-  : SCREENS
+// An argument beginning with / is a path to shoot directly, so the screens
+// that need an id — an event, a channel — can be looked at without being
+// hard-coded here with somebody's demo row in them.
+const paths = wanted.filter((w) => w.startsWith('/'))
+const names = wanted.filter((w) => !w.startsWith('/'))
+const screens = [
+  ...paths.map((p) => [p.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'root', p]),
+  ...(names.length ? SCREENS.filter(([name]) => names.some((w) => name.includes(w))) : []),
+]
+if (screens.length === 0) screens.push(...SCREENS)
 
 const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email: WHO })
 if (!link?.properties?.hashed_token) {

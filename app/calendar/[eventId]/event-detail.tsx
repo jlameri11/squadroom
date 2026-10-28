@@ -268,9 +268,10 @@ export function EventDetail({
                 </span>
               </div>
             ))}
-            {roster.length === 0 && (
-              <p className="p-4 text-center text-sm text-ink-2">Nobody has answered yet.</p>
-            )}
+            {/* Nothing here when nobody has answered. The summary line
+                directly above already says "0 in · 0 maybe · 0 out · 4 no
+                reply", and a box repeating it in words is the same fact
+                twice in half a screen. */}
           </div>
         </section>
       )}
@@ -368,7 +369,14 @@ function CallItOff({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-5 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-medium "
+        // Drawn as the destructive thing it is. It sat directly under "Add
+        // to your phone's calendar" in an identical outlined button —
+        // identical weight, identical colour — and one of the two notifies
+        // every family in the squad, past their quiet hours, with no way to
+        // mute it. Three equal buttons made the dangerous one the easiest to
+        // press by accident.
+        className="mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold"
+        style={{ borderColor: 'var(--no)', color: 'var(--no)' }}
       >
         Call this game off
       </button>

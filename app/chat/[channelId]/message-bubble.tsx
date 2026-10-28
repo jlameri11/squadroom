@@ -200,7 +200,7 @@ export function MessageBubble({
           {!message.deleted_at && <MessageAttachments attachments={message.attachments} />}
 
           {message.deleted_at ? (
-            <span className={`text-sm italic ${mine && !message.is_announcement ? 'text-white/60' : 'text-ink-3'}`}>
+            <span className={`text-sm italic ${mine && !message.is_announcement ? 'text-[var(--bubble-out-ink-2)]' : 'text-ink-3'}`}>
               Message deleted
             </span>
           ) : (
@@ -233,7 +233,7 @@ export function MessageBubble({
             ))
           )}
 
-          <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-white/60' : 'text-ink-3'}`}>
+          <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-[var(--bubble-out-ink-2)]' : 'text-ink-3'}`}>
             {time}{message.edited_at && ' · edited'}
           </span>
         </div>
