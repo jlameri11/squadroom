@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { headers } from 'next/headers'
 import { AttendancePanel } from './attendance-panel'
 import { redirect, notFound } from 'next/navigation'
@@ -94,6 +95,27 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-2">
           Players · {players?.length ?? 0}
         </h2>
+        {/*
+          Said ONCE, here, instead of seventeen times down the list. The
+          per-player control is still on every row; this is the number a
+          club acts on, and it is the one that tells them whether a kit
+          order is safe to place.
+        */}
+        {(() => {
+          const sized = (players ?? []).filter(
+            (p) => p.shirt_size || p.shorts_size || p.socks_size
+          ).length
+          const total = players?.length ?? 0
+          if (total === 0 || sized === total) return null
+          return (
+            <p className="mb-2 text-xs" style={{ color: 'var(--maybe)' }}>
+              {sized} of {total} have kit sizes —{' '}
+              <Link href="/admin/kit" className="underline underline-offset-2">
+                see the kit list
+              </Link>
+            </p>
+          )
+        })()}
         <div className="rounded-xl border border-[var(--line)]">
           {(players ?? []).map((p, i) => (
             <div key={p.id} className={`p-3 ${i > 0 ? 'border-t border-[var(--line-2)]' : ''}`}>
@@ -133,14 +155,34 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
         </div>
       </section>
 
-      <LeagueName
-        teamId={team.id}
-        name={team.name}
-        externalRef={team.external_ref}
-        skipImport={team.skip_import}
-      />
+      {/*
+        Folded, because these are things a club sets ONCE — what the league
+        calls this squad, and ending its season — and they were sitting open
+        at the bottom of a page that already lists seventeen players and
+        eighteen parents. A coach scrolls past thirty-five names to reach two
+        forms they will use twice a year.
 
-      <SeasonControl teamId={team.id} status={team.status} />
+        Not hidden in a menu: one line, one tap, and the summary says what is
+        inside it.
+      */}
+      <details className="mt-7 rounded-xl border" style={{ borderColor: 'var(--line)' }}>
+        <summary
+          className="cursor-pointer px-4 py-3 text-sm font-semibold"
+          style={{ color: 'var(--brand-text)' }}
+        >
+          Squad settings
+        </summary>
+        <div className="px-4 pb-4">
+          <LeagueName
+            teamId={team.id}
+            name={team.name}
+            externalRef={team.external_ref}
+            skipImport={team.skip_import}
+          />
+
+          <SeasonControl teamId={team.id} status={team.status} />
+        </div>
+      </details>
       </div>
     </AppShellPage>
   )

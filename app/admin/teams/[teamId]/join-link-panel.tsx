@@ -140,7 +140,15 @@ export function JoinLinkPanel({
         </p>
       </div>
 
-      <p className="mt-3 break-all text-sm" style={{ color: 'var(--brand-text)' }}>{link.url}</p>
+      {/*
+        The URL is not shown. It is a 24-character token that wraps onto
+        three lines, cannot be typed from memory and cannot be read down a
+        phone — and the code above it is the thing a coach actually says out
+        loud. Printing it made the panel look like a debugging view.
+
+        "Copy link" still copies the real URL, which is the only way anybody
+        was ever going to use it.
+      */}
       <p className="mt-1 text-sm text-ink-2">
         Used {link.useCount}{link.maxUses ? ` of ${link.maxUses}` : ' times'} · expires {expires}
       </p>

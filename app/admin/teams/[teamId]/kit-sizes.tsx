@@ -63,12 +63,17 @@ export function KitSizes({ playerId, sizes }: { playerId: string; sizes: Sizes }
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-0.5 text-xs underline underline-offset-2"
-        style={{ color: summary.length === 0 ? 'var(--maybe)' : 'var(--ink-3)' }}
+        className="mt-0.5 text-xs underline underline-offset-2 text-ink-3"
       >
-        {summary.length === 0
-          ? 'No kit sizes'
-          : `Kit ${summary.join(' · ')}`}
+        {/*
+          Quiet, and short. This said "No kit sizes" in amber on every
+          player who had none — which on a new squad is seventeen amber
+          lines down one screen, saying the same thing seventeen times.
+          Repetition at that volume is not emphasis, it is wallpaper, and
+          the count under the Players heading is where the club is actually
+          told how many are missing.
+        */}
+        {summary.length === 0 ? '＋ kit sizes' : `Kit ${summary.join(' · ')}`}
       </button>
     )
   }
