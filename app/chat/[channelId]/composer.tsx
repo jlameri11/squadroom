@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { prepareImage, type Attachment } from '@/lib/adapters/images'
+import { PhotoConsent } from './photo-consent'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
@@ -272,6 +273,11 @@ export function Composer({
           Send as an announcement
         </label>
       )}
+
+      {/* Only once images are attached. A permanent notice above the
+          composer is a notice nobody sees, and the moment it matters is the
+          moment before posting. */}
+      {pending.length > 0 && <PhotoConsent channelId={channelId} />}
 
       {pending.length > 0 && (
         <div className="flex gap-2 overflow-x-auto px-3 pt-2">

@@ -4283,6 +4283,7 @@ export type Database = {
           sender_name: string
         }[]
       }
+      photo_consent_check: { Args: { p_channel: string }; Returns: Json }
       platform_overview: {
         Args: never
         Returns: {
