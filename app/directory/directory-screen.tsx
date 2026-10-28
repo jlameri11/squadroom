@@ -117,6 +117,36 @@ export function DirectoryScreen() {
       />
       <Screen>
         <div className="p-4">
+          {/*
+            Saving twenty families one tap at a time is a thing a coach does
+            three times and then stops, spending the season asking the group
+            chat for numbers.
+
+            This is the opposite direction from the bulk address-book upload
+            CLAUDE.md forbids, and the words are close enough to be worth
+            saying: nothing goes IN. The file contains exactly what this
+            screen already shows this person, built by the same function that
+            decided what to show — so at an academy where numbers are
+            staff-only, a parent gets cards with names and squads and no
+            numbers.
+          */}
+          {state.people.length > 1 && (
+            <>
+              <a
+                href={`/api/contacts/all?academy=${state.academy.id}`}
+                className="mb-4 block rounded-xl border px-4 py-3 text-center text-sm font-semibold"
+                style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+              >
+                Save all {state.people.length - 1} to my phone
+              </a>
+              <p className="-mt-3 mb-4 text-center text-xs text-ink-3">
+                {state.isStaff
+                  ? 'One file your phone will offer to import.'
+                  : 'Names and squads. Numbers only where the club shares them.'}
+              </p>
+            </>
+          )}
+
           <DirectoryList
             academyId={state.academy.id}
             myId={state.me}

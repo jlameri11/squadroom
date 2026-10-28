@@ -146,6 +146,85 @@ head("2. A parent saving another parent gets no number")
     : ok('with no number, because directory_visibility says staff only')
 }
 
+head('2b. Saving the WHOLE directory follows exactly the same rules')
+{
+  // Added with the "save all" button. A coach saving twenty families one tap
+  // at a time does it three times and then stops, so the button matters —
+  // but it is a bulk export of families' numbers onto a device, and it must
+  // not become a second rule that drifts from the single-card one.
+  const res = await fetch(`${SITE}/api/contacts/all?academy=${NRIFA}`, {
+    headers: { cookie: parent.cookie },
+  })
+  const body = await res.text()
+  res.ok ? ok(`the file downloads (${res.status})`) : bad(`returned ${res.status}`)
+
+  const cards = body.split('BEGIN:VCARD').length - 1
+  cards > 1 ? ok(`${cards} cards in one file`) : bad(`only ${cards} card`)
+  body.trim().endsWith('END:VCARD') ? ok('concatenated the way a phone exports them') : bad('malformed')
+  res.headers.get('content-disposition')?.includes('.vcf')
+    ? ok('with a filename a phone will offer to import')
+    : bad(`disposition: ${res.headers.get('content-disposition')}`)
+
+  // THE ASSERTION THAT MATTERS. This academy's directory_visibility is
+  // staff-only, so a PARENT downloading the lot must get the coaches'
+  // numbers and no other parent's.
+  const { data: parents } = await admin
+    .from('academy_members')
+    .select('profile_id')
+    .eq('academy_id', NRIFA)
+    .eq('role', 'parent')
+    .neq('profile_id', parent.id)
+  const { data: phones } = await admin
+    .from('profiles')
+    .select('id, phone')
+    .in('id', (parents ?? []).map((p) => p.profile_id))
+  const leaked = (phones ?? []).filter((p) => p.phone && body.includes(p.phone))
+  leaked.length === 0
+    ? ok(`no other parent's number is in the file (${phones?.length ?? 0} checked)`)
+    : bad(`${leaked.length} parents' numbers leaked in the bulk file`)
+
+  // And nobody needs their own card: a phone importing it creates a
+  // duplicate of the owner's own contact.
+  const { data: mine } = await admin
+    .from('profiles')
+    .select('full_name')
+    .eq('id', parent.id)
+    .single()
+  body.includes(`FN:${mine.full_name}`)
+    ? bad('the file includes the person downloading it')
+    : ok('and it leaves the person out of their own file')
+
+  // Nobody from another club — excluding the people who are in BOTH, whose
+  // card belongs in this file legitimately.
+  //
+  // The first version of this did not exclude them and failed on the owner,
+  // who is a member of three academies. A test that cannot tell a leak from
+  // a person with two clubs would have been read as a leak.
+  const { data: nrifaMembers } = await admin
+    .from('academy_members')
+    .select('profile_id')
+    .eq('academy_id', NRIFA)
+  const here = new Set((nrifaMembers ?? []).map((m) => m.profile_id))
+
+  const { data: elsewhere } = await admin
+    .from('academy_members')
+    .select('profile_id')
+    .neq('academy_id', NRIFA)
+    .limit(100)
+  const outsiders = [...new Set((elsewhere ?? []).map((m) => m.profile_id))].filter(
+    (id) => !here.has(id)
+  )
+
+  const { data: theirs } = await admin
+    .from('profiles')
+    .select('full_name')
+    .in('id', outsiders)
+  const crossed = (theirs ?? []).filter((p) => body.includes(`FN:${p.full_name}`))
+  crossed.length === 0
+    ? ok(`and nobody who is only at another club (${outsiders.length} checked)`)
+    : bad(`${crossed.length} people from another academy in the file`)
+}
+
 head('3. Somebody from another academy gets nothing')
 {
   const { data: ravens } = await admin

@@ -378,6 +378,31 @@ function HomeScreen({
         hand their phone to a colleague and nobody could hold two accounts on
         one device.
       */}
+      {/*
+        Asked for directly, and worth having even though the tab bar already
+        carries an Admin tab for staff: the bar is a row of five icons at the
+        very bottom of a phone, and the thing a coach is looking for after
+        reading their fixtures is a sentence that says where to run the club.
+        A control somebody cannot find is a control that is not there.
+      */}
+      {isCoach && (
+        <Link
+          href="/admin"
+          className="mt-8 flex items-center justify-between border-t px-4 py-4"
+          style={{ borderColor: 'var(--line-2)' }}
+        >
+          <span>
+            <span className="block text-sm font-semibold" style={{ color: 'var(--brand)' }}>
+              Run the club
+            </span>
+            <span className="block text-xs text-ink-3">
+              Squads, fixtures, registrations, payments
+            </span>
+          </span>
+          <span className="flex-none text-lg text-ink-3">›</span>
+        </Link>
+      )}
+
       <footer className="mt-8 border-t px-4 pb-2 pt-4" style={{ borderColor: 'var(--line-2)' }}>
         <p className="px-1 text-xs text-ink-3">
           Signed in as <b>{me ?? 'you'}</b>

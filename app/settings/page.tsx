@@ -6,6 +6,7 @@ import { createClient, getUserId } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
+import { MyData } from './my-data'
 import { AppShellPage } from '@/components/shell-page'
 
 export default async function SettingsPage() {
@@ -71,6 +72,7 @@ export default async function SettingsPage() {
 
       <PushToggle />
       <CalendarFeed />
+      <MyData />
 
       {/* The proper home for it, as well as the home screen's footer — this
           is where somebody looks for it. */}

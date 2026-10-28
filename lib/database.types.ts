@@ -2869,6 +2869,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          erased_at: string | null
           full_name: string
           id: string
           phone: string | null
@@ -2877,6 +2878,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          erased_at?: string | null
           full_name?: string
           id: string
           phone?: string | null
@@ -2885,6 +2887,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          erased_at?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -3980,6 +3983,7 @@ export type Database = {
         }
         Returns: string
       }
+      erase_me: { Args: never; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
       event_register: {
         Args: { p_event: string }
@@ -4016,6 +4020,7 @@ export type Database = {
       }
       expire_stale_join_requests: { Args: never; Returns: number }
       expire_stale_registrations: { Args: never; Returns: number }
+      export_my_data: { Args: never; Returns: Json }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json
