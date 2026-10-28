@@ -7,6 +7,7 @@ import { Register } from './register'
 import { Result } from './result'
 import { Lineup } from './lineup'
 import { createClient } from '@/lib/supabase/client'
+import { sendOrQueue } from '@/lib/offline/use-outbox'
 
 type Mine = { playerId: string | null; playerName: string | null; status: string | null; note: string | null }
 type RosterRow = { playerId: string | null; name: string; status: string | null; note: string | null }
@@ -67,17 +68,26 @@ export function EventDetail({
       prev.map((a) => (a.playerId === playerId ? { ...a, status, note: note?.trim() || null } : a))
     )
     const { data: auth } = await supabase.auth.getUser()
-    const { error } = await supabase.from('event_rsvps').upsert(
-      {
-        academy_id: event.academy_id, event_id: event.id, profile_id: auth.user!.id,
-        player_id: playerId, status: status as 'yes' | 'no' | 'maybe',
-        note: note?.trim() || null,
-      },
-      { onConflict: 'event_id,profile_id,player_id' }
-    )
+    const outcome = await sendOrQueue({
+      kind: 'upsert',
+      table: 'event_rsvps',
+      rows: [
+        {
+          academy_id: event.academy_id,
+          event_id: event.id,
+          profile_id: auth.user!.id,
+          player_id: playerId,
+          status,
+          note: note?.trim() || null,
+        },
+      ],
+      onConflict: 'event_id,profile_id,player_id',
+    })
     setBusy(null)
-    if (error) {
-      setError(error.message)
+    // A queued answer is saved, so the buttons stay where the parent put
+    // them. Only a refusal is a wrong answer on screen.
+    if (outcome.status === 'refused') {
+      setError(outcome.error)
       // Put the buttons back where they were rather than showing an answer
       // that was not saved. This has to restore the state captured BEFORE the
       // optimistic update — mapping over `prev` can only ever copy what is

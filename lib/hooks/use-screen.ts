@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { readScreen, writeScreen } from '@/lib/offline/idb'
 
 /**
  * Fetch a screen's data from the BROWSER rather than the server.
@@ -33,6 +34,20 @@ import { createClient } from '@/lib/supabase/client'
  */
 const cache = new Map<string, unknown>()
 
+/**
+ * And the same thing again, on disk.
+ *
+ * The Map above dies with the tab, and the moment that matters most is the
+ * one where somebody has just reopened the app at a ground with no signal.
+ * X-09: a fixtures list from Tuesday is the right thing to show a parent
+ * standing at a gate on Saturday, and a skeleton is not.
+ *
+ * It only ever fills a screen that has nothing. A fresh answer always wins,
+ * and a stale one is never written over a newer one — `seen` is what stops a
+ * slow disk read landing after the network has already answered.
+ */
+const seen = new Set<string>()
+
 export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
   const key = fn + ':' + JSON.stringify(args ?? {})
   const [data, setData] = useState<T | null>(() => (cache.get(key) as T) ?? null)
@@ -44,6 +59,15 @@ export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
     // different instance of the component than the one that fetched it.
     const cached = cache.get(key)
     if (cached !== undefined) setData(cached as T)
+    else {
+      // Nothing in memory. Ask the disk, but never let the answer overwrite
+      // a network reply that has already landed.
+      void readScreen(key).then((hit) => {
+        if (!live || !hit || seen.has(key) || cache.get(key) !== undefined) return
+        cache.set(key, hit.data)
+        setData(hit.data as T)
+      })
+    }
     const call = async () => {
       const client = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,8 +108,13 @@ export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
           if (cache.get(key) === undefined) setFailed(true)
           return
         }
+        seen.add(key)
         cache.set(key, data)
         setData(data as T)
+        // Kept for the next cold start. Failures are silent by design — a
+        // private window refuses IndexedDB, and offline support that breaks
+        // the online case is worse than none.
+        void writeScreen(key, data)
       })
     return () => {
       live = false

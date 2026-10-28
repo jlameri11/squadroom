@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { sendOrQueue } from '@/lib/offline/use-outbox'
 
 type Row = {
   player_id: string
@@ -42,6 +43,7 @@ export function Register({ eventId, started }: { eventId: string; started: boole
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [queued, setQueued] = useState<number | null>(null)
   const [open, setOpen] = useState(false)
 
   const load = useCallback(async () => {
@@ -72,13 +74,30 @@ export function Register({ eventId, started }: { eventId: string; started: boole
       return setError('Nothing changed yet.')
     }
 
-    const { data, error } = await createClient().rpc('take_register', {
-      p_event: eventId,
-      p_marks: marks,
+    // X-09. The register is the one thing in this product that is always
+    // taken in the worst possible signal: a touchline, forty phones on one
+    // tower. A tap that silently does nothing here is a coach going back to
+    // paper for good, so a network failure KEEPS the marks and sends them
+    // later rather than reporting an error for something that is not lost.
+    const outcome = await sendOrQueue({
+      kind: 'rpc',
+      fn: 'take_register',
+      args: { p_event: eventId, p_marks: marks },
     })
     setBusy(false)
-    if (error) return setError(error.message)
-    setSaved(data as number)
+
+    if (outcome.status === 'refused') return setError(outcome.error)
+
+    if (outcome.status === 'queued') {
+      // Said plainly, because "saved" would be a lie and an error would be
+      // worse than one — the marks are safe either way.
+      setQueued(marks.length)
+      setDraft({})
+      setTimeout(() => setQueued(null), 6000)
+      return
+    }
+
+    setSaved(marks.length)
     setDraft({})
     await load()
     setTimeout(() => setSaved(null), 3000)
@@ -190,6 +209,19 @@ export function Register({ eventId, started }: { eventId: string; started: boole
               style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}
             >
               {saved} {saved === 1 ? 'child' : 'children'} saved.
+            </p>
+          )}
+          {/* A different colour and different words from "saved", because it
+              is a different fact. The marks are safe and the club cannot see
+              them yet, and a coach who is told "saved" and then finds the
+              register empty at home trusts nothing after that. */}
+          {queued !== null && (
+            <p
+              className="mt-2 rounded-lg px-3 py-2 text-sm"
+              style={{ background: 'var(--maybe-bg)', color: 'var(--maybe)' }}
+            >
+              {queued} {queued === 1 ? 'mark' : 'marks'} kept on this phone — no signal. They
+              will go as soon as there is, even if you close the app.
             </p>
           )}
 

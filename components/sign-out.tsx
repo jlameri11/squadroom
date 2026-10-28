@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { setOrg } from '@/lib/org'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
+import { clearOffline } from '@/lib/offline/idb'
 
 /**
  * Signing out, which was not possible at all.
@@ -13,8 +14,9 @@ import { invalidateScreen } from '@/lib/hooks/use-screen'
  * approved into by mistake, and nobody could switch between two accounts on
  * one device without clearing site data by hand.
  *
- * THREE THINGS HAVE TO GO, not one. The session is the obvious one. The other
- * two are what make this a correctness problem rather than a missing button:
+ * FOUR THINGS HAVE TO GO, not one. The session is the obvious one. The other
+ * three are what make this a correctness problem rather than a missing
+ * button:
  *
  *   · The remembered ORGANISATION (lib/org.ts) lives in localStorage and
  *     survives a sign-out. Leave it, and the next person to sign in on this
@@ -28,6 +30,14 @@ import { invalidateScreen } from '@/lib/hooks/use-screen'
  *     than a router push — and replace, not assign, so Back does not return
  *     to a signed-in screen.
  *
+ *   · And since X-09, what is on DISK. A cached home screen is somebody's
+ *     children's names and their fixtures, held in IndexedDB so a ground
+ *     with no signal still shows them — which also means it outlives a
+ *     reload, a sign-out and the device being handed on. The outbox goes
+ *     with it: a queued write belongs to the session that made it, and
+ *     replaying it as the next person is how "who marked this child
+ *     present" gets the wrong answer.
+ *
  * The remembered sign-in EMAIL is deliberately kept. It is not a secret, the
  * password still is, and a coach signing back in on their own phone should
  * not have to retype their address.
@@ -40,6 +50,15 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
     setBusy(true)
     setOrg(null)
     invalidateScreen()
+    // Awaited, unlike the rest. The redirect below reloads the page, and a
+    // clear that is still running when that happens leaves the previous
+    // person's children on the disk.
+    try {
+      await clearOffline()
+    } catch {
+      // Storage can be blocked or already gone. Signing out still has to
+      // work; there is nothing cached in that case anyway.
+    }
     try {
       await createClient().auth.signOut()
     } catch {

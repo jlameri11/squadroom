@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { sendOrQueue } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
 
 export type CardEvent = {
@@ -78,19 +79,28 @@ export function EventCard({
     )
 
     const { data: auth } = await supabase.auth.getUser()
-    const { error } = await supabase.from('event_rsvps').upsert(
-      {
-        academy_id: academyId, event_id: event.id, profile_id: auth.user!.id,
-        player_id: playerId, status: status as 'yes' | 'no' | 'maybe',
-        note: note?.trim() || null,
-      },
-      { onConflict: 'event_id,profile_id,player_id' }
-    )
+    const outcome = await sendOrQueue({
+      kind: 'upsert',
+      table: 'event_rsvps',
+      rows: [
+        {
+          academy_id: academyId,
+          event_id: event.id,
+          profile_id: auth.user!.id,
+          player_id: playerId,
+          status,
+          note: note?.trim() || null,
+        },
+      ],
+      onConflict: 'event_id,profile_id,player_id',
+    })
     setSaving(null)
-    if (error) {
-      setError(error.message)
-      // Put the old answer back. A chip showing "Out" for something that was
-      // never saved is worse than no answer at all.
+
+    // Only a refusal puts the old answer back. A queued write is saved and
+    // has not left the phone yet, and re-reading from the server would
+    // replace the parent's answer with the one it has not been told about.
+    if (outcome.status === 'refused') {
+      setError(outcome.error)
       supabase.rpc('my_rsvps_for_event', { p_event: event.id }).then(({ data }) => {
         setRsvps((data ?? []) as Rsvp[])
       })

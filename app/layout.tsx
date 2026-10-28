@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, Barlow_Condensed } from 'next/font/google'
 import './globals.css'
 import { HashSession } from '@/components/hash-session'
 import { TabBar } from '@/components/app-shell'
+import { OfflineBanner } from '@/components/offline-banner'
 
 const plex = IBM_Plex_Sans({
   variable: '--font-plex',
@@ -67,6 +68,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         */}
         <div className="flex min-h-dvh flex-col">
           <div className="flex-1">{children}</div>
+          {/* Above the tab bar, so it is the last thing in view on a
+              phone and does not push a screen's content around. Renders
+              nothing unless there is something waiting. */}
+          <OfflineBanner />
           <TabBar />
         </div>
       </body>

@@ -14,6 +14,7 @@ import { HomeOwing } from './home-owing'
 import { EditHome } from './edit-home'
 import { type SectionId } from '@/lib/home-sections'
 import { createClient } from '@/lib/supabase/client'
+import { sendOrQueue } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
 import { ChildChips, childColour, type Child } from './child-chips'
 
@@ -442,26 +443,33 @@ function EventCard({
     setAnswers((prev) =>
       prev.map((a) => (a.player_id === playerId ? { ...a, status } : a))
     )
-    const supabase = createClient()
-    const { data: auth } = await supabase.auth.getUser()
+    const { data: auth } = await createClient().auth.getUser()
     if (!auth.user) return
-    const { error } = await supabase.from('event_rsvps').upsert(
-      {
-        academy_id: academyId,
-        event_id: event.id,
-        profile_id: auth.user.id,
-        player_id: playerId,
-        status: status as 'yes' | 'no' | 'maybe',
-        note: note?.trim() || null,
-      },
-      { onConflict: 'event_id,profile_id,player_id' }
-    )
-    // Optimism has to be undone when it turns out to be wrong. A chip reading
-    // "Out" for an answer that never saved sends a coach into Saturday
-    // believing something untrue.
-    if (error) {
+
+    // X-09. A car park under a grandstand is where this button gets pressed.
+    const outcome = await sendOrQueue({
+      kind: 'upsert',
+      table: 'event_rsvps',
+      rows: [
+        {
+          academy_id: academyId,
+          event_id: event.id,
+          profile_id: auth.user.id,
+          player_id: playerId,
+          status,
+          note: note?.trim() || null,
+        },
+      ],
+      onConflict: 'event_id,profile_id,player_id',
+    })
+
+    // Optimism is undone only when the answer is actually WRONG. A queued
+    // write is saved — it just has not left the phone — so the chip stays
+    // where the parent put it. Rolling it back would tell them their answer
+    // did not take when it did.
+    if (outcome.status === 'refused') {
       setAnswers(before)
-      setError(error.message)
+      setError(outcome.error)
     }
   }
 
