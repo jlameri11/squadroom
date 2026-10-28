@@ -6,6 +6,7 @@ import { NewSessions } from './new-sessions'
 import { CallOffDay } from './call-off-day'
 import { DrawFilters, applyDrawFilter, type DrawFilter } from './draw-filters'
 import { ShareDraw } from './share-draw'
+import { ShareCard } from '@/components/share-card'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { useScreen } from '@/lib/hooks/use-screen'
@@ -111,6 +112,18 @@ export function FixturesScreen() {
           </div>
         )}
         {data.is_staff && <ShareDraw slug={data.academy.slug} />}
+
+        {/* The Friday post. A link is for people who already follow the
+            club; a picture is how a club reaches the ones who do not. */}
+        {data.is_staff && (
+          <div className="px-3.5 pt-3">
+            <ShareCard
+              endpoint={`/api/share/weekend?academy=${data.academy.id}`}
+              label="Make this weekend's card"
+              filename="weekend"
+            />
+          </div>
+        )}
 
         <div ref={barRef} className="sticky top-0 z-20">
           <DrawFilters events={all} filter={filter} onChange={setFilter} />

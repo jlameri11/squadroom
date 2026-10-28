@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ShareCard } from '@/components/share-card'
 
 export type EventResult = {
   ours: number
@@ -198,6 +199,16 @@ export function Result({
             <p className="mt-1.5 text-xs text-ink-3">From the competition</p>
           )}
         </div>
+      )}
+
+      {/* Only once there is a result, and for staff only — it is the club's
+          image to post, not a parent's. */}
+      {!editing && isCoach && (
+        <ShareCard
+          endpoint={`/api/share/result/${eventId}`}
+          label="Share this result"
+          filename="result"
+        />
       )}
     </section>
   )
