@@ -132,12 +132,20 @@ const delivered = await new Promise((resolve) => {
 
   const timer = setTimeout(() => finish(null), 20000)
 
-  // Path 1: the subscription.
+  // Path 1: the subscription — BROADCAST, exactly as the hook now does it.
+  //
+  // This tested postgres_changes, which is the path X-18 measured losing one
+  // message in five. Testing the path the app no longer uses would have kept
+  // reporting a failure the product had stopped having, and kept passing if
+  // the broadcast path broke.
+  //
+  // The token is already on the SOCKET — sess() awaits setAuth, for the
+  // reason written there. That is also the whole of X-18: a client built with
+  // an Authorization header is authorised for HTTP and the socket is never
+  // told, and a private broadcast topic is authorised from the socket.
   parent.client
-    .channel(`test:${u8.id}:${Date.now()}`)
-    .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${u8.id}` },
-        () => void check())
+    .channel(`channel:${u8.id}`, { config: { private: true } })
+    .on('broadcast', { event: 'new_message' }, () => void check())
     .subscribe(async (status, err) => {
       if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
         failure = `the socket reported ${status}${err ? ': ' + err.message : ''}`

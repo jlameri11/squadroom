@@ -145,7 +145,7 @@ const send = async () => {
   return error?.message
 }
 
-console.log('\nChecking realtime on public.messages\n')
+console.log('\nChecking postgres_changes on public.messages (the OLD path — see X-18)\n')
 
 const asService = await listen(admin, 'service', send, false)
 console.log(`  service role (no RLS)  ${asService === 'delivered' ? green('delivered') : red(asService)}`)

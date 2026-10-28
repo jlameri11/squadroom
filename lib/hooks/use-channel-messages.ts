@@ -34,17 +34,26 @@ export type ChatMessage = {
 /**
  * The realtime seam.
  *
- * This is the ONLY place that knows how messages arrive. It uses
- * postgres_changes, which is the quickest thing that works and does not
- * scale: Supabase re-evaluates RLS per subscriber per change, so a busy
- * academy multiplies the database's work by the number of people watching.
- * Swapping to broadcast-from-trigger is a change to this file and nothing
- * else.
+ * This is the ONLY place that knows how messages arrive, which is what made
+ * X-18 a change to one file.
  *
- * IT ALSO DOES NOT ARRIVE RELIABLY. Measured: test-chat's realtime step
- * fails about one run in five, with the message written and simply never
- * delivered, while a fresh subscription in isolation delivers 10 out of 10.
- * Recorded as X-18.
+ * NEW MESSAGES COME BY BROADCAST, from the trigger 0088 added. What it
+ * replaces is `postgres_changes`, which Supabase re-evaluates per subscriber
+ * per change — so a busy academy multiplied the database's work by the
+ * number of people watching — and which measurably lost about one message in
+ * five: written, and simply never delivered.
+ *
+ * X-18 was recorded as blocked on a project-level setting, on the strength
+ * of Realtime answering "You do not have permissions to read from this
+ * Channel topic". THAT DIAGNOSIS WAS WRONG. A private topic is authorised
+ * from the token on the SOCKET, and a client is authorised for HTTP by its
+ * session without the socket ever being told. `setAuth` is what tells it,
+ * and it has to be awaited — un-awaited it is a race, and the race is lost
+ * quietly by joining as anon, which produces exactly that message.
+ *
+ * UPDATES still come by postgres_changes. 0088 broadcasts inserts only, and
+ * the cost it was replaced for does not apply to an edit: one row when
+ * somebody fixes a typo, against every message in a busy channel.
  *
  * So delivery here does not depend on the socket alone. Three paths feed the
  * same merge, and a message needs any ONE of them:
@@ -97,17 +106,25 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
 
   useEffect(() => {
     const client = supabase.current
+    let channel: ReturnType<typeof client.channel> | null = null
+    let cancelled = false
 
-    const channel = client
-      .channel(`messages:${channelId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
-        () => {
-          // The realtime payload is the raw row: no sender name, no role, and
-          // no respect for the tombstone shaping. Re-read through the same
-          // function the initial load uses, so every message on screen has
-          // been through identical rules.
+    const start = async () => {
+      // Awaited before subscribing. See the note above: without the token on
+      // the socket the join is refused and it reads like a project setting.
+      const { data } = await client.auth.getSession()
+      if (data.session?.access_token) {
+        await client.realtime.setAuth(data.session.access_token)
+      }
+      if (cancelled) return
+
+      channel = client
+        .channel(`channel:${channelId}`, { config: { private: true } })
+        .on('broadcast', { event: 'new_message' }, () => {
+          // The broadcast carries an id and a sender, not a message: no
+          // sender name, no label, and no respect for the tombstone shaping.
+          // Re-read through the same function the initial load uses, so
+          // every message on screen has been through identical rules.
           //
           // This used to fetch p_limit: 1 and look for the id it had just
           // been told about. Two messages a second apart — a coach posting
@@ -116,23 +133,34 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
           // and the message was dropped on the floor. catchUp takes twenty
           // and merges, so a burst cannot outrun it.
           void catchUp()
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
-        (payload) => {
-          const row = payload.new as { id: string; deleted_at: string | null; body: string | null; edited_at: string | null }
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === row.id
-                ? { ...m, body: row.deleted_at ? null : row.body, deleted_at: row.deleted_at, edited_at: row.edited_at }
-                : m
+        })
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
+          (payload) => {
+            const row = payload.new as { id: string; deleted_at: string | null; body: string | null; edited_at: string | null }
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === row.id
+                  ? { ...m, body: row.deleted_at ? null : row.body, deleted_at: row.deleted_at, edited_at: row.edited_at }
+                  : m
+              )
             )
-          )
-        }
-      )
-      .subscribe()
+          }
+        )
+        .subscribe((status) => {
+          // Not an error a person should see — the two paths below still
+          // deliver, which is why they exist. But not silent either, or the
+          // next time this breaks it takes a measurement to notice.
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn(
+              `[chat] realtime ${status} on channel:${channelId} — falling back to catch-up`
+            )
+          }
+        })
+    }
+
+    void start()
 
     // A phone that sleeps kills the socket. Coming back to the app is the
     // moment a parent most expects to see what they missed.
@@ -154,7 +182,8 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
       document.removeEventListener('visibilitychange', onWake)
       window.removeEventListener('focus', onWake)
       clearInterval(timer)
-      client.removeChannel(channel)
+      cancelled = true
+      if (channel) client.removeChannel(channel)
     }
   }, [channelId, catchUp])
 
