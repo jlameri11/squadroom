@@ -102,7 +102,7 @@ function Chip({
           ? {
               borderColor: tint ?? 'var(--brand)',
               background: tint ? `color-mix(in srgb, ${tint} 16%, transparent)` : 'var(--brand-faint)',
-              color: tint ?? 'var(--brand)',
+              color: tint ?? 'var(--brand-text)',
             }
           : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
       }

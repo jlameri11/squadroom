@@ -136,7 +136,7 @@ export function EventDetail({
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(event.address ?? event.venue)}`}
                 target="_blank" rel="noopener noreferrer"
-                className="underline underline-offset-2" style={{ color: 'var(--brand)' }}
+                className="underline underline-offset-2" style={{ color: 'var(--brand-text)' }}
               >
                 {event.venue}
               </a>

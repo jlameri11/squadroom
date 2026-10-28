@@ -73,7 +73,7 @@ export default async function CompetitionPage(props: {
     <main className="mx-auto max-w-md">
       <header className="border-b border-[var(--line)] p-5">
         <Link href="/competitions" className="text-sm text-ink-2">← Competitions</Link>
-        <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand)' }}>{comp.name}</h1>
+        <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>{comp.name}</h1>
         <p className="mt-0.5 text-sm capitalize text-ink-2">
           {[comp.type.replace('_', ' '), comp.organiser, comp.season].filter(Boolean).join(' · ')}
         </p>

@@ -178,7 +178,7 @@ export function MyData() {
         onClick={download}
         disabled={busy !== null}
         className="mt-3 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
-        style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+        style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
       >
         {busy === 'export' ? 'Preparing…' : 'Download a copy'}
       </button>

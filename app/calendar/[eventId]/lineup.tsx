@@ -240,7 +240,7 @@ export function Lineup({ eventId, canSee }: { eventId: string; canSee: boolean }
         <button
           onClick={startEditing}
           className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold"
-          style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+          style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
         >
           Pick the side
         </button>
@@ -256,7 +256,7 @@ export function Lineup({ eventId, canSee }: { eventId: string; canSee: boolean }
         <span className="eyebrow">Team sheet</span>
         {data.can_pick && (
           <span className="flex gap-3 text-xs">
-            <button onClick={startEditing} style={{ color: 'var(--brand)' }}>
+            <button onClick={startEditing} style={{ color: 'var(--brand-text)' }}>
               Edit
             </button>
             <button

@@ -2,7 +2,12 @@
 
 import { type UpcomingEvent } from './calendar-list'
 
-export type DrawFilter = { day: string | null; team: string | null }
+export type DrawFilter = {
+  day: string | null
+  team: string | null
+  /** 'games' hides training, 'training' shows only it, null is everything. */
+  what: 'games' | 'training' | null
+}
 
 /**
  * F-02. The controls that turn a fixture list into a draw.
@@ -20,9 +25,18 @@ export type DrawFilter = { day: string | null; team: string | null }
  *   - the count on each chip is the real number, so a coach can see the shape
  *     of the weekend without opening it.
  *
- * Both narrow independently and both show a count of what is left, because a
- * filtered list that does not say it is filtered is a list with fixtures
- * missing.
+ * THE THIRD ROW EXISTS BECAUSE OF WHAT THIS SCREEN ACTUALLY LOOKS LIKE. A
+ * club training three squads twice a week has about fifty training sessions
+ * in a sixty-day window and maybe a dozen games — so the fixture list
+ * measured thirteen phone screens tall, almost all of it the same three rows
+ * repeating. A coach looking for Saturday scrolled past a month of Tuesdays.
+ *
+ * Nothing is hidden by default. "Games" is one tap, and the screen says how
+ * many it is showing out of how many.
+ *
+ * All three narrow independently and all show a count of what is left,
+ * because a filtered list that does not say it is filtered is a list with
+ * fixtures missing.
  */
 export function DrawFilters({
   events,
@@ -36,8 +50,17 @@ export function DrawFilters({
   // Days, in order, with a count each. Only the next eight, because a chip
   // row is for picking a match day and not for scrolling through a season —
   // clearing the filter is how you see the rest.
+  // Counted against the KIND filter, so picking "Games" and then reading
+  // "Sat 1 Nov · 9" does not promise nine when six of them are training.
+  const ofKind =
+    filter.what === null
+      ? events
+      : events.filter((e) =>
+          filter.what === 'training' ? e.type === 'training' : e.type !== 'training'
+        )
+
   const dayCounts = new Map<string, number>()
-  for (const e of events) {
+  for (const e of ofKind) {
     const key = new Date(e.starts_at).toDateString()
     dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1)
   }
@@ -48,8 +71,8 @@ export function DrawFilters({
   // then seeing "U14 · 3" when U14 do not play on Saturday would be a lie
   // told by a control about its own effect.
   const inDay = filter.day
-    ? events.filter((e) => new Date(e.starts_at).toDateString() === filter.day)
-    : events
+    ? ofKind.filter((e) => new Date(e.starts_at).toDateString() === filter.day)
+    : ofKind
   const teamCounts = new Map<string, number>()
   for (const e of inDay) {
     if (!e.team_name) continue
@@ -57,14 +80,45 @@ export function DrawFilters({
   }
   const teams = [...teamCounts.keys()].sort()
 
-  // One squad and one day is not a draw, it is a fixture. Nothing to filter.
-  if (days.length < 2 && teams.length < 2) return null
+  // How many are games and how many are training, from the same list the
+  // chips narrow — so the counts cannot disagree with what a tap produces.
+  const games = events.filter((e) => e.type !== 'training').length
+  const training = events.length - games
+  const bothKinds = games > 0 && training > 0
+
+  // One squad, one day and one kind is not a draw, it is a fixture.
+  if (days.length < 2 && teams.length < 2 && !bothKinds) return null
 
   return (
     <div
       className="border-b backdrop-blur"
       style={{ background: 'var(--paper-blur)', borderColor: 'var(--line-2)' }}
     >
+      {/* First, because it is the one that changes the screen most. */}
+      {bothKinds && (
+        <Row label="Show">
+          <Chip on={filter.what === null} onClick={() => onChange({ ...filter, what: null })}>
+            Everything
+          </Chip>
+          <Chip
+            on={filter.what === 'games'}
+            count={games}
+            onClick={() => onChange({ ...filter, what: filter.what === 'games' ? null : 'games' })}
+          >
+            Games
+          </Chip>
+          <Chip
+            on={filter.what === 'training'}
+            count={training}
+            onClick={() =>
+              onChange({ ...filter, what: filter.what === 'training' ? null : 'training' })
+            }
+          >
+            Training
+          </Chip>
+        </Row>
+      )}
+
       {days.length > 1 && (
         <Row label="Day">
           <Chip on={filter.day === null} onClick={() => onChange({ ...filter, day: null })}>
@@ -110,7 +164,9 @@ export function applyDrawFilter(events: UpcomingEvent[], f: DrawFilter) {
   return events.filter(
     (e) =>
       (f.day === null || new Date(e.starts_at).toDateString() === f.day) &&
-      (f.team === null || e.team_name === f.team)
+      (f.team === null || e.team_name === f.team) &&
+      (f.what === null ||
+        (f.what === 'training' ? e.type === 'training' : e.type !== 'training'))
   )
 }
 
@@ -149,7 +205,7 @@ function Chip({
           ? {
               borderColor: 'var(--brand)',
               background: 'var(--brand-faint)',
-              color: 'var(--brand)',
+              color: 'var(--brand-text)',
             }
           : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
       }

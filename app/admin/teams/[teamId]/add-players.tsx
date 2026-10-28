@@ -194,7 +194,7 @@ export function AddPlayers({
                 {hasParent && (
                   <div className="mt-2 flex items-center gap-3">
                     {canPick && (
-                      <button onClick={() => pickParent(i)} className="text-xs underline underline-offset-2" style={{ color: 'var(--brand)' }}>
+                      <button onClick={() => pickParent(i)} className="text-xs underline underline-offset-2" style={{ color: 'var(--brand-text)' }}>
                         Pick from contacts instead
                       </button>
                     )}

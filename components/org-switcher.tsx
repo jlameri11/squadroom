@@ -102,7 +102,7 @@ export function OrgSwitcher({ onClose }: { onClose: () => void }) {
                     </span>
                   </span>
                   {on && (
-                    <span className="flex-none text-lg" style={{ color: 'var(--brand)' }}>
+                    <span className="flex-none text-lg" style={{ color: 'var(--brand-text)' }}>
                       ✓
                     </span>
                   )}

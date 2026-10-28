@@ -27,7 +27,7 @@ export function FixturesScreen() {
   // Not remembered between visits. A fixtures screen that opens already
   // narrowed is a fixtures screen with somebody's game missing from it, and
   // the person who would notice last is the one who set the filter weeks ago.
-  const [filter, setFilter] = useState<DrawFilter>({ day: null, team: null })
+  const [filter, setFilter] = useState<DrawFilter>({ day: null, team: null, what: null })
 
   // Screen is the scroll container, so everything sticky inside it sticks to
   // the SAME top. The filter bar and the day headings both did, and the day
@@ -82,47 +82,71 @@ export function FixturesScreen() {
         }
       />
       <Screen>
-        {data.is_staff && (
-          <div
-            className="flex items-center gap-4 border-b px-4 py-3"
-            style={{ borderColor: 'var(--line-2)' }}
-          >
-            <button
-              onClick={() => setAdding(true)}
-              className="text-sm underline underline-offset-4"
-              style={{ color: 'var(--brand)' }}
-            >
-              Add weekly training
-            </button>
-            <a
-              href="/scan"
-              className="text-sm underline underline-offset-4"
-              style={{ color: 'var(--brand)' }}
-            >
-              Add games from a screenshot
-            </a>
-            {/* Wet weather does not arrive one fixture at a time. */}
-            <button
-              onClick={() => setCallingOff(true)}
-              className="text-sm underline underline-offset-4"
-              style={{ color: 'var(--no)' }}
-            >
-              Call off a day
-            </button>
-          </div>
-        )}
-        {data.is_staff && <ShareDraw slug={data.academy.slug} />}
+        {/*
+          FOLDED AWAY, because these five controls were the first screen of
+          this page. A coach opening Fixtures is looking for a fixture — the
+          tools for putting them in, taking a day off and posting them are
+          things they came here to do SECOND, if at all, and on a phone they
+          occupied the whole of the first view before a single game appeared.
 
-        {/* The Friday post. A link is for people who already follow the
-            club; a picture is how a club reaches the ones who do not. */}
+          Closed by default and one tap to open. Not hidden in a menu: a
+          coach who has never found "Call off a day" cannot call off a day,
+          and it is the one in here that is urgent.
+        */}
         {data.is_staff && (
-          <div className="px-3.5 pt-3">
-            <ShareCard
-              endpoint={`/api/share/weekend?academy=${data.academy.id}`}
-              label="Make this weekend's card"
-              filename="weekend"
-            />
-          </div>
+          <details className="border-b" style={{ borderColor: 'var(--line-2)' }}>
+            <summary
+              className="cursor-pointer px-4 py-2.5 text-sm font-semibold"
+              style={{ color: 'var(--brand-text)' }}
+            >
+              Add, share or call off
+            </summary>
+
+            <div className="px-4 pb-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <button
+                  onClick={() => setAdding(true)}
+                  className="text-sm underline underline-offset-4"
+                  style={{ color: 'var(--brand-text)' }}
+                >
+                  Add weekly training
+                </button>
+                <a
+                  href="/admin/import"
+                  className="text-sm underline underline-offset-4"
+                  style={{ color: 'var(--brand-text)' }}
+                >
+                  Import a draw
+                </a>
+                <a
+                  href="/scan"
+                  className="text-sm underline underline-offset-4"
+                  style={{ color: 'var(--brand-text)' }}
+                >
+                  From a screenshot
+                </a>
+                {/* Wet weather does not arrive one fixture at a time. */}
+                <button
+                  onClick={() => setCallingOff(true)}
+                  className="text-sm underline underline-offset-4"
+                  style={{ color: 'var(--no)' }}
+                >
+                  Call off a day
+                </button>
+              </div>
+
+              <ShareDraw slug={data.academy.slug} />
+
+              {/* The Friday post. A link is for people who already follow
+                  the club; a picture is how a club reaches the ones who do
+                  not. */}
+              <ShareCard
+                endpoint={`/api/share/weekend?academy=${data.academy.id}`}
+                label="Make this weekend's card"
+                filename="weekend"
+              />
+            </div>
+          </details>
         )}
 
         <div ref={barRef} className="sticky top-0 z-20">
@@ -133,9 +157,9 @@ export function FixturesScreen() {
           <div className="p-6 text-center">
             <p className="text-sm text-ink-3">Nothing matches that.</p>
             <button
-              onClick={() => setFilter({ day: null, team: null })}
+              onClick={() => setFilter({ day: null, team: null, what: null })}
               className="mt-2 text-sm underline underline-offset-4"
-              style={{ color: 'var(--brand)' }}
+              style={{ color: 'var(--brand-text)' }}
             >
               Clear the filter
             </button>

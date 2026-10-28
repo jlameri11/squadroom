@@ -135,7 +135,7 @@ export function DirectoryScreen() {
               <a
                 href={`/api/contacts/all?academy=${state.academy.id}`}
                 className="mb-4 block rounded-xl border px-4 py-3 text-center text-sm font-semibold"
-                style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+                style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
               >
                 Save all {state.people.length - 1} to my phone
               </a>

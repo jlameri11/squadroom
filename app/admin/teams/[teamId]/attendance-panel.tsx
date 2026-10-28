@@ -52,7 +52,7 @@ export function AttendancePanel({ academyId, teamId }: { academyId: string; team
       <button
         onClick={() => setOpen(true)}
         className="mt-7 w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold"
-        style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+        style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
       >
         Attendance this term
       </button>

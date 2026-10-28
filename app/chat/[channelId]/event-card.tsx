@@ -151,7 +151,7 @@ export function EventCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2"
-                  style={{ color: 'var(--brand)' }}
+                  style={{ color: 'var(--brand-text)' }}
                 >
                   {event.venue}
                 </a>
@@ -226,7 +226,7 @@ export function EventCard({
           <a
             href={`/api/ics/${event.id}`}
             className="mt-3 block rounded-lg border border-[var(--line)] py-2 text-center text-xs font-semibold"
-            style={{ color: 'var(--brand)' }}
+            style={{ color: 'var(--brand-text)' }}
           >
             Add to calendar
           </a>

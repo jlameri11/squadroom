@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/client'
 import { sendOrQueue } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
 import { ChildChips, childColour, type Child } from './child-chips'
+import { TrainingBlock, groupTraining } from './training-block'
 
 export type HomeEvent = {
   id: string
@@ -230,16 +231,29 @@ function HomeScreen({
               </p>
             ) : (
               <div className="stack">
-                {shownEvents.map((e) => (
-                  <EventCard
-                    key={e.id}
-                    event={e}
-                    isCoach={isCoach}
-                    academyId={academy.id}
-                    onlyChild={onlyChild}
-                    colourChildren={childList.length > 1}
-                  />
-                ))}
+                {/* An evening of training is one row, not three identical
+                    ones. A club that trains three squads on a Thursday was
+                    filling three of the five slots here with the same date,
+                    the same venue and the same word — so the Saturday match
+                    started below the fold. */}
+                {groupTraining(shownEvents).map((item) =>
+                  item.kind === 'training' ? (
+                    <TrainingBlock
+                      key={item.events[0].id}
+                      events={item.events}
+                      isCoach={isCoach}
+                    />
+                  ) : (
+                    <EventCard
+                      key={item.event.id}
+                      event={item.event}
+                      isCoach={isCoach}
+                      academyId={academy.id}
+                      onlyChild={onlyChild}
+                      colourChildren={childList.length > 1}
+                    />
+                  )
+                )}
               </div>
             )}
           </section>
@@ -392,7 +406,7 @@ function HomeScreen({
           style={{ borderColor: 'var(--line-2)' }}
         >
           <span>
-            <span className="block text-sm font-semibold" style={{ color: 'var(--brand)' }}>
+            <span className="block text-sm font-semibold" style={{ color: 'var(--brand-text)' }}>
               Run the club
             </span>
             <span className="block text-xs text-ink-3">
@@ -559,7 +573,7 @@ function EventCard({
             <b style={{ color: 'var(--yes)' }}>{event.going} in</b>
             {event.no_reply ? ` · ${event.no_reply} no reply` : ''}
           </span>
-          <span style={{ color: 'var(--brand)' }}>View roster</span>
+          <span style={{ color: 'var(--brand-text)' }}>View roster</span>
         </Link>
       )}
 

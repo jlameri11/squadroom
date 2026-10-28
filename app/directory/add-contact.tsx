@@ -162,7 +162,7 @@ export function AddContact({
           <button
             onClick={pick}
             className="mt-3 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+            style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
           >
             Pick from my phone&apos;s contacts
           </button>

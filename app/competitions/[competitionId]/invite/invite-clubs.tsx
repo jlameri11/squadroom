@@ -124,7 +124,7 @@ export function InviteClubs({
             <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
               Invited · {existing.length}
             </h2>
-            <button onClick={copyAll} className="text-sm font-semibold" style={{ color: 'var(--brand)' }}>
+            <button onClick={copyAll} className="text-sm font-semibold" style={{ color: 'var(--brand-text)' }}>
               {copied ? 'Copied' : 'Copy all links'}
             </button>
           </div>

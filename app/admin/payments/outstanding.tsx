@@ -54,7 +54,7 @@ export function Outstanding({ academyId }: { academyId: string }) {
       <button
         onClick={() => setOpen(true)}
         className="mt-6 w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold"
-        style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+        style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
       >
         Who owes money
       </button>

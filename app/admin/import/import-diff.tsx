@@ -63,7 +63,7 @@ export function ImportDiff({
 
   return (
     <section className="mt-5">
-      <h2 className="font-semibold" style={{ color: 'var(--brand)' }}>
+      <h2 className="font-semibold" style={{ color: 'var(--brand-text)' }}>
         {nothing ? 'Nothing has changed' : 'What this will do'}
       </h2>
       <p className="mt-0.5 text-xs text-ink-2">

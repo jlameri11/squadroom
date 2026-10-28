@@ -99,7 +99,7 @@ export default async function PlatformPage() {
 function Stat({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   return (
     <div className="rounded-xl border border-[var(--line)] p-3">
-      <div className="text-xl font-bold tabular-nums" style={{ color: highlight ? 'var(--yes)' : 'var(--brand)' }}>
+      <div className="text-xl font-bold tabular-nums" style={{ color: highlight ? 'var(--yes)' : 'var(--brand-text)' }}>
         {value}
       </div>
       <div className="text-xs text-ink-2">{label}</div>

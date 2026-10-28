@@ -301,7 +301,7 @@ function Fixtures({ fixtures }: { fixtures: Fixture[] }) {
                 {played ? (
                   <span
                     className="flex-none text-sm font-bold tabular-nums"
-                    style={{ color: 'var(--brand)' }}
+                    style={{ color: 'var(--brand-text)' }}
                   >
                     {f.home_score}–{f.away_score}
                   </span>

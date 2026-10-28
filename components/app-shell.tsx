@@ -315,7 +315,7 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
             prefetch
             aria-current={on ? 'page' : undefined}
             className="relative flex flex-1 flex-col items-center gap-[3px] rounded-[10px] px-0.5 pb-1 pt-1.5 text-[10.5px] font-semibold"
-            style={{ color: on ? 'var(--brand)' : 'var(--ink-3)' }}
+            style={{ color: on ? 'var(--brand-text)' : 'var(--ink-3)' }}
           >
             <span className="relative">
               <svg

@@ -142,7 +142,7 @@ export function Result({
           <button
             onClick={() => setEditing(true)}
             className="mt-1 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold"
-            style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+            style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
           >
             Add the score
           </button>
@@ -158,7 +158,7 @@ export function Result({
         {/* A score entered on the fixture is the competition's, not this
             coach's to retype here. */}
         {isCoach && result.source === 'event' && !editing && (
-          <button onClick={() => setEditing(true)} className="text-xs" style={{ color: 'var(--brand)' }}>
+          <button onClick={() => setEditing(true)} className="text-xs" style={{ color: 'var(--brand-text)' }}>
             Edit
           </button>
         )}

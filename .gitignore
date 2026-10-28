@@ -14,3 +14,7 @@ next-env.d.ts
 
 # Local Claude Code permissions
 .claude/settings.local.json
+
+# Screenshots from scripts/shots.mjs. Looking at a screen is the point;
+# keeping the pictures is not.
+.shots/

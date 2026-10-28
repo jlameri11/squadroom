@@ -21,7 +21,7 @@ export default async function PaymentsPage({
   return (
     <main className="mx-auto max-w-md">
       <header className="border-b border-[var(--line)] p-5">
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Payments</h1>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>Payments</h1>
         <p className="mt-0.5 text-sm text-ink-2">{academy.name}</p>
       </header>
       <PaymentsList

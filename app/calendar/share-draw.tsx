@@ -48,7 +48,7 @@ export function ShareDraw({ slug }: { slug: string }) {
         <button
           onClick={share}
           className="flex-none rounded-lg border px-3 py-1.5 text-xs font-semibold"
-          style={{ borderColor: 'var(--brand)', color: 'var(--brand)' }}
+          style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }}
         >
           {said ?? 'Share'}
         </button>

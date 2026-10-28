@@ -173,7 +173,7 @@ export function MessageBubble({
           }
         >
           {message.is_announcement && (
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--brand)' }}>
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--brand-text)' }}>
               Announcement
             </span>
           )}

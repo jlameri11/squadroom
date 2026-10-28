@@ -46,7 +46,7 @@ export default async function InviteClubsPage(props: {
   return (
     <main className="mx-auto max-w-md p-5">
       <Link href={`/competitions/${competitionId}`} className="text-sm text-ink-2">← {comp.name}</Link>
-      <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand)' }}>Invite clubs</h1>
+      <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>Invite clubs</h1>
 
       <InviteClubs
         competitionId={competitionId}

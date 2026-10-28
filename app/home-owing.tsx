@@ -59,7 +59,7 @@ export function HomeOwing() {
       </div>
 
       <Link href="/admin/payments" className="card block p-3.5">
-        <p className="display text-[26px] leading-none" style={{ color: 'var(--brand)' }}>
+        <p className="display text-[26px] leading-none" style={{ color: 'var(--brand-text)' }}>
           {money(total)}
         </p>
         <p className="mt-0.5 text-sm text-ink-3">

@@ -28,7 +28,7 @@ export function ClaimInvite({
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">
         {organiserName} invites
       </p>
-      <h1 className="mt-1 text-2xl font-semibold" style={{ color: 'var(--brand)' }}>{clubName}</h1>
+      <h1 className="mt-1 text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>{clubName}</h1>
       <p className="mt-1 text-sm text-ink-2">
         to {competitionName}
         {division && ` · ${division}`}

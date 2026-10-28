@@ -169,7 +169,7 @@ export function RegistrationQueue() {
                   }
                 }}
                 className="flex-none rounded-lg border px-3 py-1.5 text-xs font-semibold"
-                style={{ borderColor: 'var(--brand)', color: 'var(--brand)' }}
+                style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }}
               >
                 {copied ? 'Copied' : 'Share'}
               </button>
@@ -205,7 +205,7 @@ export function RegistrationQueue() {
                   ? {
                       borderColor: 'var(--brand)',
                       background: 'var(--brand-faint)',
-                      color: 'var(--brand)',
+                      color: 'var(--brand-text)',
                     }
                   : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
               }

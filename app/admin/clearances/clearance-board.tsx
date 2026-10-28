@@ -101,7 +101,7 @@ export function ClearanceBoard() {
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-2"
-              style={{ color: 'var(--brand)' }}
+              style={{ color: 'var(--brand-text)' }}
             >
               OCG Employer Portal
             </a>{' '}
@@ -221,7 +221,7 @@ function RecordForm({ row, onDone }: { row: Row; onDone: () => void }) {
               className="rounded-full border px-3 py-1.5 text-xs font-semibold"
               style={
                 outcome === value
-                  ? { borderColor: 'var(--brand)', background: 'var(--brand-faint)', color: 'var(--brand)' }
+                  ? { borderColor: 'var(--brand)', background: 'var(--brand-faint)', color: 'var(--brand-text)' }
                   : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
               }
             >

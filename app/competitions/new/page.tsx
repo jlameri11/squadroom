@@ -58,7 +58,7 @@ export default function NewCompetition() {
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>New competition</h1>
+      <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>New competition</h1>
 
       <form onSubmit={create} className="mt-5 flex flex-col gap-4">
         {orgs.length > 1 && (

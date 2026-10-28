@@ -110,7 +110,7 @@ export function Register({ eventId, started }: { eventId: string; started: boole
       <button
         onClick={() => setOpen(true)}
         className="sect w-full rounded-xl border px-4 py-3 text-left text-sm font-semibold"
-        style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+        style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
       >
         Take the register
       </button>

@@ -15,6 +15,19 @@
 
 :root {
   --brand: #202842;
+  /* The brand colour as TEXT, which is not the same job as the brand colour
+     as a background.
+
+     `--brand` is overridden at runtime with whatever the club chose, and is
+     never redefined for dark — so on a #080D16 ground the default navy, and
+     a club's mid-blue, were all but invisible. Found by screenshotting the
+     fixtures list in dark mode: the match TIMES had disappeared while the
+     training times beside them were fine.
+
+     Light keeps the colour as-is. Dark mixes it toward white, which works
+     for any colour a club picks rather than for the ones we happened to
+     test. */
+  --brand-text: var(--brand);
   --brand-soft: #2028421a;
   /* The faintest wash of the brand, for a selected row or a card header. The
      colour sweep produced `var(--brand)0d` in eight places, which is not CSS
@@ -82,6 +95,7 @@
     --brand-soft: #ffffff14;
     --brand-faint: #ffffff0a;
     --brand-ink: #ffffff;
+    --brand-text: color-mix(in srgb, var(--brand) 42%, #ffffff);
 
     --paper: #080D16;
     --surface: #121B29;
@@ -118,6 +132,7 @@
   --brand-soft: #ffffff14;
   --brand-faint: #ffffff0a;
   --brand-ink: #ffffff;
+  --brand-text: color-mix(in srgb, var(--brand) 42%, #ffffff);
 
   --paper: #080D16;
   --surface: #121B29;

@@ -80,7 +80,7 @@ export function CompetitionView({
             key={t}
             onClick={() => setTab(t)}
             className="flex-1 rounded-lg py-2 text-sm font-medium"
-            style={tab === t ? { background: 'var(--brand-soft)', color: 'var(--brand)' } : { color: 'var(--ink-2)' }}
+            style={tab === t ? { background: 'var(--brand-soft)', color: 'var(--brand-text)' } : { color: 'var(--ink-2)' }}
           >
             {LABEL[t]}
           </button>
@@ -134,7 +134,7 @@ export function CompetitionView({
             <Link
               href={`/competitions/${competitionId}/invite`}
               className="mb-3 block rounded-xl border px-4 py-3 text-sm font-semibold"
-              style={{ borderColor: 'var(--brand)', color: 'var(--brand)' }}
+              style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }}
             >
               {entries.length === 0
                 ? 'Invite clubs to enter →'
@@ -276,7 +276,7 @@ function RunSheet({
                 </span>
 
                 {f.status === 'final' ? (
-                  <span className="flex-none text-sm font-bold tabular-nums" style={{ color: 'var(--brand)' }}>
+                  <span className="flex-none text-sm font-bold tabular-nums" style={{ color: 'var(--brand-text)' }}>
                     {f.home_score}–{f.away_score}
                   </span>
                 ) : f.can_score ? (
@@ -601,7 +601,7 @@ function Ladder({ rows }: { rows: LadderRow[] }) {
                   <td className="p-1 text-center tabular-nums">{r.drawn}</td>
                   <td className="p-1 text-center tabular-nums">{r.lost}</td>
                   <td className="p-1 text-center tabular-nums">{r.goal_difference > 0 ? `+${r.goal_difference}` : r.goal_difference}</td>
-                  <td className="p-1 text-center font-bold tabular-nums" style={{ color: 'var(--brand)' }}>{r.points}</td>
+                  <td className="p-1 text-center font-bold tabular-nums" style={{ color: 'var(--brand-text)' }}>{r.points}</td>
                 </tr>
               ))}
             </tbody>

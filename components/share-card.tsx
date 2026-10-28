@@ -88,7 +88,7 @@ export function ShareCard({
       <button
         onClick={() => setOpen(true)}
         className="mt-2 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold"
-        style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+        style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
       >
         {label}
       </button>
@@ -117,7 +117,7 @@ export function ShareCard({
               <span className="block text-sm font-semibold">{name}</span>
               <span className="block text-xs text-ink-3">{hint}</span>
             </span>
-            <span className="flex-none text-xs" style={{ color: 'var(--brand)' }}>
+            <span className="flex-none text-xs" style={{ color: 'var(--brand-text)' }}>
               {busy === value ? 'Making…' : '→'}
             </span>
           </button>

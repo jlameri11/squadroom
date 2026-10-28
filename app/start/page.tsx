@@ -48,7 +48,7 @@ export default function Start() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
       <div>
-        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand)' }}>
+        <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>
           Set up your organisation
         </h1>
         <p className="mt-1 text-sm text-ink-2">

@@ -83,7 +83,7 @@ export function Chase({
       <button
         onClick={() => setOpen(true)}
         className="mt-2 w-full rounded-xl border px-4 py-2.5 text-left text-sm font-semibold"
-        style={{ borderColor: 'var(--line)', color: 'var(--brand)' }}
+        style={{ borderColor: 'var(--line)', color: 'var(--brand-text)' }}
       >
         {outstanding} {outstanding === 1 ? "hasn't" : "haven't"} answered — chase them
       </button>

@@ -56,7 +56,7 @@ function Gone() {
   return (
     <Shell>
       <div className="text-center">
-        <p className="display text-2xl" style={{ color: 'var(--brand)' }}>
+        <p className="display text-2xl" style={{ color: 'var(--brand-text)' }}>
           Nothing here
         </p>
         <p className="mt-2 text-sm text-ink-2">
