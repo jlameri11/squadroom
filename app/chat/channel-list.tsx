@@ -26,6 +26,19 @@ type Found = {
     sender_name: string | null
   }[]
   people: { profile_id: string; full_name: string; role: string }[]
+  // 0130. DRIBL_INTEL ranks "finding teams" and "search is broken" among
+  // the top complaints against Dribl, and a search that returned only
+  // messages answered neither: typing "Gladesville" found the chat about
+  // the game rather than the game.
+  fixtures: {
+    id: string
+    title: string
+    starts_at: string
+    venue: string | null
+    team_name: string | null
+    cancelled_at: string | null
+  }[]
+  squads: { id: string; name: string; age_group: string | null; players: number }[]
 }
 
 export function ChannelList({ channels }: { channels: Row[] }) {
@@ -71,7 +84,7 @@ export function ChannelList({ channels }: { channels: Row[] }) {
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search messages and people"
+        placeholder="Search games, squads, people and messages"
         type="search"
         className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3.5 py-2.5 text-sm"
       />
@@ -121,8 +134,10 @@ function Results({
   }
   const messages = found?.messages ?? []
   const people = found?.people ?? []
+  const fixtures = found?.fixtures ?? []
+  const squads = found?.squads ?? []
 
-  if (messages.length === 0 && people.length === 0) {
+  if (messages.length === 0 && people.length === 0 && fixtures.length === 0 && squads.length === 0) {
     return (
       <p className="card mt-4 p-6 text-center text-sm text-ink-3">
         Nothing matching “{query}”.
@@ -132,6 +147,73 @@ function Results({
 
   return (
     <>
+      {/* Games first. "When do we play" is the question this app exists to
+          answer, and a message about a game is not an answer to it. */}
+      {fixtures.length > 0 && (
+        <section className="mt-5">
+          <h2 className="eyebrow px-1 pb-2">Games</h2>
+          <div className="card overflow-hidden">
+            {fixtures.map((f) => (
+              <Link
+                key={f.id}
+                href={`/calendar/${f.id}`}
+                className={`row items-start ${f.cancelled_at ? 'opacity-50' : ''}`}
+              >
+                <span className="display mt-0.5 w-14 flex-none text-[15px] tabular-nums text-ink-3">
+                  {new Date(f.starts_at).toLocaleDateString('en-AU', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{f.title}</span>
+                  <span className="block truncate text-xs text-ink-3">
+                    {[
+                      new Date(f.starts_at).toLocaleTimeString('en-AU', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      }),
+                      f.team_name,
+                      f.venue,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {squads.length > 0 && (
+        <section className="mt-5">
+          <h2 className="eyebrow px-1 pb-2">Squads</h2>
+          <div className="card overflow-hidden">
+            {squads.map((t) => (
+              // To the FIXTURES, filtered to that squad — not to the admin
+              // team page, which is staff-only and would be a wall for the
+              // person most likely to search a squad name. "U10" is asked
+              // by a parent who wants to know when the U10s play.
+              <Link
+                key={t.id}
+                href={`/calendar?squad=${encodeURIComponent(t.name)}`}
+                className="row"
+              >
+                <span className="av alt">{initials(t.name)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{t.name}</span>
+                  <span className="block truncate text-xs text-ink-3">
+                    {t.players} {t.players === 1 ? 'player' : 'players'}
+                    {t.age_group ? ` · ${t.age_group}` : ''}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {people.length > 0 && (
         <section className="mt-5">
           <h2 className="eyebrow px-1 pb-2">People</h2>

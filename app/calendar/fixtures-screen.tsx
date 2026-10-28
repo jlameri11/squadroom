@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { NewSessions } from './new-sessions'
 import { CallOffDay } from './call-off-day'
@@ -27,7 +28,16 @@ export function FixturesScreen() {
   // Not remembered between visits. A fixtures screen that opens already
   // narrowed is a fixtures screen with somebody's game missing from it, and
   // the person who would notice last is the one who set the filter weeks ago.
-  const [filter, setFilter] = useState<DrawFilter>({ day: null, team: null, what: null })
+  // A squad can arrive in the URL, which is how a search result for "U10"
+  // lands somebody on the games rather than on a staff screen they cannot
+  // open. Read once, as the starting filter — not kept in sync, because
+  // after that the chips are what the person is driving.
+  const params = useSearchParams()
+  const [filter, setFilter] = useState<DrawFilter>({
+    day: null,
+    team: params.get('squad'),
+    what: null,
+  })
 
   // Screen is the scroll container, so everything sticky inside it sticks to
   // the SAME top. The filter bar and the day headings both did, and the day

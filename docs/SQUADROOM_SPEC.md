@@ -91,6 +91,7 @@
 | C-06 | Threaded replies under announcements that don't notify the whole channel | PARTIAL (replies_only mode + reply_to) | P2 |
 | C-07 | Notification digest (one summary push instead of many) | MISSING | P2 |
 | C-08 | Mute per channel / filter per child in the UI | DONE (column + channel settings sheet) | — |
+| C-09 | **One search for the whole club**, not just messages | **DONE** (0130). DRIBL_INTEL ranks "navigation is confusing: finding teams" at #1 and "search is broken" at #8 among complaints against Dribl, and Squadroom's search answered neither: it covered messages and people, so typing an opponent's name found the chat about the game rather than the game. It now also finds FIXTURES and SQUADS, games first, each result carrying the id its screen needs. Fixtures go through `my_upcoming_events`, so the four visibility rules including `private_to` are the screens' rules and not a second copy. A squad result links to the fixtures filtered to that squad, never to the staff team page — the person searching "U10" is usually a parent asking when the U10s play | — |
 
 ### D. Events & availability
 | ID | Feature | Status | Pri |

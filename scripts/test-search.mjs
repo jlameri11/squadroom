@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
+
+const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const ok=m=>console.log(`  \x1b[32m✓\x1b[0m ${m}`), bad=m=>{console.log(`  \x1b[31m✗\x1b[0m ${m}`);process.exitCode=1}
 const head=m=>console.log(`\n${m}`)
 
@@ -32,14 +34,59 @@ head('2. It searches people too')
 const { data: r2 } = await coach.client.rpc('search_chat', { p_query: 'Priya' })
 r2.people.length > 0 ? ok(`${r2.people[0].full_name} — ${r2.people[0].role}`) : bad('no people found')
 
+head('2b. It finds GAMES and SQUADS, not only messages')
+{
+  // DRIBL_INTEL ranks "navigation is confusing: finding teams" at #1 and
+  // "search is broken" at #8. A search returning only messages answered
+  // neither — typing an opponent's name found the chat about the game
+  // rather than the game.
+  const { data: ground } = await admin
+    .from('events')
+    .select('venue, opponent, team_id')
+    .eq('academy_id', NRIFA)
+    .not('opponent', 'is', null)
+    .gt('starts_at', new Date().toISOString())
+    .limit(1)
+    .maybeSingle()
+
+  if (!ground?.opponent) {
+    ok('(no upcoming fixture with an opponent to search for)')
+  } else {
+    const word = ground.opponent.split(' ')[0]
+    const { data } = await coach.client.rpc('search_chat', {
+      p_query: word,
+      p_academy: NRIFA,
+    })
+    data.fixtures?.length > 0
+      ? ok(`"${word}" finds the game, not just the chat about it`)
+      : bad(`"${word}" found ${data.fixtures?.length ?? 0} fixtures`)
+    data.fixtures?.[0]?.id ? ok('and it carries an id to tap') : bad('a result with nowhere to go')
+  }
+
+  const { data: team } = await admin
+    .from('teams')
+    .select('name')
+    .eq('academy_id', NRIFA)
+    .eq('status', 'active')
+    .limit(1)
+    .single()
+  const { data: bySquad } = await coach.client.rpc('search_chat', {
+    p_query: team.name.split(' ')[0],
+    p_academy: NRIFA,
+  })
+  bySquad.squads?.length > 0
+    ? ok(`"${team.name.split(' ')[0]}" finds the squad`)
+    : bad('a squad name found no squad')
+}
+
 head('3. A parent sees only channels they are in')
 const { data: r3 } = await parent.client.rpc('search_chat', { p_query: 'shin pads' })
 // The seed has several academies; scope to NRIFA's coaches channel.
 const { data: coachOnly } = await admin.from('channels').select('id, name')
-  .eq('type','coaches').eq('academy_id','00000000-0000-0000-0000-0000000a0001').limit(1).single()
+  .eq('type','coaches').eq('academy_id',NRIFA).limit(1).single()
 // Post something only coaches can see, then check a parent cannot find it.
 const { data: secret } = await admin.from('messages').insert({
-  academy_id:'00000000-0000-0000-0000-0000000a0001', channel_id: coachOnly.id,
+  academy_id:NRIFA, channel_id: coachOnly.id,
   sender_id: coach.id, body: 'SEARCHTEST coaches only, selection for the weekend',
 }).select('id').single()
 const { data: r4 } = await parent.client.rpc('search_chat', { p_query: 'SEARCHTEST' })
