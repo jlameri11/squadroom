@@ -18,7 +18,9 @@ export type Owing = {
   can_pay: boolean
 }
 
+/** A fill keeps the club's colour; text uses INK. See --brand-text. */
 const NAVY = 'var(--brand)'
+const INK = 'var(--brand-text)'
 
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat('en-AU', { style: 'currency', currency: currency.toUpperCase() }).format(
@@ -101,7 +103,7 @@ export function PaymentsList({
                     <p className="mt-1 text-sm text-ink-2">{row.description}</p>
                   )}
                 </div>
-                <div className="flex-none text-right font-semibold tabular-nums" style={{ color: NAVY }}>
+                <div className="flex-none text-right font-semibold tabular-nums" style={{ color: INK }}>
                   {money(row.amount_cents, row.currency)}
                 </div>
               </div>

@@ -21,7 +21,9 @@ type ScannedEvent = {
 }
 
 const MAX_EDGE = 2200 // Small print on a fixture list has to survive this.
+/** A fill keeps the club's colour; text uses INK. See --brand-text. */
 const NAVY = 'var(--brand)'
+const INK = 'var(--brand-text)'
 
 // A season draw is rarely one screenshot — it is the four or five it took to
 // scroll through the round. Ten is comfortably more than that, and it is also
@@ -178,7 +180,7 @@ export function ScanClient({
   return (
     <main className="mx-auto max-w-md p-5">
       <header>
-        <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
+        <h1 className="text-2xl font-semibold" style={{ color: INK }}>
           Add games from a screenshot
         </h1>
         <p className="mt-1 text-sm text-ink-2">
@@ -242,7 +244,7 @@ export function ScanClient({
           <span className="text-sm text-ink-2">{busy}</span>
         ) : (
           <>
-            <span className="font-medium" style={{ color: NAVY }}>
+            <span className="font-medium" style={{ color: INK }}>
               Choose screenshots
             </span>
             <span className="mt-1 text-sm text-ink-2">
@@ -299,7 +301,7 @@ function Results({
 
   return (
     <section className="mt-6">
-      <h2 className="font-semibold" style={{ color: NAVY }}>
+      <h2 className="font-semibold" style={{ color: INK }}>
         {events.length} {events.length === 1 ? 'game' : 'games'} added
       </h2>
       <p className="mt-0.5 text-sm text-ink-2">

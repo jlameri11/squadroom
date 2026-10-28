@@ -282,6 +282,12 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
 
   const hidden =
     BARE.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
+    // A club's public register page, which lives at /<slug>/register and so
+    // has no fixed prefix to put in BARE. It is opened by families with no
+    // account at all — the tab bar offered them Home, Chat, Fixtures and
+    // Team, every one of which is a sign-in screen for somebody who must not
+    // have one. Found by screenshotting it.
+    /^\/[^/]+\/register\/?$/.test(pathname) ||
     // A channel is full screen. /chat itself keeps its bar.
     /^\/chat\/[^/]+$/.test(pathname)
 

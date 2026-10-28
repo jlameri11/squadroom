@@ -32,7 +32,9 @@ type RegisterRow = {
   amount_cents: number
 }
 
+/** A fill keeps the club's colour; text uses INK. See --brand-text. */
 const NAVY = 'var(--brand)'
+const INK = 'var(--brand-text)'
 const money = (cents: number, currency = 'aud') =>
   new Intl.NumberFormat('en-AU', { style: 'currency', currency: currency.toUpperCase() }).format(
     cents / 100
@@ -73,7 +75,7 @@ export function PaymentsAdmin({
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
+      <h1 className="text-2xl font-semibold" style={{ color: INK }}>
         Payments
       </h1>
       <p className="mt-0.5 text-sm text-ink-2">{academyName}</p>
@@ -133,7 +135,7 @@ export function PaymentsAdmin({
       <NewRequest academyId={academyId} teams={teams} disabled={!ready} />
 
       <section className="mt-6">
-        <h2 className="font-semibold" style={{ color: NAVY }}>
+        <h2 className="font-semibold" style={{ color: INK }}>
           What you&apos;re collecting
         </h2>
         {requests.length === 0 ? (
@@ -185,7 +187,7 @@ function RequestCard({ request }: { request: RequestRow }) {
               .join(' · ')}
           </span>
         </span>
-        <span className="flex-none font-semibold tabular-nums" style={{ color: NAVY }}>
+        <span className="flex-none font-semibold tabular-nums" style={{ color: INK }}>
           {money(request.amount_cents, request.currency)}
         </span>
       </button>
@@ -211,7 +213,7 @@ function RequestCard({ request }: { request: RequestRow }) {
                   <a
                     href={`sms:${r.guardian_phone}`}
                     className="flex-none text-xs underline underline-offset-2"
-                    style={{ color: NAVY }}
+                    style={{ color: INK }}
                   >
                     Text {r.guardian?.split(' ')[0] ?? 'parent'}
                   </a>

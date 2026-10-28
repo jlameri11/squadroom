@@ -43,7 +43,19 @@ type Prepared = {
   team_name: string | null
 }
 
+/**
+ * Two constants, because a brand colour has two jobs and only one of them
+ * adapts.
+ *
+ * NAVY fills a button and carries white text on it, so it stays the club's
+ * actual colour. INK is the brand used AS text — and in dark mode the raw
+ * brand is whatever colour a club chose sitting on a near-black ground, so
+ * the headings on this screen had all but disappeared. Renaming the one
+ * constant would have lightened the buttons too and put white on a pale
+ * fill.
+ */
 const NAVY = 'var(--brand)'
+const INK = 'var(--brand-text)'
 
 type Team = {
   id: string
@@ -363,7 +375,7 @@ function Importer({
 
   return (
     <main className="mx-auto max-w-md p-5">
-      <h1 className="text-2xl font-semibold" style={{ color: NAVY }}>
+      <h1 className="text-2xl font-semibold" style={{ color: INK }}>
         Import a draw
       </h1>
       <p className="mt-1 text-sm text-ink-2">
@@ -387,12 +399,12 @@ function Importer({
           <a
             href="/admin/import/players"
             className="underline underline-offset-2"
-            style={{ color: NAVY }}
+            style={{ color: INK }}
           >
             A spreadsheet of players
           </a>
           {' · '}
-          <a href="/scan" className="underline underline-offset-2" style={{ color: NAVY }}>
+          <a href="/scan" className="underline underline-offset-2" style={{ color: INK }}>
             A screenshot of the draw
           </a>
         </p>
@@ -426,7 +438,7 @@ function Importer({
             <span className="text-sm text-ink-2">{busy}</span>
           ) : (
             <>
-              <span className="font-medium" style={{ color: NAVY }}>
+              <span className="font-medium" style={{ color: INK }}>
                 Choose a spreadsheet
               </span>
               <span className="mt-1 text-sm text-ink-2">.csv, .xlsx or .xls</span>
@@ -510,7 +522,7 @@ function Importer({
                         ? {
                             borderColor: NAVY,
                             background: 'var(--brand-faint)',
-                            color: NAVY,
+                            color: INK,
                           }
                         : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
                     }
@@ -557,7 +569,7 @@ function Importer({
             />
           ) : (
             <section className="mt-5">
-              <h2 className="font-semibold" style={{ color: NAVY }}>
+              <h2 className="font-semibold" style={{ color: INK }}>
                 {good.length} {good.length === 1 ? 'game' : 'games'} read
                 {bad.length > 0 && `, ${bad.length} left out`}
               </h2>
