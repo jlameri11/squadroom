@@ -383,6 +383,26 @@ function HomeScreen({
           Signed in as <b>{me ?? 'you'}</b>
           {role ? ` · ${role}` : ''} at {academy.name}
         </p>
+        {/*
+          `isPlatformAdmin` was threaded all the way from home_screen into
+          this component and then never rendered, so /platform — the console
+          for every academy on Squadroom — was reachable only by typing the
+          URL. Found by auditing which pages have a link to them rather than
+          by reading code, which is the same way /programs and /payments
+          turned up.
+
+          In the footer, not the main list. It is ours, not a club's, and it
+          has no business sitting between a coach's fixtures and their chats.
+        */}
+        {isPlatformAdmin && (
+          <Link
+            href="/platform"
+            className="mt-1 block px-1 text-xs underline underline-offset-2"
+            style={{ color: 'var(--ink-3)' }}
+          >
+            Platform console
+          </Link>
+        )}
         <div className="mt-1.5">
           <SignOut />
         </div>

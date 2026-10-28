@@ -371,6 +371,33 @@ function Importer({
         Nothing is created until you have checked it.
       </p>
 
+      {/*
+        Admin used to carry three rows — import a draw, import a roster, scan
+        a draw — which made a coach choose a TECHNIQUE before knowing which
+        applied to the thing in their hand. It is one row now, and the
+        question belongs here, where the answer is obvious because they are
+        looking at the file.
+
+        Only shown before a file is chosen: once somebody is mapping columns,
+        two links out are two ways to lose their work.
+      */}
+      {headers.length === 0 && (
+        <p className="mt-2 text-sm text-ink-2">
+          Got something else?{' '}
+          <a
+            href="/admin/import/players"
+            className="underline underline-offset-2"
+            style={{ color: NAVY }}
+          >
+            A spreadsheet of players
+          </a>
+          {' · '}
+          <a href="/scan" className="underline underline-offset-2" style={{ color: NAVY }}>
+            A screenshot of the draw
+          </a>
+        </p>
+      )}
+
       {result && (
         <p className="mt-4 rounded-lg border p-3 text-sm " style={{ background: 'var(--yes-bg)', borderColor: 'var(--yes)', color: 'var(--yes)' }}>
           {result}

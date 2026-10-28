@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -114,6 +115,32 @@ export function CompetitionView({
       {tab === 'ladder' && <Ladder rows={ladders[division] ?? []} />}
       {tab === 'clubs' && (
         <>
+          {/*
+            The step that was missing. /competitions/[id]/invite has existed
+            since the competition work and nothing in the product linked to
+            it — so an organiser who had just built a draw had no way to ask
+            anybody to play in it.
+
+            That is not a cosmetic gap. CLAUDE.md puts the whole commercial
+            case for Tournament Mode on this one action: running a tournament
+            here puts twenty other academies' coaches and parents into the
+            product in a day, and it cannot happen if the invite screen is
+            reachable only by typing a URL.
+
+            Above the club list, because a list with nothing in it is exactly
+            when an organiser needs this.
+          */}
+          {isOrganiser && (
+            <Link
+              href={`/competitions/${competitionId}/invite`}
+              className="mb-3 block rounded-xl border px-4 py-3 text-sm font-semibold"
+              style={{ borderColor: 'var(--brand)', color: 'var(--brand)' }}
+            >
+              {entries.length === 0
+                ? 'Invite clubs to enter →'
+                : `Invite more clubs →`}
+            </Link>
+          )}
           {isOrganiser && publication && (
             <PublishPublicly
               competitionId={competitionId}

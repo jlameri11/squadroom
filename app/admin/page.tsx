@@ -45,7 +45,8 @@ export default async function AdminHub() {
     )
   }
 
-  const [{ count: pending }, { count: pendingRegistrations }] = await Promise.all([
+  const [{ count: pending }, { count: pendingRegistrations }, { count: pendingSignups }] =
+    await Promise.all([
     supabase
       .from('join_requests')
       .select('id', { count: 'exact', head: true })
@@ -56,7 +57,14 @@ export default async function AdminHub() {
       .select('id', { count: 'exact', head: true })
       .eq('academy_id', academy.id)
       .eq('status', 'pending'),
-  ])
+    // Families who used the public register link. A third queue, and the
+    // only one containing people the club has never met.
+    supabase
+      .from('registration_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('academy_id', academy.id)
+      .eq('status', 'pending'),
+    ])
 
   return (
     <AppShellPage
@@ -114,16 +122,24 @@ export default async function AdminHub() {
           <Row href="/admin/requests" label="Join requests" hint="Approve new families" />
           <Row
             href="/admin/programs"
-            label="Programs and registrations"
+            label="Programs"
             hint={
               pendingRegistrations
                 ? `${pendingRegistrations} waiting · squads, camps, trials, tours`
-                : 'Squads, camps, trials, tours'
+                : 'Squads, camps, trials, tours — and what they cost'
             }
           />
-          <Row href="/admin/import" label="Import a draw" hint="From a Dribl export" />
-          <Row href="/admin/import/players" label="Import a roster" hint="A spreadsheet of players" />
-          <Row href="/scan" label="Scan a draw" hint="From a screenshot" />
+          {/* One row, not three.
+              "Import a draw", "Import a roster" and "Scan a draw" were three
+              rows for one intention — get what we already have into the app —
+              and they made a coach pick a TECHNIQUE before knowing which one
+              applied to the file in their hand. The import screen asks that
+              question itself, where the answer is obvious. */}
+          <Row
+            href="/admin/import"
+            label="Import fixtures or players"
+            hint="A Dribl export, a spreadsheet, or a screenshot"
+          />
         </ul>
 
         <h2 className="eyebrow px-1 pb-2">Competitions</h2>
@@ -148,10 +164,18 @@ export default async function AdminHub() {
                 label="Working With Children Checks"
                 hint="Who is cleared, and who is running out"
               />
+              {/* "Registrations" next to "Programs and registrations" was
+                  two rows a club admin could not tell apart — and this is the
+                  one with families waiting in it who have never met the club,
+                  so it says so. */}
               <Row
                 href="/admin/registrations"
-                label="Registrations"
-                hint="Families who signed up through your public link"
+                label="Sign-ups from your register link"
+                hint={
+                  pendingSignups
+                    ? `${pendingSignups} waiting to hear from you`
+                    : 'Families who found you themselves'
+                }
               />
               <Row href="/admin/kit" label="Kit list" hint="What to order, and who has not been asked" />
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
