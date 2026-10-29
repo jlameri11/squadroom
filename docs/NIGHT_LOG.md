@@ -38,6 +38,27 @@ Exact steps are in NEEDS JOEY below.
 
 ---
 
+## Build log — 29 Oct 2026, overnight (M1 + M6, non-Stripe parts first)
+
+| Item | Status | Proof |
+|---|---|---|
+| **G-02** `/{slug}` front door | **Done.** Crest, colour, open programs with price and places left, Register, the public draw. Cached, cookie-less, indexable; unknown slug is a 200 "not found". The app's tab bar was painting under it — fixed in the shell with one `isPublicPage` rule | test-public-academy 18, screens, navigation, a look at both themes |
+| **R-11** program questions | **Done, four types.** Builder on the program screen; text / yes-no / pick-one / date; validated and normalised by a trigger; answers checked in the route; queue shows labels | test-program-questions 21 |
+| R-11 file upload | **Not built — needs Joey** (below) | — |
+
+### NEEDS JOEY (added overnight)
+
+**6. File-upload questions on the public form — a decision, not a build.**
+The brief lists "file upload" among the question types. The register page
+is public, so this is an upload from somebody with no account: it needs a
+size cap, a type allow-list (PDF, JPEG, PNG?), a private bucket with a
+policy, a rate limit per IP, and a decision about retention — a stranger's
+file we never approved is still a file we hold. Say yes and pick the caps
+and I will build it; or say "after approval only" and families upload
+from inside the app once they are in, which needs none of the above.
+
+---
+
 ## Project sweep — 29 Oct 2026, before building (Joey asked for one)
 
 Asked the **database** rather than the files wherever that was possible,

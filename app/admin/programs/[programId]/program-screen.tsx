@@ -49,6 +49,11 @@ export function ProgramScreen({ programId }: { programId: string }) {
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // R-07: many at once. See registration-queue.tsx for why.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkTeam, setBulkTeam] = useState('')
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -86,27 +91,61 @@ export function ProgramScreen({ programId }: { programId: string }) {
     })()
   }, [load])
 
-  async function decide(id: string, status: Registration['status'], teamId?: string) {
-    setBusy(id)
-    setError(null)
+  /** One decision. Returns what went wrong, or null. Does not reload. */
+  async function decideOne(
+    id: string,
+    status: Registration['status'],
+    teamId?: string
+  ): Promise<string | null> {
     const supabase = createClient()
     const { error } = await supabase.from('program_registrations').update({ status }).eq('id', id)
+    if (error) return error.message
 
-    if (!error && status === 'approved' && teamId) {
+    if (status === 'approved' && teamId) {
       const row = rows?.find((r) => r.id === id)
       if (row?.player) {
         // Assigning the team is what sets everything else off: the triggers on
         // team_members add the family to the team channel and the calendar.
-        const { error: teamError } = await createClient()
+        const { error: teamError } = await supabase
           .from('players')
           .update({ team_id: teamId })
           .eq('id', row.player.id)
-        if (teamError) setError(`Approved, but could not assign the team: ${teamError.message}`)
+        if (teamError) return `Approved, but could not assign the team: ${teamError.message}`
       }
     }
+    return null
+  }
 
+  async function decide(id: string, status: Registration['status'], teamId?: string) {
+    setBusy(id)
+    setError(null)
+    const problem = await decideOne(id, status, teamId)
     setBusy(null)
-    if (error) return setError(error.message)
+    if (problem) return setError(problem)
+    await load()
+  }
+
+  function toggle(id: string) {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelected(next)
+  }
+
+  async function bulk(status: 'approved' | 'rejected') {
+    const ids = (rows ?? []).filter((r) => r.status === 'pending' && selected.has(r.id))
+    if (ids.length === 0) return
+    setError(null)
+    const failed: string[] = []
+    for (let i = 0; i < ids.length; i++) {
+      setProgress({ done: i, total: ids.length })
+      const problem = await decideOne(ids[i].id, status, bulkTeam || undefined)
+      if (problem) failed.push(`${ids[i].player?.full_name ?? 'Unknown'}: ${problem}`)
+    }
+    setProgress(null)
+    setSelected(new Set())
+    setSelecting(false)
+    if (failed.length) setError(`Could not decide ${failed.length}:\n${failed.join('\n')}`)
     await load()
   }
 
@@ -188,16 +227,102 @@ export function ProgramScreen({ programId }: { programId: string }) {
             </p>
           )}
 
-          <Group title={pending.length ? `${pending.length} waiting` : 'Nobody waiting'} rows={pending}>
-            {(r) => (
-              <Decide
-                row={r}
-                teams={teams}
-                defaultTeam={program.team_id}
-                busy={busy === r.id}
-                onDecide={decide}
-              />
-            )}
+          {pending.length > 1 && (
+            <div className="mb-2 flex justify-end px-1">
+              <button
+                onClick={() => {
+                  setSelecting(!selecting)
+                  setSelected(new Set())
+                  setBulkTeam(program.team_id ?? '')
+                }}
+                aria-pressed={selecting}
+                className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                style={
+                  selecting
+                    ? { borderColor: 'var(--brand)', background: 'var(--brand-faint)', color: 'var(--brand-text)' }
+                    : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
+                }
+              >
+                {selecting ? 'Done' : 'Select'}
+              </button>
+            </div>
+          )}
+
+          {selecting && (
+            <div className="card mb-3 p-3">
+              <div className="flex items-center gap-2 text-sm">
+                <b className="flex-1">
+                  {selected.size === 0 ? 'Tick the ones to decide' : `${selected.size} of ${pending.length} selected`}
+                </b>
+                <button
+                  onClick={() =>
+                    setSelected(
+                      selected.size === pending.length ? new Set() : new Set(pending.map((r) => r.id))
+                    )
+                  }
+                  className="text-xs underline underline-offset-4"
+                  style={{ color: 'var(--brand-text)' }}
+                >
+                  {selected.size === pending.length ? 'None' : 'All'}
+                </button>
+              </div>
+              {selected.size > 0 && (
+                <>
+                  {teams.length > 0 && (
+                    <select
+                      value={bulkTeam}
+                      onChange={(e) => setBulkTeam(e.target.value)}
+                      className="mt-2 w-full rounded-lg border px-3 py-2.5 text-sm"
+                      style={{ borderColor: 'var(--line)' }}
+                      aria-label="Squad for everyone selected"
+                    >
+                      <option value="">No team yet</option>
+                      {teams.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          Put them all in {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => void bulk('approved')}
+                      disabled={progress !== null}
+                      className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                      style={{ background: 'var(--yes)' }}
+                    >
+                      {progress ? `${progress.done + 1} of ${progress.total}…` : `In — ${selected.size}`}
+                    </button>
+                    <button
+                      onClick={() => void bulk('rejected')}
+                      disabled={progress !== null}
+                      className="rounded-lg border px-3 py-2.5 text-sm font-semibold disabled:opacity-50"
+                      style={{ borderColor: 'var(--no)', color: 'var(--no)' }}
+                    >
+                      No — {selected.size}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <Group
+            title={pending.length ? `${pending.length} waiting` : 'Nobody waiting'}
+            rows={pending}
+            pick={selecting ? { selected, toggle } : undefined}
+          >
+            {(r) =>
+              selecting ? null : (
+                <Decide
+                  row={r}
+                  teams={teams}
+                  defaultTeam={program.team_id}
+                  busy={busy === r.id}
+                  onDecide={decide}
+                />
+              )
+            }
           </Group>
 
           {waitlisted.length > 0 && (
@@ -247,11 +372,14 @@ function Group({
   title,
   hint,
   rows,
+  pick,
   children,
 }: {
   title: string
   hint?: string
   rows: Registration[]
+  /** When set, each row carries a checkbox and tapping it toggles. */
+  pick?: { selected: Set<string>; toggle: (id: string) => void }
   children: (r: Registration) => React.ReactNode
 }) {
   return (
@@ -263,7 +391,21 @@ function Group({
       ) : (
         <ul className="card overflow-hidden">
           {rows.map((r) => (
-            <li key={r.id} className="row justify-between">
+            <li
+              key={r.id}
+              className="row justify-between"
+              onClick={pick ? () => pick.toggle(r.id) : undefined}
+            >
+              {pick && (
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${r.player?.full_name ?? 'player'}`}
+                  checked={pick.selected.has(r.id)}
+                  onChange={() => pick.toggle(r.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-5 w-5 flex-none"
+                />
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">
                   {r.player?.full_name ?? 'Unknown player'}

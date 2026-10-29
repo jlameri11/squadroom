@@ -63,6 +63,13 @@ export function RegistrationQueue() {
   // purpose — a relabelled question keeps its answers — so the label is
   // looked up at the moment of reading.
   const [labels, setLabels] = useState<Record<string, Record<string, string>>>({})
+  // R-07. Registrations open on a Monday night and forty land by Tuesday.
+  // One tap each, with the sheet opening and closing between, is the
+  // hundred-tap Tuesday this exists to remove.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkTeam, setBulkTeam] = useState('')
+  const [progress, setProgress] = useState<{ done: number; total: number; verb: string } | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -133,6 +140,55 @@ export function RegistrationQueue() {
       return setError(b.error ?? 'Could not save that.')
     }
     setOpen(null)
+    await load()
+  }
+
+  function toggle(id: string) {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelected(next)
+  }
+
+  /**
+   * Many decisions, one squad, one tap.
+   *
+   * Still one request per registration, through the same route a single
+   * accept uses, because that route is the one place an account is made
+   * from a stranger's form and a second path doing the same job is how the
+   * two drift. Sequential rather than parallel: each one creates a profile
+   * and may attach to an existing child, and forty at once is a burst the
+   * auth service rate-limits. Progress is shown so forty does not look
+   * like a hang.
+   */
+  async function bulk(decision: 'approve' | 'decline') {
+    const ids = (rows ?? []).filter((r) => r.status === 'pending' && selected.has(r.request_id))
+    if (ids.length === 0) return
+    setError(null)
+    const verb = decision === 'approve' ? 'Accepting' : 'Declining'
+    const failed: string[] = []
+    for (let i = 0; i < ids.length; i++) {
+      setProgress({ done: i, total: ids.length, verb })
+      const res = await fetch('/api/register/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId: ids[i].request_id,
+          decision,
+          teamId: bulkTeam || null,
+        }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        failed.push(`${ids[i].child_name}: ${b.error ?? res.status}`)
+      }
+    }
+    setProgress(null)
+    setSelected(new Set())
+    setSelecting(false)
+    // Named, one per line, because "3 failed" sends somebody back through
+    // the list working out which three.
+    if (failed.length) setError(`Could not decide ${failed.length}:\n${failed.join('\n')}`)
     await load()
   }
 
@@ -233,7 +289,88 @@ export function RegistrationQueue() {
               {label}
             </button>
           ))}
+          <span className="flex-1" />
+          {tab === 'pending' && pending.length > 1 && (
+            <button
+              onClick={() => {
+                setSelecting(!selecting)
+                setSelected(new Set())
+              }}
+              aria-pressed={selecting}
+              className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+              style={
+                selecting
+                  ? { borderColor: 'var(--brand)', background: 'var(--brand-faint)', color: 'var(--brand-text)' }
+                  : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
+              }
+            >
+              {selecting ? 'Done' : 'Select'}
+            </button>
+          )}
         </div>
+
+        {selecting && tab === 'pending' && (
+          <div className="card mx-3.5 mt-3 p-3">
+            <div className="flex items-center gap-2 text-sm">
+              <b className="flex-1">
+                {selected.size === 0
+                  ? 'Tick the ones to decide'
+                  : `${selected.size} of ${pending.length} selected`}
+              </b>
+              <button
+                onClick={() =>
+                  setSelected(
+                    selected.size === pending.length
+                      ? new Set()
+                      : new Set(pending.map((r) => r.request_id))
+                  )
+                }
+                className="text-xs underline underline-offset-4"
+                style={{ color: 'var(--brand-text)' }}
+              >
+                {selected.size === pending.length ? 'None' : 'All'}
+              </button>
+            </div>
+            {selected.size > 0 && (
+              <>
+                <select
+                  value={bulkTeam}
+                  onChange={(e) => setBulkTeam(e.target.value)}
+                  className="mt-2 w-full rounded-lg border px-3 py-2.5 text-sm"
+                  style={{ borderColor: 'var(--line)' }}
+                  aria-label="Squad for everyone selected"
+                >
+                  <option value="">Decide the squad later</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      Put them all in {t.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => void bulk('approve')}
+                    disabled={progress !== null}
+                    className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    style={{ background: 'var(--yes)' }}
+                  >
+                    {progress
+                      ? `${progress.verb} ${progress.done + 1} of ${progress.total}…`
+                      : `Accept ${selected.size}`}
+                  </button>
+                  <button
+                    onClick={() => void bulk('decline')}
+                    disabled={progress !== null}
+                    className="rounded-lg border px-3 py-2.5 text-sm font-semibold disabled:opacity-50"
+                    style={{ borderColor: 'var(--no)', color: 'var(--no)' }}
+                  >
+                    Decline {selected.size}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {error && (
           <p
@@ -254,9 +391,25 @@ export function RegistrationQueue() {
           <div className="mt-2">
             {shown.map((r) => (
               <div key={r.request_id} className="border-b" style={{ borderColor: 'var(--line-2)' }}>
+                <div className="flex items-stretch">
+                {selecting && r.status === 'pending' && (
+                  <label className="flex flex-none items-center pl-4">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${r.child_name}`}
+                      checked={selected.has(r.request_id)}
+                      onChange={() => toggle(r.request_id)}
+                      className="h-5 w-5"
+                    />
+                  </label>
+                )}
                 <button
-                  onClick={() => setOpen(open === r.request_id ? null : r.request_id)}
-                  className="w-full px-4 py-3 text-left"
+                  onClick={() =>
+                    selecting && r.status === 'pending'
+                      ? toggle(r.request_id)
+                      : setOpen(open === r.request_id ? null : r.request_id)
+                  }
+                  className="min-w-0 flex-1 px-4 py-3 text-left"
                 >
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="min-w-0 flex-1 truncate font-medium">{r.child_name}</span>
@@ -280,6 +433,7 @@ export function RegistrationQueue() {
                     </span>
                   )}
                 </button>
+                </div>
 
                 {open === r.request_id && (
                   <div className="px-4 pb-4">
