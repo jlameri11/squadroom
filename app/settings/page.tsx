@@ -43,6 +43,17 @@ export default async function SettingsPage() {
       */}
       <ul className="card mt-6 overflow-hidden">
         <li>
+          <Link href="/settings/family" className="row justify-between">
+            <span className="min-w-0">
+              <span className="block truncate font-medium">My family</span>
+              <span className="block truncate text-sm text-ink-3">
+                Your children: medical, emergency contacts, agreements, kit sizes
+              </span>
+            </span>
+            <span className="flex-none text-lg text-ink-3">›</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/payments" className="row justify-between">
             <span className="min-w-0">
               <span className="block truncate font-medium">Your payments</span>

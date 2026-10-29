@@ -423,6 +423,30 @@ begin
     delete from public.event_lineups where event_id = v_ev;
   end if;
 
+  -- 0136. A parent sees only their own children, and answers only for them.
+  -- 46. my_family returns nothing that is not theirs.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n
+    from jsonb_array_elements(public.my_family()) c
+   where not exists (
+     select 1 from public.player_guardians pg
+      where pg.player_id = (c->>'id')::uuid and pg.profile_id = PARENT
+   );
+  insert into rls_results values (46,'my_family lists only the caller''s own children',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' not theirs)' end);
+  -- 47. and cannot answer an agreement for somebody else's child.
+  b := false;
+  begin
+    perform public.set_consent(
+      (select id from public.players where academy_id = ACAD_B limit 1),
+      gen_random_uuid(), false);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (47,'a parent cannot answer for another family''s child',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

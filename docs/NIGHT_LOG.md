@@ -45,6 +45,7 @@ Exact steps are in NEEDS JOEY below.
 | **G-02** `/{slug}` front door | **Done.** Crest, colour, open programs with price and places left, Register, the public draw. Cached, cookie-less, indexable; unknown slug is a 200 "not found". The app's tab bar was painting under it — fixed in the shell with one `isPublicPage` rule | test-public-academy 18, screens, navigation, a look at both themes |
 | **R-11** program questions | **Done, four types.** Builder on the program screen; text / yes-no / pick-one / date; validated and normalised by a trigger; answers checked in the route; queue shows labels | test-program-questions 21 |
 | R-11 file upload | **Not built — needs Joey** (below) | — |
+| **R-07** bulk approve + assign | **Done, both queues.** Select → tick → one squad for all → Accept N; progress shown, failures named | test-bulk-approve 11, in a real browser at 375px |
 
 ### NEEDS JOEY (added overnight)
 

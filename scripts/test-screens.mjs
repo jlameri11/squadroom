@@ -49,6 +49,7 @@ const SCREENS = [
   ['chat', '/chat'],
   ['directory', '/directory'],
   ['settings', '/settings'],
+  ['settings/family', '/settings/family'],
   ['admin', '/admin'],
   ['admin/teams', '/admin/teams'],
   ['admin/kit', '/admin/kit'],

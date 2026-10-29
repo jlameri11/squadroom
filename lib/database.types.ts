@@ -4126,6 +4126,7 @@ export type Database = {
           unread_count: number
         }[]
       }
+      my_family: { Args: never; Returns: Json }
       my_organisations: {
         Args: never
         Returns: {
@@ -4342,6 +4343,7 @@ export type Database = {
         Args: { p_academy: string; p_events: Json; p_team: string }
         Returns: Json
       }
+      public_academy: { Args: { p_slug: string }; Returns: Json }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
       publish_lineup: {
@@ -4467,6 +4469,10 @@ export type Database = {
       search_chat: {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
         Returns: Json
+      }
+      set_consent: {
+        Args: { p_accepted: boolean; p_document: string; p_player: string }
+        Returns: undefined
       }
       set_event_result: {
         Args: {
