@@ -22,8 +22,9 @@
 // It catches the mechanical failures so the eye is spent on the rest.
 import { createClient } from '@supabase/supabase-js'
 import puppeteer from 'puppeteer-core'
+import { resolveBaseUrl } from './_base-url.mjs'
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+const BASE = await resolveBaseUrl()
 const CHROME =
   process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const WIDTH = 375

@@ -2,6 +2,18 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   /**
+   * `npm run serve:test` sets DIST_DIR=.next-test so a test build can be made
+   * and served WHILE a dev server is running.
+   *
+   * They would otherwise share `.next`. The whole point of serve:test is to
+   * have somewhere to run the HTTP suites when `next dev` has wedged — and
+   * building into the wedged server's own directory, mid-request, is how you
+   * turn a stalled test run into a broken checkout as well. Keeping them
+   * apart means the fallback never has to ask whether dev is healthy first.
+   */
+  distDir: process.env.DIST_DIR || '.next',
+
+  /**
    * Netlify runs this app in Ohio and the database is in Sydney, so a screen
    * costs about 370ms no matter how few queries it makes — 250ms of that is
    * the Pacific. The only way below it is to stop making the trip at the

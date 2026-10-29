@@ -9,6 +9,7 @@
 // way to sign in, a coach's typo would put a stranger in a channel full of
 // children's names.
 import { createClient } from '@supabase/supabase-js'
+import { resolveBaseUrl } from './_base-url.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -16,7 +17,7 @@ const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 })
 const anon = createClient(URL_, PUB, { auth: { persistSession: false } })
-const SITE = process.env.SITE ?? 'http://localhost:3000'
+const SITE = await resolveBaseUrl()
 
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m) => {

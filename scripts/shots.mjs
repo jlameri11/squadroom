@@ -17,8 +17,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { mkdirSync } from 'node:fs'
 import puppeteer from 'puppeteer-core'
+import { resolveBaseUrl } from './_base-url.mjs'
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+const BASE = await resolveBaseUrl()
 const OUT = process.env.OUT ?? '.shots'
 const CHROME =
   process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'

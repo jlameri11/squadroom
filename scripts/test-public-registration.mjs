@@ -15,8 +15,9 @@
 // and then that the happy path still works, because a safeguard that stops
 // real families registering is a safeguard a club turns off.
 import { createClient } from '@supabase/supabase-js'
+import { resolveBaseUrl } from './_base-url.mjs'
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, {

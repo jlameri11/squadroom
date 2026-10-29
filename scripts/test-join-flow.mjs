@@ -9,8 +9,9 @@
  * Then:  node --env-file=.env.local scripts/test-join-flow.mjs
  */
 import { createClient } from '@supabase/supabase-js'
+import { resolveBaseUrl } from './_base-url.mjs'
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+const BASE = await resolveBaseUrl()
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const REF = URL.replace('https://', '').split('.')[0]
 const admin = createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {

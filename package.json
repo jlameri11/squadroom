@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "serve:test": "DIST_DIR=.next-test next build && DIST_DIR=.next-test next start -p 3100",
     "lint": "eslint",
     "types": "node --env-file=.env.local scripts/gen-types.mjs",
     "cap:sync": "cap sync",
