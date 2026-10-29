@@ -32,6 +32,17 @@ one and is meant to reach hundreds of academies.
     no scraping, no Fixturefeed code. The line is the handover: a human
     exports their own data and hands it over. We never reach across.
 
+- **Deployment, Joey's rule (30 Oct 2026).** Production deploys **once a
+  week**, in the first session after **Sunday 8pm Sydney time** — after the
+  weekend's games, never on a match day. Run the full tests first; deploy
+  only if they pass, otherwise log why in `docs/NIGHT_LOG.md` and try again
+  next session. **Exception: an urgent security fix deploys immediately.**
+  Every deploy is noted in `docs/NIGHT_LOG.md` with the date and what it
+  includes. (A one-off deploy was authorised on 30 Oct because the live
+  site was missing the Next.js security fix.)
+  - Pushing to GitHub is not deploying. The remote is a backup; production
+    moves only by the rule above.
+
 ## Decisions already made — do not relitigate
 
 - **Client-first architecture.** All authorisation lives in the database, not

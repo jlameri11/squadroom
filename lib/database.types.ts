@@ -3511,6 +3511,7 @@ export type Database = {
           kit_away: string | null
           kit_home: string | null
           name: string
+          rolled_from: string | null
           season: string
           skip_import: boolean
           status: Database["public"]["Enums"]["team_status"]
@@ -3528,6 +3529,7 @@ export type Database = {
           kit_away?: string | null
           kit_home?: string | null
           name: string
+          rolled_from?: string | null
           season?: string
           skip_import?: boolean
           status?: Database["public"]["Enums"]["team_status"]
@@ -3545,6 +3547,7 @@ export type Database = {
           kit_away?: string | null
           kit_home?: string | null
           name?: string
+          rolled_from?: string | null
           season?: string
           skip_import?: boolean
           status?: Database["public"]["Enums"]["team_status"]
@@ -3563,6 +3566,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_rolled_from_fkey"
+            columns: ["rolled_from"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -4235,6 +4245,10 @@ export type Database = {
       }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
       nudge_non_responders: { Args: { p_event: string }; Returns: Json }
+      nudge_unregistered: {
+        Args: { p_academy: string; p_season: string }
+        Returns: number
+      }
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
         Returns: string
@@ -4359,6 +4373,10 @@ export type Database = {
         Args: { p_academy: string; p_events: Json; p_team: string }
         Returns: Json
       }
+      preview_season_rollover: {
+        Args: { p_academy: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       public_academy: { Args: { p_slug: string }; Returns: Json }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
@@ -4454,6 +4472,14 @@ export type Database = {
       revoke_member_tree: {
         Args: { p_academy: string; p_profile: string }
         Returns: number
+      }
+      roll_over_season: {
+        Args: { p_academy: string; p_from: string; p_to: string }
+        Returns: Json
+      }
+      rollover_report: {
+        Args: { p_academy: string; p_season: string }
+        Returns: Json
       }
       safeguarding_queue: {
         Args: {

@@ -119,6 +119,7 @@ export default async function AdminHub() {
         <h2 className="eyebrow px-1 pb-2">The team</h2>
         <ul className="card mb-5 overflow-hidden">
           <Row href="/admin/teams" label="Teams and players" hint="Squads, seasons, join links" />
+          <Row href="/admin/season" label="New season" hint="Roll every squad up an age group, then chase re-registrations" />
           <Row href="/admin/requests" label="Join requests" hint="Approve new families" />
           <Row
             href="/admin/programs"

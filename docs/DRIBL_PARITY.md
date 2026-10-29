@@ -29,7 +29,7 @@ Statuses: **DONE** · **PARTIAL** (what is missing is named) · **MISSING** ·
 | 16 | **Deregistration with full or partial refund, cut-off dates** | Refund *recordable* (webhook) but not *issuable*; no withdraw flow; no cut-off | **MISSING** | R-15, B-04 |
 | 17 | **Digital player card** (photo, name, squad, number — match-day ID) | Nothing; the pieces exist (photo_url, number, squad) | **MISSING** | X-06, L-04 |
 | 18 | Consents / terms per product, versioned | Versioned documents; the answer recorded; withdraw from My family | **DONE** | R-06, R-17 |
-| 19 | Official registration status (PlayFootball) shown per player | `ff_number` exists; shown nowhere; no status | **MISSING** | R-14 |
+| 19 | Official registration status (PlayFootball) shown per player | Status + FFA number on the roster and on My family; weekly reminder to the family before round one | **DONE** | R-14 |
 | 20 | Registration data export | Kit list export only; no registrations export | **MISSING** | B-05 |
 
 ## What this changes in the build order
