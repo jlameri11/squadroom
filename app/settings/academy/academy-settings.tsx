@@ -31,6 +31,7 @@ const PRESETS = [
 export function AcademySettings({
   academyId, dmPolicy, directoryVisibility, primaryColour = '#202842', academyName = 'Your club',
   publicPlayerNames = 'off',
+  siblingDiscountBps = [],
 }: {
   academyId: string
   dmPolicy: string
@@ -38,6 +39,8 @@ export function AcademySettings({
   primaryColour?: string
   academyName?: string
   publicPlayerNames?: 'off' | 'initials' | 'full'
+  /** 0102's ladder: index 0 is the second child, the last entry every child beyond it. */
+  siblingDiscountBps?: number[]
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -46,14 +49,32 @@ export function AcademySettings({
   const [names, setNames] = useState(publicPlayerNames)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Shown as whole percent, stored as basis points. Two rungs is what every
+  // club actually writes — "2nd child 10% off, 3rd and beyond 20%" — and the
+  // database holds a longer ladder for anyone who needs one.
+  const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
+  const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
 
-  // Typed to the two columns this screen may touch, rather than a loose
+  // Typed to the columns this screen may touch, rather than a loose
   // record. The generated types then check the values as well as the keys.
   type Patch =
     | { directory_visibility: 'staff_only' | 'all' }
     | { dm_policy: 'staff_only' | 'open' }
     | { primary_colour: string }
     | { public_player_names: 'off' | 'initials' | 'full' }
+    | { sibling_discount_bps: number[] }
+
+  const ladder = (() => {
+    const a = Math.round(Number(second) * 100)
+    const b = Math.round(Number(third) * 100)
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+    if (a === 0 && b === 0) return []
+    // The last rung applies to every child beyond it, so a single rung is
+    // "every sibling", and two rungs where the second equals the first are
+    // one rung.
+    return b === a ? [a] : [a, b]
+  })()
+  const ladderDirty = JSON.stringify(ladder) !== JSON.stringify(siblingDiscountBps)
 
   async function update(patch: Patch) {
     setBusy(true)
@@ -211,6 +232,53 @@ export function AcademySettings({
             onClick={() => { setDir('all'); update({ directory_visibility: 'all' }) }}
           />
         </div>
+      </section>
+
+      <section>
+        <h2 className="font-semibold">Family discounts</h2>
+        <p className="mt-0.5 text-sm text-ink-2">
+          Taken off every fee, automatically, for the second child and beyond. Children are
+          ranked by age; twins count as siblings. Worked out at checkout from the price the
+          club set, so the discount a family sees is the one they are charged.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <label className="flex-1 text-sm">
+            <span className="text-ink-2">2nd child</span>
+            <span className="mt-0.5 flex items-center gap-1 rounded-lg border px-2" style={{ borderColor: 'var(--line)' }}>
+              <input
+                value={second}
+                onChange={(e) => setSecond(e.target.value)}
+                inputMode="decimal"
+                className="w-full min-w-0 py-2 tabular-nums"
+                aria-label="Second child discount, percent"
+              />
+              <span className="flex-none whitespace-nowrap text-ink-3">% off</span>
+            </span>
+          </label>
+          <label className="flex-1 text-sm">
+            <span className="text-ink-2">3rd and beyond</span>
+            <span className="mt-0.5 flex items-center gap-1 rounded-lg border px-2" style={{ borderColor: 'var(--line)' }}>
+              <input
+                value={third}
+                onChange={(e) => setThird(e.target.value)}
+                inputMode="decimal"
+                className="w-full min-w-0 py-2 tabular-nums"
+                aria-label="Third child and beyond discount, percent"
+              />
+              <span className="flex-none whitespace-nowrap text-ink-3">% off</span>
+            </span>
+          </label>
+        </div>
+        {ladderDirty && ladder && (
+          <button
+            onClick={() => update({ sibling_discount_bps: ladder })}
+            disabled={busy}
+            className="mt-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background: 'var(--brand)' }}
+          >
+            {ladder.length === 0 ? 'Turn discounts off' : 'Save discounts'}
+          </button>
+        )}
       </section>
 
       <section>

@@ -249,6 +249,10 @@ function NewRequest({
   const [amount, setAmount] = useState('')
   const [teamId, setTeamId] = useState('')
   const [dueOn, setDueOn] = useState('')
+  // 0102 has carried these since it was written, and nothing set them: a
+  // term fee in four was possible for a month and reachable by nobody.
+  const [instalments, setInstalments] = useState(1)
+  const [everyDays, setEveryDays] = useState(30)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -270,6 +274,8 @@ function NewRequest({
       team_id: teamId || null,
       due_on: dueOn || null,
       created_by: auth.user?.id ?? null,
+      instalments,
+      instalment_every_days: everyDays,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -326,6 +332,44 @@ function NewRequest({
               </option>
             ))}
           </select>
+        </label>
+        <label className="text-sm">
+          <span className="text-ink-2">Paid in</span>
+          <span className="mt-0.5 flex gap-2">
+            <select
+              value={instalments}
+              onChange={(e) => setInstalments(Number(e.target.value))}
+              className="flex-1 rounded-lg border border-[var(--line)] p-2"
+              aria-label="Instalments"
+            >
+              <option value={1}>One payment</option>
+              {[2, 3, 4, 5, 6, 8, 10, 12].map((n) => (
+                <option key={n} value={n}>
+                  {n} instalments
+                </option>
+              ))}
+            </select>
+            {instalments > 1 && (
+              <select
+                value={everyDays}
+                onChange={(e) => setEveryDays(Number(e.target.value))}
+                className="flex-1 rounded-lg border border-[var(--line)] p-2"
+                aria-label="Days between instalments"
+              >
+                <option value={14}>every fortnight</option>
+                <option value={30}>every month</option>
+                <option value={60}>every two months</option>
+                <option value={90}>every term</option>
+              </select>
+            )}
+          </span>
+          {instalments > 1 && cents >= 100 && (
+            <span className="mt-0.5 block text-xs text-ink-3">
+              {/* The database divides so the parts sum back exactly; this is
+                  only the shape of it for the person typing. */}
+              About {money(Math.floor(cents / instalments), 'aud')} each, the last one evening it up.
+            </span>
+          )}
         </label>
         <label className="text-sm">
           <span className="text-ink-2">Due by (optional)</span>

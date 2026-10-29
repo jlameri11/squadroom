@@ -142,7 +142,9 @@ function ChildCard({
           {c.number != null && <span className="pill">#{c.number}</span>}
         </span>
         <span className="block truncate text-sm text-ink-3">
-          {[c.squad?.name ?? 'No squad yet', c.club, born ? `born ${born}` : null].filter(Boolean).join(' · ')}
+          {/* Squad, then birthday, then the club — the club last because a
+              parent knows which club they are at, and it is the longest. */}
+          {[c.squad?.name ?? 'No squad yet', born ? `born ${born}` : null, c.club].filter(Boolean).join(' · ')}
         </span>
       </button>
 

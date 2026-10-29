@@ -50,6 +50,8 @@ const SCREENS = [
   ['directory', '/directory'],
   ['settings', '/settings'],
   ['settings/family', '/settings/family'],
+  ['settings/academy', '/settings/academy'],
+  ['admin/payments', '/admin/payments'],
   ['admin', '/admin'],
   ['admin/teams', '/admin/teams'],
   ['admin/kit', '/admin/kit'],

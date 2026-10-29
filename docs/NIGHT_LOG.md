@@ -46,6 +46,9 @@ Exact steps are in NEEDS JOEY below.
 | **R-11** program questions | **Done, four types.** Builder on the program screen; text / yes-no / pick-one / date; validated and normalised by a trigger; answers checked in the route; queue shows labels | test-program-questions 21 |
 | R-11 file upload | **Not built — needs Joey** (below) | — |
 | **R-07** bulk approve + assign | **Done, both queues.** Select → tick → one squad for all → Accept N; progress shown, failures named | test-bulk-approve 11, in a real browser at 375px |
+| **R-17** Settings → My family | **Done.** Each child: about, squad and number, kit sizes (editable), medical and emergency (editable), agreements (view, withdraw, re-agree). A withdrawal by either parent registers at once | test-my-family 22, test-rls 46–47, screens both themes |
+| **B-02 / B-03** admin UI | **Done, the non-Stripe half.** Club settings → Family discounts (the 0102 ladder, as percent); "Ask for a payment" → paid in 1–12 instalments, fortnightly to termly. Retry/dunning and the actual card charge still need the Stripe key | test-fee-settings 11, screens both themes |
+| **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
 ### NEEDS JOEY (added overnight)
 
