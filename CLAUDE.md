@@ -6,6 +6,32 @@ Multi-tenant group chat, fixtures and RSVPs for youth football academies.
 NRIFA (Sydney) is the first customer; the product is multi-academy from day
 one and is meant to reach hundreds of academies.
 
+## Rules
+
+- **Squadroom is separate from Fixturefeed. Never use Fixturefeed's code,
+  Dribl's API/match centre, Dribl ids or any Dribl data in Squadroom. All
+  fixtures, teams, players and results come from leagues, academies and
+  coaches entering them in Squadroom, or from a league exporting its own data
+  to us. Squadroom must be able to run a whole competition (starting with the
+  SPL) without Dribl.**
+  - How this squares with the importer, which must not be read as a loophole:
+    the importer only ever reads **a file a club or league exports from its
+    own account and hands to us**. Squadroom never reaches into Dribl — no
+    API, no scraping the public Match Centre, no Fixturefeed code. A league
+    that switches to us stops producing those files and nothing downstream
+    cares.
+  - `events.external_ref` and `teams.external_ref` hold **whatever a league
+    calls a game or a squad in the file it gave us**, which is what makes a
+    re-import update a moved game instead of duplicating a season. They are
+    not a dependency on Dribl: a league running in Squadroom populates them
+    itself, and a league that never exports anything leaves them null.
+  - **Flagged for Joey, 29 Oct:** if the intent is stricter than that — no
+    importer at all, and the `external_ref` columns dropped — say so and I
+    will plan the removal. I have not assumed it, because the 29 Oct brief
+    also says "until a league switches, Squadroom works alongside Dribl
+    through the importer", and dropping the columns would break F-01 to F-04,
+    which are built and tested.
+
 ## Decisions already made — do not relitigate
 
 - **Client-first architecture.** All authorisation lives in the database, not
@@ -32,6 +58,16 @@ one and is meant to reach hundreds of academies.
 - **Dribl is the source of truth for registration and fixtures; Squadroom is
   the communication layer.** Players must be registered in Dribl to play, so
   do not rebuild registration and do not ask a coach to type a draw twice.
+  - **SUPERSEDED IN PART, 29 Oct 2026 — see the Rules heading above.** Two
+    halves of this have changed and the rest stands. (1) Squadroom now does
+    **academy** registration (R-01 … R-17, mostly built); only **official**
+    PlayFootball registration stays out of scope, and R-14 tracks its status.
+    (2) Squadroom must be able to run a **whole competition** without Dribl
+    (M9), starting with the SPL. What stands: don't replace Dribl where
+    Football NSW mandates it, don't ask a coach to type a draw twice, build
+    an importer rather than an integration, and never scrape the Match
+    Centre. Proposed replacement wording for this whole bullet is in the
+    Step 1 plan, not yet applied.
   - Dribl has no public API and no ICS feed (checked Aug 2026; calendar sync
     moved behind a paid tier). The supported path is the club-admin export:
     Events → filter → Export → Events → download a spreadsheet.

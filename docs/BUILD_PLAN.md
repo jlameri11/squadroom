@@ -80,9 +80,22 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | R-08 | Team fields | Capacity, coach/manager, kit colours, `external_team_id` (Dribl name), "don't import" flag |
 | R-09 | Kit export | CSV/XLSX per season: name, squad, number, sizes. Ready for a kit order |
 | R-11 | Program questions UI | Builder in `/admin/programs/[id]` (text, select, yes/no, date, file); answers shown in the queue |
-| — | Settings → My family | Each child: profile, medical, emergency contacts, consents (view/withdraw), kit sizes, number, squads |
+| R-17 | Settings → My family | Each child: profile, medical, emergency contacts, consents (view/withdraw), kit sizes, number, squads. Given an ID on 29 Oct: it was only ever a dash in this table, which is how it stayed unbuilt while every field behind it got built |
+| — | Merch / kit add-ons | Optional purchasable items at checkout (a training top, a spare pair of socks), as extra line items on the same session. Distinct from R-05 kit *sizes*, which exist only so a club can place an order offline |
 
-**Acceptance:** the Section 6 acceptance test from the spec, end to end in Stripe test mode, at 375px.
+**Acceptance (29 Oct brief), in Stripe test mode at 375px:**
+1. A brand-new family finds the academy's **public page** and registers **two
+   kids into different programs**.
+2. They answer the program questions, accept the consents, enter kit sizes,
+   and pay in **one checkout** — with the sibling discount **and** an
+   instalment plan.
+3. They are approved into two squads; **jersey numbers are allocated with no
+   clashes** (the pool is per season across the academy, so a U10 filling in
+   for the U11s cannot collide).
+4. They land in **both team chats** (guardians follow the child, 0098).
+5. Later they **withdraw one child before the cut-off and get a partial
+   refund** — which needs a refund to be *issuable* from Squadroom, not just
+   recordable (see B-04).
 
 ### M2: Safeguarding & trust (1–2 sessions)
 | ID | Task | Detail |
@@ -152,6 +165,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | ID | Task | Detail |
 |---|---|---|
 | G-04 | iOS + Android builds | `npx cap add ios/android`, icons/splash in academy-neutral Squadroom branding, APNs/FCM keys, deep links (`/join`, `/chat/…`, `/calendar/…`), TestFlight then App Store review notes (push, contacts, camera = not a "web wrapper") |
+| C-10 | **Contacts like WhatsApp** | Filed as C-10, not C-09 — C-09 is already club-wide search (0130, built). Native, via the Capacitor contacts plugin: an explanation screen → the permission request → read contacts and normalise to E.164 **on the device**. Match on the device against directory numbers this user is **already** allowed to see, so `member_directory` and `directory_visibility` stay the only rule about who can see a phone number. **Contacts and hashes are NEVER sent to the server** — not even hashed, because a hashed phone number is a reversible phone number: the space is ten digits. Team → People shows matched members as "In your phone as &lt;name&gt;", with squad and role, sorted first. "Invite from contacts" opens the user's **own** SMS or WhatsApp with the join link or code; nothing is created until they join and a coach approves. Web/PWA keeps the picker and manual add, plus an iPhone hint: "Get the app to see your contacts here". Settings: a contact-matching toggle and "Forget contact names". **Test proves no network request ever carries contact data**, and that matching respects `directory_visibility` |
 | X-09 | Offline match day | Cache the schedule, rosters, player cards, venue and medical *alerts* (not histories). Queue RSVPs, attendance and score taps; sync on reconnect; an "offline" banner |
 | X-10 | Accessibility | Dynamic Type, VoiceOver labels, contrast in both themes, 44px tap targets; strings extracted for translation |
 | — | Reliability | Error monitoring (e.g. Sentry); uptime check; a nightly `smoke-demo` against dev; rate limits on every public endpoint |
@@ -166,6 +180,55 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | X-08 | Sponsor slots | The academy uploads sponsor logos; slots on the match centre, Player of the Match and share cards; simple impressions count |
 | F-06 | Squadi adapter | Fixture import mapping for QLD/WA/Northern NSW exports |
 | S-05 | Legal | Privacy lawyer review (Children's Online Privacy Code, Child Safe Standards); terms for academies; data processing terms |
+
+---
+
+### M9: League mode — run a competition without Dribl (4–6 sessions)
+
+**Goal:** the Sydney Premier League runs an entire season in Squadroom and
+never opens Dribl. Six age groups, eight clubs, home and away, referees
+appointed and paid, cards accumulating into suspensions, a washout
+rescheduled in one tap, ladders into finals, and a public match centre
+anybody can share.
+
+**Why this is the biggest thing left, and why now.** Everything else in this
+plan makes Squadroom a better app *alongside* Dribl. This is the one
+milestone that makes a league able to leave. SPL is the first target because
+its software choice is one we can influence, and a league that switches
+brings every club, coach and parent in it.
+
+**What this does NOT do, and must never claim to.** Official PlayFootball
+registration stays out of scope — Football NSW mandates it for eligibility,
+insurance and age verification, and the failure mode is a child being
+ineligible on a Saturday. Squadroom runs the *competition*; PlayFootball
+still registers the *player*. R-14 tracks that status and no more.
+
+| ID | Task | Detail |
+|---|---|---|
+| L-01 | League setup | Seasons, age groups, divisions, grading. **Settings are per division, not per league**, because a league that is relaxed about U8 scores is not relaxed about Premier: public-or-hidden scores, ladder on/off, 3/1/0, tie-break order, match length, squad size |
+| L-02 | Club entry + league fees | A club enters teams, nominates squads, and pays the **league** through Stripe Connect — to the league's connected account, the same direct-charge path academies already use. Coach and manager contacts captured at entry. A club that has not signed up is still a name on the draw (`competition_entries.team_id` is already nullable) |
+| L-03 | Squads and eligibility | Season squad lists per entry. Playing-up and borrowing rules as data, not custom. **An eligibility check runs before a sheet can be submitted** — this is the whole point: ineligible-player disputes are what leagues spend their Mondays on |
+| L-04 | Player cards | Photo cards as match-day ID, printable and on screen. Reuses X-06 and honours R-16: a league we run never publishes a visiting club's children |
+| L-05 | Match sheets | Both teams submit a side pre-kick-off (numbers, keeper, captain); the opposition **confirms**. Goals, assists, yellow/red/blue cards, subs. **Both teams enter the score and a mismatch is a dispute, not an average** — never silently resolved. Full audit trail of who typed what and when |
+| L-06 | Referees | A pool, availability and block-outs, appointments with accept/decline and a push, match-day check-in, referee report |
+| L-07 | Referee payments | Match fees, a payment run, and an export. Referees are paid *by the league*, so this rides L-02's account, not a club's |
+| L-08 | Discipline | Season card accumulation with **configurable** thresholds (they differ by league and change between seasons). A red card is an automatic suspension, and **a suspended player is blocked from the sheet** — a suspension nothing enforces is a note in a minute book. Tribunal and appeal notes; discipline report |
+| L-09 | Match-day operations | Washouts by ground or by day in one tap (X-13 already does this for an academy; this does it for a league), forfeits, postponements, rescheduling, byes. **Every change pushes into the affected clubs' team chats** through the existing 0064 trigger, so the reason travels with it |
+| L-10 | Ladders and finals | Point adjustments **with a reason attached**, forfeit scoring, finals seeded from the ladder. Ladders stay computed, not stored |
+| L-11 | League communication | Announcements to club admins, managers and coaches across the league — **never to other clubs' families.** "See the draw, not each other's people" is the rule that must not be blurred, and this is the feature most likely to blur it |
+| L-12 | Public match centre | Fixtures, results, ladders, top scorers. Shareable link, embeddable widget, and it honours each club's own privacy settings. Cached — it is the one page a hundred people open at 9am |
+| L-13 | League roles | League admin, competition manager, referee coordinator, discipline officer, ground manager |
+| L-14 | Switching from Dribl | Import a league's teams, squads and fixtures from Dribl exports. The `/admin/import` mapper is reused again, not copied |
+| L-15 | Reports | Results, ladders, discipline, referee payments, team entries |
+| L-16 | Tournament entry | External teams register and pay through the **same registration engine** as a family does. A tournament entry is a registration whose subject is a team |
+
+**Acceptance — `scripts/test-league-season.mjs`:** a simulated SPL season. Six
+age groups, eight clubs, home and away across real venues. Referees
+appointed and checked in. Sheets submitted, confirmed, completed. A red card
+that suspends a player and **blocks them from next week's sheet**. A washout
+that reschedules a round and notifies every affected chat. Ladders, then
+finals. The public match centre shows all of it. `smoke-demo` covers four
+people: league admin, club manager, referee and parent.
 
 ---
 
@@ -220,5 +283,22 @@ Look and feel: keep the current design language (navy bar, academy `--brand`, ca
 ---
 
 ## 6. Order at a glance
-**M0** make it real → **M1** registration → **M2** safeguarding → **M3** WhatsApp feel → **M4** Dribl side → **M5** match centre & stats → **M6** money & season cycle → **M7** native & offline → **M8** SaaS.
-Roughly 15–20 Claude Code sessions in total.
+
+**Revised 29 Oct 2026.** M0 and M2 are done; M1, M4 and M5 are largely done.
+Nothing has been dropped — M9 and C-10 are *added*.
+
+1. **M1 + M6 together — registration and the money that goes with it.** They
+   are one job, not two: a sibling discount, an instalment plan and a refund
+   are all the same checkout seen at different moments, and building the form
+   now and the money later means building the checkout twice. **Eight of these
+   items are blocked on a free Stripe test key** (NIGHT_LOG, NEEDS JOEY #1).
+2. **M9 League mode.** The one milestone that lets a league leave Dribl.
+3. **M7 native, pulled forward** from its old slot. Both C-10 contacts and
+   reliable iPhone push need a real build, so it gates more than it looks
+   like it does. Needs Joey's Apple account.
+4. **M3 the WhatsApp feel.**
+5. The rest of **M4 / M5**.
+6. **M8 SaaS.**
+
+Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
+Roughly 15–20 sessions, plus 4–6 for M9.

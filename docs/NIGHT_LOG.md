@@ -13,7 +13,15 @@ server, and `docs/SQUADROOM_SPEC.md` now matches the code — five statuses in
 it were wrong, two of them saying work was blocked that has in fact been
 applied for days.
 
-**Broke:** nothing. No feature code was touched.
+**Broke:** nothing — no feature code was touched. But the tidy-up turned up a
+**real pre-existing defect in the push queue** (the retry counter never
+increments through the RPC path, so the retry cap never engages), written up
+below. And a full `npm run test:all` can no longer be trusted on demand:
+**34 of 58 suites could not sign anybody in**, which is the Supabase project's
+**auth rate limit**, not a failure. Running the whole suite twice in an hour
+is what exhausts it — I did exactly that tonight. The suites that need no
+sign-in all passed: outbox 31, recurring 22, join-codes 16, league-draw 9,
+project-guard 9, reminders 8, minor-dms 3, navigation 2.
 
 **The one thing that would unblock the most work:** a Stripe **test** key.
 It is free, it takes about three minutes, and it is currently the only thing
@@ -21,6 +29,52 @@ standing between us and eight of the registration and billing items Joey
 asked for — one checkout for several children, the sibling discount,
 instalments, promo codes, refunds, overdue reminders and the finance export.
 Exact steps are in NEEDS JOEY below.
+
+---
+
+## Found while tidying: the push queue never counts an attempt
+
+**Real, reproducible, and nothing to do with tonight's changes.** Logged here
+rather than fixed, because the fix is a migration and I am stopping for the
+go-ahead first.
+
+`claim_notifications` is meant to increment `attempts` in the same statement
+it claims a row, so "a crash mid-send cannot leave a row to be retried
+forever" — its own comment says so. It does that when called as **plain
+SQL**. It does **not** when called through **PostgREST** (`supabase.rpc`),
+which is the only way the product ever calls it: `lib/push/drain.ts` uses
+`supabase.rpc('claim_notifications')`.
+
+Measured, same row, same database, 0 push subscriptions in the project:
+
+| How it was called | Rows returned | `attempts` after |
+|---|---|---|
+| `select * from claim_notifications(200)` as SQL | 0 | **incremented** |
+| `supabase.rpc('claim_notifications', …)` | 0 | **still 0** |
+
+Ruled out on the way: clock skew (the row was scheduled a minute in the
+past), a stale deployed function (the live definition was read back with
+`pg_get_functiondef` and matches), and a wrong project.
+
+**Why it matters.** The retry cap is `attempts < 5`. A counter that never
+increments is a cap that never engages, so a row that cannot be delivered is
+re-claimed every five minutes for ever. Today the queue is small and there
+are **0 registered devices**, so nothing is visibly wrong; at 300 academies
+this is the queue silting up, which CLAUDE.md already names as the thing to
+avoid.
+
+**Likely shape of the fix**, to confirm before building: make the function
+`plpgsql` with the claim as its own statement and the select as a second,
+rather than relying on a data-modifying CTE surviving however PostgREST
+plans the call. Then assert it with a test that calls it **the way the
+product does** — through the RPC — because a test that ran the SQL directly
+would have passed throughout.
+
+**`test-push-wake` was right to fail** and gets a second, smaller fix: its
+check 1 ("the database called out") fails during a full run and passes
+alone, because the wake trigger is debounced to one call per 15s and another
+suite's notification had already spent the window. Same family of mistake as
+the global-count rule in CLAUDE.md — scope it to this probe's own call.
 
 ---
 
