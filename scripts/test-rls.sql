@@ -24,8 +24,10 @@ declare
   OUTSIDER constant uuid := '00000000-0000-0000-0000-0000000000c2'; -- other tenant
   ANNO     constant uuid := '00000000-0000-0000-0000-00000000c001';
   v_u8 uuid; v_rv uuid; n int; b bool; foreign_rows int;
-  v_ev uuid; v_ev_total int; v_msg uuid;
+  v_ev uuid; v_ev_total int; v_msg uuid; v_comp uuid;
 begin
+  -- For checks 44–45. Read here, before any role switch, so it is a real id.
+  select id into v_comp from public.competitions limit 1;
   select id into v_u8 from public.channels where team_id = '00000000-0000-0000-0000-0000000d0008' and type='team';
   select id into v_rv from public.channels where team_id = '00000000-0000-0000-0000-0000000d0099' and type='team';
 
@@ -420,6 +422,36 @@ begin
     execute 'reset role';
     delete from public.event_lineups where event_id = v_ev;
   end if;
+
+  -- 0132. Two functions were callable by anyone with a uuid. Asserted the
+  -- way the holes were found: by calling them as the wrong person.
+  --
+  -- 44. A parent is not a competition organiser and cannot seed the finals.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.resolve_finals(v_comp, 'U8s');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (44,'a parent cannot seed a competition''s finals',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
+
+  -- 45. A stranger cannot re-sync a fixture into a club's events — the path
+  -- that could un-cancel a called-off game.
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  execute 'set local role anon';
+  b := false;
+  begin
+    perform public.mirror_fixture(gen_random_uuid());
+  exception when others then b := true;
+  end;
+  -- Back to ourselves BEFORE writing the result: the results table grants
+  -- insert to authenticated only, and anon writing it is its own refusal.
+  execute 'reset role';
+  insert into rls_results values (45,'a stranger cannot re-sync a fixture',
+    case when b then 'PASS' else 'FAIL' end);
 
   delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
