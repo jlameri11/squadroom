@@ -25,12 +25,12 @@ one and is meant to reach hundreds of academies.
     re-import update a moved game instead of duplicating a season. They are
     not a dependency on Dribl: a league running in Squadroom populates them
     itself, and a league that never exports anything leaves them null.
-  - **Flagged for Joey, 29 Oct:** if the intent is stricter than that — no
-    importer at all, and the `external_ref` columns dropped — say so and I
-    will plan the removal. I have not assumed it, because the 29 Oct brief
-    also says "until a league switches, Squadroom works alongside Dribl
-    through the importer", and dropping the columns would break F-01 to F-04,
-    which are built and tested.
+  - **DECIDED 29 Oct 2026, by Joey, and not to be relitigated:** the importer
+    and the `external_ref` columns **stay**. Importing a file that a club or
+    league exports **from its own account** and gives us is allowed.
+    **Never fetch anything from Dribl directly** — no API, no Match Centre,
+    no scraping, no Fixturefeed code. The line is the handover: a human
+    exports their own data and hands it over. We never reach across.
 
 ## Decisions already made — do not relitigate
 
@@ -55,22 +55,32 @@ one and is meant to reach hundreds of academies.
   data. A Supabase project's region cannot be changed after creation.
 - **One deployment serves every academy.** Branding is data
   (`academies.primary_colour`, `logo_url`), never a per-tenant build.
-- **Dribl is the source of truth for registration and fixtures; Squadroom is
-  the communication layer.** Players must be registered in Dribl to play, so
-  do not rebuild registration and do not ask a coach to type a draw twice.
-  - **SUPERSEDED IN PART, 29 Oct 2026 — see the Rules heading above.** Two
-    halves of this have changed and the rest stands. (1) Squadroom now does
-    **academy** registration (R-01 … R-17, mostly built); only **official**
-    PlayFootball registration stays out of scope, and R-14 tracks its status.
-    (2) Squadroom must be able to run a **whole competition** without Dribl
-    (M9), starting with the SPL. What stands: don't replace Dribl where
-    Football NSW mandates it, don't ask a coach to type a draw twice, build
-    an importer rather than an integration, and never scrape the Match
-    Centre. Proposed replacement wording for this whole bullet is in the
-    Step 1 plan, not yet applied.
-  - Dribl has no public API and no ICS feed (checked Aug 2026; calendar sync
-    moved behind a paid tier). The supported path is the club-admin export:
-    Events → filter → Export → Events → download a spreadsheet.
+- **Squadroom does academy registration and runs its own competitions. Only
+  OFFICIAL registration is Dribl's.** A player must be registered in
+  PlayFootball to be eligible, and that is governance, not software — the
+  failure mode is a child being ineligible on a Saturday. So Squadroom never
+  does official registration; R-14 tracks its status and no more. Everything
+  else is ours: enrolment, details, consents, fees, squads, draws, results,
+  discipline. And **Squadroom must be able to run a whole competition without
+  Dribl** (M9), starting with the SPL.
+  - Replaced the old wording on 29 Oct 2026. It used to read "Dribl is the
+    source of truth for registration and fixtures; Squadroom is the
+    communication layer", which is no longer true of either half and was
+    leading a bullet whose own sub-points contradicted it.
+  - What still stands from it, unchanged: don't replace Dribl where Football
+    NSW mandates it, don't ask a coach to type a draw twice, build an
+    importer rather than an integration, and never scrape the Match Centre.
+  - Dribl has no public API. **Corrected 29 Oct 2026:** the old note here said
+    "no ICS feed (checked Aug 2026; calendar sync moved behind a paid tier)",
+    which is out of date — **Dribl shipped Google/Outlook calendar sync on 19
+    Oct 2026** (v4.1.7, matches only). It changes nothing about our approach,
+    because sync out of Dribl into a parent's calendar is not a way to get
+    data into Squadroom, and we do not fetch from Dribl anyway. Our own feed
+    still wins on merit: it carries training, socials and tournaments, per
+    family, not just matches.
+  - The only way data comes in is unchanged: the club-admin export, which a
+    human runs on their own account — Events → filter → Export → Events →
+    download a spreadsheet.
   - So: build an importer, not an integration. Do NOT scrape the public Match
     Centre - fragile and almost certainly against their terms.
   - **Built at `/admin/import`, with no fixed column mapping at all.** It
