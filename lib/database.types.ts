@@ -2635,6 +2635,9 @@ export type Database = {
           gender: Database["public"]["Enums"]["player_gender"] | null
           id: string
           notes: string | null
+          official_status: Database["public"]["Enums"]["official_rego_status"]
+          official_status_at: string | null
+          official_status_by: string | null
           photo_url: string | null
           preferred_name: string | null
           profile_id: string | null
@@ -2655,6 +2658,9 @@ export type Database = {
           gender?: Database["public"]["Enums"]["player_gender"] | null
           id?: string
           notes?: string | null
+          official_status?: Database["public"]["Enums"]["official_rego_status"]
+          official_status_at?: string | null
+          official_status_by?: string | null
           photo_url?: string | null
           preferred_name?: string | null
           profile_id?: string | null
@@ -2675,6 +2681,9 @@ export type Database = {
           gender?: Database["public"]["Enums"]["player_gender"] | null
           id?: string
           notes?: string | null
+          official_status?: Database["public"]["Enums"]["official_rego_status"]
+          official_status_at?: string | null
+          official_status_by?: string | null
           photo_url?: string | null
           preferred_name?: string | null
           profile_id?: string | null
@@ -2692,6 +2701,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_official_status_by_fkey"
+            columns: ["official_status_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4352,6 +4368,7 @@ export type Database = {
       }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
+      queue_official_rego_reminders: { Args: never; Returns: number }
       quote_payment: {
         Args: { p_player?: string; p_request: string }
         Returns: Json
@@ -4507,6 +4524,14 @@ export type Database = {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
       }
+      set_official_status: {
+        Args: {
+          p_ff_number?: string
+          p_player: string
+          p_status: Database["public"]["Enums"]["official_rego_status"]
+        }
+        Returns: undefined
+      }
       set_program_fee: {
         Args: {
           p_amount_cents: number
@@ -4632,6 +4657,11 @@ export type Database = {
       lineup_role: "starting" | "bench" | "out"
       member_status: "invited" | "active" | "removed"
       message_status: "published" | "pending" | "rejected"
+      official_rego_status:
+        | "unknown"
+        | "pending"
+        | "registered"
+        | "not_required"
       org_type: "academy" | "club" | "league" | "school" | "other"
       player_gender: "female" | "male" | "other"
       poll_type: "simple" | "availability"
@@ -4858,6 +4888,12 @@ export const Constants = {
       lineup_role: ["starting", "bench", "out"],
       member_status: ["invited", "active", "removed"],
       message_status: ["published", "pending", "rejected"],
+      official_rego_status: [
+        "unknown",
+        "pending",
+        "registered",
+        "not_required",
+      ],
       org_type: ["academy", "club", "league", "school", "other"],
       player_gender: ["female", "male", "other"],
       poll_type: ["simple", "availability"],

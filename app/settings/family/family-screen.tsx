@@ -39,6 +39,7 @@ type Child = {
   gender: string | null
   school: string | null
   ff_number: string | null
+  official_status: 'unknown' | 'pending' | 'registered' | 'not_required'
   relationship: string | null
   kit: { shirt: string | null; shorts: string | null; socks: string | null }
   squad: { id: string; name: string; season: string | null } | null
@@ -160,6 +161,18 @@ function ChildCard({
               <dd>{c.squad ? `${c.squad.name}${c.squad.season ? ` · ${c.squad.season}` : ''}` : 'Not in a squad yet'}</dd>
               <dt className="text-ink-3">Number</dt>
               <dd>{c.number != null ? `#${c.number}` : 'Not given yet'}</dd>
+              {/* Official registration is PlayFootball's, never ours; this is
+                  what the club has recorded, and the reminder lands here. */}
+              <dt className="text-ink-3">PlayFootball</dt>
+              <dd style={{ color: c.official_status === 'registered' || c.official_status === 'not_required' ? 'var(--yes)' : c.official_status === 'pending' ? 'var(--maybe)' : undefined }}>
+                {c.official_status === 'registered'
+                  ? 'Registered'
+                  : c.official_status === 'not_required'
+                    ? 'Not needed for this squad'
+                    : c.official_status === 'pending'
+                      ? 'Pending — finish it before round one'
+                      : 'Not yet registered — do it at playfootball.com.au, then tell the club'}
+              </dd>
             </dl>
             <p className="mt-2 text-xs text-ink-3">
               Name, date of birth and squad are set by {c.club}. If something is wrong, tell the coach.

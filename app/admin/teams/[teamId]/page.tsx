@@ -11,6 +11,7 @@ import { BulkInvite } from './bulk-invite'
 import { SeasonControl } from './season-control'
 import { LeagueName } from './league-name'
 import { KitSizes } from './kit-sizes'
+import { OfficialStatusControl, type OfficialStatus } from './official-status'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -50,7 +51,7 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
     supabase
       .from('players')
       .select(
-        'id, full_name, shirt_size, shorts_size, socks_size, player_guardians(profiles(full_name))'
+        'id, full_name, shirt_size, shorts_size, socks_size, official_status, ff_number, player_guardians(profiles(full_name))'
       )
       .eq('team_id', teamId)
       .order('full_name'),
@@ -116,6 +117,20 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
             </p>
           )
         })()}
+        {/* The number that decides whether the squad can take the field on
+            Saturday. Families are reminded a fortnight before round one. */}
+        {(() => {
+          const total = players?.length ?? 0
+          const eligible = (players ?? []).filter(
+            (p) => p.official_status === 'registered' || p.official_status === 'not_required'
+          ).length
+          if (total === 0 || eligible === total) return null
+          return (
+            <p className="mb-2 text-xs" style={{ color: 'var(--maybe)' }}>
+              {total - eligible} of {total} not yet registered with PlayFootball
+            </p>
+          )
+        })()}
         <div className="rounded-xl border border-[var(--line)]">
           {(players ?? []).map((p, i) => (
             <div key={p.id} className={`p-3 ${i > 0 ? 'border-t border-[var(--line-2)]' : ''}`}>
@@ -130,6 +145,11 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
                   shorts_size: p.shorts_size,
                   socks_size: p.socks_size,
                 }}
+              />
+              <OfficialStatusControl
+                playerId={p.id}
+                status={(p.official_status ?? 'unknown') as OfficialStatus}
+                ffNumber={p.ff_number}
               />
             </div>
           ))}
