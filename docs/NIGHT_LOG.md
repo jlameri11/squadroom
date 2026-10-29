@@ -8,10 +8,16 @@ every item on it is something no amount of building can get past.
 
 ## Morning summary — 29 Oct 2026
 
-**Done:** the tidy-up (Step 0). Tests no longer depend on a healthy dev
-server, and `docs/SQUADROOM_SPEC.md` now matches the code — five statuses in
-it were wrong, two of them saying work was blocked that has in fact been
-applied for days.
+**Done:** the tidy-up (Step 0), the Step 1 plan (M9 and C-10 written into
+the docs, two decisions recorded in CLAUDE.md), and the **project sweep Joey
+asked for before building** — which paid for itself: a critical RCE in the
+share-card renderer, two database write paths open to strangers (one could
+un-cancel a called-off game), a null reason, and a push-queue counter that
+never moved. All fixed, all asserted, audit at 0. Details under "Project
+sweep". Tests no longer depend on a healthy dev server, and
+`docs/SQUADROOM_SPEC.md` now matches the code — five statuses in it were
+wrong, two of them saying work was blocked that has in fact been applied
+for days.
 
 **Broke:** nothing — no feature code was touched. But the tidy-up turned up a
 **real pre-existing defect in the push queue** (the retry counter never
@@ -29,6 +35,46 @@ standing between us and eight of the registration and billing items Joey
 asked for — one checkout for several children, the sibling discount,
 instalments, promo codes, refunds, overdue reminders and the finance export.
 Exact steps are in NEEDS JOEY below.
+
+---
+
+## Project sweep — 29 Oct 2026, before building (Joey asked for one)
+
+Asked the **database** rather than the files wherever that was possible,
+and then **called** what it reported. A grep tells you what a migration
+said; the catalog tells you what is true.
+
+### Fixed tonight
+
+| | What | Where |
+|---|---|---|
+| **Critical** | `next` 16.3.3 — remote code execution in `next/og ImageResponse`, the path the share cards render through, reachable by any signed-in parent | → 16.4.3. Share cards 15/15 on the new build, still 401 to strangers |
+| **High** | `mirror_fixture` — security definer, no guard, **executable by anon**. Its upsert sets `cancelled_at` from the fixture's status, so a stranger with a fixture id could **un-cancel a called-off game** and fire "back on" pushes to every family | 0132 revokes it from every client role. test-rls 45 |
+| **High** | `resolve_finals` — writes finals seedings from the ladder, callable by any signed-in user or anon, and first caller's seeding sticks | 0132 requires the organiser. test-rls 44 |
+| Medium | `call_off_day` null reason: `null not in (…)` is null, no raise, families get a cancellation with no reason | 0132 checks null by name |
+| Medium | **Why the above were open:** Supabase's default ACL grants EXECUTE on every new `public` function to anon and authenticated | 0132 flips the default to closed for everything created from now on |
+| Medium | `claim_notifications` never incremented `attempts` through the RPC (the only way the app calls it), so the retry cap never engaged | 0131, found during the tidy-up. test-push-wake 8/8 |
+| Low | `xlsx` 0.18.5: prototype pollution + ReDoS, no npm fix (SheetJS left npm) | → their 0.20.3 tarball. Parsing holds. **Audit: 0 vulnerabilities** |
+| Low | `npm run lint` reported **23,988** problems — 24,000 of them in `.next-test/` and `.netlify/` build output, and 900 in the test scripts' `cond ? ok() : bad()` idiom | Ignored both; 54 now, and the 20 real ones are visible |
+| Low | `test-rls.sql` was run by hand, which is how "after every migration" gets skipped | `scripts/test-rls.mjs` wraps it, so `test:all` runs it |
+
+### Checked and clean
+
+- **Typecheck** clean, before and after the upgrade.
+- **Secrets:** nothing in git history on any branch — the token pasted into chat never reached the repo. `.env.local` never committed.
+- **Every table** in `public` has RLS enabled. **Every** security-definer function sets `search_path`. **No** RLS helper lives in `public`.
+- **FOR ALL policies:** ten tables carry one beside a SELECT policy, the shape that leaked private events in 0056. Compared every pair's predicate: each write rule is a subset of its read rule (staff ⊆ member, team coach ⊆ team member), so none widens reads today. Fragile — a future edit to a write policy silently widens reads — but not a bug now. Listed below.
+- **Anon-callable functions:** called every one with no session. All refuse or return nothing except the two fixed above and the ones meant to be public (`public_match_centre`, `public_programs`, `peek_competition_invite`).
+- **API routes:** every handler either checks a session, verifies a secret or signature, or is token-credentialed by design (`calendar/[token]`). The two contacts routes 401 and go through `member_directory`, so `directory_visibility` still decides who sees a number. `ics/[eventId]` uses the cookie client, so RLS and `private_to` decide, with a 404 for a stranger.
+- No `console.log` in app code. No TODO/FIXME anywhere.
+
+### Improvements seen, NOT done (the plan does not change)
+
+1. **The 20 lint errors** are all React Compiler rules from eslint-config-next 16: 17× "setState synchronously in an effect" (the sync-prop-to-state pattern, in a dozen client components) and 3× "impure call during render" (`Date.now()` deciding whether a game is inside 24 hours, in `event-detail.tsx`, and in `composer.tsx`). Benign today; the `Date.now()` ones are the hydration-mismatch class. Worth a pass when M3 touches those screens.
+2. **Split the ten FOR ALL policies** into insert/update/delete, as 0056 did for events, so the read rule cannot be widened by accident.
+3. **Revoke anon from the rest of `public`** in one sweep, re-granting only the intentionally public set. 0132 closes the default for *new* functions; this would close the old ones that happen to be safe only because their bodies check `auth.uid()`. Needs a full `test:all` run to prove nothing public broke — do it the hour the rate limit is clear.
+4. **A rate-limit-aware `test:all`.** 34 suites each mint a magic link; two full runs in an hour exhaust the project's auth limit and the second run reads as 34 failures. Either a shared sign-in cached across suites, or the runner pausing when it sees the limit.
+5. `home` on :3100 answers **200** to a stranger (it renders the sign-in page in place) where the spec implies a redirect. Not a leak — nothing is fetched — but worth deciding.
 
 ---
 
