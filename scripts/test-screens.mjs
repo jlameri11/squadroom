@@ -56,6 +56,7 @@ const SCREENS = [
   ['admin/registrations', '/admin/registrations'],
   ['admin/import', '/admin/import'],
   ['register', '/nrifa/register'],
+  ['academy', '/nrifa'],
 ]
 
 const wanted = process.argv.slice(2)
@@ -192,7 +193,17 @@ for (const theme of ['light', 'dark']) {
 
   for (const [name, path] of screens) {
     try {
-      await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle2', timeout: 45000 })
+      const response = await page.goto(`${BASE}${path}`, {
+        waitUntil: 'networkidle2',
+        timeout: 45000,
+      })
+      // An error page is not a screen. "Internal Server Error" in the
+      // default font passed the dark-mode contrast check once, and the
+      // suite reported a 500 as a readable page.
+      if (response && response.status() >= 400) {
+        bad(`${name}: HTTP ${response.status()}`)
+        continue
+      }
       // `next dev` paints its own toolbar over the page, and it would be
       // reported as somebody else's contrast problem.
       await page.addStyleTag({

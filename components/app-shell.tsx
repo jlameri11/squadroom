@@ -216,6 +216,36 @@ const BARE = [
   '/my', '/c',
 ]
 
+/**
+ * Every top-level route the app itself owns. Anything else at one segment —
+ * /nrifa, /ravens — is a club's public front door (app/[slug]), opened by
+ * people with no account.
+ *
+ * Listed rather than inferred because a dynamic segment at the root cannot
+ * be told from an app route by its shape: `/nrifa` and `/chat` are both one
+ * word. A new top-level route has to be added here, and test-screens will
+ * say so the first time its tab bar goes missing.
+ */
+const APP_ROOTS = new Set([
+  'admin', 'api', 'auth', 'c', 'calendar', 'chat', 'competitions', 'directory',
+  'join', 'join-competition', 'my', 'payments', 'platform', 'programs', 'scan',
+  'settings', 'signin', 'signup', 'start',
+])
+
+/** A page opened by somebody who must not be offered a sign-in screen. */
+function isPublicPage(pathname: string) {
+  if (BARE.some((p) => pathname === p || pathname.startsWith(p + '/'))) return true
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return false
+  if (APP_ROOTS.has(segments[0])) return false
+  // A club's front door (/<slug>) and its register page (/<slug>/register).
+  // The register page used to be matched on its own; found by screenshotting
+  // it, when the tab bar offered a family with no account Home, Chat,
+  // Fixtures and Team — every one a sign-in screen for somebody who must not
+  // have one. The front door then had the same bar, found the same way.
+  return segments.length === 1 || (segments.length === 2 && segments[1] === 'register')
+}
+
 // Counts live outside the component, so moving between tabs does not throw
 // them away and ask for them again.
 let lastBadges: Badges | null = null
@@ -237,7 +267,7 @@ function useNavBadges(): Badges | null {
   useEffect(() => {
     // Nobody is signed in on the sign-in, join or public pages, so asking
     // would spend a request to be told null.
-    if (BARE.some((p) => pathname === p || pathname.startsWith(p + '/'))) return
+    if (isPublicPage(pathname)) return
 
     const fn = (b: Badges | null) => setBadges(b)
     badgeListeners.add(fn)
@@ -281,13 +311,7 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
   const pathname = usePathname()
 
   const hidden =
-    BARE.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
-    // A club's public register page, which lives at /<slug>/register and so
-    // has no fixed prefix to put in BARE. It is opened by families with no
-    // account at all — the tab bar offered them Home, Chat, Fixtures and
-    // Team, every one of which is a sign-in screen for somebody who must not
-    // have one. Found by screenshotting it.
-    /^\/[^/]+\/register\/?$/.test(pathname) ||
+    isPublicPage(pathname) ||
     // A channel is full screen. /chat itself keeps its bar.
     /^\/chat\/[^/]+$/.test(pathname)
 

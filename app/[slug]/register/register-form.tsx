@@ -2,25 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ProgramSummary, type PublicProgram } from '../program-card'
+import { QuestionField, unanswered } from '@/components/question-field'
 
-type Program = {
-  id: string
-  name: string
-  kind: string
-  description: string | null
-  season: string | null
-  born_from_year: number | null
-  born_to_year: number | null
-  gender: string | null
-  starts_on: string | null
-  ends_on: string | null
-  closes_at: string | null
-  questions: { id: string; label: string; required?: boolean }[] | null
-  payment_required: boolean
-  amount_cents: number | null
-  spots_left: number | null
-  waitlist_enabled: boolean
-}
+type Program = PublicProgram
 
 type Consent = {
   id: string
@@ -175,6 +160,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const required = data.consents.filter((c) => c.required)
   const missing = required.filter((c) => !agreed[c.id])
   const full = program?.spots_left === 0
+  const unansweredQs = unanswered(program?.questions, answers)
 
   async function submit() {
     if (!program) return
@@ -236,38 +222,9 @@ export function RegisterForm({ slug }: { slug: string }) {
                     background: p.id === chosen ? 'var(--brand-faint)' : 'var(--surface)',
                   }}
                 >
-                  <span className="block font-semibold">{p.name}</span>
-                  <span className="mt-0.5 block text-sm text-ink-2">
-                    {[
-                      p.born_from_year &&
-                        `Born ${p.born_from_year}${
-                          p.born_to_year && p.born_to_year !== p.born_from_year
-                            ? `–${p.born_to_year}`
-                            : ''
-                        }`,
-                      p.starts_on && `From ${shortDate(p.starts_on)}`,
-                      p.amount_cents != null && money(p.amount_cents),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                  {p.description && (
-                    <span className="mt-1 block text-sm text-ink-3">{p.description}</span>
-                  )}
-                  {/* The number, because "limited places" is what every club
-                      says and a number is what a parent can act on. */}
-                  {p.spots_left != null && (
-                    <span
-                      className="mt-1 block text-xs font-semibold"
-                      style={{ color: p.spots_left === 0 ? 'var(--no)' : 'var(--yes)' }}
-                    >
-                      {p.spots_left === 0
-                        ? p.waitlist_enabled
-                          ? 'Full — you can join the waitlist'
-                          : 'Full'
-                        : `${p.spots_left} ${p.spots_left === 1 ? 'place' : 'places'} left`}
-                    </span>
-                  )}
+                  {/* The same card the club's front door shows, so a program
+                      reads identically on both. */}
+                  <ProgramSummary program={p} />
                 </button>
               ))}
             </div>
@@ -349,11 +306,12 @@ export function RegisterForm({ slug }: { slug: string }) {
                 <section className="mt-5">
                   <span className="eyebrow">{data.academy.name} asks</span>
                   {(program.questions ?? []).map((q) => (
-                    <Field
+                    <QuestionField
                       key={q.id}
-                      label={q.label}
+                      question={q}
                       value={answers[q.id] ?? ''}
                       onChange={(v) => setAnswers({ ...answers, [q.id]: v })}
+                      tint={tint}
                     />
                   ))}
                 </section>
@@ -431,7 +389,8 @@ export function RegisterForm({ slug }: { slug: string }) {
                   !childDob ||
                   !guardianName.trim() ||
                   (!guardianPhone.trim() && !guardianEmail.trim()) ||
-                  missing.length > 0
+                  missing.length > 0 ||
+                  unansweredQs.length > 0
                 }
                 className="mt-3 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
                 style={{ background: tint }}
@@ -442,6 +401,8 @@ export function RegisterForm({ slug }: { slug: string }) {
                     ? `Agree to the ${missing.length} required ${
                         missing.length === 1 ? 'document' : 'documents'
                       }`
+                    : unansweredQs.length > 0
+                      ? `Answer the ${unansweredQs.length === 1 ? 'required question' : `${unansweredQs.length} required questions`}`
                     : full
                       ? 'Join the waitlist'
                       : 'Send to the club'}
@@ -503,16 +464,4 @@ function Field({
       {hint && <span className="mt-0.5 block text-xs text-ink-3">{hint}</span>}
     </label>
   )
-}
-
-function money(cents: number) {
-  // Integer cents, formatted once. Never arithmetic on dollars.
-  return `$${(cents / 100).toFixed(2).replace(/\.00$/, '')}`
-}
-
-function shortDate(value: string) {
-  // A plain yyyy-mm-dd is read as UTC midnight by `new Date`, which shows the
-  // previous day in Sydney.
-  const [y, m, d] = value.slice(0, 10).split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 }
