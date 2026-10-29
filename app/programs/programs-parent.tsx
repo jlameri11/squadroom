@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
@@ -50,6 +51,8 @@ export function ProgramsParent() {
   const [children, setChildren] = useState<Child[]>([])
   const [mine, setMine] = useState<Mine[]>([])
   const [chosen, setChosen] = useState<Program | null>(null)
+  // R-13: places offered after a trial, waiting on this family.
+  const [offers, setOffers] = useState<{ id: string; player: string; squad: string | null; squad_program: string; expires_at: string; state: string }[]>([])
 
   const load = useCallback(async (academyId: string, me: string) => {
     const supabase = createClient()
@@ -89,6 +92,10 @@ export function ProgramsParent() {
 
     setChildren((kids ?? []) as unknown as Child[])
     setMine((regs ?? []) as unknown as Mine[])
+
+    const { data: offered } = await supabase.rpc('my_offers')
+    setOffers(((offered ?? []) as unknown as typeof offers).filter((o) => o.state === 'open'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -116,6 +123,27 @@ export function ProgramsParent() {
       <AppBar title="Sign up" meta={academy.name} back="/" />
       <Screen>
         <div className="p-3.5">
+          {offers.length > 0 && (
+            <ul className="mb-3 flex flex-col gap-2">
+              {offers.map((o) => (
+                <li key={o.id}>
+                  <Link
+                    href={`/offer/${o.id}`}
+                    className="card block p-4"
+                    style={{ borderColor: 'var(--brand)' }}
+                  >
+                    <span className="eyebrow">A place is waiting</span>
+                    <span className="mt-0.5 block font-semibold">
+                      {o.player.split(' ')[0]} — {o.squad ?? o.squad_program}
+                    </span>
+                    <span className="block text-sm text-ink-3">
+                      Accept by {new Date(o.expires_at).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })} ›
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
           {programs.length === 0 ? (
             <p className="card p-6 text-center text-sm text-ink-2">
               Nothing open at the moment. Your coach will let you know when there is.

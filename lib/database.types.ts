@@ -2280,6 +2280,84 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          academy_id: string
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          expires_at: string
+          id: string
+          player_id: string
+          registration_id: string | null
+          squad_program_id: string
+          status: Database["public"]["Enums"]["offer_status"]
+          trial_registration_id: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          expires_at: string
+          id?: string
+          player_id: string
+          registration_id?: string | null
+          squad_program_id: string
+          status?: Database["public"]["Enums"]["offer_status"]
+          trial_registration_id: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          expires_at?: string
+          id?: string
+          player_id?: string
+          registration_id?: string | null
+          squad_program_id?: string
+          status?: Database["public"]["Enums"]["offer_status"]
+          trial_registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "offers_squad_program_fkey"
+            columns: ["squad_program_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "offers_trial_registration_fkey"
+            columns: ["trial_registration_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "program_registrations"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       payment_requests: {
         Row: {
           academy_id: string
@@ -3695,6 +3773,7 @@ export type Database = {
           status: Database["public"]["Enums"]["member_status"]
         }[]
       }
+      accept_offer: { Args: { p_offer: string }; Returns: Json }
       add_to_channel: {
         Args: {
           p_channel: string
@@ -3990,6 +4069,7 @@ export type Database = {
           team_name: string
         }[]
       }
+      decline_offer: { Args: { p_offer: string }; Returns: undefined }
       end_event_series: {
         Args: {
           p_delete?: boolean
@@ -4100,6 +4180,14 @@ export type Database = {
       }
       import_screen: { Args: { p_academy?: string }; Returns: Json }
       kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
+      make_offer: {
+        Args: {
+          p_days?: number
+          p_registration: string
+          p_squad_program: string
+        }
+        Returns: string
+      }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       member_contact: {
@@ -4153,6 +4241,7 @@ export type Database = {
         }[]
       }
       my_family: { Args: never; Returns: Json }
+      my_offers: { Args: never; Returns: Json }
       my_organisations: {
         Args: never
         Returns: {
@@ -4595,6 +4684,7 @@ export type Database = {
         Args: { p_default_country?: string; p_raw: string }
         Returns: string
       }
+      trial_offers: { Args: { p_program: string }; Returns: Json }
       whats_on: {
         Args: { p_academy: string; p_date: string }
         Returns: {
@@ -4683,6 +4773,7 @@ export type Database = {
       lineup_role: "starting" | "bench" | "out"
       member_status: "invited" | "active" | "removed"
       message_status: "published" | "pending" | "rejected"
+      offer_status: "open" | "accepted" | "declined"
       official_rego_status:
         | "unknown"
         | "pending"
@@ -4914,6 +5005,7 @@ export const Constants = {
       lineup_role: ["starting", "bench", "out"],
       member_status: ["invited", "active", "removed"],
       message_status: ["published", "pending", "rejected"],
+      offer_status: ["open", "accepted", "declined"],
       official_rego_status: [
         "unknown",
         "pending",

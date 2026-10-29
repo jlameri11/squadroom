@@ -6,6 +6,7 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
 import type { Question } from '@/components/question-field'
 import { QuestionsEditor } from './questions-editor'
+import { OfferControl, type TrialOffer } from './offer-control'
 
 type Registration = {
   id: string
@@ -54,6 +55,9 @@ export function ProgramScreen({ programId }: { programId: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkTeam, setBulkTeam] = useState('')
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  // R-13: for a trial, the squads a place can be offered in, and the offers made.
+  const [squadPrograms, setSquadPrograms] = useState<{ id: string; name: string }[]>([])
+  const [offers, setOffers] = useState<TrialOffer[]>([])
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -80,6 +84,21 @@ export function ProgramScreen({ programId }: { programId: string }) {
     ])
     setRows((regs ?? []) as unknown as Registration[])
     setTeams(ts ?? [])
+
+    if ((p as Program).kind === 'trial') {
+      const [{ data: squads }, { data: made }] = await Promise.all([
+        supabase
+          .from('programs')
+          .select('id, name')
+          .eq('academy_id', (p as Program).academy_id)
+          .eq('kind', 'squad')
+          .eq('status', 'open')
+          .order('name'),
+        supabase.rpc('trial_offers', { p_program: programId }),
+      ])
+      setSquadPrograms(squads ?? [])
+      setOffers((made ?? []) as unknown as TrialOffer[])
+    }
   }, [programId])
 
   useEffect(() => {
@@ -344,16 +363,33 @@ export function ProgramScreen({ programId }: { programId: string }) {
           )}
 
           {approved.length > 0 && (
-            <Group title={`In — ${approved.length}`} rows={approved}>
-              {(r) => (
-                <button
-                  onClick={() => decide(r.id, 'pending')}
-                  disabled={busy === r.id}
-                  className="flex-none text-xs underline underline-offset-4 text-ink-3"
-                >
-                  Undo
-                </button>
-              )}
+            <Group
+              title={program.kind === 'trial' ? `Trialled — ${approved.length}` : `In — ${approved.length}`}
+              rows={approved}
+              hint={
+                program.kind === 'trial'
+                  ? 'Offer each a place in a squad. The family accepts and pays, or declines, or it lapses.'
+                  : undefined
+              }
+            >
+              {(r) =>
+                program.kind === 'trial' ? (
+                  <OfferControl
+                    registrationId={r.id}
+                    squadPrograms={squadPrograms}
+                    existing={offers.find((o) => o.trial_registration_id === r.id)}
+                    onMade={load}
+                  />
+                ) : (
+                  <button
+                    onClick={() => decide(r.id, 'pending')}
+                    disabled={busy === r.id}
+                    className="flex-none text-xs underline underline-offset-4 text-ink-3"
+                  >
+                    Undo
+                  </button>
+                )
+              }
             </Group>
           )}
 

@@ -447,6 +447,23 @@ begin
     case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
+  -- 0140. Offers: nobody writes the table directly, and another club's are
+  -- invisible.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.offers (academy_id, trial_registration_id, player_id, squad_program_id, expires_at)
+    values (ACAD_A, gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), now() + interval '7 days');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (48,'an offer cannot be written directly',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.offers where academy_id = ACAD_B;
+  insert into rls_results values (49,'academy B offers invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

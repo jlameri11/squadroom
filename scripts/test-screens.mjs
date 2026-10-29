@@ -53,6 +53,7 @@ const SCREENS = [
   ['settings/academy', '/settings/academy'],
   ['admin/payments', '/admin/payments'],
   ['admin/season', '/admin/season'],
+  ['programs', '/programs'],
   ['admin', '/admin'],
   ['admin/teams', '/admin/teams'],
   ['admin/kit', '/admin/kit'],

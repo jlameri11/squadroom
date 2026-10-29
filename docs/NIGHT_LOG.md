@@ -51,7 +51,37 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **R-12** season rollover | **Done.** Admin → New season: preview, then clone / move / keep numbers / open next season's squad program / end the old squad; "not yet re-registered" report with a weekly nudge | test-season-rollover 20, screens both themes |
+
+### Deploys
+
+| Date | What | Outcome |
+|---|---|---|
+| 30 Oct 2026 | One-off deploy Joey authorised: the live site is missing the Next.js security fix (16.3.3 → 16.4.3) | **BLOCKED — no Netlify credentials on this machine.** See NEEDS JOEY #7. Probing `squadroom-dev.netlify.app` showed it is **at least three days stale** (`age: 255224`): `/nrifa/register` and `/api/share/weekend`, which have existed for days, answer 404 there. So nothing auto-deploys from GitHub, and production is on the vulnerable Next. |
+
 ### NEEDS JOEY (added overnight)
+
+**7. A Netlify token, so I can deploy — ~2 minutes, free.** The site is
+linked (`.netlify/state.json` has the id) but there is no login or token
+here, and `netlify login` needs a browser. Steps:
+1. Netlify → your avatar → **User settings → Applications → Personal
+   access tokens → New access token**. Name it "squadroom laptop".
+2. Put it in `.env.local` on its own line: `NETLIFY_AUTH_TOKEN=nfp_…`
+3. Tell me. I will run the full tests, deploy with
+   `npx netlify-cli deploy --prod --build`, verify `/nrifa` and the share
+   cards answer on the live site, and note it here.
+Until then the live site stays on Next 16.3.3 with the `next/og` RCE. The
+cards are signed-in only, so the exposure is to a signed-in parent, not
+the open internet — but that is the one thing the rule says deploys at
+once.
+
+**8. Club settings picks the wrong organisation for an owner of several.**
+`app/settings/academy` takes "the first academy by name", and for you that
+is a stray organisation called **"NRIFA"** (slug `nrifa-1`) with no
+squads — probably made with `/start` during a demo — not NRIFA Football
+Academy. Two questions: may I delete `nrifa-1`? And I will fix the page to
+use the organisation the browser is showing, as the season page now does
+(a small change; not done tonight only because it is outside the feature).
 
 **6. File-upload questions on the public form — a decision, not a build.**
 The brief lists "file upload" among the question types. The register page

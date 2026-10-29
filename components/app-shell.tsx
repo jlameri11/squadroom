@@ -228,7 +228,7 @@ const BARE = [
  */
 const APP_ROOTS = new Set([
   'admin', 'api', 'auth', 'c', 'calendar', 'chat', 'competitions', 'directory',
-  'join', 'join-competition', 'my', 'payments', 'platform', 'programs', 'scan',
+  'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'programs', 'scan',
   'settings', 'signin', 'signup', 'start',
 ])
 
