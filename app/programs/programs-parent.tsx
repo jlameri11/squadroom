@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
+import { QuestionField, type Question } from '@/components/question-field'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 
@@ -19,7 +20,7 @@ type Program = {
   closes_at: string | null
   starts_on: string | null
   ends_on: string | null
-  questions: { id: string; label: string; required?: boolean }[]
+  questions: Question[]
 }
 
 type Child = { id: string; full_name: string; dob: string | null; gender: string | null }
@@ -301,18 +302,12 @@ function Register({
           </div>
 
           {questions.map((q) => (
-            <label key={q.id} className="flex flex-col gap-1.5">
-              <span className="eyebrow">
-                {q.label}
-                {q.required ? '' : ' (optional)'}
-              </span>
-              <input
-                value={answers[q.id] ?? ''}
-                onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
-                className="rounded-xl border px-3.5 py-3 text-base"
-                style={{ borderColor: 'var(--line)' }}
-              />
-            </label>
+            <QuestionField
+              key={q.id}
+              question={q}
+              value={answers[q.id] ?? ''}
+              onChange={(v) => setAnswers({ ...answers, [q.id]: v })}
+            />
           ))}
 
           <label className="flex flex-col gap-1.5">

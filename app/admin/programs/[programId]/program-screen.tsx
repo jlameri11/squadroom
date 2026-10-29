@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
+import type { Question } from '@/components/question-field'
+import { QuestionsEditor } from './questions-editor'
 
 type Registration = {
   id: string
@@ -26,6 +28,7 @@ type Program = {
   born_to_year: number | null
   team_id: string | null
   closes_at: string | null
+  questions: Question[] | null
 }
 
 /**
@@ -51,7 +54,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
     const supabase = createClient()
     const { data: p } = await supabase
       .from('programs')
-      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at')
+      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions')
       .eq('id', programId)
       .maybeSingle()
     if (!p) return setProgram(null)
@@ -172,6 +175,12 @@ export function ProgramScreen({ programId }: { programId: string }) {
               {program.status === 'open' ? 'Close' : 'Open it'}
             </button>
           </div>
+
+          <QuestionsEditor
+            programId={program.id}
+            questions={Array.isArray(program.questions) ? program.questions : []}
+            onSaved={(questions) => setProgram({ ...program, questions })}
+          />
 
           {error && (
             <p className="mb-3.5 rounded-lg p-2.5 text-sm" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>

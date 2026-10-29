@@ -58,6 +58,11 @@ export function RegistrationQueue() {
   const [error, setError] = useState<string | null>(null)
   const [slug, setSlug] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Question labels by program, so an answer reads "Which school?: Hunters
+  // Hill" and not "q3: Hunters Hill". Answers are stored against the id on
+  // purpose — a relabelled question keeps its answers — so the label is
+  // looked up at the moment of reading.
+  const [labels, setLabels] = useState<Record<string, Record<string, string>>>({})
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -66,7 +71,22 @@ export function RegistrationQueue() {
       p_status: null as unknown as string,
     })
     if (error) return setRefused(true)
-    setRows((data ?? []) as Row[])
+    const rows = (data ?? []) as Row[]
+    setRows(rows)
+
+    const programIds = [...new Set(rows.map((r) => r.program_id))]
+    if (programIds.length > 0) {
+      const { data: programs } = await supabase
+        .from('programs')
+        .select('id, questions')
+        .in('id', programIds)
+      const next: Record<string, Record<string, string>> = {}
+      for (const p of programs ?? []) {
+        const qs = Array.isArray(p.questions) ? (p.questions as { id: string; label: string }[]) : []
+        next[p.id] = Object.fromEntries(qs.map((q) => [q.id, q.label]))
+      }
+      setLabels(next)
+    }
 
     const { data: screen } = await supabase.rpc('import_screen', {
       p_academy: (getOrg() ?? null) as unknown as string,
@@ -309,7 +329,8 @@ export function RegistrationQueue() {
                       <ul className="mt-2 flex flex-col gap-0.5 text-sm">
                         {Object.entries(r.answers ?? {}).map(([k, v]) => (
                           <li key={k} className="text-ink-2">
-                            <span className="text-ink-3">{k}:</span> {String(v)}
+                            <span className="text-ink-3">{labels[r.program_id]?.[k] ?? k}:</span>{' '}
+                            {String(v)}
                           </li>
                         ))}
                       </ul>

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { cleanAnswers } from '@/lib/registration/answers'
+import type { Question } from '@/components/question-field'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSecret, hashSecret, toE164 } from '@/lib/join'
 
@@ -135,6 +137,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That isn't open for registrations." }, { status: 400 })
   }
 
+  // The answers, against the questions actually asked. The form enforces
+  // required questions and option lists; this is where that is true for a
+  // browser that was not running the form.
+  const { data: asked } = await admin
+    .from('programs')
+    .select('questions')
+    .eq('id', program)
+    .maybeSingle()
+  const cleaned = cleanAnswers((asked?.questions ?? []) as unknown as Question[], answers)
+  if (!cleaned.ok) {
+    return NextResponse.json({ error: cleaned.error }, { status: 400 })
+  }
+
   const secret = generateSecret()
 
   const { data: created, error } = await admin
@@ -148,7 +163,7 @@ export async function POST(request: Request) {
       child_name: childName.trim(),
       child_dob: childDob,
       child_gender: (gender as Gender) || null,
-      answers: (answers ?? {}) as never,
+      answers: cleaned.answers as never,
       consents: (consents ?? []) as never,
       secret_hash: hashSecret(secret),
     })
