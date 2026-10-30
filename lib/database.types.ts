@@ -505,6 +505,38 @@ export type Database = {
           },
         ]
       }
+      competition_discipline_rules: {
+        Row: {
+          competition_id: string
+          games_per_red: number
+          games_per_yellow_suspension: number
+          updated_at: string
+          yellows_per_suspension: number
+        }
+        Insert: {
+          competition_id: string
+          games_per_red?: number
+          games_per_yellow_suspension?: number
+          updated_at?: string
+          yellows_per_suspension?: number
+        }
+        Update: {
+          competition_id?: string
+          games_per_red?: number
+          games_per_yellow_suspension?: number
+          updated_at?: string
+          yellows_per_suspension?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_discipline_rules_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_divisions: {
         Row: {
           age_group: string | null
@@ -4000,6 +4032,126 @@ export type Database = {
           },
         ]
       }
+      suspensions: {
+        Row: {
+          academy_id: string
+          appeal_note: string | null
+          appealed_at: string | null
+          competition_id: string
+          decided_at: string | null
+          decided_by: string | null
+          entry_id: string | null
+          from_event_id: string | null
+          from_fixture_id: string | null
+          games: number
+          id: string
+          issued_at: string
+          issued_by: string | null
+          note: string | null
+          player_id: string
+          reason: string
+          served: number
+          status: Database["public"]["Enums"]["suspension_status"]
+        }
+        Insert: {
+          academy_id: string
+          appeal_note?: string | null
+          appealed_at?: string | null
+          competition_id: string
+          decided_at?: string | null
+          decided_by?: string | null
+          entry_id?: string | null
+          from_event_id?: string | null
+          from_fixture_id?: string | null
+          games: number
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          note?: string | null
+          player_id: string
+          reason: string
+          served?: number
+          status?: Database["public"]["Enums"]["suspension_status"]
+        }
+        Update: {
+          academy_id?: string
+          appeal_note?: string | null
+          appealed_at?: string | null
+          competition_id?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          entry_id?: string | null
+          from_event_id?: string | null
+          from_fixture_id?: string | null
+          games?: number
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          note?: string | null
+          player_id?: string
+          reason?: string
+          served?: number
+          status?: Database["public"]["Enums"]["suspension_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspensions_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_from_event_id_fkey"
+            columns: ["from_event_id"]
+            isOneToOne: false
+            referencedRelation: "match_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_from_fixture_id_fkey"
+            columns: ["from_fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           academy_id: string
@@ -4247,6 +4399,16 @@ export type Database = {
         }[]
       }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
+      add_suspension: {
+        Args: {
+          p_competition: string
+          p_games: number
+          p_note?: string
+          p_player: string
+          p_reason: string
+        }
+        Returns: string
+      }
       add_to_channel: {
         Args: {
           p_channel: string
@@ -4547,6 +4709,7 @@ export type Database = {
         }[]
       }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
+      discipline_report: { Args: { p_competition: string }; Returns: Json }
       end_event_series: {
         Args: {
           p_delete?: boolean
@@ -4842,6 +5005,10 @@ export type Database = {
         Returns: number
       }
       normalise_phone: { Args: { p_phone: string }; Returns: string }
+      note_appeal: {
+        Args: { p_note: string; p_suspension: string }
+        Returns: undefined
+      }
       nudge_non_responders: { Args: { p_event: string }; Returns: Json }
       nudge_unregistered: {
         Args: { p_academy: string; p_season: string }
@@ -4877,6 +5044,10 @@ export type Database = {
           request_id: string
           title: string
         }[]
+      }
+      overturn_suspension: {
+        Args: { p_note: string; p_suspension: string }
+        Returns: undefined
       }
       payment_register: {
         Args: { p_request: string }
@@ -5371,6 +5542,7 @@ export type Database = {
       rsvp_status: "yes" | "no" | "maybe"
       sheet_status: "submitted" | "confirmed" | "disputed"
       sock_size: "K9-12" | "K13-3" | "2-7" | "7-11" | "11-14"
+      suspension_status: "active" | "served" | "overturned"
       team_status: "active" | "ended"
     }
     CompositeTypes: {
@@ -5619,6 +5791,7 @@ export const Constants = {
       rsvp_status: ["yes", "no", "maybe"],
       sheet_status: ["submitted", "confirmed", "disputed"],
       sock_size: ["K9-12", "K13-3", "2-7", "7-11", "11-14"],
+      suspension_status: ["active", "served", "overturned"],
       team_status: ["active", "ended"],
     },
   },

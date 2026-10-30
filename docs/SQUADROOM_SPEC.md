@@ -158,9 +158,9 @@ The one milestone that lets a league leave Dribl. SPL first. Detail and the acce
 |---|---|---|---|
 | L-01 | League setup: per-division rules — scores public/hidden, ladder on/off, points, tie-break, match length, squad size, grading | **DONE** (0148–0150). A division with no row keeps the old rules; the ladder and the public page honour the row; organiser-only writes. Proven by test-league-divisions (12) | P1 |
 | L-02 | Club entry + league fees through Stripe Connect to the league; nominations; coach/manager contacts | PARTIAL — entries and invites exist; fees need the Stripe key | P1 |
-| L-03 | Season squad lists per entry, playing-up/borrowing rules, eligibility check before a sheet | MISSING | P1 |
+| L-03 | Season squad lists per entry, playing-up/borrowing rules, eligibility check before a sheet | **DONE** (0151). `entry_squads` seeded from the club's roster; playing up by division rank within the same club where the division allows it, never down; a sheet with an ineligible child is refused naming them; squad-size maximum enforced. Suspensions plug into `app_private.suspension_reason`. Proven by test-match-sheets | — |
 | L-04 | Photo player cards as match-day ID | PARTIAL — the card exists (X-06); the league's match-day view of a sheet is not built | P1 |
-| L-05 | Match sheets: both teams submit, opposition confirms, goals/assists/cards/subs, both scores with mismatch as a dispute, audit trail | MISSING | P1 |
+| L-05 | Match sheets: both teams submit, opposition confirms, goals/assists/cards/subs, both scores with mismatch as a dispute, audit trail | **DONE** (0151, 0152, `/competitions/[id]/match/[fixtureId]`). Each side submits and the other confirms; events against players on the sheet; both scores — agreement is final, disagreement is disputed with the ladder unmoved until the organiser rules, never averaged; every action logged. Proven by test-match-sheets (36), test-rls 56–59 | — |
 | L-06 | Referees: pool, availability, appointments with accept/decline, check-in, report | MISSING | P1 |
 | L-07 | Referee match fees, payment run, export | MISSING — Stripe | P2 |
 | L-08 | Discipline: card accumulation, thresholds, red = suspension, suspended players blocked from the sheet, tribunal notes, report | MISSING | P1 |

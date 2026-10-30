@@ -69,7 +69,10 @@ const { data: vkids } = await admin.from('players').insert(
 // Marcus coaches the U8s. Nobody coaches without a clearance (0120), so he
 // is given one first if he has none; both are left in place afterwards.
 const { data: cl } = await admin.from('staff_clearances').select('id').eq('academy_id', NRIFA).eq('profile_id', MARCUS).maybeSingle()
+let addedClearance = false
+let addedCoaching = false
 if (!cl) {
+  addedClearance = true
   const { error } = await admin.from('staff_clearances').insert({
     academy_id: NRIFA, profile_id: MARCUS, kind: 'wwcc', number: 'WWC0000001E', outcome: 'cleared',
     expires_on: new Date(Date.now() + 400 * 864e5).toISOString().slice(0, 10), verified_by: OWNER,
@@ -78,6 +81,7 @@ if (!cl) {
 }
 const { data: mc } = await admin.from('team_members').select('role').eq('team_id', U8).eq('profile_id', MARCUS).maybeSingle()
 if (!mc) {
+  addedCoaching = true
   const { error } = await admin.from('team_members').insert({ academy_id: NRIFA, team_id: U8, profile_id: MARCUS, role: 'coach' })
   if (error) {
     bad(`could not make Marcus the U8 coach: ${error.message}`)
@@ -253,4 +257,8 @@ head('8. The match page view carries everything, for a participant only')
 }
 
 await cleanup()
+// Only what this run added. A seed row is not ours to remove; a row we
+// made would collide with test-rls's own clearance probe if left.
+if (addedCoaching) await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', MARCUS).eq('role', 'coach')
+if (addedClearance) await admin.from('staff_clearances').delete().eq('academy_id', NRIFA).eq('profile_id', MARCUS).eq('number', 'WWC0000001E')
 console.log(process.exitCode ? '\n\x1b[31mMATCH SHEETS ARE WRONG\x1b[0m\n' : '\n\x1b[32mall good\x1b[0m\n')

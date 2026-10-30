@@ -1,6 +1,7 @@
 'use client'
 
 import { DivisionSettings } from './division-settings'
+import { DisciplineTab } from './discipline-tab'
 
 import Link from 'next/link'
 import { useState } from 'react'
@@ -58,13 +59,13 @@ export function CompetitionView({
   const commsOnly = mode === 'comms_only'
   const tabs = commsOnly
     ? (['send', 'clubs'] as const)
-    : (['run', 'ladder', 'clubs', 'send'] as const)
+    : (['run', 'ladder', 'discipline', 'clubs', 'send'] as const)
 
   const [tab, setTab] = useState<string>(tabs[0])
   const [division, setDivision] = useState(divisions[0] ?? '')
 
   const LABEL: Record<string, string> = {
-    run: 'Run sheet', ladder: 'Ladder', clubs: 'Clubs', send: 'Send',
+    run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', clubs: 'Clubs', send: 'Send',
   }
 
   return (
@@ -89,7 +90,7 @@ export function CompetitionView({
         ))}
       </div>
 
-      {divisions.length > 1 && tab !== 'clubs' && (
+      {divisions.length > 1 && tab !== 'clubs' && tab !== 'discipline' && (
         <div className="flex gap-2 overflow-x-auto border-b border-[var(--line-2)] px-4 py-2">
           {divisions.map((d) => (
             <button
@@ -115,6 +116,7 @@ export function CompetitionView({
         />
       )}
       {tab === 'ladder' && <Ladder rows={ladders[division] ?? []} />}
+      {tab === 'discipline' && <DisciplineTab competitionId={competitionId} isOrganiser={isOrganiser} />}
       {tab === 'clubs' && (
         <>
           {/*

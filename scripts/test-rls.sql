@@ -557,6 +557,27 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0153. Suspensions are written by triggers and the organiser's
+  -- functions; discipline rules by the organiser; both invisible outside.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.suspensions (competition_id, player_id, academy_id, reason, games)
+    values (v_comp, gen_random_uuid(), ACAD_A, 'probe', 1);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (60,'a suspension cannot be written directly',
+    case when b then 'PASS' else 'FAIL' end);
+  b := false;
+  begin
+    insert into public.competition_discipline_rules (competition_id, games_per_red) values (v_comp, 9);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (61,'a parent cannot write discipline rules',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
