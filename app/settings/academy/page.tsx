@@ -1,50 +1,20 @@
 import { redirect } from 'next/navigation'
-import { createClient, getUserId } from '@/lib/supabase/server'
-import { AcademySettings } from './academy-settings'
+import { getUserId } from '@/lib/supabase/server'
 import { AppShellPage } from '@/components/shell-page'
+import { AcademyLoader } from './academy-loader'
 
+/**
+ * Club settings. Thin: the organisation is resolved in the browser
+ * (academy-loader), because a server page cannot know which of a person's
+ * organisations they have switched to, and "the first by name" picked the
+ * wrong one for an owner of three.
+ */
 export default async function AcademySettingsPage() {
-  const supabase = await createClient()
   const userId = await getUserId()
   if (!userId) redirect('/signin')
-
-  const { data: academies } = await supabase
-    .from('academies')
-    .select('id, name, dm_policy, directory_visibility, primary_colour, public_player_names, sibling_discount_bps')
-    .order('name')
-  const academy = academies?.[0]
-  if (!academy) redirect('/start')
-
-  const { data: me } = await supabase
-    .from('academy_members')
-    .select('role')
-    .eq('academy_id', academy.id)
-    .eq('profile_id', userId)
-    .maybeSingle()
-
-  const isStaff = me?.role === 'owner' || me?.role === 'admin'
-
   return (
     <AppShellPage title="Club settings" back="/admin">
-      <div className="p-4">
-      <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
-
-      {isStaff ? (
-        <AcademySettings
-          academyId={academy.id}
-          dmPolicy={academy.dm_policy}
-          primaryColour={academy.primary_colour}
-      academyName={academy.name}
-      directoryVisibility={academy.directory_visibility}
-      publicPlayerNames={academy.public_player_names}
-      siblingDiscountBps={academy.sibling_discount_bps ?? []}
-        />
-      ) : (
-        <p className="mt-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
-          Only owners and admins can change these.
-        </p>
-      )}
-    </div>
+      <AcademyLoader />
     </AppShellPage>
   )
 }

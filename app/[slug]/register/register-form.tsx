@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ProgramSummary, type PublicProgram } from '../program-card'
+import { ProgramSummary, money, type PublicProgram } from '../program-card'
 import { QuestionField, unanswered } from '@/components/question-field'
 
 type Program = PublicProgram
@@ -29,6 +29,24 @@ type Data = {
 }
 
 const KEY = (slug: string) => `squadroom.registration.${slug}`
+const DRAFT = (slug: string) => `squadroom.draft.${slug}`
+
+type Draft = {
+  step: 1 | 2 | 3
+  chosen: string | null
+  childName: string
+  childDob: string
+  childGender: string
+  guardianName: string
+  guardianPhone: string
+  guardianEmail: string
+  answers: Record<string, string>
+  agreed: Record<string, boolean>
+  savedAt: number
+}
+
+// Short enough to sit three abreast on a 375px phone without truncating.
+const STEPS = ['Who’s playing', 'Details', 'Review & send'] as const
 
 /**
  * Registering a child at a club that has never heard of you.
@@ -43,6 +61,16 @@ const KEY = (slug: string) => `squadroom.registration.${slug}`
  *   · it shows the consent documents it asks people to agree to. A checkbox
  *     next to a title nobody can read is not consent.
  *
+ * THREE STEPS, and a draft that survives. A parent fills this in on a phone
+ * at a bus stop, gets interrupted, and comes back; one long page that
+ * forgot everything was the form most likely to be abandoned at the
+ * agreements. Every field is kept in this browser as it is typed, and the
+ * page reopens on the step they were on. Nothing is sent until "Send".
+ *
+ * THE FEE IS SHOWN, NOT TAKEN. The third step says what the fee is and when
+ * it is paid — after the club accepts, in the app. Charging before a human
+ * says yes means refunding everyone the club turns away (B-01).
+ *
  * What comes back is a request id and a secret. The secret lives in this
  * browser and nowhere else: it is what lets THIS device collect the session
  * once the club approves, so a club accepting "Sam Whitfield" does not sign
@@ -50,9 +78,11 @@ const KEY = (slug: string) => `squadroom.registration.${slug}`
  */
 export function RegisterForm({ slug }: { slug: string }) {
   const [data, setData] = useState<Data | null | undefined>(undefined)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [chosen, setChosen] = useState<string | null>(null)
   const [sent, setSent] = useState<{ requestId: string; secret: string } | null>(null)
   const [status, setStatus] = useState<'pending' | 'approved' | 'declined' | null>(null)
+  const [resumed, setResumed] = useState(false)
 
   const [guardianName, setGuardianName] = useState('')
   const [guardianPhone, setGuardianPhone] = useState('')
@@ -65,6 +95,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [reading, setReading] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
     createClient()
@@ -76,11 +107,43 @@ export function RegisterForm({ slug }: { slug: string }) {
     try {
       const saved = localStorage.getItem(KEY(slug))
       if (saved) setSent(JSON.parse(saved))
+      // And a form half filled in. Picked up where they left off.
+      const draft = localStorage.getItem(DRAFT(slug))
+      if (draft && !saved) {
+        const d = JSON.parse(draft) as Draft
+        setStep(d.step ?? 1)
+        setChosen(d.chosen ?? null)
+        setChildName(d.childName ?? '')
+        setChildDob(d.childDob ?? '')
+        setChildGender(d.childGender ?? '')
+        setGuardianName(d.guardianName ?? '')
+        setGuardianPhone(d.guardianPhone ?? '')
+        setGuardianEmail(d.guardianEmail ?? '')
+        setAnswers(d.answers ?? {})
+        setAgreed(d.agreed ?? {})
+        setResumed(Boolean(d.childName || d.guardianName || d.chosen))
+      }
     } catch {
       // A private window refuses storage. The form still works; the parent
       // just cannot be told the outcome on this device.
     }
+    setHydrated(true)
   }, [slug])
+
+  // The draft, kept as it is typed. Not before the restore has run, or the
+  // first render's empty fields would overwrite what was saved.
+  useEffect(() => {
+    if (!hydrated || sent) return
+    try {
+      const d: Draft = {
+        step, chosen, childName, childDob, childGender, guardianName, guardianPhone, guardianEmail,
+        answers, agreed, savedAt: Date.now(),
+      }
+      localStorage.setItem(DRAFT(slug), JSON.stringify(d))
+    } catch {
+      /* no storage, no draft */
+    }
+  }, [hydrated, sent, slug, step, chosen, childName, childDob, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed])
 
   // Once there is a request, ask where it stands. Not polled on a timer: a
   // club approving takes hours or days, and a page left open on a phone
@@ -146,6 +209,13 @@ export function RegisterForm({ slug }: { slug: string }) {
             }
             setSent(null)
             setStatus(null)
+            setStep(1)
+            setChosen(null)
+            setChildName('')
+            setChildDob('')
+            setChildGender('')
+            setAnswers({})
+            setAgreed({})
           }}
           className="mt-5 text-sm underline underline-offset-4"
           style={{ color: tint }}
@@ -161,6 +231,13 @@ export function RegisterForm({ slug }: { slug: string }) {
   const missing = required.filter((c) => !agreed[c.id])
   const full = program?.spots_left === 0
   const unansweredQs = unanswered(program?.questions, answers)
+
+  const step1Ok = Boolean(program && childName.trim() && childDob)
+  const step2Ok =
+    Boolean(guardianName.trim()) &&
+    Boolean(guardianPhone.trim() || guardianEmail.trim()) &&
+    missing.length === 0 &&
+    unansweredQs.length === 0
 
   async function submit() {
     if (!program) return
@@ -191,6 +268,7 @@ export function RegisterForm({ slug }: { slug: string }) {
     const saved = { requestId: body.requestId, secret: body.secret }
     try {
       localStorage.setItem(KEY(slug), JSON.stringify(saved))
+      localStorage.removeItem(DRAFT(slug))
     } catch {
       // Nothing to do. The request is made; this device just will not be
       // able to collect the session automatically.
@@ -208,83 +286,108 @@ export function RegisterForm({ slug }: { slug: string }) {
         </p>
       ) : (
         <>
-          <section className="mt-4">
-            <span className="eyebrow">What for</span>
-            <div className="mt-1.5 flex flex-col gap-2">
-              {data.programs.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setChosen(p.id === chosen ? null : p.id)}
-                  aria-pressed={p.id === chosen}
-                  className="rounded-xl border p-3 text-left"
-                  style={{
-                    borderColor: p.id === chosen ? tint : 'var(--line)',
-                    background: p.id === chosen ? 'var(--brand-faint)' : 'var(--surface)',
-                  }}
-                >
-                  {/* The same card the club's front door shows, so a program
-                      reads identically on both. */}
-                  <ProgramSummary program={p} />
-                </button>
-              ))}
-            </div>
-          </section>
+          <Progress step={step} tint={tint} />
+          {resumed && step > 1 && (
+            <p className="mt-2 text-xs text-ink-3">Picked up where you left off.</p>
+          )}
 
-          {program && (
+          {step === 1 && (
             <>
-              {full && program.waitlist_enabled && (
-                <p
-                  className="mt-4 rounded-lg border p-3 text-sm"
-                  style={{ borderColor: 'var(--maybe)', color: 'var(--maybe)' }}
-                >
-                  This one is full. You can still register and the club will put you on the
-                  waitlist.
-                </p>
-              )}
-
-              <section className="mt-5">
-                <span className="eyebrow">Your child</span>
-                <Field label="Their full name" value={childName} onChange={setChildName} />
-                <Field
-                  label="Date of birth"
-                  type="date"
-                  value={childDob}
-                  onChange={setChildDob}
-                  hint={
-                    program.born_from_year
-                      ? `This program is for children born ${program.born_from_year}–${
-                          program.born_to_year ?? program.born_from_year
-                        }.`
-                      : undefined
-                  }
-                />
-                <fieldset className="mt-3">
-                  <legend className="text-sm text-ink-2">Gender</legend>
-                  <div className="mt-1 flex gap-1.5">
-                    {[
-                      ['male', 'Boy'],
-                      ['female', 'Girl'],
-                      ['other', 'Other'],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        onClick={() => setChildGender(childGender === value ? '' : value)}
-                        aria-pressed={childGender === value}
-                        className="flex-1 rounded-lg border py-2 text-sm font-semibold"
-                        style={
-                          childGender === value
-                            ? { borderColor: tint, background: 'var(--brand-faint)', color: tint }
-                            : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
-                        }
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
+              <section className="mt-4">
+                <span className="eyebrow">What for</span>
+                <div className="mt-1.5 flex flex-col gap-2">
+                  {data.programs.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setChosen(p.id === chosen ? null : p.id)}
+                      aria-pressed={p.id === chosen}
+                      className="rounded-xl border p-3 text-left"
+                      style={{
+                        borderColor: p.id === chosen ? tint : 'var(--line)',
+                        background: p.id === chosen ? 'var(--brand-faint)' : 'var(--surface)',
+                      }}
+                    >
+                      {/* The same card the club's front door shows, so a program
+                          reads identically on both. */}
+                      <ProgramSummary program={p} />
+                    </button>
+                  ))}
+                </div>
               </section>
 
-              <section className="mt-5">
+              {program && (
+                <>
+                  {full && program.waitlist_enabled && (
+                    <p
+                      className="mt-4 rounded-lg border p-3 text-sm"
+                      style={{ borderColor: 'var(--maybe)', color: 'var(--maybe)' }}
+                    >
+                      This one is full. You can still register and the club will put you on the
+                      waitlist.
+                    </p>
+                  )}
+
+                  <section className="mt-5">
+                    <span className="eyebrow">Your child</span>
+                    <Field label="Their full name" value={childName} onChange={setChildName} />
+                    <Field
+                      label="Date of birth"
+                      type="date"
+                      value={childDob}
+                      onChange={setChildDob}
+                      hint={
+                        program.born_from_year
+                          ? `This program is for children born ${program.born_from_year}–${
+                              program.born_to_year ?? program.born_from_year
+                            }.`
+                          : undefined
+                      }
+                    />
+                    <fieldset className="mt-3">
+                      <legend className="text-sm text-ink-2">Gender</legend>
+                      <div className="mt-1 flex gap-1.5">
+                        {[
+                          ['male', 'Boy'],
+                          ['female', 'Girl'],
+                          ['other', 'Other'],
+                        ].map(([value, label]) => (
+                          <button
+                            key={value}
+                            onClick={() => setChildGender(childGender === value ? '' : value)}
+                            aria-pressed={childGender === value}
+                            className="flex-1 rounded-lg border py-2 text-sm font-semibold"
+                            style={
+                              childGender === value
+                                ? { borderColor: tint, background: 'var(--brand-faint)', color: tint }
+                                : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+                  </section>
+                </>
+              )}
+
+              <button
+                onClick={() => {
+                  setStep(2)
+                  window.scrollTo({ top: 0 })
+                }}
+                disabled={!step1Ok}
+                className="mt-5 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+                style={{ background: tint }}
+              >
+                {!program ? 'Choose a program' : !childName.trim() || !childDob ? 'Fill in your child’s name and date of birth' : 'Continue'}
+              </button>
+            </>
+          )}
+
+          {step === 2 && program && (
+            <>
+              <section className="mt-4">
                 <span className="eyebrow">You</span>
                 <Field label="Your name" value={guardianName} onChange={setGuardianName} />
                 <Field
@@ -362,6 +465,82 @@ export function RegisterForm({ slug }: { slug: string }) {
                 </section>
               )}
 
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={() => {
+                    setStep(1)
+                    window.scrollTo({ top: 0 })
+                  }}
+                  className="rounded-xl border px-4 py-3 text-sm"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    setStep(3)
+                    window.scrollTo({ top: 0 })
+                  }}
+                  disabled={!step2Ok}
+                  className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+                  style={{ background: tint }}
+                >
+                  {!guardianName.trim()
+                    ? 'Fill in your name'
+                    : !guardianPhone.trim() && !guardianEmail.trim()
+                      ? 'A mobile or an email'
+                      : missing.length > 0
+                        ? `Agree to the ${missing.length} required ${missing.length === 1 ? 'document' : 'documents'}`
+                        : unansweredQs.length > 0
+                          ? `Answer the ${unansweredQs.length === 1 ? 'required question' : `${unansweredQs.length} required questions`}`
+                          : 'Continue'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 3 && program && (
+            <>
+              <section className="mt-4">
+                <span className="eyebrow">Check it over</span>
+                <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
+                  <dt className="text-ink-3">Program</dt>
+                  <dd className="font-medium">{program.name}</dd>
+                  <dt className="text-ink-3">Child</dt>
+                  <dd>
+                    {childName}
+                    {childDob ? `, born ${new Date(childDob + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                  </dd>
+                  <dt className="text-ink-3">You</dt>
+                  <dd>
+                    {guardianName}
+                    {guardianPhone ? ` · ${guardianPhone}` : ''}
+                    {guardianEmail ? ` · ${guardianEmail}` : ''}
+                  </dd>
+                  <dt className="text-ink-3">Agreed</dt>
+                  <dd>{data.consents.filter((c) => agreed[c.id]).map((c) => c.title).join(', ') || 'Nothing yet'}</dd>
+                </dl>
+              </section>
+
+              <section className="mt-4">
+                <span className="eyebrow">The fee</span>
+                <p className="mt-1.5 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
+                  {program.amount_cents != null ? (
+                    <>
+                      <b>{money(program.amount_cents)}</b>
+                      {program.payment_required ? ' — paid after the club accepts, in the app.' : ' — the club will tell you when it is due.'}
+                      {full ? ' Nothing is owed while you are on the waitlist.' : ''}
+                    </>
+                  ) : (
+                    'No fee for this one.'
+                  )}
+                </p>
+                <p className="mt-1.5 text-xs text-ink-3">
+                  Nothing is charged now. A registration is a request the club has not accepted yet;
+                  you pay once a person has said yes.
+                </p>
+              </section>
+
               {/* Above the button, not behind a link. This page collects a
                   child's name and date of birth from somebody who has never
                   dealt with us. */}
@@ -381,37 +560,58 @@ export function RegisterForm({ slug }: { slug: string }) {
                 </p>
               )}
 
-              <button
-                onClick={submit}
-                disabled={
-                  busy ||
-                  !childName.trim() ||
-                  !childDob ||
-                  !guardianName.trim() ||
-                  (!guardianPhone.trim() && !guardianEmail.trim()) ||
-                  missing.length > 0 ||
-                  unansweredQs.length > 0
-                }
-                className="mt-3 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
-                style={{ background: tint }}
-              >
-                {busy
-                  ? 'Sending…'
-                  : missing.length > 0
-                    ? `Agree to the ${missing.length} required ${
-                        missing.length === 1 ? 'document' : 'documents'
-                      }`
-                    : unansweredQs.length > 0
-                      ? `Answer the ${unansweredQs.length === 1 ? 'required question' : `${unansweredQs.length} required questions`}`
-                    : full
-                      ? 'Join the waitlist'
-                      : 'Send to the club'}
-              </button>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => {
+                    setStep(2)
+                    window.scrollTo({ top: 0 })
+                  }}
+                  className="rounded-xl border px-4 py-3 text-sm"
+                  style={{ borderColor: 'var(--line)' }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={submit}
+                  disabled={busy || !step1Ok || !step2Ok}
+                  className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+                  style={{ background: tint }}
+                >
+                  {busy ? 'Sending…' : full ? 'Join the waitlist' : 'Send to the club'}
+                </button>
+              </div>
             </>
           )}
         </>
       )}
     </Frame>
+  )
+}
+
+/** Three steps, the current one in the club's colour. */
+function Progress({ step, tint }: { step: 1 | 2 | 3; tint: string }) {
+  return (
+    <ol className="mt-3 flex gap-1.5" aria-label={`Step ${step} of 3: ${STEPS[step - 1]}`}>
+      {STEPS.map((label, i) => {
+        const n = (i + 1) as 1 | 2 | 3
+        const done = n < step
+        const current = n === step
+        return (
+          <li key={label} className="min-w-0 flex-1">
+            <div
+              className="h-1.5 rounded-full"
+              style={{ background: done || current ? tint : 'var(--line)', opacity: done ? 0.5 : 1 }}
+            />
+            <span
+              className="mt-1 block truncate text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: current ? tint : 'var(--ink-3)' }}
+            >
+              {n}. {label}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
