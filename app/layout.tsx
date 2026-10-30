@@ -45,18 +45,23 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
+  // suppressHydrationWarning: the script in <head> sets data-theme before
+  // React hydrates, so the attribute differs from the server's on purpose.
+  // It covers this one element only, not its children.
   return (
-    <html lang="en-AU" className={`${plex.variable} ${barlow.variable} h-full`}>
+    <html lang="en-AU" className={`${plex.variable} ${barlow.variable} h-full`} suppressHydrationWarning>
       {/*
         Applied before the first paint. Reading the choice in an effect would
         show a light screen for a frame and then swap, which on a phone at
         6am is worse than either theme.
       */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html:"try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
-        }}
-      />
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:"try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />
         {/*
