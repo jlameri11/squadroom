@@ -6,7 +6,38 @@ every item on it is something no amount of building can get past.
 
 ---
 
-## Morning summary — 29 Oct 2026
+## Morning summary — 30 Oct 2026 (overnight run)
+
+**Built and pushed, each with its own suite, test-rls after every
+migration (now 53 checks), every new screen checked at 375px in both
+themes:** G-02 the club's front door · R-11 program questions (builder,
+four types, validated) · R-07 bulk approve on both queues · R-17 Settings →
+My family · B-02/B-03 instalment and family-discount settings · R-14
+PlayFootball status with weekly family reminders · R-12 season rollover ·
+R-13 trials → offer → pay · B-05 finance CSVs · R-15 withdraw with refund
+before a cut-off · X-06 the player card with a private photo · R-02 the
+three-step register flow with a resumable draft. Plus the sweep's fixes
+(critical Next RCE, two anon-callable write paths, the push-queue counter)
+and `docs/DRIBL_PARITY.md`, the Connect parity tracker you asked for.
+Migrations 0131 → 0146. Nothing in the plan was dropped.
+
+**Still blocked on the Stripe test key** (the one thing that unblocks the
+most): the card charge itself, instalment retry, several children in one
+checkout, vouchers, bank transfer / pay later, the league–club fee split,
+and actually *issuing* a refund (everything up to the Stripe call is
+built and tested).
+
+**Needs you, in order of what it unblocks:** #1 Stripe test key · #7 a
+Netlify token (production is at least three days stale and on the
+vulnerable Next; I cannot deploy without one) · #6 file-upload questions
+(a decision) · #8 may I delete the stray "NRIFA" organisation (its screen
+bug is fixed).
+
+**Broke:** nothing that stayed broken. Eleven of the suites' first runs
+caught a bug in what they tested — each fixed the same hour and noted in
+its commit.
+
+### Morning summary — 29 Oct 2026
 
 **Done:** the tidy-up (Step 0), the Step 1 plan (M9 and C-10 written into
 the docs, two decisions recorded in CLAUDE.md), and the **project sweep Joey
@@ -51,6 +82,8 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **R-02** three-step register + draft | **Done.** Who's playing → details → review & send; the draft survives a reload and reopens on the step; the fee is shown, not taken | test-register-flow 16, in a real browser |
+| Club settings org bug (#8) | **Fixed** — resolves the organisation the browser is showing. Deleting the stray org is still your call | screens both themes |
 | **X-06** player card | **Done.** `/card/[id]` — photo in a private bucket under the child's own path, family and coaches only; squad, number, DOB, FFA number, PlayFootball status. Linked from My family and the roster | test-player-card 16, test-rls 52–53 |
 | **R-15** withdraw + refund | **Done bar the Stripe call.** Program policy (full until a date, X% after); Withdraw on Sign up with the money said first; refund computed and recorded; Refunds panel on Collect payments issues it on the connected account, or says plainly that Stripe isn't set up | test-withdrawals 17, test-rls 50–51 |
 | **B-05** finance export | **Done.** Two CSVs from Collect payments — every fee per child with Stripe ids, and totals by program / squad / family. Money from the one price function | test-finance-export 14 |
