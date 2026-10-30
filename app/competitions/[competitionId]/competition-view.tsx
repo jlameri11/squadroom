@@ -2,6 +2,7 @@
 
 import { DivisionSettings } from './division-settings'
 import { DisciplineTab } from './discipline-tab'
+import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
 import { useState } from 'react'
@@ -21,6 +22,8 @@ export type Fixture = {
   away_score: number | null
   status: string
   can_score: boolean
+  home_entry_id?: string | null
+  away_entry_id?: string | null
 }
 
 export type LadderRow = {
@@ -236,6 +239,9 @@ function RunSheet({
   return (
     <div>
       {isOrganiser && <SetUpFinals competitionId={competitionId} division={division} />}
+      {/* L-09: a wet Saturday in one tap. Every affected club's squad is
+          told through the fixture → event → push chain, with the reason. */}
+      {isOrganiser && <CallOffDay competitionId={competitionId} />}
 
       {[...slots.entries()].map(([slot, games]) => (
         <section key={slot}>
@@ -309,6 +315,16 @@ function RunSheet({
               >
                 Match sheet ›
               </Link>
+              {isOrganiser && (
+                <FixtureOps
+                  fixtureId={f.fixture_id}
+                  status={f.status}
+                  homeName={f.home_name ?? 'Home'}
+                  awayName={f.away_name ?? 'Away'}
+                  homeEntryId={f.home_entry_id ?? null}
+                  awayEntryId={f.away_entry_id ?? null}
+                />
+              )}
 
               {editing === f.fixture_id && (
                 <div className="mt-2 flex items-center gap-2">

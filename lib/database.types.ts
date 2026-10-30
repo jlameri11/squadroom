@@ -543,6 +543,7 @@ export type Database = {
           allow_playing_up: boolean
           competition_id: string
           division: string
+          forfeit_score: number
           grading_note: string | null
           id: string
           ladder_enabled: boolean
@@ -561,6 +562,7 @@ export type Database = {
           allow_playing_up?: boolean
           competition_id: string
           division: string
+          forfeit_score?: number
           grading_note?: string | null
           id?: string
           ladder_enabled?: boolean
@@ -579,6 +581,7 @@ export type Database = {
           allow_playing_up?: boolean
           competition_id?: string
           division?: string
+          forfeit_score?: number
           grading_note?: string | null
           id?: string
           ladder_enabled?: boolean
@@ -1654,6 +1657,7 @@ export type Database = {
           away_entry_id: string | null
           away_score: number | null
           away_source: string | null
+          cancel_reason: string | null
           competition_id: string
           created_at: string
           division: string
@@ -1680,6 +1684,7 @@ export type Database = {
           away_entry_id?: string | null
           away_score?: number | null
           away_source?: string | null
+          cancel_reason?: string | null
           competition_id: string
           created_at?: string
           division: string
@@ -1706,6 +1711,7 @@ export type Database = {
           away_entry_id?: string | null
           away_score?: number | null
           away_source?: string | null
+          cancel_reason?: string | null
           competition_id?: string
           created_at?: string
           division?: string
@@ -4472,6 +4478,17 @@ export type Database = {
         }
         Returns: Json
       }
+      call_off_fixtures: {
+        Args: {
+          p_cancel?: boolean
+          p_competition: string
+          p_date: string
+          p_note?: string
+          p_reason: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
       cast_poll_vote: {
         Args: {
           p_note?: string
@@ -4601,6 +4618,7 @@ export type Database = {
       competition_run_sheet: {
         Args: { p_competition: string; p_division?: string }
         Returns: {
+          away_entry_id: string
           away_name: string
           away_score: number
           can_score: boolean
@@ -4608,6 +4626,7 @@ export type Database = {
           field_label: string
           fixture_id: string
           group_label: string
+          home_entry_id: string
           home_name: string
           home_score: number
           round: string
@@ -4801,6 +4820,10 @@ export type Database = {
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json
+      }
+      forfeit_fixture: {
+        Args: { p_fixture: string; p_forfeiting_entry: string; p_note?: string }
+        Returns: undefined
       }
       generate_fixtures: {
         Args: {
@@ -5139,6 +5162,15 @@ export type Database = {
           votes: number
         }[]
       }
+      postpone_fixture: {
+        Args: {
+          p_cancel?: boolean
+          p_fixture: string
+          p_note?: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
       preview_imported_events: {
         Args: { p_academy: string; p_events: Json; p_team: string }
         Returns: Json
@@ -5235,6 +5267,15 @@ export type Database = {
         }
         Returns: string
       }
+      reschedule_fixture: {
+        Args: {
+          p_field?: string
+          p_fixture: string
+          p_starts_at: string
+          p_venue_label?: string
+        }
+        Returns: undefined
+      }
       resolve_finals: {
         Args: { p_competition: string; p_division: string }
         Returns: number
@@ -5305,6 +5346,7 @@ export type Database = {
         Returns: Json
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
+      set_bye: { Args: { p_fixture: string }; Returns: undefined }
       set_consent: {
         Args: { p_accepted: boolean; p_document: string; p_player: string }
         Returns: undefined
