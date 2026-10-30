@@ -1697,6 +1697,7 @@ export type Database = {
           created_at: string
           division: string
           duration_mins: number | null
+          external_ref: string | null
           field_label: string | null
           group_label: string | null
           home_entry_id: string | null
@@ -1724,6 +1725,7 @@ export type Database = {
           created_at?: string
           division: string
           duration_mins?: number | null
+          external_ref?: string | null
           field_label?: string | null
           group_label?: string | null
           home_entry_id?: string | null
@@ -1751,6 +1753,7 @@ export type Database = {
           created_at?: string
           division?: string
           duration_mins?: number | null
+          external_ref?: string | null
           field_label?: string | null
           group_label?: string | null
           home_entry_id?: string | null
@@ -5418,6 +5421,10 @@ export type Database = {
       }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
+      import_league_draw: {
+        Args: { p_competition: string; p_rows: Json }
+        Returns: Json
+      }
       import_official_status: {
         Args: { p_academy: string; p_rows: Json }
         Returns: Json

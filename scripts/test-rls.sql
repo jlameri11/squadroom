@@ -655,6 +655,14 @@ begin
   end;
   insert into rls_results values (71,'a parent cannot grant a league role by function',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0166. A parent cannot import a league's draw.
+  b := false;
+  begin
+    perform public.import_league_draw(v_comp, '[]'::jsonb);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (72,'a parent cannot import a league draw',
+    case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

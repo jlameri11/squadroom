@@ -631,3 +631,30 @@ export const OFFICIAL_FIELDS: FieldSpec[] = [
     excludes: ['payment', 'match'],
   },
 ]
+
+/**
+ * L-14: a league's own draw, from whatever it exported it from. One row per
+ * game; the division column is what makes it a league's file rather than a
+ * club's. The same mapper and the same day-first date reading.
+ */
+export const LEAGUE_DRAW_FIELDS: FieldSpec[] = [
+  {
+    key: 'division',
+    label: 'Division',
+    hint: 'U8s Championship, Premier…',
+    required: true,
+    matches: ['division', 'age group', 'grade', 'competition', 'comp', 'league'],
+    excludes: ['id', 'ref'],
+  },
+  { key: 'local_date', label: 'Date', hint: 'Read day first', required: true, matches: ['date', 'day', 'kick off date', 'match date'], excludes: ['time', 'update', 'birth'] },
+  { key: 'local_time', label: 'Kick-off', hint: 'Local time', required: true, matches: ['time', 'kick off', 'kick-off', 'ko'], excludes: ['date', 'end', 'finish', 'full'] },
+  { key: 'home_team', label: 'Home team', hint: '', required: true, matches: ['home team', 'home', 'team a', 'team 1'], excludes: ['club', 'score', 'goals'] },
+  { key: 'away_team', label: 'Away team', hint: '', required: true, matches: ['away team', 'away', 'team b', 'team 2', 'opponent'], excludes: ['club', 'score', 'goals'] },
+  { key: 'home_club', label: 'Home club', hint: 'If teams and clubs are separate columns', required: false, matches: ['home club'] },
+  { key: 'away_club', label: 'Away club', hint: '', required: false, matches: ['away club'] },
+  { key: 'round', label: 'Round', hint: '', required: false, matches: ['round', 'rnd', 'week', 'matchday'] },
+  { key: 'venue', label: 'Ground', hint: '', required: false, matches: ['venue', 'ground', 'location', 'park', 'oval'] },
+  { key: 'field', label: 'Field', hint: '', required: false, matches: ['field', 'pitch', 'court'] },
+  { key: 'bye', label: 'Bye', hint: 'Rows marked as a bye are skipped', required: false, matches: ['bye'] },
+  { key: 'external_ref', label: 'Reference', hint: "The file's own id for a game, so a re-import moves a game rather than doubling it", required: false, matches: ['match id', 'fixture id', 'game id', 'id', 'reference', 'ref'], excludes: ['team', 'club', 'venue', 'division'] },
+]

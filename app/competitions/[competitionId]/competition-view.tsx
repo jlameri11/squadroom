@@ -222,6 +222,11 @@ function RunSheet({
           No draw yet.
         </p>
         {isOrganiser && <BuildDraw competitionId={competitionId} division={division} />}
+        {isOrganiser && (
+          <Link href={`/competitions/${competitionId}/import`} className="mb-2 block px-4 text-xs underline underline-offset-4 text-ink-2">
+            Or import the draw from a file ›
+          </Link>
+        )}
       </div>
     )
   }
