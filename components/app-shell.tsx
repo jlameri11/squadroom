@@ -227,7 +227,7 @@ const BARE = [
  * say so the first time its tab bar goes missing.
  */
 const APP_ROOTS = new Set([
-  'admin', 'api', 'auth', 'c', 'calendar', 'chat', 'competitions', 'directory',
+  'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'competitions', 'directory',
   'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'programs', 'scan',
   'settings', 'signin', 'signup', 'start',
 ])

@@ -177,6 +177,9 @@ function ChildCard({
             <p className="mt-2 text-xs text-ink-3">
               Name, date of birth and squad are set by {c.club}. If something is wrong, tell the coach.
             </p>
+            <a href={`/card/${c.id}`} className="mt-2 inline-block text-sm underline underline-offset-4" style={{ color: 'var(--brand-text)' }}>
+              Player card — photo, number, match-day ID ›
+            </a>
           </Section>
 
           <KitSection child={c} onChanged={onChanged} />

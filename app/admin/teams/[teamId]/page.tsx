@@ -151,6 +151,9 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
                 status={(p.official_status ?? 'unknown') as OfficialStatus}
                 ffNumber={p.ff_number}
               />
+              <Link href={`/card/${p.id}`} className="mt-0.5 block text-xs underline underline-offset-2 text-ink-3">
+                Player card
+              </Link>
             </div>
           ))}
           {(players ?? []).length === 0 && (

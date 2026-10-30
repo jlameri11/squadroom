@@ -481,6 +481,24 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0146. A player photo cannot be put under another club's name, and
+  -- another club's cannot be listed.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into storage.objects (bucket_id, name, owner)
+    values ('player-photos', ACAD_B::text || '/' || gen_random_uuid()::text || '/x.jpg', PARENT);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (52,'a photo cannot be written under another club',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from storage.objects
+   where bucket_id = 'player-photos' and (storage.foldername(name))[1] = ACAD_B::text;
+  insert into rls_results values (53,'academy B player photos invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

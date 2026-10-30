@@ -4555,6 +4555,7 @@ export type Database = {
           teams: number
         }[]
       }
+      player_card: { Args: { p_player: string }; Returns: Json }
       poll_counts: {
         Args: { p_poll: string }
         Returns: {
@@ -4768,6 +4769,10 @@ export type Database = {
           p_player: string
           p_status: Database["public"]["Enums"]["official_rego_status"]
         }
+        Returns: undefined
+      }
+      set_player_photo: {
+        Args: { p_path: string; p_player: string }
         Returns: undefined
       }
       set_program_fee: {
