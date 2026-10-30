@@ -508,6 +508,7 @@ export type Database = {
       competition_divisions: {
         Row: {
           age_group: string | null
+          allow_playing_up: boolean
           competition_id: string
           division: string
           grading_note: string | null
@@ -517,6 +518,7 @@ export type Database = {
           points_draw: number
           points_loss: number
           points_win: number
+          rank: number | null
           scores_public: boolean
           squad_size_max: number | null
           tie_break: string
@@ -524,6 +526,7 @@ export type Database = {
         }
         Insert: {
           age_group?: string | null
+          allow_playing_up?: boolean
           competition_id: string
           division: string
           grading_note?: string | null
@@ -533,6 +536,7 @@ export type Database = {
           points_draw?: number
           points_loss?: number
           points_win?: number
+          rank?: number | null
           scores_public?: boolean
           squad_size_max?: number | null
           tie_break?: string
@@ -540,6 +544,7 @@ export type Database = {
         }
         Update: {
           age_group?: string | null
+          allow_playing_up?: boolean
           competition_id?: string
           division?: string
           grading_note?: string | null
@@ -549,6 +554,7 @@ export type Database = {
           points_draw?: number
           points_loss?: number
           points_win?: number
+          rank?: number | null
           scores_public?: boolean
           squad_size_max?: number | null
           tie_break?: string
@@ -953,6 +959,75 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "academies"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_squads: {
+        Row: {
+          academy_id: string
+          added_by: string | null
+          competition_id: string
+          created_at: string
+          entry_id: string
+          id: string
+          number: number | null
+          player_id: string
+        }
+        Insert: {
+          academy_id: string
+          added_by?: string | null
+          competition_id: string
+          created_at?: string
+          entry_id: string
+          id?: string
+          number?: number | null
+          player_id: string
+        }
+        Update: {
+          academy_id?: string
+          added_by?: string | null
+          competition_id?: string
+          created_at?: string
+          entry_id?: string
+          id?: string
+          number?: number | null
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_squads_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_squads_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_squads_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_squads_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_squads_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
           },
         ]
       }
@@ -1559,6 +1634,7 @@ export type Database = {
           id: string
           notes: string | null
           round: string | null
+          score_disputed: boolean
           score_entered_at: string | null
           score_entered_by: string | null
           stage: string
@@ -1584,6 +1660,7 @@ export type Database = {
           id?: string
           notes?: string | null
           round?: string | null
+          score_disputed?: boolean
           score_entered_at?: string | null
           score_entered_by?: string | null
           stage?: string
@@ -1609,6 +1686,7 @@ export type Database = {
           id?: string
           notes?: string | null
           round?: string | null
+          score_disputed?: boolean
           score_entered_at?: string | null
           score_entered_by?: string | null
           stage?: string
@@ -2001,6 +2079,242 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      match_events: {
+        Row: {
+          competition_id: string
+          created_at: string
+          created_by: string | null
+          entry_id: string
+          fixture_id: string
+          id: string
+          kind: Database["public"]["Enums"]["match_event_kind"]
+          minute: number | null
+          note: string | null
+          player_id: string | null
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          created_by?: string | null
+          entry_id: string
+          fixture_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["match_event_kind"]
+          minute?: number | null
+          note?: string | null
+          player_id?: string | null
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          created_by?: string | null
+          entry_id?: string
+          fixture_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["match_event_kind"]
+          minute?: number | null
+          note?: string | null
+          player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_events_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_sheet_log: {
+        Row: {
+          action: string
+          actor: string | null
+          at: string
+          competition_id: string
+          detail: Json
+          entry_id: string | null
+          fixture_id: string
+          id: number
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          at?: string
+          competition_id: string
+          detail?: Json
+          entry_id?: string | null
+          fixture_id: string
+          id?: number
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          at?: string
+          competition_id?: string
+          detail?: Json
+          entry_id?: string | null
+          fixture_id?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_sheet_log_actor_fkey"
+            columns: ["actor"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheet_log_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheet_log_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_sheet_players: {
+        Row: {
+          number: number | null
+          player_id: string
+          sheet_id: string
+          starting: boolean
+        }
+        Insert: {
+          number?: number | null
+          player_id: string
+          sheet_id: string
+          starting?: boolean
+        }
+        Update: {
+          number?: number | null
+          player_id?: string
+          sheet_id?: string
+          starting?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_sheet_players_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "match_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_sheets: {
+        Row: {
+          captain_player_id: string | null
+          competition_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          entry_id: string
+          fixture_id: string
+          id: string
+          keeper_player_id: string | null
+          our_score: number | null
+          status: Database["public"]["Enums"]["sheet_status"]
+          submitted_at: string
+          submitted_by: string | null
+          their_score: number | null
+        }
+        Insert: {
+          captain_player_id?: string | null
+          competition_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          entry_id: string
+          fixture_id: string
+          id?: string
+          keeper_player_id?: string | null
+          our_score?: number | null
+          status?: Database["public"]["Enums"]["sheet_status"]
+          submitted_at?: string
+          submitted_by?: string | null
+          their_score?: number | null
+        }
+        Update: {
+          captain_player_id?: string | null
+          competition_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          entry_id?: string
+          fixture_id?: string
+          id?: string
+          keeper_player_id?: string | null
+          our_score?: number | null
+          status?: Database["public"]["Enums"]["sheet_status"]
+          submitted_at?: string
+          submitted_by?: string | null
+          their_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_sheets_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheets_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheets_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheets_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheets_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -4139,6 +4453,10 @@ export type Database = {
           status: Database["public"]["Enums"]["fixture_status"]
         }[]
       }
+      confirm_match_sheet: {
+        Args: { p_entry: string; p_fixture: string }
+        Returns: undefined
+      }
       convert_poll_to_event: {
         Args: {
           p_poll: string
@@ -4247,6 +4565,15 @@ export type Database = {
           p_type: Database["public"]["Enums"]["channel_type"]
         }
         Returns: string
+      }
+      enter_sheet_score: {
+        Args: {
+          p_entry: string
+          p_fixture: string
+          p_ours: number
+          p_theirs: number
+        }
+        Returns: Json
       }
       erase_me: { Args: never; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
@@ -4371,6 +4698,7 @@ export type Database = {
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
+      match_sheet_view: { Args: { p_fixture: string }; Returns: Json }
       member_contact: {
         Args: { p_academy: string; p_profile: string }
         Returns: {
@@ -4692,6 +5020,17 @@ export type Database = {
         }
         Returns: string
       }
+      record_match_event: {
+        Args: {
+          p_entry: string
+          p_fixture: string
+          p_kind: Database["public"]["Enums"]["match_event_kind"]
+          p_minute?: number
+          p_note?: string
+          p_player?: string
+        }
+        Returns: string
+      }
       refunds_to_issue: { Args: { p_academy: string }; Returns: Json }
       registration_queue: {
         Args: { p_academy?: string; p_status?: string }
@@ -4753,6 +5092,15 @@ export type Database = {
         Args: { p_academy: string; p_season: string }
         Returns: Json
       }
+      rule_on_score: {
+        Args: {
+          p_away: number
+          p_fixture: string
+          p_home: number
+          p_note?: string
+        }
+        Returns: undefined
+      }
       safeguarding_queue: {
         Args: {
           p_academy?: string
@@ -4785,6 +5133,7 @@ export type Database = {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
         Returns: Json
       }
+      seed_entry_squad: { Args: { p_entry: string }; Returns: number }
       set_consent: {
         Args: { p_accepted: boolean; p_document: string; p_player: string }
         Returns: undefined
@@ -4855,6 +5204,16 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      submit_match_sheet: {
+        Args: {
+          p_captain?: string
+          p_entry: string
+          p_fixture: string
+          p_keeper?: string
+          p_players: Json
+        }
+        Returns: string
+      }
       take_register: {
         Args: { p_event: string; p_marks: Json }
         Returns: number
@@ -4962,6 +5321,15 @@ export type Database = {
         | "2XL"
         | "3XL"
       lineup_role: "starting" | "bench" | "out"
+      match_event_kind:
+        | "goal"
+        | "assist"
+        | "yellow"
+        | "red"
+        | "blue"
+        | "sub_on"
+        | "sub_off"
+        | "own_goal"
       member_status: "invited" | "active" | "removed"
       message_status: "published" | "pending" | "rejected"
       offer_status: "open" | "accepted" | "declined"
@@ -5001,6 +5369,7 @@ export type Database = {
         | "other"
       report_status: "open" | "actioned" | "dismissed"
       rsvp_status: "yes" | "no" | "maybe"
+      sheet_status: "submitted" | "confirmed" | "disputed"
       sock_size: "K9-12" | "K13-3" | "2-7" | "7-11" | "11-14"
       team_status: "active" | "ended"
     }
@@ -5195,6 +5564,16 @@ export const Constants = {
         "3XL",
       ],
       lineup_role: ["starting", "bench", "out"],
+      match_event_kind: [
+        "goal",
+        "assist",
+        "yellow",
+        "red",
+        "blue",
+        "sub_on",
+        "sub_off",
+        "own_goal",
+      ],
       member_status: ["invited", "active", "removed"],
       message_status: ["published", "pending", "rejected"],
       offer_status: ["open", "accepted", "declined"],
@@ -5238,6 +5617,7 @@ export const Constants = {
       ],
       report_status: ["open", "actioned", "dismissed"],
       rsvp_status: ["yes", "no", "maybe"],
+      sheet_status: ["submitted", "confirmed", "disputed"],
       sock_size: ["K9-12", "K13-3", "2-7", "7-11", "11-14"],
       team_status: ["active", "ended"],
     },

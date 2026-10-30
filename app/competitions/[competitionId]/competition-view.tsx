@@ -298,6 +298,16 @@ function RunSheet({
                 )}
               </div>
 
+              {/* L-05: the sheets, events and both sides' scores live on the
+                  match page; the Score button here stays as the organiser's
+                  quick entry. */}
+              <Link
+                href={`/competitions/${competitionId}/match/${f.fixture_id}`}
+                className="mt-1 inline-block text-xs underline underline-offset-2 text-ink-3"
+              >
+                Match sheet ›
+              </Link>
+
               {editing === f.fixture_id && (
                 <div className="mt-2 flex items-center gap-2">
                   <input value={home} onChange={(e) => setHome(e.target.value)} inputMode="numeric"

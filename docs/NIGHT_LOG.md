@@ -82,6 +82,8 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **L-01** division rules (M9 begins) | **Done.** Per-division points, tie-break, scores public/hidden, ladder on/off, match length, squad size; the ladder and the public page honour them. 0150 fixed a regression 0148 introduced on the public page for a few minutes | test-league-divisions 12, test-rls 54–55 |
+| Push-queue open question | **Decided** (0147, 0149): a claim counts whether or not there is a device — test-notifications had encoded that months ago and its reasoning is better; deliverable rows are claimed first | test-push-wake 9, test-notifications |
 | **R-02** three-step register + draft | **Done.** Who's playing → details → review & send; the draft survives a reload and reopens on the step; the fee is shown, not taken | test-register-flow 16, in a real browser |
 | Club settings org bug (#8) | **Fixed** — resolves the organisation the browser is showing. Deleting the stray org is still your call | screens both themes |
 | **X-06** player card | **Done.** `/card/[id]` — photo in a private bucket under the child's own path, family and coaches only; squad, number, DOB, FFA number, PlayFootball status. Linked from My family and the roster | test-player-card 16, test-rls 52–53 |

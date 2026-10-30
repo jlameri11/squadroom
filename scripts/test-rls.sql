@@ -520,6 +520,43 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0151. Match sheets, squads, events and the log: written by functions
+  -- only, and a competition you are not in shows nothing.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.match_sheets (competition_id, fixture_id, entry_id)
+    values (v_comp, gen_random_uuid(), gen_random_uuid());
+  exception when others then b := true;
+  end;
+  insert into rls_results values (56,'a match sheet cannot be written directly',
+    case when b then 'PASS' else 'FAIL' end);
+  b := false;
+  begin
+    insert into public.match_events (competition_id, fixture_id, entry_id, kind)
+    values (v_comp, gen_random_uuid(), gen_random_uuid(), 'goal');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (57,'a match event cannot be written directly',
+    case when b then 'PASS' else 'FAIL' end);
+  b := false;
+  begin
+    insert into public.entry_squads (competition_id, entry_id, academy_id, player_id)
+    values (v_comp, gen_random_uuid(), ACAD_B, gen_random_uuid());
+  exception when others then b := true;
+  end;
+  insert into rls_results values (58,'a parent cannot write a season squad',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.match_sheets s
+   where not exists (select 1 from public.competition_clubs cc
+                      where cc.competition_id = s.competition_id and cc.academy_id = ACAD_A)
+     and not exists (select 1 from public.competitions c
+                      where c.id = s.competition_id and (c.organiser_id = ACAD_A or c.visibility = 'public'));
+  insert into rls_results values (59,'another competition''s sheets invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

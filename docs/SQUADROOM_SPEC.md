@@ -151,6 +151,28 @@
 | G-06 | Match report and live score taps posted to the team channel | MISSING | P3 |
 | G-07 | Volunteer/referee roster for tournaments | MISSING | P3 |
 
+### I. League mode — run a competition without Dribl (M9, added 29 Oct 2026)
+The one milestone that lets a league leave Dribl. SPL first. Detail and the acceptance test (`test-league-season.mjs`) are in `BUILD_PLAN.md` § M9.
+
+| ID | Feature | Status | Pri |
+|---|---|---|---|
+| L-01 | League setup: per-division rules — scores public/hidden, ladder on/off, points, tie-break, match length, squad size, grading | **DONE** (0148–0150). A division with no row keeps the old rules; the ladder and the public page honour the row; organiser-only writes. Proven by test-league-divisions (12) | P1 |
+| L-02 | Club entry + league fees through Stripe Connect to the league; nominations; coach/manager contacts | PARTIAL — entries and invites exist; fees need the Stripe key | P1 |
+| L-03 | Season squad lists per entry, playing-up/borrowing rules, eligibility check before a sheet | MISSING | P1 |
+| L-04 | Photo player cards as match-day ID | PARTIAL — the card exists (X-06); the league's match-day view of a sheet is not built | P1 |
+| L-05 | Match sheets: both teams submit, opposition confirms, goals/assists/cards/subs, both scores with mismatch as a dispute, audit trail | MISSING | P1 |
+| L-06 | Referees: pool, availability, appointments with accept/decline, check-in, report | MISSING | P1 |
+| L-07 | Referee match fees, payment run, export | MISSING — Stripe | P2 |
+| L-08 | Discipline: card accumulation, thresholds, red = suspension, suspended players blocked from the sheet, tribunal notes, report | MISSING | P1 |
+| L-09 | Match-day ops: washouts by ground/day, forfeits, postponements, byes, every change pushed to club chats | PARTIAL — X-13 does washouts for an academy; the league-wide version is not built | P1 |
+| L-10 | Ladders and finals: point adjustments with reason, forfeit scoring, finals from the ladder | PARTIAL — finals exist (0049); adjustments are not built | P1 |
+| L-11 | League announcements to club staff, never to other clubs' families | PARTIAL — `broadcast_to_competition` exists; its audience rule needs asserting | P1 |
+| L-12 | Public match centre: fixtures, results, ladders, top scorers, share link, widget, honouring club privacy | PARTIAL — `/c/[slug]` exists; top scorers and the widget are not | P1 |
+| L-13 | League roles: admin, competition manager, referee coordinator, discipline officer, ground manager | MISSING | P2 |
+| L-14 | Switching from Dribl: import a league's teams, squads, fixtures | PARTIAL — the fixture importer exists for a club; the league-wide form is not | P2 |
+| L-15 | Reports: results, ladders, discipline, referee payments, entries | MISSING | P2 |
+| L-16 | Tournament entry: external teams register and pay through the registration engine | MISSING — Stripe for the fee | P2 |
+
 ### H. Match centre, stats & engagement (from the final Dribl scan)
 Dribl's weak spots here:
 - **No live scoring:** match events appear only after the referee completes the match sheet.
