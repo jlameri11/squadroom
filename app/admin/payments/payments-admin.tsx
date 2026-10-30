@@ -79,6 +79,19 @@ export function PaymentsAdmin({
         Payments
       </h1>
       <p className="mt-0.5 text-sm text-ink-2">{academyName}</p>
+      {/* B-05. A treasurer's two downloads: every fee per child with the
+          Stripe ids to match a payout, and the totals by program, squad and
+          family for a committee. The database decides who may have them. */}
+      <p className="mt-2 text-sm">
+        <a href={`/api/export/finance?academyId=${academyId}&view=detail`} className="underline underline-offset-4" style={{ color: 'var(--brand-text)' }}>
+          Download every fee
+        </a>
+        <span className="text-ink-3"> · </span>
+        <a href={`/api/export/finance?academyId=${academyId}&view=summary`} className="underline underline-offset-4" style={{ color: 'var(--brand-text)' }}>
+          totals by program, squad and family
+        </a>
+        <span className="block text-xs text-ink-3">CSV — opens in Excel, Numbers or Sheets. Stripe payment ids included for matching payouts.</span>
+      </p>
 
       <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
         <h2 className="font-semibold">Where the money goes</h2>

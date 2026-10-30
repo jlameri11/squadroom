@@ -4127,6 +4127,28 @@ export type Database = {
       expire_stale_join_requests: { Args: never; Returns: number }
       expire_stale_registrations: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
+      finance_export: {
+        Args: { p_academy: string }
+        Returns: {
+          due_on: string
+          fee_cents: number
+          guardian_name: string
+          guardian_phone: string
+          instalments: number
+          net_cents: number
+          outstanding_cents: number
+          paid_at: string
+          paid_cents: number
+          player_id: string
+          player_name: string
+          request_id: string
+          scope_kind: string
+          scope_name: string
+          status: string
+          stripe_payment_intents: string
+          title: string
+        }[]
+      }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json
