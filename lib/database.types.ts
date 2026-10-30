@@ -759,6 +759,35 @@ export type Database = {
           },
         ]
       }
+      competition_referee_fees: {
+        Row: {
+          competition_id: string
+          fee_cents: number
+          role: Database["public"]["Enums"]["referee_role"]
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          fee_cents: number
+          role: Database["public"]["Enums"]["referee_role"]
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          fee_cents?: number
+          role?: Database["public"]["Enums"]["referee_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_referee_fees_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           created_at: string
@@ -3858,9 +3887,145 @@ export type Database = {
           },
         ]
       }
+      referee_payment_items: {
+        Row: {
+          academy_id: string
+          amount_cents: number
+          appointment_id: string
+          created_at: string
+          id: string
+          paid_at: string | null
+          referee_id: string
+          run_id: string
+          status: Database["public"]["Enums"]["payment_item_status"]
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          academy_id: string
+          amount_cents: number
+          appointment_id: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          referee_id: string
+          run_id: string
+          status?: Database["public"]["Enums"]["payment_item_status"]
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          academy_id?: string
+          amount_cents?: number
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          referee_id?: string
+          run_id?: string
+          status?: Database["public"]["Enums"]["payment_item_status"]
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_payment_items_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_payment_items_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "referee_appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_payment_items_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "referees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_payment_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "referee_payment_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referee_payment_runs: {
+        Row: {
+          academy_id: string
+          competition_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          paid_at: string | null
+          paid_method: string | null
+          period_from: string
+          period_to: string
+          status: Database["public"]["Enums"]["payment_run_status"]
+          total_cents: number
+        }
+        Insert: {
+          academy_id: string
+          competition_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          paid_method?: string | null
+          period_from: string
+          period_to: string
+          status?: Database["public"]["Enums"]["payment_run_status"]
+          total_cents?: number
+        }
+        Update: {
+          academy_id?: string
+          competition_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          paid_method?: string | null
+          period_from?: string
+          period_to?: string
+          status?: Database["public"]["Enums"]["payment_run_status"]
+          total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_payment_runs_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_payment_runs_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_payment_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referees: {
         Row: {
           academy_id: string
+          bank_details: string | null
           claim_token: string
           claimed_at: string | null
           created_at: string
@@ -3871,9 +4036,11 @@ export type Database = {
           phone: string | null
           profile_id: string | null
           status: string
+          stripe_account_id: string | null
         }
         Insert: {
           academy_id: string
+          bank_details?: string | null
           claim_token?: string
           claimed_at?: string | null
           created_at?: string
@@ -3884,9 +4051,11 @@ export type Database = {
           phone?: string | null
           profile_id?: string | null
           status?: string
+          stripe_account_id?: string | null
         }
         Update: {
           academy_id?: string
+          bank_details?: string | null
           claim_token?: string
           claimed_at?: string | null
           created_at?: string
@@ -3897,6 +4066,7 @@ export type Database = {
           phone?: string | null
           profile_id?: string | null
           status?: string
+          stripe_account_id?: string | null
         }
         Relationships: [
           {
@@ -4752,6 +4922,15 @@ export type Database = {
         Args: { p_body: string; p_competition: string; p_urgent?: boolean }
         Returns: number
       }
+      build_referee_payment_run: {
+        Args: {
+          p_competition: string
+          p_from: string
+          p_note?: string
+          p_to: string
+        }
+        Returns: string
+      }
       bulk_invite_clubs: {
         Args: { p_clubs: Json; p_competition: string; p_division: string }
         Returns: {
@@ -5206,6 +5385,10 @@ export type Database = {
         Returns: string
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
+      mark_referee_run_paid: {
+        Args: { p_method?: string; p_run: string }
+        Returns: undefined
+      }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
       match_sheet_view: { Args: { p_fixture: string }; Returns: Json }
       member_contact: {
@@ -5560,6 +5743,24 @@ export type Database = {
       }
       referee_availability: { Args: { p_fixture: string }; Returns: Json }
       referee_check_in: { Args: { p_appointment: string }; Returns: string }
+      referee_payments: { Args: { p_competition: string }; Returns: Json }
+      referee_payments_export: {
+        Args: { p_competition: string }
+        Returns: {
+          amount_cents: number
+          bank_details: string
+          game: string
+          grade: string
+          item_status: string
+          paid_at: string
+          paid_method: string
+          played_on: string
+          referee: string
+          role: string
+          run_period: string
+          run_status: string
+        }[]
+      }
       referee_pool: { Args: { p_competition: string }; Returns: Json }
       refunds_to_issue: { Args: { p_academy: string }; Returns: Json }
       registration_queue: {
@@ -5716,6 +5917,10 @@ export type Database = {
         }
         Returns: string
       }
+      set_my_bank_details: {
+        Args: { p_details: string; p_referee: string }
+        Returns: undefined
+      }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
@@ -5751,6 +5956,14 @@ export type Database = {
         Args: { p_secret: string; p_url: string }
         Returns: undefined
       }
+      set_referee_fee: {
+        Args: {
+          p_competition: string
+          p_fee_cents: number
+          p_role: Database["public"]["Enums"]["referee_role"]
+        }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       submit_match_sheet: {
@@ -5784,6 +5997,7 @@ export type Database = {
         Returns: string
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
+      void_referee_run: { Args: { p_run: string }; Returns: undefined }
       whats_on: {
         Args: { p_academy: string; p_date: string }
         Returns: {
@@ -5897,6 +6111,8 @@ export type Database = {
         | "registered"
         | "not_required"
       org_type: "academy" | "club" | "league" | "school" | "other"
+      payment_item_status: "pending" | "paid" | "void"
+      payment_run_status: "draft" | "paid"
       player_gender: "female" | "male" | "other"
       poll_type: "simple" | "availability"
       posting_mode: "open" | "hosts_only" | "replies_only"
@@ -6145,6 +6361,8 @@ export const Constants = {
         "not_required",
       ],
       org_type: ["academy", "club", "league", "school", "other"],
+      payment_item_status: ["pending", "paid", "void"],
+      payment_run_status: ["draft", "paid"],
       player_gender: ["female", "male", "other"],
       poll_type: ["simple", "availability"],
       posting_mode: ["open", "hosts_only", "replies_only"],

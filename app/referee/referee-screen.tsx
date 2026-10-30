@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 
 const SYDNEY = 'Australia/Sydney'
 
-type Pool = { id: string; league: string; grade: string | null; status: 'active' | 'inactive' }
+type Pool = { id: string; league: string; grade: string | null; status: 'active' | 'inactive'; bank_details: string | null }
 type Appointment = {
   id: string
   role: 'referee' | 'assistant' | 'fourth'
@@ -30,6 +30,9 @@ type Appointment = {
   away: string | null
   home_score: number | null
   away_score: number | null
+  /** L-07: the match fee, and when the league paid it. */
+  fee_cents: number | null
+  paid_at: string | null
 }
 type Blockout = { id: string; referee_id: string; starts_at: string; ends_at: string; reason: string | null }
 type Mine = { pools: Pool[]; appointments: Appointment[]; blockouts: Blockout[] }
@@ -59,6 +62,7 @@ export function RefereeScreen() {
   const [busy, setBusy] = useState<string | null>(null)
   const [reporting, setReporting] = useState<string | null>(null)
   const [report, setReport] = useState({ home_score: '', away_score: '', conduct: '', incidents: '', pitch: '', notes: '' })
+  const [bank, setBank] = useState<string | null>(null)
   const [addingBlock, setAddingBlock] = useState(false)
   const [block, setBlock] = useState({ from: '', to: '', reason: '' })
   // The clock is state, not a call during render: the check-in window
@@ -140,6 +144,22 @@ export function RefereeScreen() {
     if (error) return setError(error.message)
     setAddingBlock(false)
     setBlock({ from: '', to: '', reason: '' })
+    await load()
+  }
+
+  async function saveBank() {
+    if (!mine || bank === null) return
+    setBusy('bank')
+    setError(null)
+    for (const p of mine.pools) {
+      const { error } = await createClient().rpc('set_my_bank_details', { p_referee: p.id, p_details: bank })
+      if (error) {
+        setBusy(null)
+        return setError(error.message)
+      }
+    }
+    setBusy(null)
+    setBank(null)
     await load()
   }
 
@@ -238,6 +258,7 @@ export function RefereeScreen() {
                 <p className="mt-1 text-xs text-ink-3">
                   {a.checked_in_at ? 'Checked in' : 'No check-in'}
                   {a.reported_at ? ' · report sent' : ''}
+                  {a.fee_cents != null ? ` · ${(a.fee_cents / 100).toFixed(2)}${a.paid_at ? ' paid' : a.checked_in_at ? ' owed' : ''}` : ''}
                 </p>
                 {!a.reported_at && (
                   <ReportForm a={a} open={reporting === a.id} onOpen={() => setReporting(a.id)} onClose={() => setReporting(null)} report={report} setReport={setReport} onSend={() => sendReport(a.id)} busy={busy === a.id} />
@@ -247,6 +268,37 @@ export function RefereeScreen() {
           </ul>
         </>
       )}
+
+      <h3 className="eyebrow px-1 pb-1.5">Getting paid</h3>
+      <section className="card mb-4 p-3.5 text-sm">
+        {(() => {
+          const paid = mine.appointments.filter((a) => a.paid_at).reduce((s, a) => s + (a.fee_cents ?? 0), 0)
+          const owed = mine.appointments.filter((a) => !a.paid_at && a.status === 'accepted' && a.checked_in_at).reduce((s, a) => s + (a.fee_cents ?? 0), 0)
+          return (
+            <p>
+              <b>Owed to you:</b> ${(owed / 100).toFixed(2)} · <span className="text-ink-3">paid so far ${(paid / 100).toFixed(2)}</span>
+            </p>
+          )
+        })()}
+        <p className="mt-0.5 text-xs text-ink-3">A game counts once you check in at the ground. The league pays runs of games, by bank transfer or Stripe.</p>
+        {bank === null ? (
+          <p className="mt-2 flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-xs text-ink-2">{mine.pools[0]?.bank_details ?? 'No bank details given yet.'}</span>
+            <button onClick={() => setBank(mine.pools[0]?.bank_details ?? '')} className="flex-none rounded-lg border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
+              {mine.pools[0]?.bank_details ? 'Change' : 'Add bank details'}
+            </button>
+          </p>
+        ) : (
+          <div className="mt-2 grid gap-2">
+            <input value={bank} onChange={(e) => setBank(e.target.value)} placeholder="Name, BSB and account number" className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }} />
+            <p className="text-xs text-ink-3">Seen by the league&apos;s treasurer and nobody else.</p>
+            <div className="flex gap-2">
+              <button onClick={saveBank} disabled={busy === 'bank'} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
+              <button onClick={() => setBank(null)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </section>
 
       <h3 className="eyebrow px-1 pb-1.5">When you&apos;re not free</h3>
       <section className="card mb-4 p-3.5">

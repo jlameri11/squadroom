@@ -58,7 +58,7 @@ expect. Same statuses as above.
 | S7 | Forfeit request coach → club → league | Organiser forfeits (L-09) | PARTIAL — no request chain | L-22 |
 | S8 | Fixture Flowing with club-to-club chat on a fixture | — | MISSING | L-23 |
 | S9 | Draw quality summary; field-impact pop-up; one source of truth | Draw generation with clash avoidance | PARTIAL — no quality view | L-24 |
-| S10 | Referees: accept/decline with reason, late-decline block, self-appointment, club-allocated refs, Connect payouts (parent for U18), payments in app | Pool, block-outs, offer/accept/decline with a note, withdraw, check-in, report (L-06) | PARTIAL — payouts and the rest are L-07/L-25 | L-06, L-07, L-25 |
+| S10 | Referees: accept/decline with reason, late-decline block, self-appointment, club-allocated refs, Connect payouts (parent for U18), payments in app | Pool, block-outs, offer/accept/decline with a note, withdraw, check-in, report (L-06); fees, runs, bank-transfer payment, CSV, in-app view of what is owed and paid (L-07) | PARTIAL — the Stripe transfer needs the key and referee accounts; late-decline block, self-appointment and club-allocated refs are L-25 | L-06, L-07, L-25 |
 | S11 | Live match-day ops dashboard | — | MISSING | L-26 |
 | S12 | Nominations: drag into teams, propose division, lock on submit, DOB override | Entries per division | PARTIAL | L-27 |
 | S13 | Bulk score upload, bulk reschedule, move a competition | Call off a day / ground (L-09) | PARTIAL | L-28 |

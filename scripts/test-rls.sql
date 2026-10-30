@@ -628,6 +628,18 @@ begin
   end;
   insert into rls_results values (67,'a parent cannot import a PlayFootball export',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0163. Referee money is the league's: a parent neither sets a fee nor
+  -- builds a run, and sees no payment item.
+  b := false;
+  begin
+    perform public.set_referee_fee(v_comp, 'referee', 5000);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (68,'a parent cannot set a referee fee',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.referee_payment_items;
+  insert into rls_results values (69,'a parent sees no referee payment items',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { RefereePayments } from './referee-payments'
 
 const SYDNEY = 'Australia/Sydney'
 
@@ -346,6 +347,8 @@ export function RefereesTab({
           })}
         </ul>
       )}
+
+      {isOrganiser && <RefereePayments competitionId={competitionId} />}
 
       {isOrganiser && summary.length > 0 && (
         <>
