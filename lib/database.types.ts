@@ -2120,6 +2120,61 @@ export type Database = {
           },
         ]
       }
+      ladder_adjustments: {
+        Row: {
+          competition_id: string
+          division: string
+          entry_id: string
+          id: string
+          made_at: string
+          made_by: string | null
+          points: number
+          reason: string
+        }
+        Insert: {
+          competition_id: string
+          division: string
+          entry_id: string
+          id?: string
+          made_at?: string
+          made_by?: string | null
+          points: number
+          reason: string
+        }
+        Update: {
+          competition_id?: string
+          division?: string
+          entry_id?: string
+          id?: string
+          made_at?: string
+          made_by?: string | null
+          points?: number
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ladder_adjustments_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ladder_adjustments_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ladder_adjustments_made_by_fkey"
+            columns: ["made_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_events: {
         Row: {
           competition_id: string

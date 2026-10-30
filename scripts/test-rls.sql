@@ -578,6 +578,26 @@ begin
     case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
+  -- 0158. Ladder adjustments: organiser only, and invisible outside.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.ladder_adjustments (competition_id, division, entry_id, points, reason)
+    values (v_comp, 'probe', gen_random_uuid(), -1, 'probe');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (62,'a parent cannot adjust a ladder',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.ladder_adjustments a
+   where not exists (select 1 from public.competition_clubs cc
+                      where cc.competition_id = a.competition_id and cc.academy_id = ACAD_A)
+     and not exists (select 1 from public.competitions c
+                      where c.id = a.competition_id and (c.organiser_id = ACAD_A or c.visibility = 'public'));
+  insert into rls_results values (63,'another competition''s adjustments invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

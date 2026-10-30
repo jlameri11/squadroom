@@ -5,7 +5,7 @@ import { DisciplineTab } from './discipline-tab'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -118,7 +118,9 @@ export function CompetitionView({
           fixtures={fixtures.filter((f) => divisions.length <= 1 || f.division === division)}
         />
       )}
-      {tab === 'ladder' && <Ladder rows={ladders[division] ?? []} />}
+      {tab === 'ladder' && (
+        <Ladder rows={ladders[division] ?? []} competitionId={competitionId} division={division} isOrganiser={isOrganiser} />
+      )}
       {tab === 'discipline' && <DisciplineTab competitionId={competitionId} isOrganiser={isOrganiser} />}
       {tab === 'clubs' && (
         <>
@@ -595,16 +597,77 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
   )
 }
 
-function Ladder({ rows }: { rows: LadderRow[] }) {
+function Ladder({
+  rows, competitionId, division, isOrganiser,
+}: {
+  rows: LadderRow[]; competitionId: string; division: string; isOrganiser: boolean
+}) {
+  // L-10. Adjustments are rows with a reason, never an edit to a score; the
+  // ladder function adds them, so every reader shows the same table. The
+  // reasons are listed under it, because a deduction nobody can explain is
+  // the first thing a club asks the league about.
+  const router = useRouter()
+  const [adjusting, setAdjusting] = useState<string | null>(null)
+  const [points, setPoints] = useState('-3')
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [adjError, setAdjError] = useState<string | null>(null)
+  const [notes, setNotes] = useState<{ entry_id: string; points: number; reason: string }[]>([])
+
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await createClient()
+        .from('ladder_adjustments')
+        .select('entry_id, points, reason')
+        .eq('competition_id', competitionId)
+        .eq('division', division)
+        .order('made_at')
+      setNotes(data ?? [])
+    })()
+  }, [competitionId, division, rows])
+
+  async function adjust(entryId: string) {
+    setBusy(true)
+    setAdjError(null)
+    const { error } = await createClient().from('ladder_adjustments').insert({
+      competition_id: competitionId, division, entry_id: entryId, points: Number(points), reason: reason.trim(),
+    })
+    setBusy(false)
+    if (error) return setAdjError(error.message)
+    setAdjusting(null)
+    setReason('')
+    router.refresh()
+  }
+
   if (rows.length === 0) {
     return <p className="m-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">Nothing to rank yet.</p>
   }
 
   const groups = new Map<string, LadderRow[]>()
   for (const r of rows) groups.set(r.group_label ?? '', [...(groups.get(r.group_label ?? '') ?? []), r])
+  const nameOf = (id: string) => rows.find((r) => r.entry_id === id)?.team_name ?? '?'
 
   return (
     <div>
+      {notes.length > 0 && (
+        <ul className="border-b px-4 py-2 text-xs text-ink-2" style={{ borderColor: 'var(--line-2)' }}>
+          {notes.map((n, i) => (
+            <li key={i}>
+              <b>{nameOf(n.entry_id)}</b> {n.points > 0 ? `+${n.points}` : n.points} — {n.reason}
+            </li>
+          ))}
+        </ul>
+      )}
+      {isOrganiser && adjusting && (
+        <div className="flex flex-wrap items-center gap-1.5 border-b px-4 py-2 text-xs" style={{ borderColor: 'var(--line-2)' }}>
+          <span className="font-semibold">{nameOf(adjusting)}</span>
+          <input value={points} onChange={(e) => setPoints(e.target.value)} inputMode="numeric" className="w-12 rounded border px-1.5 py-1 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Points" />
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="why — the record keeps it" className="min-w-0 flex-1 rounded border px-1.5 py-1" style={{ borderColor: 'var(--line)' }} aria-label="Reason" />
+          <button onClick={() => adjust(adjusting)} disabled={busy || !reason.trim() || !Number(points)} className="rounded px-2 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Apply</button>
+          <button onClick={() => setAdjusting(null)} className="px-1">✕</button>
+          {adjError && <span className="w-full" style={{ color: 'var(--no)' }}>{adjError}</span>}
+        </div>
+      )}
       {[...groups.entries()].map(([g, list]) => (
         <section key={g}>
           {g && (
@@ -636,7 +699,12 @@ function Ladder({ rows }: { rows: LadderRow[] }) {
                   <td className="p-1 text-center tabular-nums">{r.drawn}</td>
                   <td className="p-1 text-center tabular-nums">{r.lost}</td>
                   <td className="p-1 text-center tabular-nums">{r.goal_difference > 0 ? `+${r.goal_difference}` : r.goal_difference}</td>
-                  <td className="p-1 text-center font-bold tabular-nums" style={{ color: 'var(--brand-text)' }}>{r.points}</td>
+                  <td className="p-1 text-center font-bold tabular-nums" style={{ color: 'var(--brand-text)' }}>
+                    {r.points}
+                    {isOrganiser && (
+                      <button onClick={() => setAdjusting(r.entry_id)} className="ml-1 text-xs font-normal text-ink-3" aria-label={`Adjust ${r.team_name}`}>±</button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
