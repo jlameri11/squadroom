@@ -24,6 +24,8 @@ export type Database = {
           logo_url: string | null
           name: string
           plan: string
+          playfootball_fees_disclosed_at: string | null
+          playfootball_fees_disclosed_season: string | null
           primary_colour: string
           public_player_names: Database["public"]["Enums"]["public_names_mode"]
           sibling_discount_bps: number[]
@@ -41,6 +43,8 @@ export type Database = {
           logo_url?: string | null
           name: string
           plan?: string
+          playfootball_fees_disclosed_at?: string | null
+          playfootball_fees_disclosed_season?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
           sibling_discount_bps?: number[]
@@ -58,6 +62,8 @@ export type Database = {
           logo_url?: string | null
           name?: string
           plan?: string
+          playfootball_fees_disclosed_at?: string | null
+          playfootball_fees_disclosed_season?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
           sibling_discount_bps?: number[]
@@ -3175,6 +3181,7 @@ export type Database = {
           created_at: string
           dob: string | null
           ff_number: string | null
+          fifa_id: string | null
           full_name: string
           gender: Database["public"]["Enums"]["player_gender"] | null
           id: string
@@ -3198,6 +3205,7 @@ export type Database = {
           created_at?: string
           dob?: string | null
           ff_number?: string | null
+          fifa_id?: string | null
           full_name: string
           gender?: Database["public"]["Enums"]["player_gender"] | null
           id?: string
@@ -3221,6 +3229,7 @@ export type Database = {
           created_at?: string
           dob?: string | null
           ff_number?: string | null
+          fifa_id?: string | null
           full_name?: string
           gender?: Database["public"]["Enums"]["player_gender"] | null
           id?: string
@@ -3562,6 +3571,7 @@ export type Database = {
           payment_required: boolean
           questions: Json
           refund_bps_after: number
+          requires_official_rego: boolean
           season: string | null
           starts_on: string | null
           status: Database["public"]["Enums"]["program_status"]
@@ -3589,6 +3599,7 @@ export type Database = {
           payment_required?: boolean
           questions?: Json
           refund_bps_after?: number
+          requires_official_rego?: boolean
           season?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["program_status"]
@@ -3616,6 +3627,7 @@ export type Database = {
           payment_required?: boolean
           questions?: Json
           refund_bps_after?: number
+          requires_official_rego?: boolean
           season?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["program_status"]
@@ -4039,10 +4051,14 @@ export type Database = {
           decided_by: string | null
           decision_note: string | null
           expires_at: string
+          ffa_number: string | null
+          fifa_id: string | null
           guardian_email: string | null
           guardian_name: string
           guardian_phone: string | null
           id: string
+          official_confirmed_at: string | null
+          official_confirmed_by: string | null
           player_id: string | null
           profile_id: string | null
           program_id: string
@@ -4063,10 +4079,14 @@ export type Database = {
           decided_by?: string | null
           decision_note?: string | null
           expires_at?: string
+          ffa_number?: string | null
+          fifa_id?: string | null
           guardian_email?: string | null
           guardian_name: string
           guardian_phone?: string | null
           id?: string
+          official_confirmed_at?: string | null
+          official_confirmed_by?: string | null
           player_id?: string | null
           profile_id?: string | null
           program_id: string
@@ -4087,10 +4107,14 @@ export type Database = {
           decided_by?: string | null
           decision_note?: string | null
           expires_at?: string
+          ffa_number?: string | null
+          fifa_id?: string | null
           guardian_email?: string | null
           guardian_name?: string
           guardian_phone?: string | null
           id?: string
+          official_confirmed_at?: string | null
+          official_confirmed_by?: string | null
           player_id?: string | null
           profile_id?: string | null
           program_id?: string
@@ -4109,6 +4133,13 @@ export type Database = {
           {
             foreignKeyName: "registration_requests_decided_by_fkey"
             columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_official_confirmed_by_fkey"
+            columns: ["official_confirmed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -4922,6 +4953,10 @@ export type Database = {
         Args: { p_entry: string; p_fixture: string }
         Returns: undefined
       }
+      confirm_official_rego: {
+        Args: { p_confirmed?: boolean; p_request: string }
+        Returns: undefined
+      }
       convert_poll_to_event: {
         Args: {
           p_poll: string
@@ -5147,6 +5182,10 @@ export type Database = {
       }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
+      import_official_status: {
+        Args: { p_academy: string; p_rows: Json }
+        Returns: Json
+      }
       import_players: {
         Args: {
           p_academy: string
@@ -5535,13 +5574,18 @@ export type Database = {
           decided_at: string
           decided_by: string
           decision_note: string
+          existing_official_status: string
           existing_player_id: string
+          ffa_number: string
+          fifa_id: string
           guardian_email: string
           guardian_name: string
           guardian_phone: string
+          official_confirmed_at: string
           program_id: string
           program_name: string
           request_id: string
+          requires_official: boolean
           spots_left: number
           status: string
         }[]

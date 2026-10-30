@@ -612,6 +612,22 @@ begin
   end;
   insert into rls_results values (65,'a parent cannot appoint a referee',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0162. A parent cannot confirm a PlayFootball registration, and cannot
+  -- import an export.
+  b := false;
+  begin
+    perform public.confirm_official_rego(gen_random_uuid(), true);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (66,'a parent cannot confirm a PlayFootball registration',
+    case when b then 'PASS' else 'FAIL' end);
+  b := false;
+  begin
+    perform public.import_official_status(ACAD_A, '[]'::jsonb);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (67,'a parent cannot import a PlayFootball export',
+    case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

@@ -8,6 +8,7 @@ import type { Question } from '@/components/question-field'
 import { QuestionsEditor } from './questions-editor'
 import { OfferControl, type TrialOffer } from './offer-control'
 import { WithdrawPolicy } from './withdraw-policy'
+import { OfficialRegoToggle } from './official-rego-toggle'
 
 type Registration = {
   id: string
@@ -33,6 +34,7 @@ type Program = {
   questions: Question[] | null
   withdraw_until: string | null
   refund_bps_after: number
+  requires_official_rego: boolean
 }
 
 /**
@@ -66,7 +68,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
     const supabase = createClient()
     const { data: p } = await supabase
       .from('programs')
-      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions, withdraw_until, refund_bps_after')
+      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions, withdraw_until, refund_bps_after, requires_official_rego')
       .eq('id', programId)
       .maybeSingle()
     if (!p) return setProgram(null)
@@ -248,6 +250,12 @@ export function ProgramScreen({ programId }: { programId: string }) {
             withdrawUntil={program.withdraw_until}
             refundBpsAfter={program.refund_bps_after ?? 0}
             onSaved={(withdraw_until, refund_bps_after) => setProgram({ ...program, withdraw_until, refund_bps_after })}
+          />
+
+          <OfficialRegoToggle
+            programId={program.id}
+            value={program.requires_official_rego}
+            onSaved={(requires_official_rego) => setProgram({ ...program, requires_official_rego })}
           />
 
           {error && (

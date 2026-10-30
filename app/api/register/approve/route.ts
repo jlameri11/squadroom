@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const { data: req } = await supabase
     .from('registration_requests')
     .select(
-      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents'
+      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at'
     )
     .eq('id', requestId)
     .maybeSingle()
@@ -125,11 +125,34 @@ export async function POST(request: Request) {
   // attaches to the existing roster row rather than creating a twin.
   const { data: match } = await admin
     .from('players')
-    .select('id')
+    .select('id, official_status')
     .eq('academy_id', req.academy_id)
     .eq('dob', req.child_dob)
     .ilike('full_name', req.child_name)
     .maybeSingle()
+
+  // R-18: PlayFootball first. For a program that requires it, somebody at
+  // the club has confirmed the registration on the request, or the child is
+  // already on the roster as registered. The trigger on
+  // program_registrations enforces the same rule below this route; the
+  // check here is so the club gets a sentence, not a constraint error.
+  const { data: prog } = await admin
+    .from('programs')
+    .select('requires_official_rego')
+    .eq('id', req.program_id)
+    .maybeSingle()
+  const confirmed =
+    Boolean(req.official_confirmed_at) ||
+    match?.official_status === 'registered' ||
+    match?.official_status === 'not_required'
+  if (prog?.requires_official_rego && !confirmed) {
+    return NextResponse.json(
+      {
+        error: `${req.child_name} needs their PlayFootball registration confirmed first. Tick it on the request once you have checked PlayFootball, or import your PlayFootball export.`,
+      },
+      { status: 409 }
+    )
+  }
 
   let playerId = match?.id ?? null
 
@@ -144,6 +167,9 @@ export async function POST(request: Request) {
         // Constrained on the way in (route and table), so the cast is
         // narrowing a value that is already one of the three.
         gender: req.child_gender as 'male' | 'female' | 'other' | null,
+        ff_number: req.ffa_number ?? null,
+        fifa_id: req.fifa_id ?? null,
+        official_status: req.official_confirmed_at ? 'registered' : 'unknown',
       })
       .select('id')
       .single()
@@ -151,10 +177,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not add the player.' }, { status: 500 })
     }
     playerId = newPlayer.id
-  } else if (teamId) {
-    // An existing child being accepted into a squad. 0098 makes the whole
-    // family follow a child into the squad's channels.
-    await admin.from('players').update({ team_id: teamId }).eq('id', playerId)
+  } else {
+    // An existing child. 0098 makes the whole family follow a child into
+    // the squad's channels; and a confirmed request carries PlayFootball's
+    // ids onto the roster row.
+    const patch: { team_id?: string; ff_number?: string; fifa_id?: string; official_status?: 'registered' } = {}
+    if (teamId) patch.team_id = teamId
+    if (req.ffa_number) patch.ff_number = req.ffa_number
+    if (req.fifa_id) patch.fifa_id = req.fifa_id
+    if (req.official_confirmed_at && match?.official_status !== 'not_required') patch.official_status = 'registered'
+    if (Object.keys(patch).length > 0) await admin.from('players').update(patch).eq('id', playerId)
   }
 
   await admin.from('player_guardians').upsert(

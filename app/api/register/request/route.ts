@@ -45,6 +45,8 @@ export async function POST(request: Request) {
     guardianEmail,
     childName,
     childDob,
+    childFfa,
+    childFifa,
     childGender,
     answers,
     consents,
@@ -56,6 +58,8 @@ export async function POST(request: Request) {
     guardianEmail?: string
     childName?: string
     childDob?: string
+    childFfa?: string
+    childFifa?: string
     childGender?: string
     answers?: Record<string, unknown>
     consents?: { id: string; version: number }[]
@@ -150,6 +154,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: cleaned.error }, { status: 400 })
   }
 
+  // R-18: PlayFootball's ids are digits. Spaces people type are dropped;
+  // anything else is a typo we would rather hear about now.
+  const ffa = (childFfa ?? '').replace(/\s/g, '')
+  const fifa = (childFifa ?? '').replace(/\s/g, '')
+  if ((ffa && !/^\d{5,20}$/.test(ffa)) || (fifa && !/^\d{5,20}$/.test(fifa))) {
+    return NextResponse.json({ error: 'An FFA number or FIFA ID is digits only.' }, { status: 400 })
+  }
+
   const secret = generateSecret()
 
   const { data: created, error } = await admin
@@ -163,6 +175,8 @@ export async function POST(request: Request) {
       child_name: childName.trim(),
       child_dob: childDob,
       child_gender: (gender as Gender) || null,
+      ffa_number: ffa || null,
+      fifa_id: fifa || null,
       answers: cleaned.answers as never,
       consents: (consents ?? []) as never,
       secret_hash: hashSecret(secret),

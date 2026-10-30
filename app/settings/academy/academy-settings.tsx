@@ -32,6 +32,7 @@ export function AcademySettings({
   academyId, dmPolicy, directoryVisibility, primaryColour = '#202842', academyName = 'Your club',
   publicPlayerNames = 'off',
   siblingDiscountBps = [],
+  feesDisclosedSeason = null,
 }: {
   academyId: string
   dmPolicy: string
@@ -41,6 +42,8 @@ export function AcademySettings({
   publicPlayerNames?: 'off' | 'initials' | 'full'
   /** 0102's ladder: index 0 is the second child, the last entry every child beyond it. */
   siblingDiscountBps?: number[]
+  /** R-18: the season the club last ticked "fees disclosed in PlayFootball". */
+  feesDisclosedSeason?: string | null
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -52,6 +55,8 @@ export function AcademySettings({
   // Shown as whole percent, stored as basis points. Two rungs is what every
   // club actually writes — "2nd child 10% off, 3rd and beyond 20%" — and the
   // database holds a longer ladder for anyone who needs one.
+  const thisSeason = String(new Date().getFullYear())
+  const [feesSeason, setFeesSeason] = useState(feesDisclosedSeason)
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
 
@@ -63,6 +68,7 @@ export function AcademySettings({
     | { primary_colour: string }
     | { public_player_names: 'off' | 'initials' | 'full' }
     | { sibling_discount_bps: number[] }
+    | { playfootball_fees_disclosed_season: string | null; playfootball_fees_disclosed_at: string | null }
 
   const ladder = (() => {
     const a = Math.round(Number(second) * 100)
@@ -278,6 +284,47 @@ export function AcademySettings({
           >
             {ladder.length === 0 ? 'Turn discounts off' : 'Save discounts'}
           </button>
+        )}
+      </section>
+
+      <section>
+        <h2 className="font-semibold">Fees in PlayFootball</h2>
+        <p className="mt-0.5 text-sm text-ink-2">
+          Football Australia&apos;s Circular 26-02 (1 Oct 2026) says an affiliated club must list every
+          fee, levy and charge in PlayFootball, and justify it if asked. Squadroom can&apos;t check that
+          for you; it can make sure nobody forgot. Tick it once a season.
+        </p>
+        {feesSeason === thisSeason ? (
+          <p className="mt-2 flex items-center gap-2 text-sm">
+            <span className="pill" style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}>Done for {thisSeason}</span>
+            <button
+              onClick={async () => {
+                await update({ playfootball_fees_disclosed_season: null, playfootball_fees_disclosed_at: null })
+                setFeesSeason(null)
+              }}
+              disabled={busy}
+              className="text-xs underline underline-offset-2 text-ink-3"
+            >
+              undo
+            </button>
+          </p>
+        ) : (
+          <div className="mt-2">
+            <p className="mb-2 text-sm" style={{ color: 'var(--maybe)' }}>
+              Not yet ticked for {thisSeason}{feesSeason ? ` (last done ${feesSeason})` : ''}.
+            </p>
+            <button
+              onClick={async () => {
+                await update({ playfootball_fees_disclosed_season: thisSeason, playfootball_fees_disclosed_at: new Date().toISOString() })
+                setFeesSeason(thisSeason)
+              }}
+              disabled={busy}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              style={{ background: 'var(--brand)' }}
+            >
+              Our {thisSeason} fees are in PlayFootball
+            </button>
+          </div>
         )}
       </section>
 

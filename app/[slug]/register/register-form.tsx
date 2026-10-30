@@ -36,6 +36,8 @@ type Draft = {
   chosen: string | null
   childName: string
   childDob: string
+  childFfa?: string
+  childFifa?: string
   childGender: string
   guardianName: string
   guardianPhone: string
@@ -89,6 +91,9 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [guardianEmail, setGuardianEmail] = useState('')
   const [childName, setChildName] = useState('')
   const [childDob, setChildDob] = useState('')
+  // R-18: PlayFootball's ids, so the club can confirm the registration.
+  const [childFfa, setChildFfa] = useState('')
+  const [childFifa, setChildFifa] = useState('')
   const [childGender, setChildGender] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [agreed, setAgreed] = useState<Record<string, boolean>>({})
@@ -115,6 +120,8 @@ export function RegisterForm({ slug }: { slug: string }) {
         setChosen(d.chosen ?? null)
         setChildName(d.childName ?? '')
         setChildDob(d.childDob ?? '')
+        setChildFfa(d.childFfa ?? '')
+        setChildFifa(d.childFifa ?? '')
         setChildGender(d.childGender ?? '')
         setGuardianName(d.guardianName ?? '')
         setGuardianPhone(d.guardianPhone ?? '')
@@ -136,14 +143,14 @@ export function RegisterForm({ slug }: { slug: string }) {
     if (!hydrated || sent) return
     try {
       const d: Draft = {
-        step, chosen, childName, childDob, childGender, guardianName, guardianPhone, guardianEmail,
+        step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
         answers, agreed, savedAt: Date.now(),
       }
       localStorage.setItem(DRAFT(slug), JSON.stringify(d))
     } catch {
       /* no storage, no draft */
     }
-  }, [hydrated, sent, slug, step, chosen, childName, childDob, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed])
+  }, [hydrated, sent, slug, step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed])
 
   // Once there is a request, ask where it stands. Not polled on a timer: a
   // club approving takes hours or days, and a page left open on a phone
@@ -254,6 +261,8 @@ export function RegisterForm({ slug }: { slug: string }) {
         guardianEmail: guardianEmail || undefined,
         childName,
         childDob,
+        childFfa: childFfa || undefined,
+        childFifa: childFifa || undefined,
         childGender: childGender || undefined,
         answers,
         consents: data!.consents
@@ -343,6 +352,20 @@ export function RegisterForm({ slug }: { slug: string }) {
                           : undefined
                       }
                     />
+                    {program.requires_official_rego && (
+                      <p className="mt-3 rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
+                        This program is for players registered in <b>PlayFootball</b> first (Football
+                        Australia&apos;s rule). Register there if you haven&apos;t, then give the FFA number
+                        or FIFA ID below so the club can confirm it.
+                      </p>
+                    )}
+                    <Field
+                      label={program.requires_official_rego ? 'FFA number' : 'FFA number (if registered in PlayFootball)'}
+                      value={childFfa}
+                      onChange={setChildFfa}
+                      hint="On the PlayFootball profile, digits only."
+                    />
+                    <Field label="FIFA ID (optional)" value={childFifa} onChange={setChildFifa} />
                     <fieldset className="mt-3">
                       <legend className="text-sm text-ink-2">Gender</legend>
                       <div className="mt-1 flex gap-1.5">

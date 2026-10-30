@@ -49,7 +49,7 @@ expect. Same statuses as above.
 
 | # | Squadi does | Squadroom | Status | Where |
 |---|---|---|---|---|
-| S1 | PlayFootball first, then "Competition Access" (Circular 26-02) | Per-program requirement; FFA/FIFA ID captured; approval blocked until confirmed; export import; fee-disclosure reminder | **BUILDING** (30 Oct) | R-18 |
+| S1 | PlayFootball first, then "Competition Access" (Circular 26-02) | Per-program requirement; FFA/FIFA ID captured; approval blocked until confirmed (route and trigger); export import; fee-disclosure tick per season | **DONE** (0162, 30 Oct) | R-18 |
 | S2 | Team-sheet lock at T-30/T-15, referee-only edits after | — | MISSING | L-17 |
 | S3 | Scorer handoff, referee verifies, typed Confirm | Both sides enter; a mismatch is a dispute (L-05) | PARTIAL — no handoff or typed confirm | L-18 |
 | S4 | Match lifecycle Editable → Ended → correction request | Final is final; organiser rules on disputes | PARTIAL — no correction request | L-19 |

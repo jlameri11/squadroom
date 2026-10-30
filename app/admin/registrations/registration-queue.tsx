@@ -25,6 +25,18 @@ type Row = {
   decision_note: string | null
   existing_player_id: string | null
   spots_left: number | null
+  // R-18
+  ffa_number: string | null
+  fifa_id: string | null
+  requires_official: boolean
+  official_confirmed_at: string | null
+  existing_official_status: string | null
+}
+
+/** R-18: may this request be accepted, as far as PlayFootball goes? */
+function officialOk(r: Row) {
+  if (!r.requires_official) return true
+  return Boolean(r.official_confirmed_at) || r.existing_official_status === 'registered' || r.existing_official_status === 'not_required'
 }
 
 /**
@@ -120,6 +132,15 @@ export function RegistrationQueue() {
   useEffect(() => {
     void load()
   }, [load])
+
+  async function confirmOfficial(row: Row, confirmed: boolean) {
+    setBusy(row.request_id)
+    setError(null)
+    const { error } = await createClient().rpc('confirm_official_rego', { p_request: row.request_id, p_confirmed: confirmed })
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
+  }
 
   async function decide(row: Row, decision: 'approve' | 'decline') {
     setBusy(row.request_id)
@@ -490,6 +511,38 @@ export function RegistrationQueue() {
                       </ul>
                     )}
 
+                    {(r.requires_official || r.ffa_number || r.fifa_id) && (
+                      <div className="mt-3 rounded-lg p-2.5 text-sm" style={{ background: 'var(--surface-2)' }}>
+                        <span className="block text-xs text-ink-3">PlayFootball</span>
+                        <span className="block">
+                          {[r.ffa_number && `FFA ${r.ffa_number}`, r.fifa_id && `FIFA ID ${r.fifa_id}`].filter(Boolean).join(' · ') || 'No number given'}
+                        </span>
+                        {r.requires_official && (
+                          officialOk(r) ? (
+                            <span className="mt-1 flex items-center gap-2">
+                              <span className="pill" style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}>
+                                {r.official_confirmed_at ? 'Registration confirmed' : 'On the roster as registered'}
+                              </span>
+                              {r.status === 'pending' && r.official_confirmed_at && (
+                                <button onClick={() => void confirmOfficial(r, false)} disabled={busy === r.request_id} className="text-xs underline underline-offset-2 text-ink-3">
+                                  undo
+                                </button>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="mt-1 flex items-center gap-2">
+                              <span className="pill" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>Not confirmed</span>
+                              {r.status === 'pending' && (
+                                <button onClick={() => void confirmOfficial(r, true)} disabled={busy === r.request_id} className="rounded-lg border px-2 py-1 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
+                                  I checked PlayFootball — registered
+                                </button>
+                              )}
+                            </span>
+                          )
+                        )}
+                      </div>
+                    )}
+
                     {r.status === 'pending' && (
                       <>
                         <label className="mt-3 block text-sm">
@@ -527,11 +580,12 @@ export function RegistrationQueue() {
                         <div className="mt-2 flex gap-2">
                           <button
                             onClick={() => void decide(r, 'approve')}
-                            disabled={busy === r.request_id}
+                            disabled={busy === r.request_id || !officialOk(r)}
+                            title={officialOk(r) ? undefined : 'Confirm the PlayFootball registration first'}
                             className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                             style={{ background: 'var(--yes)' }}
                           >
-                            {busy === r.request_id ? 'Working…' : 'Accept'}
+                            {busy === r.request_id ? 'Working…' : officialOk(r) ? 'Accept' : 'Accept (PlayFootball first)'}
                           </button>
                           <button
                             onClick={() => void decide(r, 'decline')}

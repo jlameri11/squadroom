@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useScreen } from '@/lib/hooks/use-screen'
@@ -396,17 +397,25 @@ function Importer({
       {headers.length === 0 && (
         <p className="mt-2 text-sm text-ink-2">
           Got something else?{' '}
-          <a
+          <Link
             href="/admin/import/players"
             className="underline underline-offset-2"
             style={{ color: INK }}
           >
             A spreadsheet of players
-          </a>
+          </Link>
           {' · '}
-          <a href="/scan" className="underline underline-offset-2" style={{ color: INK }}>
+          <Link
+            href="/admin/import/playfootball"
+            className="underline underline-offset-2"
+            style={{ color: INK }}
+          >
+            Your PlayFootball export
+          </Link>
+          {' · '}
+          <Link href="/scan" className="underline underline-offset-2" style={{ color: INK }}>
             A screenshot of the draw
-          </a>
+          </Link>
         </p>
       )}
 

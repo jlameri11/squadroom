@@ -28,6 +28,8 @@ export type PublicProgram = {
   ends_on: string | null
   closes_at: string | null
   questions: Question[] | null
+  /** R-18: PlayFootball first. */
+  requires_official_rego?: boolean
   payment_required: boolean
   amount_cents: number | null
   spots_left: number | null

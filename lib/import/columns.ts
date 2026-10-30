@@ -568,3 +568,66 @@ export function resolveSides(
   // this academy is playing in is noise in every family's calendar.
   return { opponent: null, wasHome: null, derby: false, foreign: true }
 }
+
+/**
+ * R-18: the registrations export a club admin downloads from their own
+ * PlayFootball account. Only ever a file handed to us — Squadroom never
+ * logs in to PlayFootball and never scrapes it (CLAUDE.md). A name can
+ * arrive whole or as first + last; either is enough with a date of birth,
+ * and an FFA number or FIFA ID matches on its own.
+ */
+export const OFFICIAL_FIELDS: FieldSpec[] = [
+  {
+    key: 'ffa_number',
+    label: 'FFA number',
+    hint: 'Matches a player on its own',
+    required: false,
+    matches: ['ffa number', 'ffa no', 'ffa id', 'ffa', 'fa number', 'participant id'],
+  },
+  {
+    key: 'fifa_id',
+    label: 'FIFA ID',
+    hint: 'The FIFA Connect ID',
+    required: false,
+    matches: ['fifa id', 'fifa connect', 'fifa'],
+  },
+  {
+    key: 'full_name',
+    label: 'Full name',
+    hint: 'If the file has one name column',
+    required: false,
+    matches: ['full name', 'player name', 'participant name', 'name'],
+    excludes: ['first', 'last', 'surname', 'given', 'club', 'team', 'program', 'parent', 'guardian'],
+  },
+  {
+    key: 'first_name',
+    label: 'First name',
+    hint: 'If names are split',
+    required: false,
+    matches: ['first name', 'given name', 'first', 'given'],
+    excludes: ['parent', 'guardian', 'contact'],
+  },
+  {
+    key: 'last_name',
+    label: 'Last name',
+    hint: 'If names are split',
+    required: false,
+    matches: ['last name', 'surname', 'family name', 'last'],
+    excludes: ['parent', 'guardian', 'contact'],
+  },
+  {
+    key: 'dob',
+    label: 'Date of birth',
+    hint: 'Read day first',
+    required: false,
+    matches: ['date of birth', 'dob', 'birth date', 'birthday', 'born'],
+  },
+  {
+    key: 'status',
+    label: 'Registration status',
+    hint: 'Active / pending / cancelled',
+    required: false,
+    matches: ['registration status', 'status', 'state'],
+    excludes: ['payment', 'match'],
+  },
+]

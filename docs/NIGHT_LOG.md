@@ -21,6 +21,22 @@ three-step register flow with a resumable draft. Plus the sweep's fixes
 and `docs/DRIBL_PARITY.md`, the Connect parity tracker you asked for.
 Migrations 0131 → 0146. Nothing in the plan was dropped.
 
+**Then M9 League mode, through the day (30 Oct):** L-01 division rules ·
+L-03/L-05 season squads, eligibility and match sheets from both sides ·
+L-08 discipline (cards → suspensions → blocked from the sheet) · L-09
+match-day ops (call off a day, postpone, reschedule, forfeit, bye — every
+change pushed with its reason) · L-10 ladder adjustments with reasons ·
+L-11 league comms to club staff only · L-04 the card at the ground (league
+officials, and the opposition on match day) · L-12 top scorers on the public
+page · **L-06 referees** (pool, block-outs, offer/accept/decline with a
+push, check-in, report, the Refs tab and `/referee`) · and, from your
+message, **R-18 Circular 26-02** (PlayFootball first — per program,
+Accept refused until confirmed, the club's own export imported, fees
+tick) with the whole of `SQUADI_INTEL.md` §6 folded into the plan docs and
+your pricing rule in CLAUDE.md. Also fixed: nav badges never loaded (an
+unbound `rpc`), and a React 19 hydration warning on every page (the theme
+script sat outside `<head>`). Migrations 0147 → 0162; test-rls now 67.
+
 **Still blocked on the Stripe test key** (the one thing that unblocks the
 most): the card charge itself, instalment retry, several children in one
 checkout, vouchers, bank transfer / pay later, the league–club fee split,
@@ -82,6 +98,7 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **R-18** Circular 26-02 (Joey's ask, 30 Oct) | **Done.** Per-program "requires PlayFootball registration"; FFA number + FIFA ID on the public form, the request and the roster; Accept refused in the route *and* by a trigger until the club confirms (one tap on the request) or the export says so; `/admin/import/playfootball` reads the club's own export — never a login, never a scrape; a per-season "fees are in PlayFootball" tick in club settings. Plan docs for the rest of SQUADI_INTEL §6 landed in the same hour (BUILD_PLAN, DRIBL_PARITY, SPEC, CLAUDE.md) | test-circular-26-02 21, test-rls 66–67, screens both themes |
 | **L-06** referees | **Done.** A league's pool with claim links (a referee is never a member of anything), block-outs, availability per game with the reason, offer → accept/decline → withdraw each with a push, check-in three hours either side of kick-off, the referee's report (organiser reads it; clubs see that it exists). "Refs" is the sixth tab on a competition; `/referee` is the referee's own page, linked from Settings only for referees. First run of the suite found the seed's NRIFA owner also owns the SPL, so the club in the checks is Ravens | test-referees 40 (an official, two referees, a club owner, a parent), test-rls 64–65, screens both themes |
 | **L-04 / L-12** card at the ground, top scorers | **Done (L-12 bar the share link and widget).** The player card opens for the league's officials (any child on a season squad in their competition) and for the opposition's manager on match day, from a name on the sheet — ±1 day of kick-off, nothing before or after; neither can edit it. Top scorers on the public page from the sheets, final games only, named by each club's own rule with a family's opt-out winning | test-league-public 13 (an official, a visiting manager, a stranger), test-player-card 16 still green, screens both themes |
 | **L-10 / L-11** adjustments, league comms | **Done.** Point adjustments with a reason, shown by every ladder including the public one. League broadcasts moved from each club's academy-wide channel to its coaches channel — the old behaviour sent a league secretary's message to every family at every club, against the "draw, not people" rule | test-ladder-adjustments 9, test-league-comms 6, test-rls 62–63 |
