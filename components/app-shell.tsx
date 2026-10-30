@@ -228,8 +228,8 @@ const BARE = [
  */
 const APP_ROOTS = new Set([
   'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'competitions', 'directory',
-  'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'programs', 'scan',
-  'settings', 'signin', 'signup', 'start',
+  'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'programs', 'ref', 'referee',
+  'scan', 'settings', 'signin', 'signup', 'start',
 ])
 
 /** A page opened by somebody who must not be offered a sign-in screen. */

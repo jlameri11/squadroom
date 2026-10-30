@@ -2,6 +2,7 @@
 
 import { DivisionSettings } from './division-settings'
 import { DisciplineTab } from './discipline-tab'
+import { RefereesTab } from './referees-tab'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
@@ -24,6 +25,8 @@ export type Fixture = {
   can_score: boolean
   home_entry_id?: string | null
   away_entry_id?: string | null
+  /** L-06: who is on it, from the run sheet — "Pat Lee, Sam Roy (AR)?" (a ? is still only asked). */
+  referees?: string | null
 }
 
 export type LadderRow = {
@@ -62,13 +65,13 @@ export function CompetitionView({
   const commsOnly = mode === 'comms_only'
   const tabs = commsOnly
     ? (['send', 'clubs'] as const)
-    : (['run', 'ladder', 'discipline', 'clubs', 'send'] as const)
+    : (['run', 'ladder', 'discipline', 'referees', 'clubs', 'send'] as const)
 
   const [tab, setTab] = useState<string>(tabs[0])
   const [division, setDivision] = useState(divisions[0] ?? '')
 
   const LABEL: Record<string, string> = {
-    run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', clubs: 'Clubs', send: 'Send',
+    run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', referees: 'Refs', clubs: 'Clubs', send: 'Send',
   }
 
   return (
@@ -122,6 +125,7 @@ export function CompetitionView({
         <Ladder rows={ladders[division] ?? []} competitionId={competitionId} division={division} isOrganiser={isOrganiser} />
       )}
       {tab === 'discipline' && <DisciplineTab competitionId={competitionId} isOrganiser={isOrganiser} />}
+      {tab === 'referees' && <RefereesTab competitionId={competitionId} division={division} isOrganiser={isOrganiser} />}
       {tab === 'clubs' && (
         <>
           {/*
@@ -307,6 +311,10 @@ function RunSheet({
                   <span className="flex-none text-xs text-ink-3">—</span>
                 )}
               </div>
+
+              {f.referees && (
+                <p className="mt-0.5 text-xs text-ink-3">Ref: {f.referees}</p>
+              )}
 
               {/* L-05: the sheets, events and both sides' scores live on the
                   match page; the Score button here stays as the organiser's

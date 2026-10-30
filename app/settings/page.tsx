@@ -20,6 +20,10 @@ export default async function SettingsPage() {
   // column from the table grant so nobody can read anyone else's.
   const { data } = await supabase.rpc('my_profile')
   const me = data?.[0]
+  // L-06: only a referee sees the Refereeing row — a parent has no use for
+  // it, and the pool row is visible to its own person and nobody else.
+  const { count: pools } = await supabase.from('referees').select('id', { count: 'exact', head: true }).eq('profile_id', userId)
+  const isReferee = (pools ?? 0) > 0
 
   return (
     <AppShellPage title="Your details" meta="Only you see these">
@@ -42,6 +46,19 @@ export default async function SettingsPage() {
         quieter form. These are always here.
       */}
       <ul className="card mt-6 overflow-hidden">
+        {isReferee && (
+          <li>
+            <Link href="/referee" className="row justify-between">
+              <span className="min-w-0">
+                <span className="block truncate font-medium">Refereeing</span>
+                <span className="block truncate text-sm text-ink-3">
+                  Your games, check-in, reports, dates you can&apos;t do
+                </span>
+              </span>
+              <span className="flex-none text-lg text-ink-3">›</span>
+            </Link>
+          </li>
+        )}
         <li>
           <Link href="/settings/family" className="row justify-between">
             <span className="min-w-0">

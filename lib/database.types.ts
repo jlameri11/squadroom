@@ -3705,6 +3705,211 @@ export type Database = {
           },
         ]
       }
+      referee_appointments: {
+        Row: {
+          academy_id: string
+          checked_in_at: string | null
+          competition_id: string
+          created_at: string
+          fee_cents: number | null
+          fixture_id: string
+          id: string
+          offered_at: string
+          offered_by: string | null
+          referee_id: string
+          report: Json | null
+          reported_at: string | null
+          responded_at: string | null
+          response_note: string | null
+          role: Database["public"]["Enums"]["referee_role"]
+          status: Database["public"]["Enums"]["appointment_status"]
+          withdrawn_note: string | null
+        }
+        Insert: {
+          academy_id: string
+          checked_in_at?: string | null
+          competition_id: string
+          created_at?: string
+          fee_cents?: number | null
+          fixture_id: string
+          id?: string
+          offered_at?: string
+          offered_by?: string | null
+          referee_id: string
+          report?: Json | null
+          reported_at?: string | null
+          responded_at?: string | null
+          response_note?: string | null
+          role?: Database["public"]["Enums"]["referee_role"]
+          status?: Database["public"]["Enums"]["appointment_status"]
+          withdrawn_note?: string | null
+        }
+        Update: {
+          academy_id?: string
+          checked_in_at?: string | null
+          competition_id?: string
+          created_at?: string
+          fee_cents?: number | null
+          fixture_id?: string
+          id?: string
+          offered_at?: string
+          offered_by?: string | null
+          referee_id?: string
+          report?: Json | null
+          reported_at?: string | null
+          responded_at?: string | null
+          response_note?: string | null
+          role?: Database["public"]["Enums"]["referee_role"]
+          status?: Database["public"]["Enums"]["appointment_status"]
+          withdrawn_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_appointments_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_appointments_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_appointments_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_appointments_offered_by_fkey"
+            columns: ["offered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_appointments_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "referees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referee_blockouts: {
+        Row: {
+          academy_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          reason: string | null
+          referee_id: string
+          starts_at: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          reason?: string | null
+          referee_id: string
+          starts_at: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          reason?: string | null
+          referee_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referee_blockouts_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_blockouts_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "referees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referees: {
+        Row: {
+          academy_id: string
+          claim_token: string
+          claimed_at: string | null
+          created_at: string
+          created_by: string | null
+          full_name: string
+          grade: string | null
+          id: string
+          phone: string | null
+          profile_id: string | null
+          status: string
+        }
+        Insert: {
+          academy_id: string
+          claim_token?: string
+          claimed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          full_name: string
+          grade?: string | null
+          id?: string
+          phone?: string | null
+          profile_id?: string | null
+          status?: string
+        }
+        Update: {
+          academy_id?: string
+          claim_token?: string
+          claimed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          full_name?: string
+          grade?: string | null
+          id?: string
+          phone?: string | null
+          profile_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referees_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referees_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refunds: {
         Row: {
           academy_id: string
@@ -4460,6 +4665,16 @@ export type Database = {
         }[]
       }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
+      add_referee: {
+        Args: {
+          p_competition: string
+          p_full_name: string
+          p_grade?: string
+          p_phone?: string
+          p_profile?: string
+        }
+        Returns: string
+      }
       add_suspension: {
         Args: {
           p_competition: string
@@ -4480,6 +4695,14 @@ export type Database = {
       }
       announcement_reach: { Args: { p_message: string }; Returns: Json }
       applied_migration: { Args: { p_name: string }; Returns: string }
+      appoint_referee: {
+        Args: {
+          p_fixture: string
+          p_referee: string
+          p_role?: Database["public"]["Enums"]["referee_role"]
+        }
+        Returns: string
+      }
       attendance_summary: {
         Args: { p_academy: string; p_from?: string; p_team?: string }
         Returns: {
@@ -4615,6 +4838,7 @@ export type Database = {
           url: string
         }[]
       }
+      claim_referee: { Args: { p_token: string }; Returns: Json }
       claim_sms_escalations: {
         Args: { p_limit?: number }
         Returns: {
@@ -4641,6 +4865,10 @@ export type Database = {
           verified_at: string
           verified_by: string
         }[]
+      }
+      competition_appointments: {
+        Args: { p_competition: string; p_division?: string }
+        Returns: Json
       }
       competition_contacts: {
         Args: { p_competition: string }
@@ -4684,6 +4912,7 @@ export type Database = {
           home_entry_id: string
           home_name: string
           home_score: number
+          referees: string
           round: string
           starts_at: string
           status: Database["public"]["Enums"]["fixture_status"]
@@ -4972,6 +5201,7 @@ export type Database = {
           on_date: string
         }[]
       }
+      my_appointments: { Args: never; Returns: Json }
       my_calendar_token: { Args: { p_rotate?: boolean }; Returns: string }
       my_channels: {
         Args: { p_academy: string }
@@ -5289,6 +5519,9 @@ export type Database = {
         }
         Returns: string
       }
+      referee_availability: { Args: { p_fixture: string }; Returns: Json }
+      referee_check_in: { Args: { p_appointment: string }; Returns: string }
+      referee_pool: { Args: { p_competition: string }; Returns: Json }
       refunds_to_issue: { Args: { p_academy: string }; Returns: Json }
       registration_queue: {
         Args: { p_academy?: string; p_status?: string }
@@ -5338,6 +5571,10 @@ export type Database = {
       resolve_source: {
         Args: { p_competition: string; p_division: string; p_source: string }
         Returns: string
+      }
+      respond_appointment: {
+        Args: { p_accept: boolean; p_appointment: string; p_note?: string }
+        Returns: undefined
       }
       review_report: {
         Args: {
@@ -5482,6 +5719,10 @@ export type Database = {
         }
         Returns: string
       }
+      submit_referee_report: {
+        Args: { p_appointment: string; p_report: Json }
+        Returns: undefined
+      }
       take_register: {
         Args: { p_event: string; p_marks: Json }
         Returns: number
@@ -5522,6 +5763,10 @@ export type Database = {
           player_name: string
         }[]
       }
+      withdraw_appointment: {
+        Args: { p_appointment: string; p_note?: string }
+        Returns: undefined
+      }
       withdraw_registration: {
         Args: { p_reason?: string; p_registration: string }
         Returns: Json
@@ -5530,6 +5775,7 @@ export type Database = {
     }
     Enums: {
       academy_role: "owner" | "admin" | "coach" | "parent" | "player"
+      appointment_status: "offered" | "accepted" | "declined" | "withdrawn"
       attendance_status: "present" | "absent" | "late" | "excused"
       channel_member_role: "host" | "co_host" | "member"
       channel_status: "active" | "archived"
@@ -5621,6 +5867,7 @@ export type Database = {
         | "other"
       program_status: "draft" | "open" | "closed"
       public_names_mode: "off" | "initials" | "full"
+      referee_role: "referee" | "assistant" | "fourth"
       refund_status: "requested" | "issued" | "failed" | "declined"
       registration_status:
         | "pending"
@@ -5769,6 +6016,7 @@ export const Constants = {
   public: {
     Enums: {
       academy_role: ["owner", "admin", "coach", "parent", "player"],
+      appointment_status: ["offered", "accepted", "declined", "withdrawn"],
       attendance_status: ["present", "absent", "late", "excused"],
       channel_member_role: ["host", "co_host", "member"],
       channel_status: ["active", "archived"],
@@ -5868,6 +6116,7 @@ export const Constants = {
       ],
       program_status: ["draft", "open", "closed"],
       public_names_mode: ["off", "initials", "full"],
+      referee_role: ["referee", "assistant", "fourth"],
       refund_status: ["requested", "issued", "failed", "declined"],
       registration_status: [
         "pending",

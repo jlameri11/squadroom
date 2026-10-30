@@ -598,6 +598,22 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0161. Referees: the pool is the league's; a parent at a club can
+  -- neither read it nor appoint from it.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.referees;
+  insert into rls_results values (64,'a parent sees no referee pool (no phone numbers)',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  b := false;
+  begin
+    perform public.appoint_referee(gen_random_uuid(), gen_random_uuid());
+  exception when others then b := true;
+  end;
+  insert into rls_results values (65,'a parent cannot appoint a referee',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
