@@ -276,8 +276,14 @@ function useNavBadges(): Badges | null {
       // The generated types are produced from the deployed schema, which does
       // not yet have 0080's p_academy. Cast at the call rather than hand-
       // editing lib/database.types.ts, which is regenerated.
+      // Bound, not detached: `rpc` reads `this.rest` inside supabase-js, and
+      // taking the method off the client leaves `this` undefined — the
+      // browser logged "Cannot read properties of undefined (reading
+      // 'rest')" on every page, and the badges never loaded. Found by
+      // capturing the console while screenshotting the match page.
+      const client = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rpc = createClient().rpc as any
+      const rpc = client.rpc.bind(client) as any
       inFlight = (async () => {
         // The organisation the browser remembers. Pre-0080 the function takes
         // no argument and PostgREST rejects the call, so fall back to asking
