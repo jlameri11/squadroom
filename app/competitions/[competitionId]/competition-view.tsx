@@ -4,6 +4,7 @@ import { DivisionSettings } from './division-settings'
 import { DisciplineTab } from './discipline-tab'
 import { RefereesTab } from './referees-tab'
 import { LeagueOfficials } from './league-officials'
+import { ReportsCard } from './reports-card'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
@@ -159,6 +160,7 @@ export function CompetitionView({
             </Link>
           )}
           {areas.includes('staff') && <LeagueOfficials competitionId={competitionId} />}
+          {!commsOnly && <ReportsCard competitionId={competitionId} referees={areas.includes('referees')} />}
           {isOrganiser && publication && (
             <PublishPublicly
               competitionId={competitionId}
