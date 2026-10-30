@@ -70,10 +70,24 @@ type Tab = (typeof TABS)[number]
  * Nothing here is interactive beyond choosing what to look at. There is no
  * sign-in prompt, nothing to tap that asks who you are, and no analytics.
  */
-export function MatchCentre({ centre }: { centre: Centre }) {
+export function MatchCentre({
+  centre,
+  embed = false,
+  initialTab,
+  initialDivision,
+  shareUrl,
+}: {
+  centre: Centre
+  /** L-12: inside a league's own website. No header, a footer link out. */
+  embed?: boolean
+  initialTab?: string
+  initialDivision?: string
+  /** The canonical page, for the Share button and the embed's footer. */
+  shareUrl?: string
+}) {
   const { competition, fixtures, ladder, divisions } = centre
-  const [division, setDivision] = useState(divisions[0] ?? '')
-  const [tab, setTab] = useState<Tab>('fixtures')
+  const [division, setDivision] = useState(initialDivision && divisions.includes(initialDivision) ? initialDivision : divisions[0] ?? '')
+  const [tab, setTab] = useState<Tab>((TABS as readonly string[]).includes(initialTab ?? '') ? (initialTab as Tab) : 'fixtures')
 
   const mine = divisions.length > 1 ? fixtures.filter((f) => f.division === division) : fixtures
   // Only offered when there is something to show. A Squads tab that opens on
@@ -82,21 +96,26 @@ export function MatchCentre({ centre }: { centre: Centre }) {
   const hasScorers = Object.values(centre.top_scorers ?? {}).some((l) => l.length > 0)
 
   return (
-    <main className="mx-auto w-full max-w-lg pb-12">
-      <header
-        className="px-5 pb-5 pt-7"
-        style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
-      >
-        <p className="eyebrow" style={{ color: '#ffffffaa' }}>
-          {competition.organiser}
-        </p>
-        <h1 className="display mt-1 text-[30px] leading-none">{competition.name}</h1>
-        {competition.season && (
-          <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>
-            {competition.season}
+    <main className={`mx-auto w-full max-w-lg ${embed ? 'pb-4' : 'pb-12'}`}>
+      {!embed && (
+        <header
+          className="px-5 pb-5 pt-7"
+          style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+        >
+          <p className="eyebrow" style={{ color: '#ffffffaa' }}>
+            {competition.organiser}
           </p>
-        )}
-      </header>
+          <h1 className="display mt-1 text-[30px] leading-none">{competition.name}</h1>
+          <div className="mt-1.5 flex items-center gap-3">
+            {competition.season && (
+              <p className="text-sm" style={{ color: '#ffffffb3' }}>
+                {competition.season}
+              </p>
+            )}
+            {shareUrl && <ShareButton title={competition.name} url={shareUrl} />}
+          </div>
+        </header>
+      )}
 
       {divisions.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto px-3.5 pt-3.5 pb-1">
@@ -152,7 +171,46 @@ export function MatchCentre({ centre }: { centre: Centre }) {
           ? 'Squads are published by each club. Any family can ask to be left off.'
           : 'Clubs and scores only. No player names are published here.'}
       </p>
+      {embed && shareUrl && (
+        <p className="px-6 pt-2 text-center text-xs text-ink-3">
+          <a href={shareUrl} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+            {competition.name} on Squadroom ›
+          </a>
+        </p>
+      )}
     </main>
+  )
+}
+
+/**
+ * The phone's own share sheet where there is one (every phone), copy
+ * where there is not. No tracking parameters on the link: the URL a child
+ * pastes into a group chat is the same one everybody else has.
+ */
+function ShareButton({ title, url }: { title: string; url: string }) {
+  const [copied, setCopied] = useState(false)
+  async function share() {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title, url })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // Dismissed, or no clipboard. Nothing to report.
+    }
+  }
+  return (
+    <button
+      onClick={() => void share()}
+      className="ml-auto flex-none rounded-full px-3 py-1 text-xs font-semibold"
+      style={{ background: '#ffffff22', color: '#fff' }}
+      aria-label="Share this page"
+    >
+      {copied ? 'Link copied' : 'Share'}
+    </button>
   )
 }
 

@@ -54,6 +54,18 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=(self)' },
         ],
       },
+      // L-12: the one page meant to be framed — a league's widget on its own
+      // website. Later entries override earlier ones for the same key, and a
+      // CSP frame-ancestors beats X-Frame-Options in every current browser.
+      // It carries no session (no cookies are read on /c), so framing it
+      // exposes nothing but the draw.
+      {
+        source: '/c/:slug/embed',
+        headers: [
+          { key: 'X-Frame-Options', value: 'ALLOWALL' },
+          { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
+        ],
+      },
     ]
   },
 }

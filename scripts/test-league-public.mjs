@@ -4,6 +4,7 @@
 // the opposition — and for nobody else outside the club.
 // L-12: top scorers on the public page, named by each club's own rule.
 import { createClient } from '@supabase/supabase-js'
+import { resolveBaseUrl } from './_base-url.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -149,6 +150,25 @@ head('3. Top scorers on the public page, by each club\'s own naming rule')
   await admin.from('competition_divisions').upsert({ competition_id: comp.id, division: 'U8', scores_public: false, allow_playing_up: true }, { onConflict: 'competition_id,division' })
   ;({ data: centre } = await anon.rpc('public_match_centre', { p_slug: 'lpubtest-league' }))
   centre?.top_scorers?.U8 === undefined ? ok('a hidden-score division publishes no scorers') : bad('scorers published for a hidden division')
+}
+
+head('4. The share link and the widget')
+{
+  const BASE = await resolveBaseUrl({ quiet: true })
+  await admin.from('competition_divisions').upsert({ competition_id: comp.id, division: 'U8', scores_public: true, allow_playing_up: true }, { onConflict: 'competition_id,division' })
+  const page = await fetch(`${BASE}/c/lpubtest-league`)
+  const html = await page.text()
+  page.status === 200 && /Share/.test(html) ? ok('the public page carries a Share button') : bad(`public page: ${page.status}, share button: ${/Share/.test(html)}`)
+  page.headers.get('x-frame-options') === 'DENY' ? ok('and may not be framed (X-Frame-Options DENY stays on it)') : bad(`public page X-Frame-Options: ${page.headers.get('x-frame-options')}`)
+  const emb = await fetch(`${BASE}/c/lpubtest-league/embed?view=ladder&division=U8`)
+  const ehtml = await emb.text()
+  emb.status === 200 && /LPUBTEST League(<!-- -->)? on Squadroom/.test(ehtml) ? ok('the embed answers with a link back to the full page') : bad(`embed: ${emb.status}`)
+  emb.headers.get('content-security-policy') === 'frame-ancestors *' && emb.headers.get('x-frame-options') !== 'DENY'
+    ? ok('and may be framed by any site (frame-ancestors *)')
+    : bad(`embed headers: CSP=${emb.headers.get('content-security-policy')} XFO=${emb.headers.get('x-frame-options')}`)
+  !/<header/.test(ehtml) ? ok('no header inside the frame') : bad('the embed still paints the big header')
+  const gone = await fetch(`${BASE}/c/no-such-league-ever/embed`)
+  gone.status === 200 && /isn&#x27;t published|isn't published/.test(await gone.text()) ? ok('an unknown slug says so inside the frame') : bad(`unknown embed: ${gone.status}`)
 }
 
 await cleanup()

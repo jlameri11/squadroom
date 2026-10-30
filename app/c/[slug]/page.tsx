@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import type { Metadata } from 'next'
-import { MatchCentre, type Centre } from './match-centre'
+import { MatchCentre } from './match-centre'
+import { load } from './load'
+import { siteUrl } from '@/lib/site'
 
 /**
  * A competition, in public, with no login.
@@ -28,15 +29,6 @@ export const revalidate = 60
 // parent refreshing wants to see them; the database would also rather answer
 // once for a hundred readers than a hundred times.
 
-async function load(slug: string): Promise<Centre | null> {
-  const anon = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false } }
-  )
-  const { data } = await anon.rpc('public_match_centre', { p_slug: slug })
-  return (data as unknown as Centre) ?? null
-}
 
 export async function generateMetadata(ctx: {
   params: Promise<{ slug: string }>
@@ -86,5 +78,5 @@ export default async function PublicCompetitionPage(ctx: {
     )
   }
 
-  return <MatchCentre centre={centre} />
+  return <MatchCentre centre={centre} shareUrl={`${siteUrl()}/c/${slug}`} />
 }

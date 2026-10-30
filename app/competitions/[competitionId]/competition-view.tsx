@@ -822,6 +822,7 @@ function PublishPublicly({
             Open
           </a>
         </div>
+        <EmbedSnippet url={url} name={name} />
         <button onClick={unpublish} disabled={busy}
                 className="mt-2 text-xs underline underline-offset-4 text-ink-2">
           {busy ? 'Working…' : 'Take it down'}
@@ -892,6 +893,54 @@ function Clubs({ entries }: { entries: Entry[] }) {
           </span>
         </div>
       ))}
+    </div>
+  )
+}
+
+/**
+ * L-12: the widget. One iframe tag a league pastes into its own website;
+ * the embed page carries no header and no session, and is the one path the
+ * site allows to be framed (next.config.ts).
+ */
+function EmbedSnippet({ url, name }: { url: string; name: string }) {
+  const [open, setOpen] = useState(false)
+  const [view, setView] = useState<'ladder' | 'fixtures' | 'scorers'>('ladder')
+  const [copied, setCopied] = useState(false)
+  const src = `${url}/embed?view=${view}`
+  const snippet = `<iframe src="${src}" title="${name.replace(/"/g, '&quot;')}" width="100%" height="640" style="border:0;max-width:560px" loading="lazy"></iframe>`
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="mt-2 block text-xs underline underline-offset-4 text-ink-2">
+        Embed it on your website
+      </button>
+    )
+  }
+  return (
+    <div className="mt-3 rounded-lg p-2.5" style={{ background: 'var(--surface-2)' }}>
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-ink-2">Show</span>
+        <select value={view} onChange={(e) => setView(e.target.value as typeof view)} className="rounded-lg border bg-transparent px-2 py-1" style={{ borderColor: 'var(--line)' }}>
+          <option value="ladder">Ladder</option>
+          <option value="fixtures">Fixtures</option>
+          <option value="scorers">Top scorers</option>
+        </select>
+        <button onClick={() => setOpen(false)} className="ml-auto text-ink-3">Close</button>
+      </div>
+      <p className="mt-2 break-all rounded-lg p-2 font-mono text-[11px]" style={{ background: 'var(--surface-3)' }}>
+        {snippet}
+      </p>
+      <button
+        onClick={async () => {
+          await navigator.clipboard.writeText(snippet)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        }}
+        className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-white"
+        style={{ background: 'var(--brand)' }}
+      >
+        {copied ? 'Copied' : 'Copy the embed code'}
+      </button>
+      <p className="mt-1.5 text-[11px] text-ink-3">Paste it where you want the table. It updates itself; readers can pick a division.</p>
     </div>
   )
 }
