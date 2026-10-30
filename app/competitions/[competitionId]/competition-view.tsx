@@ -1,5 +1,7 @@
 'use client'
 
+import { DivisionSettings } from './division-settings'
+
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -148,6 +150,11 @@ export function CompetitionView({
               slug={publication.slug}
               publishedAt={publication.publishedAt}
             />
+          )}
+          {/* L-01: the organiser's rules per division — points, tie-break,
+              whether scores and the ladder are public, match length. */}
+          {isOrganiser && !commsOnly && divisions.length > 0 && (
+            <DivisionSettings competitionId={competitionId} divisions={divisions} />
           )}
           <Clubs entries={entries} />
         </>

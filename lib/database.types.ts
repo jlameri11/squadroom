@@ -505,6 +505,65 @@ export type Database = {
           },
         ]
       }
+      competition_divisions: {
+        Row: {
+          age_group: string | null
+          competition_id: string
+          division: string
+          grading_note: string | null
+          id: string
+          ladder_enabled: boolean
+          match_length_mins: number | null
+          points_draw: number
+          points_loss: number
+          points_win: number
+          scores_public: boolean
+          squad_size_max: number | null
+          tie_break: string
+          updated_at: string
+        }
+        Insert: {
+          age_group?: string | null
+          competition_id: string
+          division: string
+          grading_note?: string | null
+          id?: string
+          ladder_enabled?: boolean
+          match_length_mins?: number | null
+          points_draw?: number
+          points_loss?: number
+          points_win?: number
+          scores_public?: boolean
+          squad_size_max?: number | null
+          tie_break?: string
+          updated_at?: string
+        }
+        Update: {
+          age_group?: string | null
+          competition_id?: string
+          division?: string
+          grading_note?: string | null
+          id?: string
+          ladder_enabled?: boolean
+          match_length_mins?: number | null
+          points_draw?: number
+          points_loss?: number
+          points_win?: number
+          scores_public?: boolean
+          squad_size_max?: number | null
+          tie_break?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_divisions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_entries: {
         Row: {
           academy_id: string | null

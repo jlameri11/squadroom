@@ -499,6 +499,27 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0148. Division rules: only the organiser writes them; a competition
+  -- you are not in shows none.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.competition_divisions (competition_id, division, points_win)
+    values (v_comp, 'RLS probe', 9);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (54,'a parent cannot write division rules',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.competition_divisions d
+   where not exists (select 1 from public.competition_clubs cc
+                      where cc.competition_id = d.competition_id and cc.academy_id = ACAD_A)
+     and not exists (select 1 from public.competitions c
+                      where c.id = d.competition_id and c.organiser_id = ACAD_A);
+  insert into rls_results values (55,'another competition''s division rules invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

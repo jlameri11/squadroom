@@ -28,6 +28,19 @@ async function netCalls() {
 const PROBE_ENDPOINT = 'https://probe.invalid/push-wake-test'
 
 /**
+ * A limit that covers the whole due queue. Since 0147 a claim takes every
+ * due row, device or not; a fixed 200 can leave the probe behind older
+ * rows that will never be sent. 0149 puts deliverable rows first, but the
+ * no-device check in 6 has to reach its row regardless.
+ */
+async function deep() {
+  const { count } = await admin.from('notification_queue')
+    .select('*', { count: 'exact', head: true })
+    .is('sent_at', null).lt('attempts', 5).lte('scheduled_for', new Date().toISOString())
+  return (count ?? 100) + 50
+}
+
+/**
  * A device to deliver to.
  *
  * Checks 2 and 5 were asserting something that could not happen: the project
@@ -118,7 +131,7 @@ burstAfter - burstBefore <= 1
 // because a test that ran the SQL directly would have passed throughout.
 head('5. Claiming through the RPC counts exactly one attempt (0131)')
 const id5 = await enqueue('wake-probe-claim', new Date(Date.now() - 60000).toISOString())
-const { data: firstClaim, error: claimErr } = await admin.rpc('claim_notifications', { p_limit: 200 })
+const { data: firstClaim, error: claimErr } = await admin.rpc('claim_notifications', { p_limit: await deep() })
 if (claimErr) bad(`claim_notifications failed: ${claimErr.message}`)
 const returnedOurs = (firstClaim ?? []).filter(r => r.id === id5).length
 const attemptsAfterOne = (await admin.from('notification_queue')
@@ -130,26 +143,28 @@ attemptsAfterOne === 1
   ? ok('attempts=1 after one call — not 0, and not 2')
   : bad(`attempts=${attemptsAfterOne} after a single RPC, expected exactly 1`)
 
-await admin.rpc('claim_notifications', { p_limit: 200 })
+await admin.rpc('claim_notifications', { p_limit: await deep() })
 const attemptsAfterTwo = (await admin.from('notification_queue')
   .select('attempts').eq('id', id5).single()).data?.attempts
 attemptsAfterTwo === 2
   ? ok('a second call makes it 2, so the attempts < 5 cap can engage')
   : bad(`attempts=${attemptsAfterTwo} after two RPCs, expected 2`)
 
-head('6. A notification for somebody with no device is left alone')
-// Unchanged by 0131 and asserted so it stays a decision rather than a
-// side effect: without this, the now-working cap would quietly abandon the
-// row after five sweeps, which is a choice about dropping somebody's
-// notification. Open question in NIGHT_LOG.
+head('6. A notification for somebody with no device is still claimed and counted')
+// 0147, reversing 0131's choice. test-notifications had already decided
+// this: the cap exists to stop a stuck row, and a row never claimed is the
+// stuck row. It is tried five times and left; nothing is returned to send.
 await removeProbeDevice()
 const id6 = await enqueue('wake-probe-nodevice', new Date(Date.now() - 60000).toISOString())
-await admin.rpc('claim_notifications', { p_limit: 200 })
+const { data: returned } = await admin.rpc('claim_notifications', { p_limit: await deep() })
 const noDevice = (await admin.from('notification_queue')
   .select('attempts').eq('id', id6).single()).data?.attempts
-noDevice === 0
-  ? ok('not claimed, so it does not burn an attempt it could never use')
+noDevice === 1
+  ? ok('claimed and counted, so the attempts < 5 cap can end it')
   : bad(`attempts=${noDevice} for a profile with no registered device`)
+;(returned ?? []).some((r) => r.id === id6)
+  ? bad('a row with no device was handed over to send')
+  : ok('and nothing was handed over to send — there is nowhere to send it')
 
 await admin.from('notification_queue').delete().like('dedupe_key', 'wake-%')
 await removeProbeDevice()

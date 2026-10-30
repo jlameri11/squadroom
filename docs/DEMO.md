@@ -118,6 +118,35 @@ which child is waitlisted and at what position.
 next game, kit colour and arrive-by time, no account, nothing to log into.
 Children do not get accounts in Squadroom at all.
 
+### 11. What a stranger sees — open **https://squadroom-dev.netlify.app/nrifa** in a private window
+The club's front door: crest, colour, the three open programs with the price
+and the places left, **Register**, and the public draw. Nothing about a
+person. An unknown slug says "not found" with a 200 — no enumeration oracle.
+
+Tap **Register**. Three steps — who's playing, details and agreements, review
+and send. Fill in a child, press Continue, type your name, then **reload the
+page**: it reopens on step 2 with everything still there. The review step
+says the fee and that nothing is charged now — a family pays once a human has
+said yes.
+
+### 12. The parent's own records — sign in as Sam, **Settings → My family**
+Leo and Zoe: squad and number, kit sizes (editable), medical and emergency
+details (editable), the agreements with **Withdraw** on each, PlayFootball
+status, and a **Player card** — photo in a private bucket only this family and
+the club's coaches can open, never published anywhere.
+
+### 13. The club's season — **Admin**
+- **New season**: preview, then every squad rolls up an age group with its
+  families, chat and numbers; the "not yet re-registered" list with a weekly
+  nudge.
+- **Programs → SPL Squad Trials → Trialled**: offer a trialist a squad place
+  for N days. The family sees it at the top of **Sign up** and on
+  `/offer/…`; accepting is pre-approved and goes straight to the fee.
+- **Collect payments**: two CSVs (every fee per child with Stripe ids; totals
+  by program, squad and family) and **Refunds** — worked out when a family
+  withdraws before or after the program's cut-off, issued here.
+- **Registrations → Select**: tick many, one squad for all, Accept N.
+
 ---
 
 ## If somebody asks
@@ -145,6 +174,8 @@ could add one.
 |---|---|
 | **Taking a payment** | Needs a Stripe test key (free, `sk_test_…`). A parent sees the bill and the screen says the club is still setting up, rather than offering a dead button. |
 | **Push on a phone** | Works, but needs the PWA installed on a device. No notifications in a desktop browser. |
-| **Live chat delivery** | Reliable now via three paths, but the underlying socket drops about one message in five on its own (X-18). The broadcast fix is built and blocked on a Supabase project setting. |
+| **Live chat delivery** | Fixed (X-18): messages arrive by broadcast, 40 of 40 in the measurement. Still worth two phones in your hands at a ground before a club sees it. |
 | **Native iOS app** | Needs an Apple Developer account. The Capacitor shell is written and has never been compiled. |
-| **Match sheets, referees, player borrowing** | Dribl's, on purpose. Federation functions. |
+| **Match sheets, referees, discipline** | League mode (M9) — being built now so the SPL can run a season without Dribl. Until then, Dribl's. |
+| **Refunds, instalments, vouchers, one checkout for several children** | Everything up to the Stripe call is built and tested; the call needs the free test key. |
+| **The live site** | At least three days behind this build until a Netlify token is on the laptop (NIGHT_LOG, NEEDS JOEY #7). |
