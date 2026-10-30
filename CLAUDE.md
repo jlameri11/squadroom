@@ -32,6 +32,40 @@ one and is meant to reach hundreds of academies.
     no scraping, no Fixturefeed code. The line is the handover: a human
     exports their own data and hands it over. We never reach across.
 
+- **Pricing, Joey's rule (30 Oct 2026): Squadroom is paid by clubs,
+  academies and leagues, never by parents.** Do not build any Squadroom
+  billing or plans yet — pricing is decided later, by Joey
+  (`SQUADI_INTEL.md` §6E is open). B-06 stays unbuilt until then. A
+  parent's payment goes to their club in full; there is no code path that
+  could add our fee to it (see 0065, below).
+
+- **PlayFootball and Circular 26-02 (FA, 1 Oct 2026).** For any affiliated
+  club, program or competition the order is **PlayFootball first, Squadroom
+  second**: a program can require official registration, and Squadroom
+  blocks approval until a human at the club has confirmed it. We capture
+  the FFA number and FIFA ID, import the club's own PlayFootball **export**
+  to tick statuses off, and remind the club to disclose every fee in
+  PlayFootball. **Never log in to PlayFootball and never scrape it** — the
+  only thing that crosses is a file a club admin downloads from their own
+  account. R-18 is the build; R-14 is the status.
+
+- **Design rules** (from what users say they hate about Squadi and Dribl,
+  `SQUADI_INTEL.md` §6D; check each on every new screen):
+  - Everything works on the phone. No "do it on the website". No screen is
+    desktop-only, and nothing is hidden behind a hover.
+  - One flow for families. A profile is clearly the **child's**, not the
+    parent's; a parent edits their own child's photo and details.
+  - A notification opens the exact item, never a home screen.
+  - Ladder audit: tap a ladder row to see how every point was earned,
+    adjustments included, with reasons.
+  - A sanity check before publishing a generated draw: empty slots,
+    travel, same-club clashes.
+  - Ask for selected photos only, never "all photos".
+  - Support: fast human replies, a match-day hotline, staged rollouts
+    (pilot one division first), and never blaming an organiser publicly.
+  - Transparent, published pricing. A family sees one clear total, never
+    stacked fees.
+
 - **Deployment, Joey's rule (30 Oct 2026).** Production deploys **once a
   week**, in the first session after **Sunday 8pm Sydney time** — after the
   weekend's games, never on a match day. Run the full tests first; deploy

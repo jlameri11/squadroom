@@ -107,6 +107,22 @@ Exact steps are in NEEDS JOEY below.
 
 ### NEEDS JOEY (added overnight)
 
+**9. Is the SPL sanctioned by Football NSW, and is NRIFA a "Club" under
+the FA regulations?** `SQUADI_INTEL.md` §1 says Circular 26-02 binds FA,
+member federations, districts, clubs and registered players, and is
+silent on independent academies and unsanctioned competitions. R-18 is
+built so it works either way — "requires PlayFootball registration" is a
+per-program switch — but which programs you switch it on for is your call,
+and the answer to this question decides it.
+
+**10. Where M10 Differentiators sits.** Added from `SQUADI_INTEL.md` §6C
+straight after M9's core, as the intel recommends. Say if you want it
+after M7 or M8 instead; nothing else moves.
+
+**11. Pricing (§6E) is left for you,** as asked. Your rule — paid by clubs,
+academies and leagues, never parents; no billing or plans built yet — is in
+CLAUDE.md.
+
 **7. A Netlify token, so I can deploy — ~2 minutes, free.** The site is
 linked (`.netlify/state.json` has the id) but there is no login or token
 here, and `netlify login` needs a browser. Steps:

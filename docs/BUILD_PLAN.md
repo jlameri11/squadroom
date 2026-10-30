@@ -81,6 +81,10 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | R-09 | Kit export | CSV/XLSX per season: name, squad, number, sizes. Ready for a kit order |
 | R-11 | Program questions UI | Builder in `/admin/programs/[id]` (text, select, yes/no, date, file); answers shown in the queue |
 | R-17 | Settings → My family | Each child: profile, medical, emergency contacts, consents (view/withdraw), kit sizes, number, squads. Given an ID on 29 Oct: it was only ever a dash in this table, which is how it stayed unbuilt while every field behind it got built |
+| R-18 | **Circular 26-02 compliance** (FA, 1 Oct 2026; `SQUADI_INTEL.md` §1, §6B.13) | Per-program "requires PlayFootball registration"; FFA number and FIFA ID captured on the form; **approval blocked until official status is confirmed** where required (route and trigger); a PlayFootball **export** import that ticks off statuses — a file the club downloads from its own account, **never a login or a scrape**; a reminder to disclose every fee in PlayFootball, ticked per season |
+| R-20 | Registration dashboard (§6B.21) | New vs returning, age, gender, against the club's targets |
+| S-07 | Mandatory 2FA for owners, admins and league admins (§6B.20) | TOTP via Supabase MFA; enforced at sign-in for those roles only; parents untouched |
+| B-14 | Shop (§6B.19) | Standalone and at checkout; inventory and variants; pickup or shipped; partial refunds. Kit sizes (R-05) feed the order so a supplier can fulfil it. Needs the Stripe key |
 | — | Merch / kit add-ons | Optional purchasable items at checkout (a training top, a spare pair of socks), as extra line items on the same session. Distinct from R-05 kit *sizes*, which exist only so a club can place an order offline |
 
 **Acceptance (29 Oct brief), in Stripe test mode at 375px:**
@@ -158,6 +162,11 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | B-05 | Finance export | Paid/outstanding by program/team/family; Stripe payout reconciliation; CSV |
 | — | Promo codes | Per program, % or $, limited uses and expiry |
 | R-13 | Trials → offer | Trial registration (free or paid) → trial event → coach marks Offer/Waitlist/No → offer email/push with a pay link that expires |
+| B-10 | Multi-level fee split (§6B.14) | Extends B-09: each level (league, club) refunds its own share; finance views per organisation; withdrawal exports with fees. Stripe |
+| B-11 | De-registration approval chain (§6B.15) | Extends R-15: club → league approval where a league runs the competition; automatic refunds per level; voucher carve-outs |
+| B-12 | Named voucher types (§6B.16) | Extends B-07: coach, volunteer, scholarship, sibling, government — each with limits and expiry |
+| B-13 | Direct debit and Afterpay (§6B.17) | Stripe BECS and Afterpay at checkout; **instalments can be paid early** (Squadi cannot). Stripe |
+| R-19 | Notice of Offer (§6B.18) | Extends R-12 and R-13: a dated offer to every returning player at rollover, accepted into next season's program with the fee |
 | R-12 | Season rollover | Clone teams → move everyone up an age group → keep numbers where possible → re-registration invites prefilled → report on who hasn't re-registered |
 | R-14 | Official rego status | Per player: PlayFootball done/pending, manual or via import; reminders to pending families before round 1 |
 
@@ -221,6 +230,18 @@ still registers the *player*. R-14 tracks that status and no more.
 | L-14 | Switching from Dribl | Import a league's teams, squads and fixtures from Dribl exports. The `/admin/import` mapper is reused again, not copied |
 | L-15 | Reports | Results, ladders, discipline, referee payments, team entries |
 | L-16 | Tournament entry | External teams register and pay through the **same registration engine** as a family does. A tournament entry is a registration whose subject is a team |
+| L-17 | Team-sheet lock (§6A.1) | Sheets lock at T-30 (configurable, T-15 for some leagues); after that only the referee edits, and every edit is logged |
+| L-18 | Scorer handoff (§6A.2) | The scorer hands their phone to the referee, who verifies with their own mobile number and types "Confirm" to finalise |
+| L-19 | Match lifecycle (§6A.3) | Editable → Ended (locked) → correction request, with an audit trail of who asked, who ruled, what changed |
+| L-20 | "One card away" and sanction codes (§6A.4) | Extends L-08: a push to the club when a player is one yellow from a suspension; a sanction code on every suspension |
+| L-21 | Finals eligibility and borrowing caps (§6A.5) | Attendance-driven: played N of the season's games to play finals; a cap on borrowed games per player per season; both from sheets, enforced on the sheet |
+| L-22 | Forfeit request chain (§6A.6) | Coach → club → league approval, each with a reason; the forfeit score applies only when the league rules |
+| L-23 | Fixture Flowing (§6A.7) | After the draw is published, home clubs get a window to adjust home fixtures, with **club-to-club chat on the fixture** — the natural Squadroom fit |
+| L-24 | Draw quality (§6A.8) | Pair counts, home/away balance, slot rotation, travel and club clustering before publishing; an unavailable-field impact view. **One source of truth:** match-day edits are never overwritten by republishing |
+| L-25 | Referee extras (§6A.9) | Extends L-06/L-07: decline with a reason, a late-decline block, self-appointment by experience, club-allocated referees for unfilled games, payouts to a parent for under-18s, payments visible in the app |
+| L-26 | Match-day ops dashboard (§6A.10) | Live: missing sheets, unverified results, pending reports, suspensions, unfilled referees |
+| L-27 | Nominations (§6A.11) | Clubs drag players into teams and propose a division with a comment; the league sets the final division; lock on submit; date-of-birth override by admins |
+| L-28 | Bulk tools (§6A.12) | Bulk score upload, bulk reschedule (push a round back, double headers, abandon), move a competition in bulk |
 
 **Acceptance — `scripts/test-league-season.mjs`:** a simulated SPL season. Six
 age groups, eight clubs, home and away across real venues. Referees
@@ -229,6 +250,27 @@ that suspends a player and **blocks them from next week's sheet**. A washout
 that reschedules a round and notifies every affected chat. Ladders, then
 finals. The public match centre shows all of it. `smoke-demo` covers four
 people: league admin, club manager, referee and parent.
+
+---
+
+### M10: Differentiators — what neither Squadi nor Dribl has (after M9 core)
+
+**Goal:** the reasons a league or academy picks Squadroom over both, from
+`SQUADI_INTEL.md` §6C. Built after M9's core, because every one of them
+sits on top of sheets, rosters and chat that M9 finishes. Placement in the
+order is Joey's call (NIGHT_LOG, NEEDS JOEY).
+
+| ID | Task | Detail |
+|---|---|---|
+| W-01 | Respect / behaviour marks (§6C.22) | Players, coaches and spectators marked after each game by the referee and the opposition; a league dashboard; never public |
+| W-02 | Concussion register (§6C.23) | A recorded concussion locks the child out of sheets until a clearance is uploaded and accepted |
+| W-03 | Safeguarding gate (§6C.24) | A lapsed WWCC or training blocks rosters, chat and sheets (extends 0120); a reportable-conduct register |
+| W-04 | Children's privacy consent centre (§6C.25) | The Privacy Code's consents in one place for a family, versioned, withdrawable (extends R-06, R-17, S-05) |
+| W-05 | Auto referee assignment (§6C.26) | Extends L-06: a proposed allocation across a round from availability, grade and travel, with preview and undo |
+| W-06 | Match QR check-in (§6C.27) | Extends L-06: the referee scans the ground's QR to check in; the club's manager can show it on a phone |
+| W-07 | Club-to-club change requests; overdue-fee block (§6C.28) | Extends L-23; attendance blocked while a fee is overdue, where the club turns that on |
+| W-08 | Auto-translated chat (§6C.29) | A message read in the reader's language; the original always one tap away |
+| W-09 | Later (§6C.30) | Video clips on player profiles and a league video exchange; development plans; pitch booking; casual sessions; registration insurance; streaming; lotto (NSW permits first) |
 
 ---
 
@@ -293,6 +335,9 @@ Nothing has been dropped — M9 and C-10 are *added*.
    now and the money later means building the checkout twice. **Eight of these
    items are blocked on a free Stripe test key** (NIGHT_LOG, NEEDS JOEY #1).
 2. **M9 League mode.** The one milestone that lets a league leave Dribl.
+   - **Then M10 Differentiators** (added 30 Oct 2026 from `SQUADI_INTEL.md`
+     §6C), straight after M9's core as the intel recommends. Joey to confirm
+     the slot; nothing else moves.
 3. **M7 native, pulled forward** from its old slot. Both C-10 contacts and
    reliable iPhone push need a real build, so it gates more than it looks
    like it does. Needs Joey's Apple account.

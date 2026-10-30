@@ -80,6 +80,9 @@
 | R-15 | Withdraw/deregister with full or partial refund before a cut-off | **DONE, bar the Stripe call running** (0145, `/api/payments/refund`). Each program carries its policy — full refund until a date, a share after it (0% by default, because "no refund after the cut-off" is what most clubs mean). A family withdraws from Sign up and is told the money before the tap; the club can withdraw too. The refund is worked out in the database from the payments actually made and recorded as *requested*; the treasurer issues it from Collect payments, on the club's connected account. Without a key the route says so and the request is kept. Withdrawing leaves the roster alone — removing a family from a chat is the club's explicit act. Proven by test-withdrawals (17), test-rls 50–51 | — |
 | R-16 | Hide a player's name or photo on public tournament pages | **DONE** (0093–0096). Three controls: an academy setting (off / "Leo W." / full name), a per-child opt-out that always wins, and the rule that each player's OWN academy decides — a competition you run never publishes a visiting club's children. Proven by test-public-squads, which also asserts the payload carries nothing but a name and a number: no date of birth, no phone number, no medical note | P2 |
 | R-17 | **Settings → My family**: each child's profile, medical, emergency contacts, consents (view *and withdraw*), kit sizes, number, squads | MISSING. Added as an ID on 29 Oct because it was only ever a cell in the Section 3 table, which is how it stayed unbuilt while every field behind it got built. All of it exists (0082, 0085, 0123) and all of it is **admin- and coach-side only**: a parent's single route to their own child's record is the JSON data export. The sharpest gap is consent *withdrawal* — R-06 records a refusal as carefully as a yes, and a parent currently has no way to change their mind | P1 |
+| R-18 | **Circular 26-02 compliance** (FA, 1 Oct 2026): per-program "requires PlayFootball registration"; FFA number + FIFA ID captured; approval blocked until official status is confirmed where required; PlayFootball export import; fee-disclosure reminder. Never log in to or scrape PlayFootball | BUILDING (30 Oct 2026) | P1 |
+| R-19 | Notice of Offer to returning players at rollover (extends R-12, R-13) | MISSING — added 30 Oct from `SQUADI_INTEL.md` §6B | P2 |
+| R-20 | Registration dashboard: new vs returning, age, gender, against targets | MISSING — added 30 Oct from `SQUADI_INTEL.md` §6B | P3 |
 
 ### B. Safeguarding & compliance
 | ID | Feature | Status | Pri |
@@ -90,6 +93,7 @@
 | S-04 | Photo-consent warning before posting media of a player without consent (needs R-06) | **DONE** (0128 + `app/chat/[channelId]/photo-consent.tsx`). Consent had been recorded since R-06, refusals included, and nothing read it back — so a coach could photograph training and post it into a chat containing the family who said no. It does NOT claim to have looked at the photo: a product that said so would be trusted and cannot be. It names who in THIS squad must not be photographed, at the moment of posting, and leaves the looking to the human who was there. REFUSED and NOT ANSWERED are never merged — one is a decision, the other a question the club has not asked, and merging them fires the warning for every child at a new club, which trains people past the real one. A club with no photo policy gets nothing. Proven by test-photo-consent (16), including that reissuing the form resets every earlier answer | — |
 | S-05 | **Children's Online Privacy Code** (due by 10 Dec 2026): guardian consent records, export/delete my data, child-friendly privacy notice, data minimisation. Get a legal review before the second academy | **EXPORT AND ERASE DONE** (0127, `app/settings/my-data.tsx`, `app/api/me/erase`). Consent records were already versioned (R-06). The thinking is in what is KEPT, each with a stated reason returned by the function itself so a screen cannot describe a policy the code does not implement: safeguarding reports (a report naming somebody cannot be erased BY them), payment amounts (the club's books, five years), WWCC records (the club's obligation, not the holder's property), messages tombstoned not deleted (removing them rewrites other people's conversations), and the child's roster row (it belongs to the club) — with the club NOTIFIED when the last guardian goes, because a child nobody can ring about is a child nobody can collect from training. Erasure returns a manifest, which is the compliance artifact. **Still outstanding: the child-friendly privacy notice and the legal review** | P2 |
 | S-06 | Player accounts (13+) restricted to team/announcement channels and always linked to a guardian | **SUPERSEDED — will not be built.** Joey's decision: *nobody under 18 gets an account.* Children exist as roster records, never as users, and they see fixtures, results and ladders through the public match centre with no login and nothing collected about them — which is how Dribl already does it. This is both the stronger safeguarding posture and a large reduction in regulatory surface: the under-16 social-media minimum age and most of the Children's Online Privacy Code apply to *child users*, and there will not be any. Enforced by **0078** (applied), which is two triggers, not one: `academy_members_adults_only` refuses the `player` role outright, and `players_no_logins` refuses a `profile_id` on a player record — because a child given a login through the roster rather than the member list would have walked around a single gate. The `player` role stays in the enum, refused at the door, rather than being removed: a role nothing can grant is safer than a migration across every policy. Proven by `test-adults-only.mjs` | — |
+| S-07 | Mandatory 2FA for owners, admins and league admins (TOTP); parents untouched | MISSING — added 30 Oct from `SQUADI_INTEL.md` §6B.20 | P2 |
 
 ### C. Chat (close the gap with WhatsApp)
 | ID | Feature | Status | Pri |
@@ -172,6 +176,32 @@ The one milestone that lets a league leave Dribl. SPL first. Detail and the acce
 | L-14 | Switching from Dribl: import a league's teams, squads, fixtures | PARTIAL — the fixture importer exists for a club; the league-wide form is not | P2 |
 | L-15 | Reports: results, ladders, discipline, referee payments, entries | MISSING | P2 |
 | L-16 | Tournament entry: external teams register and pay through the registration engine | MISSING — Stripe for the fee | P2 |
+| L-17 | Team-sheet lock at T-30/T-15, referee-only edits after, logged | MISSING — Squadi parity, `SQUADI_INTEL.md` §6A.1 | P1 |
+| L-18 | Scorer handoff: referee verifies on the scorer's phone with their mobile; typed "Confirm" | MISSING — §6A.2 | P2 |
+| L-19 | Match lifecycle Editable → Ended (locked) → correction request, audited | MISSING — §6A.3; L-05 has final + dispute | P1 |
+| L-20 | "One card away" warning push; sanction codes (extends L-08) | MISSING — §6A.4 | P2 |
+| L-21 | Attendance-driven finals eligibility; borrowing caps, enforced on the sheet | MISSING — §6A.5 | P1 |
+| L-22 | Forfeit request chain coach → club → league | MISSING — §6A.6; L-09 has the organiser's forfeit | P2 |
+| L-23 | Fixture Flowing: home clubs adjust in a window; club-to-club chat on a fixture | MISSING — §6A.7 | P1 |
+| L-24 | Draw quality summary and field-impact view; match-day edits never overwritten by republishing | MISSING — §6A.8 | P1 |
+| L-25 | Referee extras: decline reason, late-decline block, self-appointment by experience, club-allocated refs, under-18 payouts to a parent, payments in app | MISSING — §6A.9; extends L-06/L-07 | P2 |
+| L-26 | Live match-day ops dashboard: missing sheets, unverified results, pending reports, suspensions, unfilled referees | MISSING — §6A.10 | P1 |
+| L-27 | Nominations: drag players into teams, propose a division with a comment, league sets it, lock on submit, DOB override | MISSING — §6A.11 | P2 |
+| L-28 | Bulk tools: score upload, reschedule a round, double headers, abandon, move a competition | MISSING — §6A.12 | P2 |
+
+### J. Differentiators — neither Squadi nor Dribl (M10, added 30 Oct 2026)
+
+| ID | Feature | Status | Priority |
+|---|---|---|---|
+| W-01 | Respect / behaviour marks (players, coaches, spectators) with a league dashboard; never public | MISSING | P2 |
+| W-02 | Concussion register: sheet lockout until a clearance is uploaded and accepted | MISSING | P1 |
+| W-03 | Safeguarding gate: a lapsed WWCC or training blocks rosters, chat and sheets; reportable-conduct register | PARTIAL — 0120 gates coaching on a clearance | P1 |
+| W-04 | Children's privacy consent centre | PARTIAL — R-06, R-17 | P2 |
+| W-05 | Auto referee assignment with preview and undo | MISSING | P2 |
+| W-06 | Match QR check-in for referees | MISSING — L-06 has a tap check-in | P3 |
+| W-07 | Club-to-club change requests; attendance blocked on overdue fees | MISSING | P2 |
+| W-08 | Auto-translated chat, original one tap away | MISSING | P3 |
+| W-09 | Later: video, development plans, pitch booking, casual sessions, insurance, streaming, lotto | LATER | — |
 
 ### H. Match centre, stats & engagement (from the final Dribl scan)
 Dribl's weak spots here:
