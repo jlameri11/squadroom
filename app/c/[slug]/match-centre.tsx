@@ -47,13 +47,15 @@ export type Centre = {
    * organiser's.
    */
   squads?: Record<string, SquadPlayer[]>
+  /** L-12: goals from the sheets, named by each player's own club's rule. Absent for hidden-score divisions. */
+  top_scorers?: Record<string, { name: string; team: string; goals: number }[]>
 }
 
 const SYDNEY = 'Australia/Sydney'
 
 // A `const` assertion cannot be applied to a conditional expression, so the
 // list is declared once and filtered rather than built inline.
-const TABS = ['fixtures', 'ladder', 'squads'] as const
+const TABS = ['fixtures', 'ladder', 'scorers', 'squads'] as const
 type Tab = (typeof TABS)[number]
 
 /**
@@ -77,6 +79,7 @@ export function MatchCentre({ centre }: { centre: Centre }) {
   // Only offered when there is something to show. A Squads tab that opens on
   // "no squads published" is worse than no tab.
   const hasSquads = Object.keys(centre.squads ?? {}).length > 0
+  const hasScorers = Object.values(centre.top_scorers ?? {}).some((l) => l.length > 0)
 
   return (
     <main className="mx-auto w-full max-w-lg pb-12">
@@ -115,7 +118,7 @@ export function MatchCentre({ centre }: { centre: Centre }) {
       )}
 
       <div className="flex gap-1.5 px-3.5 py-2.5">
-        {TABS.filter((t) => t !== 'squads' || hasSquads).map((t) => (
+        {TABS.filter((t) => (t !== 'squads' || hasSquads) && (t !== 'scorers' || hasScorers)).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -126,13 +129,15 @@ export function MatchCentre({ centre }: { centre: Centre }) {
                 : { background: 'transparent', color: 'var(--ink-3)' }
             }
           >
-            {t === 'fixtures' ? 'Fixtures' : t === 'ladder' ? 'Ladder' : 'Squads'}
+            {t === 'fixtures' ? 'Fixtures' : t === 'ladder' ? 'Ladder' : t === 'scorers' ? 'Scorers' : 'Squads'}
           </button>
         ))}
       </div>
 
       {tab === 'fixtures' ? (
         <Fixtures fixtures={mine} />
+      ) : tab === 'scorers' ? (
+        <Scorers rows={centre.top_scorers?.[division] ?? centre.top_scorers?.[divisions[0] ?? ''] ?? []} />
       ) : tab === 'ladder' ? (
         <Ladder rows={ladder[division] ?? ladder[divisions[0] ?? ''] ?? []} />
       ) : (
@@ -414,4 +419,25 @@ function dayOf(games: Fixture[]) {
     month: 'short',
     timeZone: SYDNEY,
   })
+}
+
+/** L-12: who scored, from the sheets. Named by each player's own club's rule. */
+function Scorers({ rows }: { rows: { name: string; team: string; goals: number }[] }) {
+  if (rows.length === 0) {
+    return <p className="m-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">No goals recorded yet.</p>
+  }
+  return (
+    <ol className="px-4 py-2">
+      {rows.map((r, i) => (
+        <li key={i} className="flex items-center gap-3 border-b py-2.5 text-sm" style={{ borderColor: 'var(--line-2)' }}>
+          <span className="w-5 flex-none text-right text-xs tabular-nums text-ink-3">{i + 1}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{r.name}</span>
+            <span className="block truncate text-xs text-ink-3">{r.team}</span>
+          </span>
+          <span className="flex-none text-base font-bold tabular-nums" style={{ color: 'var(--brand-text)' }}>{r.goals}</span>
+        </li>
+      ))}
+    </ol>
+  )
 }

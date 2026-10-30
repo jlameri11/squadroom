@@ -288,7 +288,12 @@ function SheetPanel({
             {sheet.players.map((p) => (
               <li key={p.player_id} className="flex items-center gap-2">
                 <span className="w-7 flex-none tabular-nums text-ink-3">{p.number ?? '—'}</span>
-                <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                {/* L-04: the card, for whoever may open it — the family and
+                    club always, the league's officials for the season, the
+                    opposition on match day. */}
+                <a href={`/card/${p.player_id}`} className="min-w-0 flex-1 truncate underline decoration-dotted underline-offset-2">
+                  {p.name}
+                </a>
                 {sheet.captain_player_id === p.player_id && <span className="pill">C</span>}
                 {sheet.keeper_player_id === p.player_id && <span className="pill">GK</span>}
               </li>
