@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Question } from '@/components/question-field'
 import { QuestionsEditor } from './questions-editor'
 import { OfferControl, type TrialOffer } from './offer-control'
+import { WithdrawPolicy } from './withdraw-policy'
 
 type Registration = {
   id: string
@@ -30,6 +31,8 @@ type Program = {
   team_id: string | null
   closes_at: string | null
   questions: Question[] | null
+  withdraw_until: string | null
+  refund_bps_after: number
 }
 
 /**
@@ -63,7 +66,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
     const supabase = createClient()
     const { data: p } = await supabase
       .from('programs')
-      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions')
+      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions, withdraw_until, refund_bps_after')
       .eq('id', programId)
       .maybeSingle()
     if (!p) return setProgram(null)
@@ -238,6 +241,13 @@ export function ProgramScreen({ programId }: { programId: string }) {
             programId={program.id}
             questions={Array.isArray(program.questions) ? program.questions : []}
             onSaved={(questions) => setProgram({ ...program, questions })}
+          />
+
+          <WithdrawPolicy
+            programId={program.id}
+            withdrawUntil={program.withdraw_until}
+            refundBpsAfter={program.refund_bps_after ?? 0}
+            onSaved={(withdraw_until, refund_bps_after) => setProgram({ ...program, withdraw_until, refund_bps_after })}
           />
 
           {error && (

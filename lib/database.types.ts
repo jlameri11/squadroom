@@ -3095,12 +3095,14 @@ export type Database = {
           payment_request_id: string | null
           payment_required: boolean
           questions: Json
+          refund_bps_after: number
           season: string | null
           starts_on: string | null
           status: Database["public"]["Enums"]["program_status"]
           team_id: string | null
           updated_at: string
           waitlist_enabled: boolean
+          withdraw_until: string | null
         }
         Insert: {
           academy_id: string
@@ -3120,12 +3122,14 @@ export type Database = {
           payment_request_id?: string | null
           payment_required?: boolean
           questions?: Json
+          refund_bps_after?: number
           season?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["program_status"]
           team_id?: string | null
           updated_at?: string
           waitlist_enabled?: boolean
+          withdraw_until?: string | null
         }
         Update: {
           academy_id?: string
@@ -3145,12 +3149,14 @@ export type Database = {
           payment_request_id?: string | null
           payment_required?: boolean
           questions?: Json
+          refund_bps_after?: number
           season?: string | null
           starts_on?: string | null
           status?: Database["public"]["Enums"]["program_status"]
           team_id?: string | null
           updated_at?: string
           waitlist_enabled?: boolean
+          withdraw_until?: string | null
         }
         Relationships: [
           {
@@ -3227,6 +3233,100 @@ export type Database = {
           {
             foreignKeyName: "push_subscriptions_profile_id_fkey"
             columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refunds: {
+        Row: {
+          academy_id: string
+          amount_cents: number
+          id: string
+          issued_at: string | null
+          issued_by: string | null
+          note: string | null
+          payment_id: string
+          player_id: string
+          reason: string | null
+          registration_id: string
+          requested_at: string
+          requested_by: string | null
+          status: Database["public"]["Enums"]["refund_status"]
+          stripe_refund_id: string | null
+        }
+        Insert: {
+          academy_id: string
+          amount_cents: number
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          note?: string | null
+          payment_id: string
+          player_id: string
+          reason?: string | null
+          registration_id: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["refund_status"]
+          stripe_refund_id?: string | null
+        }
+        Update: {
+          academy_id?: string
+          amount_cents?: number
+          id?: string
+          issued_at?: string | null
+          issued_by?: string | null
+          note?: string | null
+          payment_id?: string
+          player_id?: string
+          reason?: string | null
+          registration_id?: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["refund_status"]
+          stripe_refund_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_payment_fkey"
+            columns: ["payment_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "refunds_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "refunds_registration_fkey"
+            columns: ["registration_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "program_registrations"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "refunds_requested_by_fkey"
+            columns: ["requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -4532,6 +4632,7 @@ export type Database = {
         }
         Returns: string
       }
+      refunds_to_issue: { Args: { p_academy: string }; Returns: Json }
       registration_queue: {
         Args: { p_academy?: string; p_status?: string }
         Returns: {
@@ -4730,6 +4831,10 @@ export type Database = {
           player_name: string
         }[]
       }
+      withdraw_registration: {
+        Args: { p_reason?: string; p_registration: string }
+        Returns: Json
+      }
       zone_time: { Args: { p_zone: string }; Returns: string }
     }
     Enums: {
@@ -4816,6 +4921,7 @@ export type Database = {
         | "other"
       program_status: "draft" | "open" | "closed"
       public_names_mode: "off" | "initials" | "full"
+      refund_status: "requested" | "issued" | "failed" | "declined"
       registration_status:
         | "pending"
         | "approved"
@@ -5050,6 +5156,7 @@ export const Constants = {
       ],
       program_status: ["draft", "open", "closed"],
       public_names_mode: ["off", "initials", "full"],
+      refund_status: ["requested", "issued", "failed", "declined"],
       registration_status: [
         "pending",
         "approved",

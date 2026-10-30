@@ -26,11 +26,11 @@ Statuses: **DONE** · **PARTIAL** (what is missing is named) · **MISSING** ·
 | 13 | Team nomination step | Nothing | **MISSING** | L-02 (league mode) |
 | 14 | **Team Creator / Team Link** — a captain registers a team, teammates join with a code | Join codes exist for a squad (X-21): six characters, said at training, coach approval. **No "captain creates the team" flow**, and the code joins a chat/squad, not a registration | **PARTIAL** → **L-16** tournament/team entry: a team registers and pays as one, and members join it by code | X-21, L-16 |
 | 15 | Double approval (club, then Dribl) | Single club approval; bulk approve | **DONE, by design** — there is no second organisation to approve unless a league runs the competition (M9), where the league's acceptance of a club's entry is the second step | R-07, L-02 |
-| 16 | **Deregistration with full or partial refund, cut-off dates** | Refund *recordable* (webhook) but not *issuable*; no withdraw flow; no cut-off | **MISSING** | R-15, B-04 |
+| 16 | **Deregistration with full or partial refund, cut-off dates** | Per-program cut-off and after-share; family or club withdraws; refund computed and recorded; treasurer issues on the connected account | **DONE** (the Stripe call itself untested until the key) | R-15, B-04 |
 | 17 | **Digital player card** (photo, name, squad, number — match-day ID) | Nothing; the pieces exist (photo_url, number, squad) | **MISSING** | X-06, L-04 |
 | 18 | Consents / terms per product, versioned | Versioned documents; the answer recorded; withdraw from My family | **DONE** | R-06, R-17 |
 | 19 | Official registration status (PlayFootball) shown per player | Status + FFA number on the roster and on My family; weekly reminder to the family before round one | **DONE** | R-14 |
-| 20 | Registration data export | Kit list export only; no registrations export | **MISSING** | B-05 |
+| 20 | Registration data export | Finance CSVs (every fee per child; totals by program, squad, family). A registrations-only export (who registered for what, with answers) is still to do | **PARTIAL** | B-05 |
 
 ## What this changes in the build order
 

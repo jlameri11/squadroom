@@ -51,6 +51,8 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **R-15** withdraw + refund | **Done bar the Stripe call.** Program policy (full until a date, X% after); Withdraw on Sign up with the money said first; refund computed and recorded; Refunds panel on Collect payments issues it on the connected account, or says plainly that Stripe isn't set up | test-withdrawals 17, test-rls 50–51 |
+| **B-05** finance export | **Done.** Two CSVs from Collect payments — every fee per child with Stripe ids, and totals by program / squad / family. Money from the one price function | test-finance-export 14 |
 | **R-13** trials → offer → pay | **Done.** Offer control on the trial's list (squad program + days); guardians notified; `/offer/[id]` to accept (pre-approved, into the squad, then the fee) or decline; lapses by date. Two of its own bugs caught by the suite and fixed (0141, 0142) | test-trial-offers 26, test-rls 48–49 |
 | **R-12** season rollover | **Done.** Admin → New season: preview, then clone / move / keep numbers / open next season's squad program / end the old squad; "not yet re-registered" report with a weekly nudge | test-season-rollover 20, screens both themes |
 

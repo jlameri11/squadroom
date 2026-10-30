@@ -464,6 +464,23 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0145. Refunds: nobody writes the table directly; another club's are
+  -- invisible.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.refunds (academy_id, registration_id, player_id, payment_id, amount_cents)
+    values (ACAD_A, gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), 100);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (50,'a refund cannot be written directly',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.refunds where academy_id = ACAD_B;
+  insert into rls_results values (51,'academy B refunds invisible',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

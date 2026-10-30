@@ -6,6 +6,7 @@ import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
 import { QuestionField, type Question } from '@/components/question-field'
+import { WithdrawButton } from './withdraw-button'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 
@@ -170,6 +171,19 @@ export function ProgramsParent() {
                             <li key={r.id} className="text-sm">
                               <b>{child?.full_name}</b>{' '}
                               <span style={{ color: tone(r.status) }}>{said(r)}</span>
+                              {['pending', 'approved', 'waitlisted'].includes(r.status) && (
+                                <WithdrawButton
+                                  registrationId={r.id}
+                                  childName={child?.full_name ?? 'this child'}
+                                  withdrawUntil={(p as Program & { withdraw_until?: string | null }).withdraw_until ?? null}
+                                  refundBpsAfter={(p as Program & { refund_bps_after?: number }).refund_bps_after ?? 0}
+                                  onDone={async () => {
+                                    const supabase = createClient()
+                                    const { data: claims } = await supabase.auth.getClaims()
+                                    if (claims?.claims?.sub && academy) await load(academy.id, claims.claims.sub)
+                                  }}
+                                />
+                              )}
                             </li>
                           )
                         })}

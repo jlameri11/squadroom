@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Outstanding } from './outstanding'
+import { RefundsPanel } from './refunds-panel'
 import { createClient } from '@/lib/supabase/client'
 
 export type BillingStatus = {
@@ -92,6 +93,8 @@ export function PaymentsAdmin({
         </a>
         <span className="block text-xs text-ink-3">CSV — opens in Excel, Numbers or Sheets. Stripe payment ids included for matching payouts.</span>
       </p>
+
+      <RefundsPanel academyId={academyId} />
 
       <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
         <h2 className="font-semibold">Where the money goes</h2>
