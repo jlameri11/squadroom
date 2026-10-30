@@ -2210,6 +2210,55 @@ export type Database = {
           },
         ]
       }
+      league_roles: {
+        Row: {
+          academy_id: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["league_role"]
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          profile_id: string
+          role: Database["public"]["Enums"]["league_role"]
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          profile_id?: string
+          role?: Database["public"]["Enums"]["league_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "league_roles_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "league_roles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_events: {
         Row: {
           competition_id: string
@@ -5359,6 +5408,14 @@ export type Database = {
           profile_id: string
         }[]
       }
+      grant_league_role: {
+        Args: {
+          p_competition: string
+          p_profile: string
+          p_role: Database["public"]["Enums"]["league_role"]
+        }
+        Returns: undefined
+      }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
       import_official_status: {
@@ -5376,6 +5433,7 @@ export type Database = {
       }
       import_screen: { Args: { p_academy?: string }; Returns: Json }
       kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
+      league_officials: { Args: { p_competition: string }; Returns: Json }
       make_offer: {
         Args: {
           p_days?: number
@@ -5442,6 +5500,7 @@ export type Database = {
           unread_count: number
         }[]
       }
+      my_competition_access: { Args: { p_competition: string }; Returns: Json }
       my_family: { Args: never; Returns: Json }
       my_offers: { Args: never; Returns: Json }
       my_organisations: {
@@ -5829,6 +5888,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      revoke_league_role: {
+        Args: {
+          p_competition: string
+          p_profile: string
+          p_role: Database["public"]["Enums"]["league_role"]
+        }
+        Returns: undefined
+      }
       revoke_member_tree: {
         Args: { p_academy: string; p_profile: string }
         Returns: number
@@ -6092,6 +6159,11 @@ export type Database = {
         | "XL"
         | "2XL"
         | "3XL"
+      league_role:
+        | "competition_manager"
+        | "referee_coordinator"
+        | "discipline_officer"
+        | "ground_manager"
       lineup_role: "starting" | "bench" | "out"
       match_event_kind:
         | "goal"
@@ -6339,6 +6411,12 @@ export const Constants = {
         "XL",
         "2XL",
         "3XL",
+      ],
+      league_role: [
+        "competition_manager",
+        "referee_coordinator",
+        "discipline_officer",
+        "ground_manager",
       ],
       lineup_role: ["starting", "bench", "out"],
       match_event_kind: [

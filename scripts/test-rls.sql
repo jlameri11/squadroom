@@ -640,6 +640,21 @@ begin
   select count(*) into n from public.referee_payment_items;
   insert into rls_results values (69,'a parent sees no referee payment items',
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0164. League roles are handed out by the league's staff and nobody else.
+  b := false;
+  begin
+    insert into public.league_roles (academy_id, profile_id, role) values (ACAD_A, PARENT, 'competition_manager');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (70,'a parent cannot give themselves a league role',
+    case when b then 'PASS' else 'FAIL' end);
+  b := false;
+  begin
+    perform public.grant_league_role(v_comp, PARENT, 'competition_manager');
+  exception when others then b := true;
+  end;
+  insert into rls_results values (71,'a parent cannot grant a league role by function',
+    case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

@@ -3,6 +3,7 @@
 import { DivisionSettings } from './division-settings'
 import { DisciplineTab } from './discipline-tab'
 import { RefereesTab } from './referees-tab'
+import { LeagueOfficials } from './league-officials'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
@@ -46,11 +47,13 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, mode, isOrganiser, name, publication, divisions, fixtures, ladders, entries,
+  competitionId, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries,
 }: {
   competitionId: string
   mode: string
   isOrganiser: boolean
+  /** L-13: 'staff', 'competition', 'referees', 'discipline', 'grounds' — what this person may run here. */
+  areas?: string[]
   name: string
   /** Null until 0079 is applied, which is how the control stays hidden. */
   publication: { slug: string | null; publishedAt: string | null } | null
@@ -117,6 +120,7 @@ export function CompetitionView({
         <RunSheet
           competitionId={competitionId}
           isOrganiser={isOrganiser}
+          grounds={areas.includes('grounds')}
           division={division}
           fixtures={fixtures.filter((f) => divisions.length <= 1 || f.division === division)}
         />
@@ -124,8 +128,8 @@ export function CompetitionView({
       {tab === 'ladder' && (
         <Ladder rows={ladders[division] ?? []} competitionId={competitionId} division={division} isOrganiser={isOrganiser} />
       )}
-      {tab === 'discipline' && <DisciplineTab competitionId={competitionId} isOrganiser={isOrganiser} />}
-      {tab === 'referees' && <RefereesTab competitionId={competitionId} division={division} isOrganiser={isOrganiser} />}
+      {tab === 'discipline' && <DisciplineTab competitionId={competitionId} isOrganiser={areas.includes('discipline')} />}
+      {tab === 'referees' && <RefereesTab competitionId={competitionId} division={division} isOrganiser={areas.includes('referees')} />}
       {tab === 'clubs' && (
         <>
           {/*
@@ -154,6 +158,7 @@ export function CompetitionView({
                 : `Invite more clubs →`}
             </Link>
           )}
+          {areas.includes('staff') && <LeagueOfficials competitionId={competitionId} />}
           {isOrganiser && publication && (
             <PublishPublicly
               competitionId={competitionId}
@@ -176,10 +181,12 @@ export function CompetitionView({
 }
 
 function RunSheet({
-  competitionId, isOrganiser, division, fixtures,
+  competitionId, isOrganiser, grounds = isOrganiser, division, fixtures,
 }: {
   competitionId: string
   isOrganiser: boolean
+  /** L-13: may call off, postpone, reschedule, forfeit. */
+  grounds?: boolean
   division: string
   fixtures: Fixture[]
 }) {
@@ -247,7 +254,7 @@ function RunSheet({
       {isOrganiser && <SetUpFinals competitionId={competitionId} division={division} />}
       {/* L-09: a wet Saturday in one tap. Every affected club's squad is
           told through the fixture → event → push chain, with the reason. */}
-      {isOrganiser && <CallOffDay competitionId={competitionId} />}
+      {grounds && <CallOffDay competitionId={competitionId} />}
 
       {[...slots.entries()].map(([slot, games]) => (
         <section key={slot}>
@@ -325,7 +332,7 @@ function RunSheet({
               >
                 Match sheet ›
               </Link>
-              {isOrganiser && (
+              {grounds && (
                 <FixtureOps
                   fixtureId={f.fixture_id}
                   status={f.status}

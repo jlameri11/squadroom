@@ -20,7 +20,7 @@ export default async function CompetitionPage(props: {
 
   if (!comp) notFound()
 
-  const [{ data: sheet }, { data: entries }, { data: me }] = await Promise.all([
+  const [{ data: sheet }, { data: entries }, { data: access }] = await Promise.all([
     supabase.rpc('competition_run_sheet', { p_competition: competitionId }),
     supabase
       .from('competition_entries')
@@ -29,15 +29,12 @@ export default async function CompetitionPage(props: {
       .order('division')
       .order('group_label')
       .order('display_name'),
-    supabase
-      .from('academy_members')
-      .select('role')
-      .eq('academy_id', comp.organiser_id)
-      .eq('profile_id', userId)
-      .maybeSingle(),
+    // L-13: owner/admin, or a league role scoped to an area.
+    supabase.rpc('my_competition_access', { p_competition: competitionId }),
   ])
 
-  const isOrganiser = me?.role === 'owner' || me?.role === 'admin'
+  const areas = ((access as unknown as { areas?: string[] } | null)?.areas ?? []) as string[]
+  const isOrganiser = areas.includes('competition')
   const divisions = [...new Set((entries ?? []).map((e) => e.division))]
 
   // Asked for separately, and allowed to fail.
@@ -83,6 +80,7 @@ export default async function CompetitionPage(props: {
         competitionId={comp.id}
         mode={comp.mode}
         isOrganiser={isOrganiser}
+        areas={areas}
         name={comp.name}
         publication={
           publication
