@@ -92,9 +92,9 @@ const game1At = sat.toISOString()
 const game2At = new Date(sat.getTime() + 60 * 60_000).toISOString()
 const game3At = new Date(sat.getTime() + 3 * 60 * 60_000).toISOString()
 const { data: fx } = await admin.from('fixtures').insert([
-  { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: nrifa.id, away_entry_id: ravens.id, starts_at: game1At, field_label: 'Field 1', status: 'scheduled', stage: 'group' },
-  { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: visitors.id, away_entry_id: nrifa.id, starts_at: game2At, field_label: 'Field 2', status: 'scheduled', stage: 'group' },
-  { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: ravens.id, away_entry_id: visitors.id, starts_at: game3At, field_label: 'Field 1', status: 'scheduled', stage: 'group' },
+  { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: nrifa.id, away_entry_id: ravens.id, starts_at: game1At, venue_label: 'Nolan Reserve', field_label: 'Field 1', status: 'scheduled', stage: 'group' },
+  { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: visitors.id, away_entry_id: nrifa.id, starts_at: game2At, venue_label: 'Magdala Park', field_label: 'Field 2', status: 'scheduled', stage: 'group' },
+  { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: ravens.id, away_entry_id: visitors.id, starts_at: game3At, venue_label: 'Nolan Reserve', field_label: 'Field 1', status: 'scheduled', stage: 'group' },
 ]).select('id')
 const [game1, game2, game3] = fx.map((r) => r.id)
 
@@ -162,7 +162,7 @@ let appt1
   const { data: q } = await admin.from('notification_queue').select('title, body, url, kind').eq('profile_id', refAId).eq('kind', 'referee_appointment')
   q?.length === 1 && q[0].url === '/referee' ? ok(`the push: "${q[0].title}" — ${q[0].body}`) : bad(`pushes to Pat: ${JSON.stringify(q)}`)
   const { error: clash } = await official.rpc('appoint_referee', { p_fixture: game2, p_referee: poolA })
-  clash?.message.includes('already on') ? ok(`game 2 an hour later is refused: "${clash.message}"`) : bad(`a double booking: ${clash?.message ?? 'went through'}`)
+  clash?.message.includes('already on') ? ok(`game 2 an hour later across town is refused: "${clash.message}"`) : bad(`a double booking: ${clash?.message ?? 'went through'}`)
   const { error: free } = await official.rpc('appoint_referee', { p_fixture: game3, p_referee: poolA })
   free ? bad(`game 3, three hours on: ${free.message}`) : ok('game 3, three hours later, is fine')
   const { error: second } = await official.rpc('appoint_referee', { p_fixture: game3, p_referee: poolB, p_role: 'referee' })

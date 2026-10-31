@@ -83,7 +83,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 | X2 | Concussion register with sheet lockout and clearance upload | Recorded by family or club; sheet refuses by name; clearance in a private bucket; only the club clears; "No play" on the card | **DONE** (0168, 1 Nov) | W-02 |
 | X3 | Safeguarding gate (WWCC / training lapse blocks rosters, chat, sheets); reportable-conduct register | A lapsed WWCC removes coaching rights, roster and posting on the spot (0169–0170); conduct register filed by any member, read by officers | **DONE** bar training records (none exist yet) | W-03 |
 | X4 | Children's privacy consent centre | One section per child: who sees what from the enforcing code, the public-name switch, agreements with versions, export/erase; a child-first notice at `/privacy` | **DONE** (0171, 1 Nov) | W-04 |
-| X5 | Auto referee assignment with preview and undo | Manual with availability (L-06) | MISSING | W-05 |
+| X5 | Auto referee assignment with preview and undo | A day drafted from availability and load, previewed, applied as a batch of offers, undone as a batch | **DONE** (0172–0173, 1 Nov) | W-05 |
 | X6 | Match QR check-in for referees | Tap check-in in a window (L-06) | PARTIAL | W-06 |
 | X7 | Club-to-club change requests; attendance blocked on overdue fees | — | MISSING | W-07 |
 | X8 | Auto-translated chat | — | MISSING | W-08 |

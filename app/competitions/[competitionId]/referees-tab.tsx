@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { RefereePayments } from './referee-payments'
+import { RefereeAuto } from './referee-auto'
 
 const SYDNEY = 'Australia/Sydney'
 
@@ -243,6 +244,8 @@ export function RefereesTab({
           )}
         </section>
       )}
+
+      {isOrganiser && <RefereeAuto competitionId={competitionId} onDone={load} />}
 
       <h3 className="eyebrow px-1 pb-1.5">Games</h3>
       {games.length === 0 ? (

@@ -4169,6 +4169,7 @@ export type Database = {
       referee_appointments: {
         Row: {
           academy_id: string
+          batch_id: string | null
           checked_in_at: string | null
           competition_id: string
           created_at: string
@@ -4188,6 +4189,7 @@ export type Database = {
         }
         Insert: {
           academy_id: string
+          batch_id?: string | null
           checked_in_at?: string | null
           competition_id: string
           created_at?: string
@@ -4207,6 +4209,7 @@ export type Database = {
         }
         Update: {
           academy_id?: string
+          batch_id?: string | null
           checked_in_at?: string | null
           competition_id?: string
           created_at?: string
@@ -5316,6 +5319,10 @@ export type Database = {
       }
       announcement_reach: { Args: { p_message: string }; Returns: Json }
       applied_migration: { Args: { p_name: string }; Returns: string }
+      apply_referee_allocation: {
+        Args: { p_competition: string; p_rows: Json }
+        Returns: Json
+      }
       appoint_referee: {
         Args: {
           p_fixture: string
@@ -6165,6 +6172,10 @@ export type Database = {
         Args: { p_academy: string; p_from: string; p_to: string }
         Returns: Json
       }
+      propose_referee_allocation: {
+        Args: { p_competition: string; p_date: string; p_division?: string }
+        Returns: Json
+      }
       public_academy: { Args: { p_slug: string }; Returns: Json }
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
@@ -6529,6 +6540,7 @@ export type Database = {
         Returns: string
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
+      undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
       void_referee_run: { Args: { p_run: string }; Returns: undefined }
       whats_on: {
         Args: { p_academy: string; p_date: string }
