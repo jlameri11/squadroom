@@ -3314,6 +3314,96 @@ export type Database = {
           },
         ]
       }
+      player_concussions: {
+        Row: {
+          academy_id: string
+          clearance_note: string | null
+          clearance_path: string | null
+          clearance_uploaded_at: string | null
+          clearance_uploaded_by: string | null
+          cleared_at: string | null
+          cleared_by: string | null
+          created_at: string
+          decision_note: string | null
+          id: string
+          note: string | null
+          occurred_on: string
+          player_id: string
+          recorded_by: string | null
+          status: Database["public"]["Enums"]["concussion_status"]
+        }
+        Insert: {
+          academy_id: string
+          clearance_note?: string | null
+          clearance_path?: string | null
+          clearance_uploaded_at?: string | null
+          clearance_uploaded_by?: string | null
+          cleared_at?: string | null
+          cleared_by?: string | null
+          created_at?: string
+          decision_note?: string | null
+          id?: string
+          note?: string | null
+          occurred_on: string
+          player_id: string
+          recorded_by?: string | null
+          status?: Database["public"]["Enums"]["concussion_status"]
+        }
+        Update: {
+          academy_id?: string
+          clearance_note?: string | null
+          clearance_path?: string | null
+          clearance_uploaded_at?: string | null
+          clearance_uploaded_by?: string | null
+          cleared_at?: string | null
+          cleared_by?: string | null
+          created_at?: string
+          decision_note?: string | null
+          id?: string
+          note?: string | null
+          occurred_on?: string
+          player_id?: string
+          recorded_by?: string | null
+          status?: Database["public"]["Enums"]["concussion_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_concussions_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_concussions_clearance_uploaded_by_fkey"
+            columns: ["clearance_uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_concussions_cleared_by_fkey"
+            columns: ["cleared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_concussions_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "player_concussions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_guardians: {
         Row: {
           academy_id: string
@@ -5473,6 +5563,10 @@ export type Database = {
           team_name: string
         }[]
       }
+      decide_concussion_clearance: {
+        Args: { p_accept: boolean; p_concussion: string; p_note?: string }
+        Returns: undefined
+      }
       decide_entry_request: {
         Args: {
           p_accept: boolean
@@ -6013,6 +6107,10 @@ export type Database = {
         }
         Returns: string
       }
+      record_concussion: {
+        Args: { p_note?: string; p_occurred_on: string; p_player: string }
+        Returns: string
+      }
       record_match_event: {
         Args: {
           p_entry: string
@@ -6280,6 +6378,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      submit_concussion_clearance: {
+        Args: { p_concussion: string; p_note?: string; p_path: string }
+        Returns: undefined
+      }
       submit_match_sheet: {
         Args: {
           p_captain?: string
@@ -6367,6 +6469,7 @@ export type Database = {
         | "gala_day"
         | "friendly_series"
         | "other"
+      concussion_status: "active" | "clearance_submitted" | "cleared"
       consent_kind:
         | "code_of_conduct"
         | "photo_media"
@@ -6618,6 +6721,7 @@ export const Constants = {
         "friendly_series",
         "other",
       ],
+      concussion_status: ["active", "clearance_submitted", "cleared"],
       consent_kind: [
         "code_of_conduct",
         "photo_media",

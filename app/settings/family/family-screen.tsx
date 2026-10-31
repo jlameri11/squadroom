@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { ConcussionPanel } from '@/components/concussion'
 import { SHIRT_SIZES, SOCK_SIZES } from '@/app/admin/teams/[teamId]/kit-sizes'
 
 type Medical = {
@@ -184,6 +185,10 @@ function ChildCard({
 
           <KitSection child={c} onChanged={onChanged} />
           <MedicalSection child={c} onChanged={onChanged} />
+          <Section title="Concussion">
+            <p className="text-xs text-ink-3">A recorded concussion keeps {c.preferred_name ?? c.full_name.split(' ')[0]} off every team sheet until {c.club} accepts a doctor&apos;s clearance. Either of you can record one; only the club clears it.</p>
+            <ConcussionPanel playerId={c.id} academyId={c.academy_id} role="family" />
+          </Section>
           <ConsentsSection child={c} onChanged={onChanged} />
         </div>
       )}

@@ -676,6 +676,26 @@ begin
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
+  -- 0168. A concussion is the family's and the club's; another tenant sees
+  -- none, and a parent cannot clear their own child.
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.player_concussions c
+   where c.academy_id = ACAD_A;
+  insert into rls_results values (75,'another tenant sees no concussion records',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.decide_concussion_clearance(gen_random_uuid(), true);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (76,'a parent cannot clear a concussion',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

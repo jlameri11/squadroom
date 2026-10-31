@@ -80,7 +80,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 | # | Neither has it | Squadroom | Status | Where |
 |---|---|---|---|---|
 | X1 | Respect / behaviour marks with a league dashboard | — | MISSING | W-01 |
-| X2 | Concussion register with sheet lockout and clearance upload | — | MISSING | W-02 |
+| X2 | Concussion register with sheet lockout and clearance upload | Recorded by family or club; sheet refuses by name; clearance in a private bucket; only the club clears; "No play" on the card | **DONE** (0168, 1 Nov) | W-02 |
 | X3 | Safeguarding gate (WWCC / training lapse blocks rosters, chat, sheets); reportable-conduct register | WWCC gate on coaching (0120) | PARTIAL | W-03 |
 | X4 | Children's privacy consent centre | Versioned consents, withdrawable (R-06, R-17) | PARTIAL | W-04 |
 | X5 | Auto referee assignment with preview and undo | Manual with availability (L-06) | MISSING | W-05 |

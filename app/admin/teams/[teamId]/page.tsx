@@ -12,6 +12,7 @@ import { SeasonControl } from './season-control'
 import { LeagueName } from './league-name'
 import { KitSizes } from './kit-sizes'
 import { OfficialStatusControl, type OfficialStatus } from './official-status'
+import { ConcussionPanel } from '@/components/concussion'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -151,6 +152,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
                 status={(p.official_status ?? 'unknown') as OfficialStatus}
                 ffNumber={p.ff_number}
               />
+              {/* W-02: a knock to the head keeps them off every sheet until the club accepts a clearance. */}
+              <ConcussionPanel playerId={p.id} academyId={team.academy_id} role="coach" compact />
               <Link href={`/card/${p.id}`} className="mt-0.5 block text-xs underline underline-offset-2 text-ink-3">
                 Player card
               </Link>

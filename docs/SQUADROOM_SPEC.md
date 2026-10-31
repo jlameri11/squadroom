@@ -194,7 +194,7 @@ The one milestone that lets a league leave Dribl. SPL first. Detail and the acce
 | ID | Feature | Status | Priority |
 |---|---|---|---|
 | W-01 | Respect / behaviour marks (players, coaches, spectators) with a league dashboard; never public | MISSING | P2 |
-| W-02 | Concussion register: sheet lockout until a clearance is uploaded and accepted | MISSING | P1 |
+| W-02 | Concussion register: sheet lockout until a clearance is uploaded and accepted | **DONE** (0168). Recorded by a parent or a coach; the sheet refuses the child by name (through 0151's eligibility hook, ahead of suspensions) and the match-day card says "No play"; the clearance is a file in a private bucket only the family and the club's coaches can open; only the club accepts it, with a reason if not. On the roster, on My family and on the card. Proven by test-concussion (19), test-rls 75–76 | — |
 | W-03 | Safeguarding gate: a lapsed WWCC or training blocks rosters, chat and sheets; reportable-conduct register | PARTIAL — 0120 gates coaching on a clearance | P1 |
 | W-04 | Children's privacy consent centre | PARTIAL — R-06, R-17 | P2 |
 | W-05 | Auto referee assignment with preview and undo | MISSING | P2 |

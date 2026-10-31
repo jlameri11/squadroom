@@ -15,6 +15,8 @@ type Card = {
   squad: { name: string; season: string | null; age_group: string | null } | null
   number: number | null
   club: { name: string; colour: string; logo_url: string | null; slug: string } | null
+  /** W-02: an uncleared concussion. The referee and the opposition see this too. */
+  concussion: { occurred_on: string; status: 'active' | 'clearance_submitted' } | null
   can_edit: boolean
 }
 
@@ -149,6 +151,15 @@ export function PlayerCard({ playerId }: { playerId: string }) {
               <>
                 <dt className="eyebrow mt-2">FFA number</dt>
                 <dd className="tabular-nums">{card.ff_number}</dd>
+              </>
+            )}
+            {card.concussion && (
+              <>
+                <dt className="eyebrow mt-2" style={{ color: 'var(--no)' }}>No play</dt>
+                <dd style={{ color: 'var(--no)' }}>
+                  Concussion {new Date(card.concussion.occurred_on + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} —{' '}
+                  {card.concussion.status === 'clearance_submitted' ? 'clearance waiting for the club' : 'no clearance yet'}
+                </dd>
               </>
             )}
             <dt className="eyebrow mt-2">PlayFootball</dt>
