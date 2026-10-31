@@ -62,7 +62,7 @@ expect. Same statuses as above.
 | S11 | Live match-day ops dashboard | — | MISSING | L-26 |
 | S12 | Nominations: drag into teams, propose division, lock on submit, DOB override | Entries per division | PARTIAL | L-27 |
 | S13 | Bulk score upload, bulk reschedule, move a competition | Call off a day / ground (L-09) | PARTIAL | L-28 |
-| S14 | Multi-level fee split, each level refunds its share; finance per org | Fee split B-09 (Stripe-blocked) | MISSING | B-10 |
+| S14 | Multi-level fee split, each level refunds its share; finance per org | Entry fees owed to the league per entry, paid by bank/cash and ticked off (L-02); the Stripe split (B-09) is key-blocked | PARTIAL | B-10 |
 | S15 | De-registration approval chain with automatic refunds; voucher carve-outs | Withdraw with refund (R-15) | PARTIAL | B-11 |
 | S16 | Named voucher types with limits and expiry | Vouchers B-07 (Stripe-blocked) | MISSING | B-12 |
 | S17 | Direct debit, Afterpay | Card and bank transfer (B-08) | MISSING — and we add **pay instalments early**, which Squadi cannot | B-13 |

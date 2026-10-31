@@ -49,6 +49,8 @@ export type Centre = {
   squads?: Record<string, SquadPlayer[]>
   /** L-12: goals from the sheets, named by each player's own club's rule. Absent for hidden-score divisions. */
   top_scorers?: Record<string, { name: string; team: string; goals: number }[]>
+  /** L-16: teams may ask to enter from /c/[slug]/enter. */
+  entries_open?: boolean
 }
 
 const SYDNEY = 'Australia/Sydney'
@@ -114,6 +116,11 @@ export function MatchCentre({
             )}
             {shareUrl && <ShareButton title={competition.name} url={shareUrl} />}
           </div>
+          {centre.entries_open && shareUrl && (
+            <a href={`${shareUrl}/enter`} className="mt-3 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold" style={{ background: '#fff', color: 'var(--brand)' }}>
+              Enter a team ›
+            </a>
+          )}
         </header>
       )}
 

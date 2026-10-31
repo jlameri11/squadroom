@@ -50,10 +50,10 @@ export default async function CompetitionPage(props: {
   const loose = supabase as any
   const { data: publication } = (await loose
     .from('competitions')
-    .select('public_slug, published_at')
+    .select('public_slug, published_at, entries_open')
     .eq('id', competitionId)
     .maybeSingle()) as {
-    data: { public_slug: string | null; published_at: string | null } | null
+    data: { public_slug: string | null; published_at: string | null; entries_open: boolean | null } | null
   }
 
   // One ladder per division, computed rather than stored.
@@ -81,6 +81,7 @@ export default async function CompetitionPage(props: {
         mode={comp.mode}
         isOrganiser={isOrganiser}
         areas={areas}
+        entriesOpen={Boolean(publication?.entries_open)}
         name={comp.name}
         publication={
           publication

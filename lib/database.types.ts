@@ -669,6 +669,127 @@ export type Database = {
           },
         ]
       }
+      competition_entry_requests: {
+        Row: {
+          club_name: string
+          competition_id: string
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          division: string | null
+          entry_id: string | null
+          id: string
+          invite_id: string | null
+          ip_hash: string | null
+          note: string | null
+          status: string
+          team_name: string
+        }
+        Insert: {
+          club_name: string
+          competition_id: string
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          division?: string | null
+          entry_id?: string | null
+          id?: string
+          invite_id?: string | null
+          ip_hash?: string | null
+          note?: string | null
+          status?: string
+          team_name: string
+        }
+        Update: {
+          club_name?: string
+          competition_id?: string
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          division?: string | null
+          entry_id?: string | null
+          id?: string
+          invite_id?: string | null
+          ip_hash?: string | null
+          note?: string | null
+          status?: string
+          team_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_entry_requests_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entry_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entry_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entry_requests_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "competition_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_fees: {
+        Row: {
+          competition_id: string
+          division: string
+          fee_cents: number
+          instructions: string | null
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          division?: string
+          fee_cents: number
+          instructions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          division?: string
+          fee_cents?: number
+          instructions?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_fees_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_invites: {
         Row: {
           club_name: string
@@ -793,6 +914,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           ends_on: string | null
+          entries_open: boolean
           id: string
           mode: Database["public"]["Enums"]["competition_mode"]
           name: string
@@ -812,6 +934,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ends_on?: string | null
+          entries_open?: boolean
           id?: string
           mode?: Database["public"]["Enums"]["competition_mode"]
           name: string
@@ -831,6 +954,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           ends_on?: string | null
+          entries_open?: boolean
           id?: string
           mode?: Database["public"]["Enums"]["competition_mode"]
           name?: string
@@ -1028,6 +1152,77 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entry_fees: {
+        Row: {
+          academy_id: string
+          amount_cents: number
+          club_academy_id: string | null
+          competition_id: string
+          created_at: string
+          entry_id: string
+          id: string
+          method: string | null
+          note: string | null
+          paid_at: string | null
+          status: Database["public"]["Enums"]["entry_fee_status"]
+        }
+        Insert: {
+          academy_id: string
+          amount_cents: number
+          club_academy_id?: string | null
+          competition_id: string
+          created_at?: string
+          entry_id: string
+          id?: string
+          method?: string | null
+          note?: string | null
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["entry_fee_status"]
+        }
+        Update: {
+          academy_id?: string
+          amount_cents?: number
+          club_academy_id?: string | null
+          competition_id?: string
+          created_at?: string
+          entry_id?: string
+          id?: string
+          method?: string | null
+          note?: string | null
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["entry_fee_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_fees_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_fees_club_academy_id_fkey"
+            columns: ["club_academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_fees_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_fees_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: true
+            referencedRelation: "competition_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -5144,6 +5339,7 @@ export type Database = {
           status: string
         }[]
       }
+      competition_fees_view: { Args: { p_competition: string }; Returns: Json }
       competition_ladder: {
         Args: { p_competition: string; p_division: string }
         Returns: {
@@ -5277,6 +5473,15 @@ export type Database = {
           team_name: string
         }[]
       }
+      decide_entry_request: {
+        Args: {
+          p_accept: boolean
+          p_division?: string
+          p_note?: string
+          p_request: string
+        }
+        Returns: Json
+      }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
       end_event_series: {
@@ -5307,6 +5512,7 @@ export type Database = {
         }
         Returns: Json
       }
+      entry_requests: { Args: { p_competition: string }; Returns: Json }
       erase_me: { Args: never; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
       event_register: {
@@ -5450,6 +5656,15 @@ export type Database = {
         Returns: string
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
+      mark_entry_fee: {
+        Args: {
+          p_fee: string
+          p_method?: string
+          p_note?: string
+          p_status: Database["public"]["Enums"]["entry_fee_status"]
+        }
+        Returns: undefined
+      }
       mark_referee_run_paid: {
         Args: { p_method?: string; p_run: string }
         Returns: undefined
@@ -5508,6 +5723,7 @@ export type Database = {
         }[]
       }
       my_competition_access: { Args: { p_competition: string }; Returns: Json }
+      my_entry_fees: { Args: { p_competition: string }; Returns: Json }
       my_family: { Args: never; Returns: Json }
       my_offers: { Args: never; Returns: Json }
       my_organisations: {
@@ -5753,6 +5969,7 @@ export type Database = {
         Returns: Json
       }
       public_academy: { Args: { p_slug: string }; Returns: Json }
+      public_competition_entry: { Args: { p_slug: string }; Returns: Json }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
       publish_lineup: {
@@ -5866,6 +6083,20 @@ export type Database = {
         }
         Returns: string
       }
+      request_competition_entry: {
+        Args: {
+          p_club_name: string
+          p_contact_email: string
+          p_contact_name: string
+          p_contact_phone: string
+          p_division: string
+          p_ip_hash: string
+          p_note: string
+          p_slug: string
+          p_team_name: string
+        }
+        Returns: string
+      }
       reschedule_fixture: {
         Args: {
           p_field?: string
@@ -5958,6 +6189,15 @@ export type Database = {
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
       set_bye: { Args: { p_fixture: string }; Returns: undefined }
+      set_competition_fee: {
+        Args: {
+          p_competition: string
+          p_division: string
+          p_fee_cents: number
+          p_instructions?: string
+        }
+        Returns: undefined
+      }
       set_consent: {
         Args: { p_accepted: boolean; p_document: string; p_player: string }
         Returns: undefined
@@ -6137,6 +6377,7 @@ export type Database = {
         | "other"
       directory_visibility: "staff_only" | "all"
       dm_policy: "staff_only" | "open"
+      entry_fee_status: "owed" | "paid" | "waived"
       event_type: "match" | "training" | "social" | "other" | "tournament"
       fixture_status:
         | "scheduled"
@@ -6388,6 +6629,7 @@ export const Constants = {
       ],
       directory_visibility: ["staff_only", "all"],
       dm_policy: ["staff_only", "open"],
+      entry_fee_status: ["owed", "paid", "waived"],
       event_type: ["match", "training", "social", "other", "tournament"],
       fixture_status: [
         "scheduled",

@@ -663,6 +663,17 @@ begin
   end;
   insert into rls_results values (72,'a parent cannot import a league draw',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0167. Entry fees and entry requests are the league's.
+  b := false;
+  begin
+    perform public.set_competition_fee(v_comp, '', 5000, null);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (73,'a parent cannot set an entry fee',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.competition_entry_requests;
+  insert into rls_results values (74,'a parent sees no entry requests (no contacts)',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

@@ -5,6 +5,7 @@ import { DisciplineTab } from './discipline-tab'
 import { RefereesTab } from './referees-tab'
 import { LeagueOfficials } from './league-officials'
 import { ReportsCard } from './reports-card'
+import { EntriesAndFees, ClubFees } from './entries-and-fees'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
@@ -48,13 +49,15 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries,
+  competitionId, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries, entriesOpen = false,
 }: {
   competitionId: string
   mode: string
   isOrganiser: boolean
   /** L-13: 'staff', 'competition', 'referees', 'discipline', 'grounds' — what this person may run here. */
   areas?: string[]
+  /** L-16: whether teams may ask to enter from the public page. */
+  entriesOpen?: boolean
   name: string
   /** Null until 0079 is applied, which is how the control stays hidden. */
   publication: { slug: string | null; publishedAt: string | null } | null
@@ -160,6 +163,8 @@ export function CompetitionView({
             </Link>
           )}
           {areas.includes('staff') && <LeagueOfficials competitionId={competitionId} />}
+          {isOrganiser && !commsOnly && <EntriesAndFees competitionId={competitionId} divisions={divisions} entriesOpen={entriesOpen} />}
+          {!isOrganiser && <ClubFees competitionId={competitionId} />}
           {!commsOnly && <ReportsCard competitionId={competitionId} referees={areas.includes('referees')} />}
           {isOrganiser && publication && (
             <PublishPublicly
