@@ -243,7 +243,9 @@ still registers the *player*. R-14 tracks that status and no more.
 | L-27 | Nominations (§6A.11) | Clubs drag players into teams and propose a division with a comment; the league sets the final division; lock on submit; date-of-birth override by admins |
 | L-28 | Bulk tools (§6A.12) | Bulk score upload, bulk reschedule (push a round back, double headers, abandon), move a competition in bulk |
 
-**Acceptance — `scripts/test-league-season.mjs`:** a simulated SPL season. Six
+**Acceptance — `scripts/test-league-season.mjs`: PASSES (1 Nov 2026, 44
+assertions as five people; the Stripe halves of L-02, L-07 and L-16 wait on
+the key).** The brief: a simulated SPL season. Six
 age groups, eight clubs, home and away across real venues. Referees
 appointed and checked in. Sheets submitted, confirmed, completed. A red card
 that suspends a player and **blocks them from next week's sheet**. A washout

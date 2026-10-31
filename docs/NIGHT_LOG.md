@@ -6,6 +6,45 @@ every item on it is something no amount of building can get past.
 
 ---
 
+## Morning summary — 1 Nov 2026 (overnight run)
+
+**M9 League mode is complete bar the three Stripe halves, and its
+acceptance test passes:** `test-league-season` runs a simulated SPL season
+as five people — 6 divisions, 8 clubs, 168 games drawn weekly on two
+grounds and mirrored into families' calendars; a referee appointed,
+accepting, checking in, reporting and paid; sheets from both sides,
+confirmed by the other; a red card that suspends a child and is refused by
+name on next week's sheet; a washout that postpones a round and tells the
+U8 parent why, then a reschedule that tells them it is back on; ladder,
+then a final seeded first v second; the public page with the lot and not
+one phone number; the parent seeing the draw and nothing else.
+
+**Built since the last summary:** L-06 referees (pool, block-outs,
+appointments with a push, check-in, report) · L-07 referee payments (fees,
+runs, bank/cash, CSV; Stripe transfer waits on the key) · L-12 share link
+and embeddable widget · L-13 league roles (competition manager, referee
+coordinator, discipline officer, ground manager — writes scoped by area)
+· L-15 reports (results, ladders, discipline, entries, referee payments as
+CSV) · L-14 a league imports its own draw from a file · L-02/L-16 entry
+fees and public tournament entry (online payment waits on the key) ·
+**R-18 Circular 26-02** from your message, with `SQUADI_INTEL.md` §6
+folded into the plan docs and your pricing rule in CLAUDE.md. Migrations
+0161 → 0167; test-rls now 74; every new screen checked at 375px in both
+themes. `smoke-demo` has a four-role league section.
+
+**Deploy:** Sunday 1 Nov 8pm Sydney was the weekly slot. **Not deployed —
+no Netlify token on this machine** (NEEDS JOEY #7). The full suite was not
+run for it either, for the same reason; next slot Sunday 8 Nov.
+
+**Next, in the agreed order:** M10 Differentiators (W-02 concussion
+register and W-03 safeguarding gate first, both P1) unless you move it
+(NEEDS JOEY #10); M7 native is blocked on the Apple account (#5); then M3.
+
+**Needs you:** #1 Stripe test key (now blocks the league's online fees and
+the referee transfers as well as everything in M1/M6) · #7 Netlify token ·
+#9 is the SPL sanctioned / is NRIFA a Club (decides which programs get the
+PlayFootball switch) · #10 M10's slot · #11 pricing.
+
 ## Morning summary — 30 Oct 2026 (overnight run)
 
 **Built and pushed, each with its own suite, test-rls after every
@@ -98,6 +137,7 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **M9 acceptance** `test-league-season` | **Passes.** Six divisions, eight clubs, 168 games drawn weekly on two grounds and mirrored into families' calendars; a referee appointed, accepting, checking in, reporting and paid; both sheets, confirmed by the other side; a red card that suspends a child and is refused by name on next week's sheet; a washout that postpones 24 games and tells the U8 parent why, then a reschedule that tells them it is back on; the ladder, then a final seeded first v second; the public page with 169 fixtures, the ladder and top scorers and not one phone number; the parent seeing the draw and nothing else. 44 assertions as five people. `smoke-demo` gained a four-role league section | test-league-season 44 |
 | **L-02 / L-16** entries and fees | **Done bar the Stripe charge.** Entry fees per division with the league's own "how to pay"; owed the moment an entry exists, owned by the club that claims it, ticked off by the treasurer (bank / cash / waive); the club sees what it owes. Teams enter from the public page with no account, rate-limited, and an accepted request becomes an entry plus the same join link an invited club gets. Online payment to the league waits on the key (B-09) | test-league-entry 31 through the real route, test-rls 73–74, screens both themes |
 | **L-14** a league brings its draw | **Done.** `/competitions/[id]/import`: a file the league exported itself, mapped column by column with a human, previewed day-first, written once — entries per division (linked to entered clubs by name), fixtures at local time with the file's match id kept so a re-import moves a game instead of doubling it and leaves a played one alone. Squads stay with each club's roster import. Hit the regex-after-a-statement ASI trap for the sixth time; named the value | test-league-import 18, test-rls 72, screens both themes |
 | **L-15** reports | **Done.** Results, ladders, discipline and entries as CSV from one route (referee payments from L-07's); each through the caller's own session, so a club gets its competition and the organiser the contacts; a Reports card on the Clubs tab. No migration — every report reads what was already built | test-league-reports 9 through the real route |
@@ -126,6 +166,7 @@ Exact steps are in NEEDS JOEY below.
 
 | Date | What | Outcome |
 |---|---|---|
+| 1 Nov 2026 (Sun, weekly slot) | Everything from 0147 to 0167: M9 league mode, R-18, the two fixes | **NOT DEPLOYED — no Netlify token** (NEEDS JOEY #7). Next slot Sunday 8 Nov. |
 | 30 Oct 2026 | One-off deploy Joey authorised: the live site is missing the Next.js security fix (16.3.3 → 16.4.3) | **BLOCKED — no Netlify credentials on this machine.** See NEEDS JOEY #7. Probing `squadroom-dev.netlify.app` showed it is **at least three days stale** (`age: 255224`): `/nrifa/register` and `/api/share/weekend`, which have existed for days, answer 404 there. So nothing auto-deploys from GitHub, and production is on the vulnerable Next. |
 
 ### NEEDS JOEY (added overnight)

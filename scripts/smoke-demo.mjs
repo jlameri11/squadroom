@@ -509,6 +509,42 @@ head('Every route answers')
 
 // --- things a demo needs that need a key -----------------------------------
 
+// --- league mode: four people -------------------------------------------
+
+head('League mode (four people: league admin, club manager, referee, parent)')
+{
+  // The coach session is NRIFA's owner and, in the seed, an owner of the
+  // SPL — so it stands for both the league admin and the club manager here.
+  const { data: leagues } = await admin.from('competitions').select('id, name, organiser_id').eq('organiser_id', '00000000-0000-0000-0000-0000000a0003').eq('mode', 'managed')
+  if ((leagues ?? []).length === 0) {
+    fail('the SPL runs no managed competition — league mode has nothing to show')
+  } else {
+    const spl = leagues[0]
+    const { data: access } = await coach.rpc('my_competition_access', { p_competition: spl.id })
+    const areas = access?.areas ?? []
+    areas.includes('competition') ? ok(`league admin: runs ${spl.name} (${areas.join(', ')})`) : fail('the demo account cannot run the SPL competition')
+    const { data: sheet } = await coach.rpc('competition_run_sheet', { p_competition: spl.id })
+    const games = sheet ?? []
+    games.length > 0 ? ok(`  run sheet: ${games.length} games, ${games.filter((g) => g.status === 'final').length} final`) : warn('  the run sheet is empty')
+    const { data: pool } = await coach.rpc('referee_pool', { p_competition: spl.id })
+    const refs = pool ?? []
+    refs.length > 0 ? ok(`  referees: ${refs.length} in the pool, ${refs.filter((r) => r.claimed).length} with the app`) : warn('  no referees in the pool — add one and send the link to demo /referee')
+    const { data: fees } = await coach.rpc('referee_payments', { p_competition: spl.id })
+    fees ? ok(`  referee money: ${fees.unpaid.length} games owed, ${fees.runs.length} runs`) : warn('  referee payments not readable')
+    const { data: disc } = await coach.rpc('discipline_report', { p_competition: spl.id })
+    disc ? ok(`  discipline: ${disc.players.length} carded players`) : warn('  discipline report not readable')
+    const mine = games.filter((g) => g.can_score)
+    mine.length > 0 ? ok(`club manager: may score ${mine.length} of NRIFA's games`) : warn('club manager: no game to score')
+    const { count: appts } = await admin.from('referee_appointments').select('id', { count: 'exact', head: true }).eq('competition_id', spl.id).in('status', ['offered', 'accepted'])
+    appts > 0 ? ok(`referee: ${appts} appointment(s) standing — open /referee as that referee`) : warn('referee: nobody is appointed to anything — appoint one from the Refs tab before the demo')
+    const { data: pSheet } = await parent.rpc('competition_run_sheet', { p_competition: spl.id })
+    const parentRows = pSheet ?? []
+    parentRows.length > 0 && parentRows.every((g) => !g.can_score) ? ok('parent: sees the draw, can score nothing') : warn('parent: cannot see the SPL draw')
+    const { data: pPool } = await parent.rpc('referee_pool', { p_competition: spl.id })
+    pPool === null ? ok('  and nothing of the referee pool') : fail('  a parent can read the referee pool')
+  }
+}
+
 head('Known gaps')
 {
   const { data: billing } = await admin
