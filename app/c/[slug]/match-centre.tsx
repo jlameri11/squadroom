@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 
 export type Fixture = {
   id: string
@@ -176,7 +177,8 @@ export function MatchCentre({
       <p className="px-6 pt-6 text-center text-xs text-ink-3">
         {hasSquads
           ? 'Squads are published by each club. Any family can ask to be left off.'
-          : 'Clubs and scores only. No player names are published here.'}
+          : 'Clubs and scores only. No player names are published here.'}{' '}
+        <Link href="/privacy" className="underline underline-offset-2">How we look after your info ›</Link>
       </p>
       {embed && shareUrl && (
         <p className="px-6 pt-2 text-center text-xs text-ink-3">

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { ConcussionPanel } from '@/components/concussion'
+import { ChildPrivacy } from '@/components/child-privacy'
 import { SHIRT_SIZES, SOCK_SIZES } from '@/app/admin/teams/[teamId]/kit-sizes'
 
 type Medical = {
@@ -190,6 +191,9 @@ function ChildCard({
             <ConcussionPanel playerId={c.id} academyId={c.academy_id} role="family" />
           </Section>
           <ConsentsSection child={c} onChanged={onChanged} />
+          <Section title="Privacy — who sees what">
+            <ChildPrivacy playerId={c.id} firstName={c.preferred_name ?? c.full_name.split(' ')[0]} />
+          </Section>
         </div>
       )}
     </article>

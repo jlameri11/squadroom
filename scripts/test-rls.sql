@@ -708,6 +708,17 @@ begin
   insert into rls_results values (78,'a parent cannot review a conduct report',
     case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
+  -- 0171. A child's privacy facts are the family's and the club's.
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.child_privacy((select id from public.players where academy_id = ACAD_A limit 1));
+  exception when others then b := true;
+  end;
+  insert into rls_results values (79,'another tenant cannot read a child''s privacy facts',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

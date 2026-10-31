@@ -5452,6 +5452,7 @@ export type Database = {
         Args: { p_ip_hash: string; p_program: string }
         Returns: boolean
       }
+      child_privacy: { Args: { p_player: string }; Returns: Json }
       claim_competition_invite: {
         Args: { p_academy: string; p_team?: string; p_token: string }
         Returns: string
@@ -6398,6 +6399,10 @@ export type Database = {
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
       set_bye: { Args: { p_fixture: string }; Returns: undefined }
+      set_child_public_name: {
+        Args: { p_hidden: boolean; p_player: string }
+        Returns: undefined
+      }
       set_competition_fee: {
         Args: {
           p_competition: string
