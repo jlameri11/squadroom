@@ -6,6 +6,7 @@ import { RefereesTab } from './referees-tab'
 import { LeagueOfficials } from './league-officials'
 import { ReportsCard } from './reports-card'
 import { EntriesAndFees, ClubFees } from './entries-and-fees'
+import { ChangeRequests, ProposeChange } from './change-requests'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 
 import Link from 'next/link'
@@ -165,6 +166,7 @@ export function CompetitionView({
           {areas.includes('staff') && <LeagueOfficials competitionId={competitionId} />}
           {isOrganiser && !commsOnly && <EntriesAndFees competitionId={competitionId} divisions={divisions} entriesOpen={entriesOpen} />}
           {!isOrganiser && <ClubFees competitionId={competitionId} />}
+          {!commsOnly && <ChangeRequests competitionId={competitionId} />}
           {!commsOnly && <ReportsCard competitionId={competitionId} referees={areas.includes('referees')} />}
           {isOrganiser && publication && (
             <PublishPublicly
@@ -344,6 +346,9 @@ function RunSheet({
               >
                 Match sheet ›
               </Link>
+              {f.can_score && !grounds && f.status === 'scheduled' && (
+                <ProposeChange fixtureId={f.fixture_id} startsAt={f.starts_at} onDone={() => router.refresh()} />
+              )}
               {grounds && (
                 <FixtureOps
                   fixtureId={f.fixture_id}

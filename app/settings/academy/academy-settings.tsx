@@ -33,6 +33,8 @@ export function AcademySettings({
   publicPlayerNames = 'off',
   siblingDiscountBps = [],
   feesDisclosedSeason = null,
+  blockRsvpWhenOverdue = false,
+  overdueGraceDays = 14,
 }: {
   academyId: string
   dmPolicy: string
@@ -44,6 +46,9 @@ export function AcademySettings({
   siblingDiscountBps?: number[]
   /** R-18: the season the club last ticked "fees disclosed in PlayFootball". */
   feesDisclosedSeason?: string | null
+  /** W-07: a family with a fee past due cannot say yes to a game until it is paid. */
+  blockRsvpWhenOverdue?: boolean
+  overdueGraceDays?: number
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -57,6 +62,8 @@ export function AcademySettings({
   // database holds a longer ladder for anyone who needs one.
   const thisSeason = String(new Date().getFullYear())
   const [feesSeason, setFeesSeason] = useState(feesDisclosedSeason)
+  const [blockOverdue, setBlockOverdue] = useState(blockRsvpWhenOverdue)
+  const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
 
@@ -69,6 +76,8 @@ export function AcademySettings({
     | { public_player_names: 'off' | 'initials' | 'full' }
     | { sibling_discount_bps: number[] }
     | { playfootball_fees_disclosed_season: string | null; playfootball_fees_disclosed_at: string | null }
+    | { block_rsvp_when_overdue: boolean }
+    | { overdue_grace_days: number }
 
   const ladder = (() => {
     const a = Math.round(Number(second) * 100)
@@ -284,6 +293,37 @@ export function AcademySettings({
           >
             {ladder.length === 0 ? 'Turn discounts off' : 'Save discounts'}
           </button>
+        )}
+      </section>
+
+      <section>
+        <h2 className="font-semibold">Overdue fees and attendance</h2>
+        <p className="mt-0.5 text-sm text-ink-2">
+          Off by default. On, a family with a fee more than the grace period past due cannot say
+          <b> yes</b> to a game or training until it is paid; they can still say no or maybe, and a
+          coach marking attendance is never blocked. Squadroom never charges the family anything itself.
+        </p>
+        <label className="mt-2 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={blockOverdue}
+            disabled={busy}
+            onChange={async (e) => {
+              setBlockOverdue(e.target.checked)
+              await update({ block_rsvp_when_overdue: e.target.checked })
+            }}
+          />
+          Block &ldquo;yes&rdquo; while a fee is overdue
+        </label>
+        {blockOverdue && (
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <span className="text-ink-2">Grace period</span>
+            <input value={grace} onChange={(e) => setGrace(e.target.value)} inputMode="numeric" className="w-16 rounded-lg border px-2 py-1.5 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} />
+            <span className="text-ink-3">days after the due date</span>
+            {Number(grace) !== overdueGraceDays && Number.isFinite(Number(grace)) && (
+              <button onClick={() => update({ overdue_grace_days: Math.max(0, Math.min(365, Math.round(Number(grace)))) })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
+            )}
+          </label>
         )}
       </section>
 

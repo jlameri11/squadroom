@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       academies: {
         Row: {
+          block_rsvp_when_overdue: boolean
           created_at: string
           created_by: string | null
           directory_visibility: Database["public"]["Enums"]["directory_visibility"]
@@ -23,6 +24,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          overdue_grace_days: number
           plan: string
           playfootball_fees_disclosed_at: string | null
           playfootball_fees_disclosed_season: string | null
@@ -35,6 +37,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          block_rsvp_when_overdue?: boolean
           created_at?: string
           created_by?: string | null
           directory_visibility?: Database["public"]["Enums"]["directory_visibility"]
@@ -42,6 +45,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          overdue_grace_days?: number
           plan?: string
           playfootball_fees_disclosed_at?: string | null
           playfootball_fees_disclosed_season?: string | null
@@ -54,6 +58,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          block_rsvp_when_overdue?: boolean
           created_at?: string
           created_by?: string | null
           directory_visibility?: Database["public"]["Enums"]["directory_visibility"]
@@ -61,6 +66,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          overdue_grace_days?: number
           plan?: string
           playfootball_fees_disclosed_at?: string | null
           playfootball_fees_disclosed_season?: string | null
@@ -1962,6 +1968,158 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      fixture_change_notes: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_change_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_notes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "fixture_change_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixture_change_requests: {
+        Row: {
+          answer_note: string | null
+          answered_at: string | null
+          answered_by: string | null
+          by_entry_id: string
+          competition_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          fixture_id: string
+          id: string
+          other_entry_id: string | null
+          proposed_by: string | null
+          proposed_field: string | null
+          proposed_starts_at: string | null
+          proposed_venue: string | null
+          reason: string
+          status: Database["public"]["Enums"]["change_request_status"]
+        }
+        Insert: {
+          answer_note?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          by_entry_id: string
+          competition_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          fixture_id: string
+          id?: string
+          other_entry_id?: string | null
+          proposed_by?: string | null
+          proposed_field?: string | null
+          proposed_starts_at?: string | null
+          proposed_venue?: string | null
+          reason: string
+          status?: Database["public"]["Enums"]["change_request_status"]
+        }
+        Update: {
+          answer_note?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          by_entry_id?: string
+          competition_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          fixture_id?: string
+          id?: string
+          other_entry_id?: string | null
+          proposed_by?: string | null
+          proposed_field?: string | null
+          proposed_starts_at?: string | null
+          proposed_venue?: string | null
+          reason?: string
+          status?: Database["public"]["Enums"]["change_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_change_requests_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_requests_by_entry_id_fkey"
+            columns: ["by_entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_requests_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_requests_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_requests_other_entry_id_fkey"
+            columns: ["other_entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_change_requests_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -5289,6 +5447,10 @@ export type Database = {
         }[]
       }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
+      add_fixture_change_note: {
+        Args: { p_body: string; p_request: string }
+        Returns: string
+      }
       add_referee: {
         Args: {
           p_competition: string
@@ -5318,6 +5480,10 @@ export type Database = {
         Returns: undefined
       }
       announcement_reach: { Args: { p_message: string }; Returns: Json }
+      answer_fixture_change: {
+        Args: { p_agree: boolean; p_note?: string; p_request: string }
+        Returns: undefined
+      }
       applied_migration: { Args: { p_name: string }; Returns: string }
       apply_referee_allocation: {
         Args: { p_competition: string; p_rows: Json }
@@ -5672,6 +5838,10 @@ export type Database = {
         }
         Returns: Json
       }
+      decide_fixture_change: {
+        Args: { p_approve: boolean; p_note?: string; p_request: string }
+        Returns: undefined
+      }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
       end_event_series: {
@@ -5774,6 +5944,10 @@ export type Database = {
           stripe_payment_intents: string
           title: string
         }[]
+      }
+      fixture_change_requests: {
+        Args: { p_competition: string }
+        Returns: Json
       }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
@@ -6172,6 +6346,16 @@ export type Database = {
         Args: { p_academy: string; p_from: string; p_to: string }
         Returns: Json
       }
+      propose_fixture_change: {
+        Args: {
+          p_field?: string
+          p_fixture: string
+          p_reason: string
+          p_starts_at?: string
+          p_venue?: string
+        }
+        Returns: string
+      }
       propose_referee_allocation: {
         Args: { p_competition: string; p_date: string; p_division?: string }
         Returns: Json
@@ -6569,6 +6753,10 @@ export type Database = {
         Args: { p_appointment: string; p_note?: string }
         Returns: undefined
       }
+      withdraw_fixture_change: {
+        Args: { p_request: string }
+        Returns: undefined
+      }
       withdraw_registration: {
         Args: { p_reason?: string; p_registration: string }
         Returns: Json
@@ -6579,6 +6767,13 @@ export type Database = {
       academy_role: "owner" | "admin" | "coach" | "parent" | "player"
       appointment_status: "offered" | "accepted" | "declined" | "withdrawn"
       attendance_status: "present" | "absent" | "late" | "excused"
+      change_request_status:
+        | "proposed"
+        | "agreed"
+        | "declined"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
       channel_member_role: "host" | "co_host" | "member"
       channel_status: "active" | "archived"
       channel_type:
@@ -6836,6 +7031,14 @@ export const Constants = {
       academy_role: ["owner", "admin", "coach", "parent", "player"],
       appointment_status: ["offered", "accepted", "declined", "withdrawn"],
       attendance_status: ["present", "absent", "late", "excused"],
+      change_request_status: [
+        "proposed",
+        "agreed",
+        "declined",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
       channel_member_role: ["host", "co_host", "member"],
       channel_status: ["active", "archived"],
       channel_type: [

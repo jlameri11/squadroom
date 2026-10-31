@@ -15,6 +15,8 @@ type Academy = {
   public_player_names: 'off' | 'initials' | 'full'
   sibling_discount_bps: number[] | null
   playfootball_fees_disclosed_season: string | null
+  block_rsvp_when_overdue: boolean
+  overdue_grace_days: number
 }
 
 /**
@@ -47,7 +49,7 @@ export function AcademyLoader() {
       const [{ data: a }, { data: member }] = await Promise.all([
         supabase
           .from('academies')
-          .select('id, name, dm_policy, directory_visibility, primary_colour, public_player_names, sibling_discount_bps, playfootball_fees_disclosed_season')
+          .select('id, name, dm_policy, directory_visibility, primary_colour, public_player_names, sibling_discount_bps, playfootball_fees_disclosed_season, block_rsvp_when_overdue, overdue_grace_days')
           .eq('id', org)
           .maybeSingle(),
         supabase.from('academy_members').select('role').eq('academy_id', org).eq('profile_id', me).eq('status', 'active').maybeSingle(),
@@ -75,6 +77,8 @@ export function AcademyLoader() {
           publicPlayerNames={academy.public_player_names}
           siblingDiscountBps={academy.sibling_discount_bps ?? []}
           feesDisclosedSeason={academy.playfootball_fees_disclosed_season}
+          blockRsvpWhenOverdue={academy.block_rsvp_when_overdue}
+          overdueGraceDays={academy.overdue_grace_days}
         />
       ) : (
         <p className="mt-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">

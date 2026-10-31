@@ -729,6 +729,17 @@ begin
   end;
   insert into rls_results values (80,'a parent cannot propose referee appointments',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0174. A change to a game is the clubs' and the league's.
+  b := false;
+  begin
+    perform public.decide_fixture_change(gen_random_uuid(), true, null);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (81,'a parent cannot decide a game change',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from public.fixture_change_requests;
+  insert into rls_results values (82,'a parent sees no game-change requests',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
