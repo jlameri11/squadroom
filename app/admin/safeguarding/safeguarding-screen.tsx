@@ -5,6 +5,7 @@ import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
+import { ConductRegister } from './conduct-register'
 
 type Report = {
   report_id: string
@@ -240,6 +241,7 @@ export function SafeguardingScreen() {
             </ul>
           )}
         </div>
+        <ConductRegister />
       </Screen>
     </>
   )

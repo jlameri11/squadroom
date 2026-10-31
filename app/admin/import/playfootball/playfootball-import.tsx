@@ -40,6 +40,8 @@ export function PlayfootballImport() {
   useEffect(() => {
     ;(async () => {
       const supabase = createClient()
+      const { data: claims } = await supabase.auth.getClaims()
+      if (!claims?.claims?.sub) return setAcademy(null)
       let org = getOrg()
       if (!org) {
         const { data: m } = await supabase.from('academy_members').select('academy_id').eq('status', 'active').limit(1).maybeSingle()

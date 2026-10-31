@@ -81,7 +81,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 |---|---|---|---|---|
 | X1 | Respect / behaviour marks with a league dashboard | — | MISSING | W-01 |
 | X2 | Concussion register with sheet lockout and clearance upload | Recorded by family or club; sheet refuses by name; clearance in a private bucket; only the club clears; "No play" on the card | **DONE** (0168, 1 Nov) | W-02 |
-| X3 | Safeguarding gate (WWCC / training lapse blocks rosters, chat, sheets); reportable-conduct register | WWCC gate on coaching (0120) | PARTIAL | W-03 |
+| X3 | Safeguarding gate (WWCC / training lapse blocks rosters, chat, sheets); reportable-conduct register | A lapsed WWCC removes coaching rights, roster and posting on the spot (0169–0170); conduct register filed by any member, read by officers | **DONE** bar training records (none exist yet) | W-03 |
 | X4 | Children's privacy consent centre | Versioned consents, withdrawable (R-06, R-17) | PARTIAL | W-04 |
 | X5 | Auto referee assignment with preview and undo | Manual with availability (L-06) | MISSING | W-05 |
 | X6 | Match QR check-in for referees | Tap check-in in a window (L-06) | PARTIAL | W-06 |

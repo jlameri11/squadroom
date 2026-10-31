@@ -694,6 +694,19 @@ begin
   end;
   insert into rls_results values (76,'a parent cannot clear a concussion',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0169. The conduct register is the officers'.
+  perform public.conduct_register(ACAD_A);
+  select count(*) into n from public.conduct_reports r
+   where r.academy_id = ACAD_A and r.reported_by <> PARENT;
+  insert into rls_results values (77,'a parent sees nobody else''s conduct reports',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  b := false;
+  begin
+    perform public.review_conduct_report(gen_random_uuid(), 'closed', 'x', null);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (78,'a parent cannot review a conduct report',
+    case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

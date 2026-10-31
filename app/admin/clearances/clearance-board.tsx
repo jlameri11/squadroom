@@ -22,10 +22,10 @@ type Row = {
 }
 
 const STATE: Record<Row['state'], { label: string; tint: string }> = {
-  barred: { label: 'Barred', tint: 'var(--no)' },
-  not_found: { label: 'Not on the register', tint: 'var(--no)' },
+  barred: { label: 'Barred — coaching blocked', tint: 'var(--no)' },
+  not_found: { label: 'Not on the register — coaching blocked', tint: 'var(--no)' },
   missing: { label: 'Nothing recorded', tint: 'var(--no)' },
-  expired: { label: 'Expired', tint: 'var(--no)' },
+  expired: { label: 'Expired — coaching blocked until renewed', tint: 'var(--no)' },
   expiring: { label: 'Running out', tint: 'var(--maybe)' },
   applied: { label: 'Applied', tint: 'var(--maybe)' },
   current: { label: 'Current', tint: 'var(--yes)' },

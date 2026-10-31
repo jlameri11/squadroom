@@ -987,6 +987,89 @@ export type Database = {
           },
         ]
       }
+      conduct_reports: {
+        Row: {
+          academy_id: string
+          category: Database["public"]["Enums"]["conduct_category"]
+          created_at: string
+          description: string
+          id: string
+          involves_child: boolean
+          occurred_on: string | null
+          outcome: string | null
+          referred_to: string | null
+          reported_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["conduct_status"]
+          subject_name: string | null
+          subject_profile_id: string | null
+        }
+        Insert: {
+          academy_id: string
+          category: Database["public"]["Enums"]["conduct_category"]
+          created_at?: string
+          description: string
+          id?: string
+          involves_child?: boolean
+          occurred_on?: string | null
+          outcome?: string | null
+          referred_to?: string | null
+          reported_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["conduct_status"]
+          subject_name?: string | null
+          subject_profile_id?: string | null
+        }
+        Update: {
+          academy_id?: string
+          category?: Database["public"]["Enums"]["conduct_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          involves_child?: boolean
+          occurred_on?: string | null
+          outcome?: string | null
+          referred_to?: string | null
+          reported_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["conduct_status"]
+          subject_name?: string | null
+          subject_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conduct_reports_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conduct_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conduct_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conduct_reports_subject_profile_id_fkey"
+            columns: ["subject_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_acceptances: {
         Row: {
           academy_id: string
@@ -5314,6 +5397,10 @@ export type Database = {
         }
         Returns: Json
       }
+      can_post_in_channel: {
+        Args: { p_channel: string; p_reply_to?: string }
+        Returns: boolean
+      }
       cast_poll_vote: {
         Args: {
           p_note?: string
@@ -5466,6 +5553,7 @@ export type Database = {
           status: Database["public"]["Enums"]["fixture_status"]
         }[]
       }
+      conduct_register: { Args: { p_academy?: string }; Returns: Json }
       confirm_match_sheet: {
         Args: { p_entry: string; p_fixture: string }
         Returns: undefined
@@ -5645,6 +5733,18 @@ export type Database = {
       expire_stale_join_requests: { Args: never; Returns: number }
       expire_stale_registrations: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
+      file_conduct_report: {
+        Args: {
+          p_academy: string
+          p_category: Database["public"]["Enums"]["conduct_category"]
+          p_description: string
+          p_involves_child?: boolean
+          p_occurred_on?: string
+          p_subject_name?: string
+          p_subject_profile?: string
+        }
+        Returns: string
+      }
       finance_export: {
         Args: { p_academy: string }
         Returns: {
@@ -5739,6 +5839,8 @@ export type Database = {
         Returns: Json
       }
       import_screen: { Args: { p_academy?: string }; Returns: Json }
+      is_academy_coach: { Args: { p_academy: string }; Returns: boolean }
+      is_team_coach: { Args: { p_team: string }; Returns: boolean }
       kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
       league_officials: { Args: { p_competition: string }; Returns: Json }
       make_offer: {
@@ -6216,6 +6318,15 @@ export type Database = {
         Args: { p_accept: boolean; p_appointment: string; p_note?: string }
         Returns: undefined
       }
+      review_conduct_report: {
+        Args: {
+          p_outcome?: string
+          p_referred_to?: string
+          p_report: string
+          p_status: Database["public"]["Enums"]["conduct_status"]
+        }
+        Returns: undefined
+      }
       review_report: {
         Args: {
           p_outcome: string
@@ -6470,6 +6581,13 @@ export type Database = {
         | "friendly_series"
         | "other"
       concussion_status: "active" | "clearance_submitted" | "cleared"
+      conduct_category:
+        | "disclosure"
+        | "allegation"
+        | "concern"
+        | "boundary_breach"
+        | "other"
+      conduct_status: "open" | "referred" | "closed"
       consent_kind:
         | "code_of_conduct"
         | "photo_media"
@@ -6722,6 +6840,14 @@ export const Constants = {
         "other",
       ],
       concussion_status: ["active", "clearance_submitted", "cleared"],
+      conduct_category: [
+        "disclosure",
+        "allegation",
+        "concern",
+        "boundary_breach",
+        "other",
+      ],
+      conduct_status: ["open", "referred", "closed"],
       consent_kind: [
         "code_of_conduct",
         "photo_media",
