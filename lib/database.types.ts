@@ -5505,6 +5505,7 @@ export type Database = {
         Row: {
           compact_lists: boolean
           created_at: string
+          digest_minutes: number
           home_order: string
           home_sections: Json | null
           notify_announcements: boolean
@@ -5523,6 +5524,7 @@ export type Database = {
         Insert: {
           compact_lists?: boolean
           created_at?: string
+          digest_minutes?: number
           home_order?: string
           home_sections?: Json | null
           notify_announcements?: boolean
@@ -5541,6 +5543,7 @@ export type Database = {
         Update: {
           compact_lists?: boolean
           created_at?: string
+          digest_minutes?: number
           home_order?: string
           home_sections?: Json | null
           notify_announcements?: boolean
@@ -6291,6 +6294,7 @@ export type Database = {
         }[]
       }
       my_competition_access: { Args: { p_competition: string }; Returns: Json }
+      my_digest_minutes: { Args: never; Returns: number }
       my_entry_fees: { Args: { p_competition: string }; Returns: Json }
       my_family: { Args: never; Returns: Json }
       my_offers: { Args: never; Returns: Json }
@@ -6823,6 +6827,7 @@ export type Database = {
         Args: { p_accepted: boolean; p_document: string; p_player: string }
         Returns: undefined
       }
+      set_digest_minutes: { Args: { p_minutes: number }; Returns: undefined }
       set_event_result: {
         Args: {
           p_event: string

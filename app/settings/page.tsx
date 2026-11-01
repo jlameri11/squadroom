@@ -8,6 +8,7 @@ import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
 import { MyData } from './my-data'
 import { ChatLanguage } from './chat-language'
+import { NotificationPrefs } from './notification-prefs'
 import { AppShellPage } from '@/components/shell-page'
 
 export default async function SettingsPage() {
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
   const isReferee = (pools ?? 0) > 0
   // W-08: the language this person reads messages in (null = as written).
   const { data: langRow } = await supabase.from('profiles').select('chat_language').eq('id', userId).maybeSingle()
+  const { data: digest } = await supabase.rpc('my_digest_minutes')
 
   return (
     <AppShellPage title="Your details" meta="Only you see these">
@@ -40,6 +42,7 @@ export default async function SettingsPage() {
         email={email}
       />
       <ChatLanguage initial={langRow?.chat_language ?? null} />
+      <NotificationPrefs initialDigest={(digest as number | null) ?? 0} />
       {/*
         A permanent way to reach these two.
 
