@@ -770,6 +770,13 @@ begin
   end;
   insert into rls_results values (87,'a person cannot spend the translation budget directly',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0179. Who can be named in a channel is the channel's business.
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from jsonb_array_elements(public.channel_mentionables(
+    (select c.id from public.channels c where c.academy_id = ACAD_A and c.status = 'active' limit 1)));
+  insert into rls_results values (88,'another tenant cannot list who is in our channel',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

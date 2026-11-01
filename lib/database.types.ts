@@ -3117,6 +3117,8 @@ export type Database = {
           event_id: string | null
           id: string
           is_announcement: boolean
+          mention_everyone: boolean
+          mentions: string[]
           pinned_at: string | null
           pinned_by: string | null
           poll_id: string | null
@@ -3138,6 +3140,8 @@ export type Database = {
           event_id?: string | null
           id?: string
           is_announcement?: boolean
+          mention_everyone?: boolean
+          mentions?: string[]
           pinned_at?: string | null
           pinned_by?: string | null
           poll_id?: string | null
@@ -3159,6 +3163,8 @@ export type Database = {
           event_id?: string | null
           id?: string
           is_announcement?: boolean
+          mention_everyone?: boolean
+          mentions?: string[]
           pinned_at?: string | null
           pinned_by?: string | null
           poll_id?: string | null
@@ -5747,6 +5753,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      channel_mentionables: { Args: { p_channel: string }; Returns: Json }
       channel_messages: {
         Args: { p_before?: string; p_channel: string; p_limit?: number }
         Returns: {

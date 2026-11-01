@@ -11,6 +11,17 @@ import { PollCard, type CardPoll } from './poll-card'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
+/** C-03: "@Sarah Whitfield" and "@everyone" in bold, the rest as written. */
+function withMentions(body: string, mine: boolean) {
+  const parts = body.split(/(@everyone\b|@[A-Z][\p{L}'’-]*(?: [A-Z][\p{L}'’-]*)?)/u)
+  if (parts.length === 1) return body
+  return parts.map((p, i) =>
+    i % 2 === 1
+      ? <b key={i} className="rounded px-0.5" style={{ background: mine ? '#ffffff22' : 'var(--brand-soft)', color: mine ? 'inherit' : 'var(--brand-text)' }}>{p}</b>
+      : p
+  )
+}
+
 type Count = { emoji: string; reaction_count: number; reacted_by_me: boolean }
 
 export function MessageBubble({
@@ -233,7 +244,7 @@ export function MessageBubble({
               </span>
             ) : (
               <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">
-                {translation && !showOriginal ? translation : message.body}
+                {withMentions((translation && !showOriginal ? translation : message.body) ?? '', mine && !message.is_announcement)}
                 {translation && translation !== message.body && (
                   <button onClick={() => setShowOriginal((v) => !v)} className="ml-1.5 text-[11px] underline underline-offset-2 opacity-70">
                     {showOriginal ? 'translation' : 'original'}

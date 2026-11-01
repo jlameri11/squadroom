@@ -27,6 +27,23 @@ export function Composer({
   replaceOptimistic: (tempId: string, real: ChatMessage | null) => void
 }) {
   const [text, setText] = useState('')
+  // C-03: who can be named here, fetched once; the ids of those named so far.
+  const [people, setPeople] = useState<{ id: string; name: string; label: string | null }[] | null>(null)
+  const [mentioned, setMentioned] = useState<{ id: string; name: string }[]>([])
+  const mentionQuery = (() => {
+    const m = text.match(/(?:^|\s)@([^\s@]{0,30})$/)
+    return m ? m[1] : null
+  })()
+  async function loadPeople() {
+    if (people) return
+    const { data } = await supabase.rpc('channel_mentionables', { p_channel: channelId })
+    setPeople(((data as unknown as { id: string; name: string; label: string | null }[]) ?? []))
+  }
+  function pick(p: { id: string; name: string }) {
+    setText((t) => t.replace(/(^|\s)@[^\s@]{0,30}$/, `$1@${p.name} `))
+    setMentioned((m) => (m.some((x) => x.id === p.id) ? m : [...m, p]))
+  }
+  const candidates = mentionQuery === null || !people ? [] : people.filter((p) => p.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
   const [announcement, setAnnouncement] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<{ file: File; preview: string }[]>([])
@@ -186,12 +203,16 @@ export function Composer({
     onCancelReply()
     setError(null)
 
+    // Only names still in the text count; a deleted "@Sarah" mentions nobody.
+    const mentions = mentioned.filter((m) => body.includes('@' + m.name)).map((m) => m.id)
+    const everyone = isHost && /(^|\s)@everyone(\s|$)/.test(body)
     const { data, error } = await supabase
       .from('messages')
       .insert({
         academy_id: academyId, channel_id: channelId, sender_id: myId,
         body: body || null, attachments: uploaded,
         reply_to_id: replyId, is_announcement: announcement && isHost,
+        mentions, mention_everyone: everyone,
       })
       .select('id, created_at')
       .single()
@@ -211,6 +232,7 @@ export function Composer({
     }
 
     setAnnouncement(false)
+    setMentioned([])
     replaceOptimistic(tempId, null)
   }
 
@@ -380,6 +402,26 @@ export function Composer({
         </div>
       )}
 
+      {mentionQuery !== null && (candidates.length > 0 || (isHost && 'everyone'.startsWith(mentionQuery.toLowerCase()))) && (
+        <ul className="mx-3 mb-1 overflow-hidden rounded-xl border text-sm" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+          {isHost && 'everyone'.startsWith(mentionQuery.toLowerCase()) && (
+            <li>
+              <button onClick={() => pick({ id: 'everyone', name: 'everyone' })} className="flex w-full items-baseline gap-2 px-3 py-2 text-left">
+                <span className="font-medium">@everyone</span>
+                <span className="text-xs text-ink-3">the whole channel, mutes and all</span>
+              </button>
+            </li>
+          )}
+          {candidates.map((p) => (
+            <li key={p.id} className="border-t" style={{ borderColor: 'var(--line-2)' }}>
+              <button onClick={() => pick(p)} className="flex w-full items-baseline gap-2 px-3 py-2 text-left">
+                <span className="font-medium">{p.name}</span>
+                {p.label && <span className="truncate text-xs text-ink-3">{p.label}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="flex items-end gap-2 p-3">
         <input
           ref={fileInput}
@@ -416,9 +458,13 @@ export function Composer({
         )}
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); if (e.target.value.includes('@')) void loadPeople() }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              if (candidates.length > 0 && mentionQuery !== null) pick(candidates[0])
+              else send()
+            }
           }}
           rows={1}
           placeholder={

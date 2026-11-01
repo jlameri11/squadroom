@@ -100,7 +100,7 @@
 |---|---|---|---|
 | C-01 | **"Seen by 41/56"** on announcements, from `channel_members.last_read_at`, plus a one-tap re-ping of unread members | **DONE** (0109). `announcement_reach` and `reping_unread`; the re-ping is rate limited in the database, so pressing it twice tells nobody twice | — |
 | C-02 | **Automatic member labels** from roster links: "Anna's Dad · U9 Navy", "Coach", "Manager" | **DONE** (0111). `app_private.channel_member_label` takes the CHANNEL, not the academy, because what may be said about a person depends on who is listening: a team channel names that person's children in THAT squad (everyone there can already read the roster), an academy-wide channel names no child at all — only the role and the squads. Proven by test-labels-and-reasons, which checks every child's first name in the academy against every academy-wide label | — |
-| C-03 | @mentions | MISSING | P2 |
+| C-03 | @mentions | **DONE** (0179). `@` in the composer autocompletes from the channel's members (names and the 0111 labels, never a phone; nothing for an outsider); the message carries the ids; a mention is a push of its own kind that gets through a mute and quiet hours; `@everyone` from a host reaches everyone, mutes and all, and from a parent is just text; names bold in the bubble. Proven by test-mentions (11), test-rls 88; chat suite re-run | — |
 | C-04 | Scheduled messages | MISSING | P2 |
 | C-05 | Voice notes + short video | MISSING | P2 |
 | C-06 | Threaded replies under announcements that don't notify the whole channel | PARTIAL (replies_only mode + reply_to) | P2 |
