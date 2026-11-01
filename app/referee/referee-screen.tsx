@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { MarksPicker, type Marks } from '@/components/respect-marks'
 
 const SYDNEY = 'Australia/Sydney'
 
@@ -16,6 +17,8 @@ type Appointment = {
   report: Record<string, unknown> | null
   withdrawn_note: string | null
   fixture_id: string
+  home_entry_id: string | null
+  away_entry_id: string | null
   starts_at: string | null
   fixture_status: string
   competition: string
@@ -62,6 +65,8 @@ export function RefereeScreen() {
   const [busy, setBusy] = useState<string | null>(null)
   const [reporting, setReporting] = useState<string | null>(null)
   const [report, setReport] = useState({ home_score: '', away_score: '', conduct: '', incidents: '', pitch: '', notes: '' })
+  const blank: Marks = { players: 4, coaches: 4, spectators: 4, note: '' }
+  const [marks, setMarks] = useState<{ home: Marks; away: Marks }>({ home: blank, away: blank })
   const [bank, setBank] = useState<string | null>(null)
   const [addingBlock, setAddingBlock] = useState(false)
   const [block, setBlock] = useState({ from: '', to: '', reason: '' })
@@ -114,9 +119,24 @@ export function RefereeScreen() {
       pitch: report.pitch.trim() || null,
       notes: report.notes.trim() || null,
     }
-    const { error } = await createClient().rpc('submit_referee_report', { p_appointment: id, p_report: body })
+    const client = createClient()
+    const { error } = await client.rpc('submit_referee_report', { p_appointment: id, p_report: body })
+    if (error) {
+      setBusy(null)
+      return setError(error.message)
+    }
+    // W-01: the referee's marks for each side, with the report.
+    const a = mine?.appointments.find((x) => x.id === id)
+    for (const [sideKey, entryId] of [['home', a?.home_entry_id], ['away', a?.away_entry_id]] as const) {
+      if (!entryId) continue
+      const m = marks[sideKey]
+      const { error: me } = await client.rpc('give_respect_marks', { p_fixture: a!.fixture_id, p_about_entry: entryId, p_players: m.players, p_coaches: m.coaches, p_spectators: m.spectators, p_note: m.note || undefined })
+      if (me) {
+        setBusy(null)
+        return setError(me.message)
+      }
+    }
     setBusy(null)
-    if (error) return setError(error.message)
     setReporting(null)
     setReport({ home_score: '', away_score: '', conduct: '', incidents: '', pitch: '', notes: '' })
     await load()
@@ -241,7 +261,7 @@ export function RefereeScreen() {
                 <p className="mt-1.5 text-xs text-ink-3">Check in from three hours before kick-off.</p>
               )}
               {afterKickOff(a, now) && !a.reported_at && (
-                <ReportForm a={a} open={reporting === a.id} onOpen={() => setReporting(a.id)} onClose={() => setReporting(null)} report={report} setReport={setReport} onSend={() => sendReport(a.id)} busy={busy === a.id} />
+                <ReportForm a={a} open={reporting === a.id} onOpen={() => setReporting(a.id)} onClose={() => setReporting(null)} report={report} setReport={setReport} marks={marks} setMarks={setMarks} onSend={() => sendReport(a.id)} busy={busy === a.id} />
               )}
             </li>
           ))}
@@ -261,7 +281,7 @@ export function RefereeScreen() {
                   {a.fee_cents != null ? ` · ${(a.fee_cents / 100).toFixed(2)}${a.paid_at ? ' paid' : a.checked_in_at ? ' owed' : ''}` : ''}
                 </p>
                 {!a.reported_at && (
-                  <ReportForm a={a} open={reporting === a.id} onOpen={() => setReporting(a.id)} onClose={() => setReporting(null)} report={report} setReport={setReport} onSend={() => sendReport(a.id)} busy={busy === a.id} />
+                  <ReportForm a={a} open={reporting === a.id} onOpen={() => setReporting(a.id)} onClose={() => setReporting(null)} report={report} setReport={setReport} marks={marks} setMarks={setMarks} onSend={() => sendReport(a.id)} busy={busy === a.id} />
                 )}
               </li>
             ))}
@@ -381,7 +401,7 @@ function GameLine({ a, muted = false }: { a: Appointment; muted?: boolean }) {
 }
 
 function ReportForm({
-  a, open, onOpen, onClose, report, setReport, onSend, busy,
+  a, open, onOpen, onClose, report, setReport, marks, setMarks, onSend, busy,
 }: {
   a: Appointment
   open: boolean
@@ -389,6 +409,8 @@ function ReportForm({
   onClose: () => void
   report: { home_score: string; away_score: string; conduct: string; incidents: string; pitch: string; notes: string }
   setReport: (r: typeof report) => void
+  marks: { home: Marks; away: Marks }
+  setMarks: (m: { home: Marks; away: Marks }) => void
   onSend: () => void
   busy: boolean
 }) {
@@ -413,6 +435,11 @@ function ReportForm({
       <textarea value={report.incidents} onChange={(e) => setReport({ ...report, incidents: e.target.value })} placeholder="Incidents: cards, injuries, abandonment" rows={2} className={field} style={{ borderColor: 'var(--line)' }} />
       <input value={report.pitch} onChange={(e) => setReport({ ...report, pitch: e.target.value })} placeholder="Pitch and facilities" className={field} style={{ borderColor: 'var(--line)' }} />
       <textarea value={report.notes} onChange={(e) => setReport({ ...report, notes: e.target.value })} placeholder="Anything else" rows={2} className={field} style={{ borderColor: 'var(--line)' }} />
+      <p className="mt-1 text-xs font-semibold">Respect marks — {a.home ?? 'Home'}</p>
+      <MarksPicker value={marks.home} onChange={(m) => setMarks({ ...marks, home: m })} compact />
+      <p className="mt-1 text-xs font-semibold">Respect marks — {a.away ?? 'Away'}</p>
+      <MarksPicker value={marks.away} onChange={(m) => setMarks({ ...marks, away: m })} compact />
+      <p className="text-[11px] text-ink-3">Players, coaches, spectators — 1 to 5. Only the league sees them.</p>
       <div className="flex gap-2">
         <button onClick={onSend} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           Send the report

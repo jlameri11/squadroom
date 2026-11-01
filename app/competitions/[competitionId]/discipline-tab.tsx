@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { RespectDashboard } from '@/components/respect-marks'
 
 type Suspension = {
   id: string
@@ -183,6 +184,7 @@ export function DisciplineTab({
           })}
         </ul>
       )}
+      <RespectDashboard competitionId={competitionId} isOrganiser={isOrganiser} />
     </div>
   )
 }

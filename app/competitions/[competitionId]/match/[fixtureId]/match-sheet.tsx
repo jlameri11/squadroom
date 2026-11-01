@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { RespectPanel } from '@/components/respect-marks'
 
 type SquadPlayer = { player_id: string; number: number | null; name: string; ineligible: string | null }
 type SheetPlayer = { player_id: string; number: number | null; starting: boolean; name: string }
@@ -149,6 +150,12 @@ export function MatchSheet({ fixtureId }: { fixtureId: string }) {
 
       {canManage && !closed && (
         <ScorePanel fixtureId={f.id} entryId={entryId} sheet={sheet} onChanged={load} onError={setError} />
+      )}
+
+      {/* W-01: after the game, the other side marks this team — you are
+          looking at the side you do NOT manage. */}
+      {['final', 'forfeit'].includes(f.status) && canConfirm && !canManage && (
+        <RespectPanel fixtureId={f.id} aboutEntryId={entryId} aboutName={side === 'home' ? f.home : f.away} />
       )}
 
       {view.log.length > 0 && (

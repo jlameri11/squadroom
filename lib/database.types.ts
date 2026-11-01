@@ -4918,6 +4918,90 @@ export type Database = {
           },
         ]
       }
+      respect_marks: {
+        Row: {
+          about_entry_id: string
+          by_entry_id: string | null
+          coaches: number
+          competition_id: string
+          created_at: string
+          fixture_id: string
+          id: string
+          marker_id: string
+          marker_role: string
+          note: string | null
+          players: number
+          spectators: number
+          updated_at: string
+        }
+        Insert: {
+          about_entry_id: string
+          by_entry_id?: string | null
+          coaches: number
+          competition_id: string
+          created_at?: string
+          fixture_id: string
+          id?: string
+          marker_id: string
+          marker_role: string
+          note?: string | null
+          players: number
+          spectators: number
+          updated_at?: string
+        }
+        Update: {
+          about_entry_id?: string
+          by_entry_id?: string | null
+          coaches?: number
+          competition_id?: string
+          created_at?: string
+          fixture_id?: string
+          id?: string
+          marker_id?: string
+          marker_role?: string
+          note?: string | null
+          players?: number
+          spectators?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "respect_marks_about_entry_id_fkey"
+            columns: ["about_entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respect_marks_by_entry_id_fkey"
+            columns: ["by_entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respect_marks_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respect_marks_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respect_marks_marker_id_fkey"
+            columns: ["marker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safeguarding_officers: {
         Row: {
           academy_id: string
@@ -5993,6 +6077,17 @@ export type Database = {
           profile_id: string
         }[]
       }
+      give_respect_marks: {
+        Args: {
+          p_about_entry: string
+          p_coaches: number
+          p_fixture: string
+          p_note?: string
+          p_players: number
+          p_spectators: number
+        }
+        Returns: string
+      }
       grant_league_role: {
         Args: {
           p_competition: string
@@ -6152,6 +6247,7 @@ export type Database = {
           phone: string
         }[]
       }
+      my_respect_marks: { Args: { p_fixture: string }; Returns: Json }
       my_rsvps_for_event: {
         Args: { p_event: string }
         Returns: {
@@ -6510,6 +6606,7 @@ export type Database = {
         Args: { p_competition: string; p_division: string; p_source: string }
         Returns: string
       }
+      respect_dashboard: { Args: { p_competition: string }; Returns: Json }
       respond_appointment: {
         Args: { p_accept: boolean; p_appointment: string; p_note?: string }
         Returns: undefined

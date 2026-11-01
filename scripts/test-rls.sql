@@ -740,6 +740,17 @@ begin
   select count(*) into n from public.fixture_change_requests;
   insert into rls_results values (82,'a parent sees no game-change requests',
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0175. Respect marks are read through the dashboard, never the table.
+  select count(*) into n from public.respect_marks;
+  insert into rls_results values (83,'a parent reads no respect marks',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  b := false;
+  begin
+    perform public.give_respect_marks(gen_random_uuid(), gen_random_uuid(), 1, 1, 1, null);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (84,'a parent cannot give respect marks',
+    case when b then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
