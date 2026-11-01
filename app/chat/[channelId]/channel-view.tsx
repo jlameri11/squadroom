@@ -41,6 +41,19 @@ export function ChannelView({
   const [showSettings, setShowSettings] = useState(false)
   // C-04: bumps when a message is queued for later, so the strip reloads.
   const [scheduledKey, setScheduledKey] = useState(0)
+  // C-06: replies to an announcement that is on screen sit under it, folded.
+  const [openThreads, setOpenThreads] = useState<Set<string>>(new Set())
+  const onScreen = useMemo(() => new Set(messages.map((m) => m.id)), [messages])
+  const threads = useMemo(() => {
+    const t = new Map<string, ChatMessage[]>()
+    for (const m of messages) {
+      if (m.reply_to_announcement && m.reply_to_id && onScreen.has(m.reply_to_id)) {
+        t.set(m.reply_to_id, [...(t.get(m.reply_to_id) ?? []), m])
+      }
+    }
+    return t
+  }, [messages, onScreen])
+  const topLevel = useMemo(() => messages.filter((m) => !(m.reply_to_announcement && m.reply_to_id && onScreen.has(m.reply_to_id))), [messages, onScreen])
   const bottom = useRef<HTMLDivElement>(null)
   const supabase = useRef(createClient())
 
@@ -139,18 +152,43 @@ export function ChannelView({
           </p>
         )}
 
-        {messages.map((m, i) => (
-          <MessageBubble
-            key={m.id}
-            message={m}
-            translation={translations[m.id] ?? null}
-            mine={m.sender_id === myId}
-            isHost={isHost}
-            academyId={academyId}
-            myId={myId}
-            showDay={showDaySeparator(messages, i)}
-            onReply={() => setReplyTo(m)}
-          />
+        {topLevel.map((m, i) => (
+          <div key={m.id}>
+            <MessageBubble
+              message={m}
+              translation={translations[m.id] ?? null}
+              mine={m.sender_id === myId}
+              isHost={isHost}
+              academyId={academyId}
+              myId={myId}
+              showDay={showDaySeparator(topLevel, i)}
+              onReply={() => setReplyTo(m)}
+            />
+            {threads.has(m.id) && (
+              <div className="mb-2 ml-4">
+                <button
+                  onClick={() => setOpenThreads((s) => { const n = new Set(s); if (n.has(m.id)) n.delete(m.id); else n.add(m.id); return n })}
+                  className="mb-1 text-xs font-semibold underline underline-offset-2"
+                  style={{ color: 'var(--brand-text)' }}
+                >
+                  {openThreads.has(m.id) ? 'Hide replies' : `${threads.get(m.id)!.length} ${threads.get(m.id)!.length === 1 ? 'reply' : 'replies'} ›`}
+                </button>
+                {openThreads.has(m.id) && threads.get(m.id)!.map((r) => (
+                  <MessageBubble
+                    key={r.id}
+                    message={r}
+                    translation={translations[r.id] ?? null}
+                    mine={r.sender_id === myId}
+                    isHost={isHost}
+                    academyId={academyId}
+                    myId={myId}
+                    showDay={false}
+                    onReply={() => setReplyTo(m)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
         <div ref={bottom} />
       </div>

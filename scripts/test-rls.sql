@@ -787,6 +787,15 @@ begin
   insert into rls_results values (89,'a host reads nobody else''s scheduled messages',
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
+  -- 0183 recreated channel_messages with the thread columns. The feed is
+  -- still the channel's: another tenant reads nothing from it.
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.channel_messages(
+    (select c.id from public.channels c where c.academy_id = ACAD_A and c.status = 'active' limit 1), null, 50);
+  insert into rls_results values (90,'another tenant reads none of our feed, threads included',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

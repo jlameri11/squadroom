@@ -29,6 +29,9 @@ export type ChatMessage = {
   event?: unknown
   poll_id?: string | null
   poll?: unknown
+  /** C-06: replies under this message; whether this message is a reply to an announcement. */
+  reply_count?: number
+  reply_to_announcement?: boolean
 }
 
 /**

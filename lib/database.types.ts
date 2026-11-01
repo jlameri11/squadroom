@@ -5779,6 +5779,8 @@ export type Database = {
           pinned_at: string
           poll: Json
           poll_id: string
+          reply_count: number
+          reply_to_announcement: boolean
           reply_to_body: string
           reply_to_id: string
           reply_to_name: string
