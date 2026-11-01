@@ -2129,6 +2129,7 @@ export type Database = {
           away_score: number | null
           away_source: string | null
           cancel_reason: string | null
+          checkin_key: string
           competition_id: string
           created_at: string
           division: string
@@ -2157,6 +2158,7 @@ export type Database = {
           away_score?: number | null
           away_source?: string | null
           cancel_reason?: string | null
+          checkin_key?: string
           competition_id: string
           created_at?: string
           division: string
@@ -2185,6 +2187,7 @@ export type Database = {
           away_score?: number | null
           away_source?: string | null
           cancel_reason?: string | null
+          checkin_key?: string
           competition_id?: string
           created_at?: string
           division?: string
@@ -6033,6 +6036,7 @@ export type Database = {
         Args: { p_competition: string }
         Returns: Json
       }
+      fixture_checkin_key: { Args: { p_fixture: string }; Returns: string }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json
@@ -6518,6 +6522,10 @@ export type Database = {
       }
       referee_availability: { Args: { p_fixture: string }; Returns: Json }
       referee_check_in: { Args: { p_appointment: string }; Returns: string }
+      referee_check_in_by_key: {
+        Args: { p_fixture: string; p_key: string }
+        Returns: Json
+      }
       referee_payments: { Args: { p_competition: string }; Returns: Json }
       referee_payments_export: {
         Args: { p_competition: string }

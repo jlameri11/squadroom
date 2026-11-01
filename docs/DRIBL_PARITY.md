@@ -84,7 +84,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 | X3 | Safeguarding gate (WWCC / training lapse blocks rosters, chat, sheets); reportable-conduct register | A lapsed WWCC removes coaching rights, roster and posting on the spot (0169–0170); conduct register filed by any member, read by officers | **DONE** bar training records (none exist yet) | W-03 |
 | X4 | Children's privacy consent centre | One section per child: who sees what from the enforcing code, the public-name switch, agreements with versions, export/erase; a child-first notice at `/privacy` | **DONE** (0171, 1 Nov) | W-04 |
 | X5 | Auto referee assignment with preview and undo | A day drafted from availability and load, previewed, applied as a batch of offers, undone as a batch | **DONE** (0172–0173, 1 Nov) | W-05 |
-| X6 | Match QR check-in for referees | Tap check-in in a window (L-06) | PARTIAL | W-06 |
+| X6 | Match QR check-in for referees | A per-game QR shown by the manager, scanned by the appointed referee inside the window | **DONE** (0176, 1 Nov) | W-06 |
 | X7 | Club-to-club change requests; attendance blocked on overdue fees | Propose → the other club agrees → the league decides, with a notes thread; an opt-in overdue block on "yes" with a grace period | **DONE** (0174, 1 Nov) | W-07 |
 | X8 | Auto-translated chat | — | MISSING | W-08 |
 | X9 | Video, development plans, pitch booking, casual sessions, insurance, streaming, lotto | — | LATER | W-09 |

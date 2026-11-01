@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { RespectPanel } from '@/components/respect-marks'
+import Link from 'next/link'
 
 type SquadPlayer = { player_id: string; number: number | null; name: string; ineligible: string | null }
 type SheetPlayer = { player_id: string; number: number | null; starting: boolean; name: string }
@@ -45,7 +46,7 @@ const KIND_LABEL: Record<string, string> = {
  * sides record events, both sides enter the score. Agreement makes the
  * game final; disagreement makes it disputed and leaves it to the organiser.
  */
-export function MatchSheet({ fixtureId }: { fixtureId: string }) {
+export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; competitionId: string }) {
   const [view, setView] = useState<View | null | undefined>(undefined)
   const [side, setSide] = useState<'home' | 'away'>('home')
   const [error, setError] = useState<string | null>(null)
@@ -101,6 +102,12 @@ export function MatchSheet({ fixtureId }: { fixtureId: string }) {
           </p>
         )}
         {view.is_organiser && f.score_disputed && <RuleOnScore fixtureId={f.id} onDone={load} />}
+        {/* W-06: the code the referee scans at the ground. */}
+        {(view.can_manage_home || view.can_manage_away || view.is_organiser) && !closed && (
+          <Link href={`/competitions/${competitionId}/match/${f.id}/qr`} className="mt-2 inline-block text-xs underline underline-offset-2 text-ink-3">
+            Referee check-in code ›
+          </Link>
+        )}
       </header>
 
       <div className="mt-3 flex gap-1.5">

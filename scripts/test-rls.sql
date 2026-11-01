@@ -751,6 +751,10 @@ begin
   end;
   insert into rls_results values (84,'a parent cannot give respect marks',
     case when b then 'PASS' else 'FAIL' end);
+  -- 0176. The check-in code is for the game's managers and the league.
+  b := (select public.fixture_checkin_key(f.id) is null from public.fixtures f where f.competition_id = v_comp limit 1);
+  insert into rls_results values (85,'a parent is not handed a check-in code',
+    case when coalesce(b, true) then 'PASS' else 'FAIL' end);
   execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

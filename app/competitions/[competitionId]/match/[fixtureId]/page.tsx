@@ -16,7 +16,7 @@ export default async function MatchPage(props: {
   if (!userId) redirect(`/signin?next=/competitions/${competitionId}/match/${fixtureId}`)
   return (
     <AppShellPage title="Match sheet" back={`/competitions/${competitionId}`}>
-      <MatchSheet fixtureId={fixtureId} />
+      <MatchSheet fixtureId={fixtureId} competitionId={competitionId} />
     </AppShellPage>
   )
 }
