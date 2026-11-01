@@ -121,7 +121,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | E-03 | Chase non-responders | "12 haven't answered" → one tap sends a nudge; automatic nudge 48h before (academy setting) |
 | E-04 + Home | "Needs you" strip and family view | At the top of Home: RSVPs due · payments due · forms/consents due · approvals (staff). Child chips filter Home and Fixtures by kid, with a colour per child. Each child's next-game card shows their last result |
 | C-03 | @mentions | Autocomplete from channel members; a mention notifies even in a muted channel; @everyone for hosts only |
-| C-05 | Voice notes + video | Hold to record (max 2 min), waveform playback. Video up to ~60s, compressed client-side, thumbnail. Storage rules as for photos |
+| C-05 | Voice notes + video | **DONE (0184).** Tap to record (max 60 s, native player; waveform not built), video up to 25 MB (~30 s) refused client-side before upload; no client-side video compression or thumbnail yet (needs ffmpeg.wasm or the native shell — M7). Storage rules as for photos, proven by test-media |
 | C-04 | Scheduled messages | "Send Thursday 7pm". Shown as scheduled to the sender, with edit/cancel |
 | C-06 | Threads on announcements | Replies collapse under the announcement ("8 replies") and don't notify the whole channel |
 | C-07 | Digest | Non-urgent pushes batched (e.g. "5 new messages in U9 Navy"). Urgent ones (cancellations, mentions, announcements) are never batched |

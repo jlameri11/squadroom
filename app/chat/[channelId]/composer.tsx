@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { prepareImage, type Attachment } from '@/lib/adapters/images'
+import { prepareImage, kindOf, extensionFor, MAX_MEDIA_BYTES, type Attachment, type AttachmentKind } from '@/lib/adapters/images'
+import { canRecord, startRecording, formatDuration, MAX_VOICE_SECONDS, type Recording } from '@/lib/adapters/recorder'
 import { PhotoConsent } from './photo-consent'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 
@@ -63,10 +64,43 @@ export function Composer({
     onScheduled?.()
   }
   const [error, setError] = useState<string | null>(null)
-  const [pending, setPending] = useState<{ file: File; preview: string }[]>([])
+  const [pending, setPending] = useState<{ key: string; file: File; preview: string; kind: AttachmentKind; duration?: number }[]>([])
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+  // C-05: a voice note. The server has no microphone, so it renders the send
+  // button and the client swaps in the mic once it knows it has one.
+  const canMic = useSyncExternalStore(() => () => {}, canRecord, () => false)
+  const [recSeconds, setRecSeconds] = useState<number | null>(null)
+  const recRef = useRef<Recording | null>(null)
+  async function startVoice() {
+    setError(null)
+    try {
+      const handle = await startRecording((s) => {
+        setRecSeconds(s)
+        if (s >= MAX_VOICE_SECONDS) void finishVoice()
+      })
+      recRef.current = handle
+      setRecSeconds(0)
+    } catch {
+      setError('Squadroom needs the microphone for a voice note. Allow it in your browser settings.')
+    }
+  }
+  async function finishVoice() {
+    const handle = recRef.current
+    if (!handle) return
+    recRef.current = null
+    const note = await handle.stop()
+    setRecSeconds(null)
+    if (!note || note.duration < 0.5) return
+    const file = new File([note.blob], `voice-note.${extensionFor(note.mime, 'webm')}`, { type: note.mime })
+    setPending((prev) => [...prev, { key: crypto.randomUUID(), file, preview: '', kind: 'audio' as const, duration: note.duration }].slice(0, 6))
+  }
+  function cancelVoice() {
+    recRef.current?.cancel()
+    recRef.current = null
+    setRecSeconds(null)
+  }
 
   type Upcoming = { id: string; title: string; starts_at: string; type: string }
   const [fixtures, setFixtures] = useState<Upcoming[] | null>(null)
@@ -150,13 +184,26 @@ export function Composer({
     // A few at a time. Someone selecting their whole camera roll is almost
     // always a mistake, and a 40-image message is unreadable anyway.
     const chosen = Array.from(files).slice(0, 6)
-    setPending((prev) => [...prev, ...chosen.map((f) => ({ file: f, preview: URL.createObjectURL(f) }))].slice(0, 6))
+    // C-05: a video is refused here, before a byte is sent, rather than by
+    // the bucket after thirty seconds of upload on a 4G connection.
+    const big = chosen.find((f) => f.size > MAX_MEDIA_BYTES)
+    if (big) {
+      setError(`${big.name} is too big. Keep videos short — under 25 MB, about thirty seconds.`)
+      return
+    }
+    setPending((prev) => [
+      ...prev,
+      ...chosen.map((f) => {
+        const kind = kindOf(f.type)
+        return { key: crypto.randomUUID(), file: f, preview: kind === 'image' ? URL.createObjectURL(f) : '', kind }
+      }),
+    ].slice(0, 6))
     setError(null)
   }
 
   function removePending(i: number) {
     setPending((prev) => {
-      URL.revokeObjectURL(prev[i].preview)
+      if (prev[i].preview) URL.revokeObjectURL(prev[i].preview)
       return prev.filter((_, n) => n !== i)
     })
   }
@@ -165,12 +212,14 @@ export function Composer({
     if (pending.length === 0) return []
     const out: Attachment[] = []
 
-    for (const { file } of pending) {
+    for (const { file, duration } of pending) {
+      // Photos are downsized on the phone; a voice note or a video goes up
+      // as recorded, within the 25 MB the picker already enforced.
       const prepared = await prepareImage(file)
       // The path IS the authorisation: academy / channel / uploader / file.
       // The storage policies read the channel and the uploader straight out
       // of it, so a client cannot write somewhere it has no business.
-      const ext = prepared.mime === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() ?? 'bin')
+      const ext = extensionFor(prepared.mime, file.name.split('.').pop() ?? 'bin')
       const path = `${academyId}/${channelId}/${myId}/${crypto.randomUUID()}.${ext}`
 
       const { error } = await supabase.storage
@@ -189,6 +238,7 @@ export function Composer({
       out.push({
         path, mime: prepared.mime, size: prepared.blob.size,
         width: prepared.width, height: prepared.height, name: file.name,
+        ...(duration ? { duration } : {}),
       })
     }
     return out
@@ -215,7 +265,7 @@ export function Composer({
       pinned_at: null, created_at: new Date().toISOString(), edited_at: null, deleted_at: null,
     })
     setText('')
-    pending.forEach((p) => URL.revokeObjectURL(p.preview))
+    pending.forEach((p) => { if (p.preview) URL.revokeObjectURL(p.preview) })
     setPending([])
     onCancelReply()
     setError(null)
@@ -332,14 +382,32 @@ export function Composer({
       {/* Only once images are attached. A permanent notice above the
           composer is a notice nobody sees, and the moment it matters is the
           moment before posting. */}
-      {pending.length > 0 && <PhotoConsent channelId={channelId} />}
+      {/* A video of training is a photo of training, thirty times a second. */}
+      {pending.some((p) => p.kind === 'image' || p.kind === 'video') && <PhotoConsent channelId={channelId} />}
 
       {pending.length > 0 && (
         <div className="flex gap-2 overflow-x-auto px-3 pt-2">
           {pending.map((p, i) => (
-            <div key={p.preview} className="relative flex-none">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.preview} alt="" className="h-16 w-16 rounded-lg object-cover" />
+            <div key={p.key} className="relative flex-none">
+              {p.kind === 'image' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.preview} alt="" className="h-16 w-16 rounded-lg object-cover" />
+              ) : (
+                <div
+                  className="flex h-16 max-w-[180px] items-center gap-2 rounded-lg border px-3 text-sm"
+                  style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}
+                >
+                  <span className="text-lg" aria-hidden>{p.kind === 'audio' ? '🎙' : p.kind === 'video' ? '🎬' : '📄'}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">
+                      {p.kind === 'audio' ? 'Voice note' : p.kind === 'video' ? 'Video' : p.file.name}
+                    </span>
+                    <span className="block text-xs text-ink-3">
+                      {p.duration ? formatDuration(p.duration) : `${(p.file.size / 1048576).toFixed(1)} MB`}
+                    </span>
+                  </span>
+                </div>
+              )}
               <button
                 onClick={() => removePending(i)}
                 className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--brand)] text-xs text-white"
@@ -459,15 +527,26 @@ export function Composer({
         <input
           ref={fileInput}
           type="file"
-          accept="image/*,application/pdf"
+          accept="image/*,video/*,audio/*,application/pdf"
           multiple
           className="hidden"
           onChange={(e) => { pickFiles(e.target.files); e.target.value = '' }}
         />
+        {recSeconds !== null ? (
+          // Recording. The row becomes the recorder: a pulsing dot, the
+          // clock, and the two choices there are.
+          <div className="flex flex-1 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px]" style={{ background: 'var(--surface-2)' }} role="status" aria-live="polite">
+            <span className="h-2.5 w-2.5 flex-none animate-pulse rounded-full" style={{ background: 'var(--no)' }} aria-hidden />
+            <span className="flex-1 tabular-nums">Recording {formatDuration(recSeconds)}</span>
+            <button onClick={cancelVoice} className="text-sm text-ink-3 underline underline-offset-2">Cancel</button>
+            <button onClick={finishVoice} className="rounded-lg px-3 py-1 text-sm font-semibold text-white" style={{ background: 'var(--brand)' }}>Done</button>
+          </div>
+        ) : (
+        <>
         <button
           onClick={() => fileInput.current?.click()}
           className="grid h-10 w-10 flex-none place-items-center rounded-full text-xl text-ink-2"
-          aria-label="Add a photo"
+          aria-label="Add a photo or video"
         >
           ＋
         </button>
@@ -505,15 +584,30 @@ export function Composer({
           }
           className="max-h-32 flex-1 resize-none rounded-2xl bg-[var(--surface-2)] px-3.5 py-2.5 text-[15px] outline-none"
         />
-        <button
-          onClick={send}
-          disabled={(!text.trim() && pending.length === 0) || uploading}
-          className="grid h-10 w-10 flex-none place-items-center rounded-full text-white disabled:opacity-40"
-          style={{ background: 'var(--brand)' }}
-          aria-label="Send"
-        >
-          {uploading ? '…' : '↑'}
-        </button>
+        {canMic && !text.trim() && pending.length === 0 ? (
+          // Nothing typed, nothing attached: the button is a microphone, the
+          // way every messaging app a parent already uses does it.
+          <button
+            onClick={startVoice}
+            className="grid h-10 w-10 flex-none place-items-center rounded-full text-white"
+            style={{ background: 'var(--brand)' }}
+            aria-label="Record a voice note"
+          >
+            🎙
+          </button>
+        ) : (
+          <button
+            onClick={send}
+            disabled={(!text.trim() && pending.length === 0) || uploading}
+            className="grid h-10 w-10 flex-none place-items-center rounded-full text-white disabled:opacity-40"
+            style={{ background: 'var(--brand)' }}
+            aria-label="Send"
+          >
+            {uploading ? '…' : '↑'}
+          </button>
+        )}
+        </>
+        )}
       </div>
     </div>
   )

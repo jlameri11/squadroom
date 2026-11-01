@@ -796,6 +796,12 @@ begin
   insert into rls_results values (90,'another tenant reads none of our feed, threads included',
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
+  -- 0184 widened what the attachments bucket accepts. It is still private:
+  -- a voice note of a coach or a clip of somebody's child is never a
+  -- permanent public link.
+  select count(*) into n from storage.buckets b where b.id = 'attachments' and b.public;
+  insert into rls_results values (91,'the attachments bucket stays private with voice and video in it',
+    case when n=0 then 'PASS' else 'FAIL' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

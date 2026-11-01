@@ -61,4 +61,30 @@ export type Attachment = {
   width: number
   height: number
   name: string
+  /** Seconds, for a voice note or a video. */
+  duration?: number
+}
+
+/** C-05: the bucket's ceiling, about thirty seconds of phone video. */
+export const MAX_MEDIA_BYTES = 25 * 1024 * 1024
+
+export type AttachmentKind = 'image' | 'audio' | 'video' | 'file'
+
+export function kindOf(mime: string | undefined | null): AttachmentKind {
+  if (!mime) return 'file'
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('audio/')) return 'audio'
+  if (mime.startsWith('video/')) return 'video'
+  return 'file'
+}
+
+/** The file extension the bucket path should end in, from the type. */
+export function extensionFor(mime: string, fallback: string): string {
+  const known: Record<string, string> = {
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/heic': 'heic',
+    'application/pdf': 'pdf',
+    'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/mpeg': 'mp3', 'audio/ogg': 'ogg', 'audio/aac': 'aac', 'audio/wav': 'wav',
+    'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
+  }
+  return known[mime] ?? fallback
 }
