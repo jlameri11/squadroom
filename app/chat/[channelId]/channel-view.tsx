@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from '@/lib/hooks/use-translations'
 import { useChannelMessages, type ChatMessage } from '@/lib/hooks/use-channel-messages'
 import { MessageBubble } from './message-bubble'
 import { Composer } from './composer'
@@ -27,6 +28,15 @@ export function ChannelView({
   const { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic } =
     useChannelMessages(channelId, initialMessages)
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null)
+  // W-08: the language this person reads in (Settings); null is as written.
+  const [lang, setLang] = useState<string | null>(null)
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await createClient().from('profiles').select('chat_language').eq('id', myId).maybeSingle()
+      setLang(data?.chat_language ?? null)
+    })()
+  }, [myId])
+  const translations = useTranslations(messages, lang)
   const [showSettings, setShowSettings] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
   const supabase = useRef(createClient())
@@ -130,6 +140,7 @@ export function ChannelView({
           <MessageBubble
             key={m.id}
             message={m}
+            translation={translations[m.id] ?? null}
             mine={m.sender_id === myId}
             isHost={isHost}
             academyId={academyId}

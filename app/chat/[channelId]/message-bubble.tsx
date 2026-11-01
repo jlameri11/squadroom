@@ -14,9 +14,11 @@ const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 type Count = { emoji: string; reaction_count: number; reacted_by_me: boolean }
 
 export function MessageBubble({
-  message, mine, isHost, academyId, myId, showDay, onReply,
+  message, mine, isHost, academyId, myId, showDay, onReply, translation = null,
 }: {
   message: ChatMessage
+  /** W-08: the body in the reader's language, when they chose one and it exists. */
+  translation?: string | null
   mine: boolean
   isHost: boolean
   academyId: string
@@ -31,6 +33,7 @@ export function MessageBubble({
   const [busy, setBusy] = useState(false)
   const [voters, setVoters] = useState<string | null>(null)
   const [showContact, setShowContact] = useState(false)
+  const [showOriginal, setShowOriginal] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -229,7 +232,14 @@ export function MessageBubble({
                 </span>
               </span>
             ) : (
-              <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">{message.body}</span>
+              <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">
+                {translation && !showOriginal ? translation : message.body}
+                {translation && translation !== message.body && (
+                  <button onClick={() => setShowOriginal((v) => !v)} className="ml-1.5 text-[11px] underline underline-offset-2 opacity-70">
+                    {showOriginal ? 'translation' : 'original'}
+                  </button>
+                )}
+              </span>
             ))
           )}
 

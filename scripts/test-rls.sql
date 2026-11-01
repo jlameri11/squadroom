@@ -756,6 +756,21 @@ begin
   insert into rls_results values (85,'a parent is not handed a check-in code',
     case when coalesce(b, true) then 'PASS' else 'FAIL' end);
   execute 'reset role';
+  -- 0177. A translation is the channel's; the budget is the server's.
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.message_translations t
+   where exists (select 1 from public.messages m where m.id = t.message_id and m.academy_id = ACAD_A);
+  insert into rls_results values (86,'another tenant reads no translations of our messages',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  b := false;
+  begin
+    perform public.translation_budget_take(OUTSIDER, ACAD_A, 1);
+  exception when others then b := true;
+  end;
+  insert into rls_results values (87,'a person cannot spend the translation budget directly',
+    case when b then 'PASS' else 'FAIL' end);
+  execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

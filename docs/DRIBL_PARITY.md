@@ -86,7 +86,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 | X5 | Auto referee assignment with preview and undo | A day drafted from availability and load, previewed, applied as a batch of offers, undone as a batch | **DONE** (0172–0173, 1 Nov) | W-05 |
 | X6 | Match QR check-in for referees | A per-game QR shown by the manager, scanned by the appointed referee inside the window | **DONE** (0176, 1 Nov) | W-06 |
 | X7 | Club-to-club change requests; attendance blocked on overdue fees | Propose → the other club agrees → the league decides, with a notes thread; an opt-in overdue block on "yes" with a grace period | **DONE** (0174, 1 Nov) | W-07 |
-| X8 | Auto-translated chat | — | MISSING | W-08 |
+| X8 | Auto-translated chat | A per-person language, translated once and cached, capped per person and club, original one tap away | **DONE** (0177–0178, 1 Nov) | W-08 |
 | X9 | Video, development plans, pitch booking, casual sessions, insurance, streaming, lotto | — | LATER | W-09 |
 
 | # | Users hate this in both | Squadroom's rule (CLAUDE.md "Design rules") | Status |

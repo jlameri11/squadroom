@@ -7,6 +7,7 @@ import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
 import { MyData } from './my-data'
+import { ChatLanguage } from './chat-language'
 import { AppShellPage } from '@/components/shell-page'
 
 export default async function SettingsPage() {
@@ -24,6 +25,8 @@ export default async function SettingsPage() {
   // it, and the pool row is visible to its own person and nobody else.
   const { count: pools } = await supabase.from('referees').select('id', { count: 'exact', head: true }).eq('profile_id', userId)
   const isReferee = (pools ?? 0) > 0
+  // W-08: the language this person reads messages in (null = as written).
+  const { data: langRow } = await supabase.from('profiles').select('chat_language').eq('id', userId).maybeSingle()
 
   return (
     <AppShellPage title="Your details" meta="Only you see these">
@@ -36,6 +39,7 @@ export default async function SettingsPage() {
         initialPhone={me?.phone ?? ''}
         email={email}
       />
+      <ChatLanguage initial={langRow?.chat_language ?? null} />
       {/*
         A permanent way to reach these two.
 

@@ -3067,6 +3067,41 @@ export type Database = {
           },
         ]
       }
+      message_translations: {
+        Row: {
+          body: string
+          channel_id: string
+          created_at: string
+          lang: string
+          message_id: string
+          model: string | null
+        }
+        Insert: {
+          body: string
+          channel_id: string
+          created_at?: string
+          lang: string
+          message_id: string
+          model?: string | null
+        }
+        Update: {
+          body?: string
+          channel_id?: string
+          created_at?: string
+          lang?: string
+          message_id?: string
+          model?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_translations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           academy_id: string
@@ -4047,6 +4082,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          chat_language: string | null
           created_at: string
           erased_at: string | null
           full_name: string
@@ -4056,6 +4092,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          chat_language?: string | null
           created_at?: string
           erased_at?: string | null
           full_name?: string
@@ -4065,6 +4102,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          chat_language?: string | null
           created_at?: string
           erased_at?: string | null
           full_name?: string
@@ -5415,6 +5453,45 @@ export type Database = {
           },
         ]
       }
+      translation_takes: {
+        Row: {
+          academy_id: string
+          created_at: string
+          id: string
+          n: number
+          profile_id: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          id?: string
+          n: number
+          profile_id: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          id?: string
+          n?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_takes_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "translation_takes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           compact_lists: boolean
@@ -6699,6 +6776,7 @@ export type Database = {
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
       set_bye: { Args: { p_fixture: string }; Returns: undefined }
+      set_chat_language: { Args: { p_lang: string }; Returns: undefined }
       set_child_public_name: {
         Args: { p_hidden: boolean; p_player: string }
         Returns: undefined
@@ -6827,6 +6905,14 @@ export type Database = {
       to_e164: {
         Args: { p_default_country?: string; p_raw: string }
         Returns: string
+      }
+      translation_budget_take: {
+        Args: { p_academy: string; p_n: number; p_profile: string }
+        Returns: undefined
+      }
+      translations_for: {
+        Args: { p_lang: string; p_message_ids: string[] }
+        Returns: Json
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
