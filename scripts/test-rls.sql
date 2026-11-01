@@ -778,6 +778,15 @@ begin
   insert into rls_results values (88,'another tenant cannot list who is in our channel',
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
   execute 'reset role';
+  -- 0180. A scheduled message is the sender's alone until it goes — not
+  -- even a host reads it.
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.messages m
+   where m.status = 'scheduled' and m.sender_id <> COACH;
+  insert into rls_results values (89,'a host reads nobody else''s scheduled messages',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

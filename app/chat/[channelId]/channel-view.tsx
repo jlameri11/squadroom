@@ -8,6 +8,7 @@ import { useChannelMessages, type ChatMessage } from '@/lib/hooks/use-channel-me
 import { MessageBubble } from './message-bubble'
 import { Composer } from './composer'
 import { PendingQueue } from './pending-queue'
+import { ScheduledStrip } from './scheduled-strip'
 import { ChannelSettings } from './channel-settings'
 
 export function ChannelView({
@@ -38,6 +39,8 @@ export function ChannelView({
   }, [myId])
   const translations = useTranslations(messages, lang)
   const [showSettings, setShowSettings] = useState(false)
+  // C-04: bumps when a message is queued for later, so the strip reloads.
+  const [scheduledKey, setScheduledKey] = useState(0)
   const bottom = useRef<HTMLDivElement>(null)
   const supabase = useRef(createClient())
 
@@ -152,7 +155,9 @@ export function ChannelView({
         <div ref={bottom} />
       </div>
 
+      <ScheduledStrip channelId={channelId} refreshKey={scheduledKey} />
       <Composer
+        onScheduled={() => setScheduledKey((k) => k + 1)}
         channelId={channelId}
         academyId={academyId}
         teamId={teamId}

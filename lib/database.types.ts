@@ -3123,6 +3123,7 @@ export type Database = {
           pinned_by: string | null
           poll_id: string | null
           reply_to_id: string | null
+          scheduled_for: string | null
           sender_id: string | null
           status: Database["public"]["Enums"]["message_status"]
         }
@@ -3146,6 +3147,7 @@ export type Database = {
           pinned_by?: string | null
           poll_id?: string | null
           reply_to_id?: string | null
+          scheduled_for?: string | null
           sender_id?: string | null
           status?: Database["public"]["Enums"]["message_status"]
         }
@@ -3169,6 +3171,7 @@ export type Database = {
           pinned_by?: string | null
           poll_id?: string | null
           reply_to_id?: string | null
+          scheduled_for?: string | null
           sender_id?: string | null
           status?: Database["public"]["Enums"]["message_status"]
         }
@@ -5744,6 +5747,10 @@ export type Database = {
         Args: { p_channel: string; p_reply_to?: string }
         Returns: boolean
       }
+      cancel_scheduled_message: {
+        Args: { p_message: string }
+        Returns: undefined
+      }
       cast_poll_vote: {
         Args: {
           p_note?: string
@@ -6345,6 +6352,7 @@ export type Database = {
           status: Database["public"]["Enums"]["rsvp_status"]
         }[]
       }
+      my_scheduled_messages: { Args: { p_channel: string }; Returns: Json }
       my_upcoming_events: {
         Args: { p_academy: string; p_days?: number }
         Returns: {
@@ -6552,6 +6560,7 @@ export type Database = {
         Args: { p_event: string; p_published?: boolean }
         Returns: undefined
       }
+      publish_scheduled_messages: { Args: never; Returns: number }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
@@ -6690,6 +6699,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      reschedule_message: {
+        Args: { p_at: string; p_body?: string; p_message: string }
+        Returns: undefined
+      }
       resolve_finals: {
         Args: { p_competition: string; p_division: string }
         Returns: number
@@ -6776,6 +6789,15 @@ export type Database = {
           id: string
           storage_path: string
         }[]
+      }
+      schedule_message: {
+        Args: {
+          p_announcement?: boolean
+          p_at: string
+          p_body: string
+          p_channel: string
+        }
+        Returns: string
       }
       search_chat: {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
@@ -7054,7 +7076,7 @@ export type Database = {
         | "sub_off"
         | "own_goal"
       member_status: "invited" | "active" | "removed"
-      message_status: "published" | "pending" | "rejected"
+      message_status: "published" | "pending" | "rejected" | "scheduled"
       offer_status: "open" | "accepted" | "declined"
       official_rego_status:
         | "unknown"
@@ -7327,7 +7349,7 @@ export const Constants = {
         "own_goal",
       ],
       member_status: ["invited", "active", "removed"],
-      message_status: ["published", "pending", "rejected"],
+      message_status: ["published", "pending", "rejected", "scheduled"],
       offer_status: ["open", "accepted", "declined"],
       official_rego_status: [
         "unknown",

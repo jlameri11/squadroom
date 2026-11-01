@@ -10,7 +10,7 @@ const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
 export function Composer({
   channelId, academyId, teamId, myId, canPost, isHost, archived, postingMode,
-  replyTo, onCancelReply, lastMessageId, addOptimistic, replaceOptimistic,
+  replyTo, onCancelReply, lastMessageId, addOptimistic, replaceOptimistic, onScheduled,
 }: {
   channelId: string
   academyId: string
@@ -21,6 +21,8 @@ export function Composer({
   archived: boolean
   postingMode: string
   replyTo: ChatMessage | null
+  /** C-04: a message was queued for later; the strip above reloads. */
+  onScheduled?: () => void
   onCancelReply: () => void
   lastMessageId: string | null
   addOptimistic: (m: ChatMessage) => void
@@ -45,6 +47,21 @@ export function Composer({
   }
   const candidates = mentionQuery === null || !people ? [] : people.filter((p) => p.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
   const [announcement, setAnnouncement] = useState(false)
+  // C-04: send later.
+  const [laterOpen, setLaterOpen] = useState(false)
+  const [laterAt, setLaterAt] = useState('')
+  async function scheduleIt() {
+    const body = text.trim()
+    if (!body || !laterAt) return
+    const { error } = await supabase.rpc('schedule_message', { p_channel: channelId, p_body: body, p_at: new Date(laterAt).toISOString(), p_announcement: announcement && isHost })
+    if (error) return setError(error.message)
+    setText('')
+    setLaterOpen(false)
+    setLaterAt('')
+    setAnnouncement(false)
+    setMentioned([])
+    onScheduled?.()
+  }
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<{ file: File; preview: string }[]>([])
   const [uploading, setUploading] = useState(false)
@@ -285,15 +302,31 @@ export function Composer({
 
       {error && <p className="px-4 pt-2 text-xs ">{error}</p>}
 
-      {isHost && (
-        <label className="flex items-center gap-2 px-4 pt-2 text-xs text-ink-2">
-          <input
-            type="checkbox"
-            checked={announcement}
-            onChange={(e) => setAnnouncement(e.target.checked)}
-          />
-          Send as an announcement
-        </label>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pt-2 text-xs text-ink-2">
+        {isHost && (
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={announcement}
+              onChange={(e) => setAnnouncement(e.target.checked)}
+            />
+            Send as an announcement
+          </label>
+        )}
+        {canPost && !archived && (
+          <button onClick={() => setLaterOpen((v) => !v)} className="underline underline-offset-2">
+            {laterOpen ? 'Send now instead' : 'Send later…'}
+          </button>
+        )}
+      </div>
+      {laterOpen && (
+        <div className="flex items-center gap-2 px-4 pt-1.5 text-xs">
+          <input type="datetime-local" value={laterAt} onChange={(e) => setLaterAt(e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+          <button onClick={scheduleIt} disabled={!text.trim() || !laterAt || uploading} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+            Schedule
+          </button>
+          <span className="text-ink-3">Text only; photos go now.</span>
+        </div>
       )}
 
       {/* Only once images are attached. A permanent notice above the
