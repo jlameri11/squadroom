@@ -23,7 +23,7 @@ declare
   PARENT   constant uuid := '00000000-0000-0000-0000-0000000000b1'; -- U8 parent
   OUTSIDER constant uuid := '00000000-0000-0000-0000-0000000000c2'; -- other tenant
   ANNO     constant uuid := '00000000-0000-0000-0000-00000000c001';
-  v_u8 uuid; v_rv uuid; n int; b bool; foreign_rows int;
+  v_u8 uuid; v_rv uuid; n int; b bool; b2 bool; foreign_rows int;
   v_ev uuid; v_ev_total int; v_msg uuid; v_comp uuid;
 begin
   -- For checks 44–45. Read here, before any role switch, so it is a real id.
@@ -868,6 +868,25 @@ begin
   execute 'reset role';
   insert into rls_results values (96,'the draw check, the match-day list and fixture flowing are the league''s alone',
     case when n=0 and b then 'PASS' else 'FAIL' end);
+  -- 0190. A parent can neither ask for a forfeit nor verify a game as the
+  -- referee, and reads no forfeit requests.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.request_forfeit((select f.id from public.fixtures f where f.home_entry_id is not null order by f.created_at limit 1),
+                                   (select f.home_entry_id from public.fixtures f where f.home_entry_id is not null order by f.created_at limit 1), 'rls probe');
+  exception when others then b := true;
+  end;
+  b2 := false;
+  begin
+    perform public.referee_verify_by_phone((select f.id from public.fixtures f order by f.created_at limit 1), '0400000000', 'Confirm');
+  exception when others then b2 := true;
+  end;
+  select count(*) into n from public.forfeit_requests;
+  execute 'reset role';
+  insert into rls_results values (97,'a parent cannot ask for a forfeit, verify a game, or read forfeit requests',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

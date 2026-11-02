@@ -313,6 +313,10 @@ head('8. But the coach still learns what they need at the ground')
 // team_members row, not merely the academy-wide coach role. Marcus has the
 // academy role and is not on the U8 team, so without this he reads nothing,
 // which is correct and not what step 8 is testing.
+// The seed now has Marcus on the U8s; this suite used to delete that row on
+// its way out, and every suite after it in a full run found the U8s with no
+// coach. Noted here, restored below.
+const marcusWasOnU8 = Boolean((await admin.from('team_members').select('id').eq('team_id', U8).eq('profile_id', coach.id).maybeSingle()).data)
 const beCoach = () =>
   admin
     .from('team_members')
@@ -610,7 +614,7 @@ if (ravens) {
 }
 
 await clean()
-await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', coach.id)
+if (!marcusWasOnU8) await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', coach.id)
 await admin.from('player_medical').delete().eq('player_id', leo.id)
 await admin.from('programs').delete().eq('id', draft.id)
 

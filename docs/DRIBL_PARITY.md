@@ -51,11 +51,11 @@ expect. Same statuses as above.
 |---|---|---|---|---|
 | S1 | PlayFootball first, then "Competition Access" (Circular 26-02) | Per-program requirement; FFA/FIFA ID captured; approval blocked until confirmed (route and trigger); export import; fee-disclosure tick per season | **DONE** (0162, 30 Oct) | R-18 |
 | S2 | Team-sheet lock at T-30/T-15, referee-only edits after | Per-division lock minutes; referee or league only after it, logged | **DONE** (0187, 2 Nov) | L-17 |
-| S3 | Scorer handoff, referee verifies, typed Confirm | Both sides enter; a mismatch is a dispute (L-05) | PARTIAL — no handoff or typed confirm | L-18 |
+| S3 | Scorer handoff, referee verifies, typed Confirm | The referee's mobile and the word Confirm on the scorer's phone verify and end the game in the referee's name | **DONE** (0190, 2 Nov) | L-18 |
 | S4 | Match lifecycle Editable → Ended → correction request | Ended by the referee or the league; corrections requested, pushed, applied or declined with a note; reopen with a reason; all logged | **DONE** (0187, 2 Nov) | L-19 |
-| S5 | Card accumulation, auto-suspension, sheet block, sanction codes, "one card away" push | Accumulation, auto-suspension, sheet block (L-08) | PARTIAL — no warning push, no sanction codes | L-20 |
+| S5 | Card accumulation, auto-suspension, sheet block, sanction codes, "one card away" push | Accumulation, auto-suspension, sheet block (L-08); Y1–Y6 / R1–R8 on every card, the club pushed one yellow out and again when it lands | **DONE** (0190, 2 Nov) | L-20 |
 | S6 | Attendance-driven finals eligibility; borrowing caps | Games-on-a-sheet before a final; a cap on playing up; both per division, both refused on the sheet | **DONE** (0187, 2 Nov) | L-21 |
-| S7 | Forfeit request coach → club → league | Organiser forfeits (L-09) | PARTIAL — no request chain | L-22 |
+| S7 | Forfeit request coach → club → league | The chain, each step pushed, the forfeit score only on the league's decision | **DONE** (0190, 2 Nov) | L-22 |
 | S8 | Fixture Flowing with club-to-club chat on a fixture | A window the league opens; a home club's agreed move is done at once inside it; 0174's notes thread | **DONE** (0189, 2 Nov) | L-23 |
 | S9 | Draw quality summary; field-impact pop-up; one source of truth | Pairs, balance, slots, club clashes, double headers, travel, empty slots; a closed field's impact; moved games pinned and kept on a rebuild | **DONE** (0189, 2 Nov) | L-24 |
 | S10 | Referees: accept/decline with reason, late-decline block, self-appointment, club-allocated refs, Connect payouts (parent for U18), payments in app | Pool, block-outs, offer/accept/decline with a note, withdraw, check-in, report (L-06); fees, runs, bank-transfer payment, CSV, in-app view of what is owed and paid (L-07) | PARTIAL — the Stripe transfer needs the key and referee accounts; late-decline block, self-appointment and club-allocated refs are L-25 | L-06, L-07, L-25 |

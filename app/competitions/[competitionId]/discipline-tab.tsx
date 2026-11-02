@@ -13,6 +13,7 @@ type Suspension = {
   issued_at: string
   note: string | null
   appeal_note: string | null
+  code?: string | null
 }
 type Row = {
   player_id: string
@@ -22,6 +23,9 @@ type Row = {
   yellows: number
   reds: number
   blues: number
+  /** L-20 (0190): one yellow from a suspension; every card with its code. */
+  one_away?: boolean | null
+  cards?: { kind: string; code: string | null; minute: number | null; fixture_id: string; game: string | null }[]
   suspensions: Suspension[]
 }
 type Report = {
@@ -155,9 +159,21 @@ export function DisciplineTab({
                     {p.blues > 0 && <span>🟦 {p.blues}</span>}
                   </span>
                 </div>
+                {(p.cards ?? []).some((c) => c.code) && (
+                  <p className="mt-0.5 text-xs text-ink-3">
+                    {(p.cards ?? []).map((c, i) => (
+                      <span key={i} className="mr-1.5">{c.kind === 'yellow' ? '🟨' : c.kind === 'red' ? '🟥' : '🟦'}{c.code ? ` ${c.code}` : ''}{c.minute != null ? ` ${c.minute}'` : ''}</span>
+                    ))}
+                  </p>
+                )}
+                {p.one_away && !active && (
+                  <p className="mt-1 text-xs font-semibold" style={{ color: 'var(--maybe)' }} data-one-away>
+                    One yellow from a suspension — the club has been told
+                  </p>
+                )}
                 {active && (
                   <p className="mt-1 text-xs font-semibold" style={{ color: 'var(--no)' }}>
-                    Suspended — {active.reason}, {active.games - active.served} of {active.games} to serve
+                    Suspended — {active.reason}{active.code ? ` (${active.code})` : ''}, {active.games - active.served} of {active.games} to serve
                   </p>
                 )}
                 {p.suspensions.filter((s) => s.status !== 'active').map((s) => (

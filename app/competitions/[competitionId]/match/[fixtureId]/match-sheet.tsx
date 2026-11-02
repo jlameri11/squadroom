@@ -23,6 +23,11 @@ type Correction = {
   status: 'open' | 'applied' | 'declined'; requested_by: string | null; created_at: string
   decided_at: string | null; decision_note: string | null
 }
+type Forfeit = {
+  id: string; entry_id: string; entry: string | null; reason: string
+  status: 'proposed' | 'club_approved' | 'approved' | 'declined' | 'withdrawn'
+  requested_by: string | null; created_at: string; club_note: string | null; league_note: string | null
+}
 type View = {
   fixture: {
     id: string; division: string; round: string | null; starts_at: string | null; stage: string | null
@@ -30,6 +35,8 @@ type View = {
     home_entry_id: string; away_entry_id: string; home: string; away: string
     /** L-17 / L-19 (0187). */
     ended_at: string | null; lock_at: string | null; locked: boolean
+    /** L-18 (0190). */
+    referee_verified_at: string | null; referee_verified_by: string | null
   }
   can_manage_home: boolean
   can_manage_away: boolean
@@ -37,12 +44,31 @@ type View = {
   is_referee: boolean
   may_end: boolean
   may_reopen: boolean
+  /** L-22 / L-18 (0190). */
+  may_grounds: boolean
+  is_club_staff_home: boolean
+  is_club_staff_away: boolean
+  referee_name: string | null
+  can_hand_over: boolean
   rules: { squad_size_max: number | null; match_length_mins: number | null; sheet_lock_mins: number | null } | null
   sheets: { home?: Sheet; away?: Sheet }
   squads: { home: SquadPlayer[]; away: SquadPlayer[] }
-  events: { id: string; entry_id: string; player_id: string | null; name: string | null; kind: string; minute: number | null; note: string | null }[]
+  events: { id: string; entry_id: string; player_id: string | null; name: string | null; kind: string; minute: number | null; note: string | null; code?: string | null }[]
   corrections: Correction[]
+  forfeits: Forfeit[]
   log: { action: string; detail: Record<string, unknown>; at: string; by: string | null }[]
+}
+
+/** L-20: the federation's sanction codes, as a referee writes them. */
+const SANCTION_CODES: Record<'yellow' | 'red', [string, string][]> = {
+  yellow: [
+    ['Y1', 'Unsporting behaviour'], ['Y2', 'Dissent'], ['Y3', 'Persistent infringement'],
+    ['Y4', 'Delaying the restart'], ['Y5', 'Not respecting the distance'], ['Y6', 'Entering or leaving without permission'],
+  ],
+  red: [
+    ['R1', 'Serious foul play'], ['R2', 'Violent conduct'], ['R3', 'Spitting'], ['R4', 'Denying a goal by handball'],
+    ['R5', 'Denying an obvious goal-scoring opportunity'], ['R6', 'Offensive or insulting language'], ['R7', 'Second caution'], ['R8', 'Other'],
+  ],
 }
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
@@ -132,9 +158,16 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
                   : ''}
           </p>
         )}
+        {f.referee_verified_at && (
+          <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }} data-verified>
+            Verified by the referee{f.referee_verified_by ? ` (${f.referee_verified_by})` : ''} at {clock(f.referee_verified_at)}.
+          </p>
+        )}
         {(view.may_end || view.may_reopen) && (
           <Lifecycle fixtureId={f.id} mayEnd={view.may_end} mayReopen={view.may_reopen} onDone={load} />
         )}
+        {/* L-18: the scorer hands the phone over; the referee confirms on it. */}
+        {view.can_hand_over && <Handover fixtureId={f.id} refereeName={view.referee_name} onDone={load} />}
 
         {/* W-06: the code the referee scans at the ground. */}
         {inside && !closed && (
@@ -191,6 +224,21 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
 
       {(side === 'home' ? view.can_manage_home : view.can_manage_away) && !closed && (
         <ScorePanel fixtureId={f.id} entryId={entryId} sheet={sheet} onChanged={load} onError={setError} />
+      )}
+
+      {/* L-22: a forfeit is asked for, not declared — coach, club, league. */}
+      {inside && !ended && ['scheduled', 'postponed', 'forfeit'].includes(f.status) && (
+        <ForfeitPanel
+          fixtureId={f.id}
+          entryId={entryId}
+          entryName={side === 'home' ? f.home : f.away}
+          forfeits={view.forfeits ?? []}
+          canAsk={(side === 'home' ? view.can_manage_home : view.can_manage_away) && f.status !== 'forfeit'}
+          canClubDecide={side === 'home' ? view.is_club_staff_home : view.is_club_staff_away}
+          canLeagueDecide={view.may_grounds}
+          onChanged={load}
+          onError={setError}
+        />
       )}
 
       {/* L-19: once the game has ended (or is final), what is wrong is a
@@ -392,6 +440,7 @@ function EventsPanel({
   const [kind, setKind] = useState('goal')
   const [player, setPlayer] = useState('')
   const [minute, setMinute] = useState('')
+  const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function add() {
@@ -400,10 +449,12 @@ function EventsPanel({
     const { error } = await createClient().rpc('record_match_event', {
       p_fixture: fixtureId, p_entry: entryId, p_kind: kind as never,
       p_player: player || undefined, p_minute: minute ? Number(minute) : undefined,
+      p_code: (kind === 'yellow' || kind === 'red') && code ? code : undefined,
     })
     setBusy(false)
     if (error) return onError(error.message)
     setMinute('')
+    setCode('')
     await onChanged()
   }
 
@@ -418,7 +469,7 @@ function EventsPanel({
             {events.map((e) => (
               <li key={e.id} className="flex items-center gap-2">
                 <span className="w-8 flex-none tabular-nums text-ink-3">{e.minute != null ? `${e.minute}'` : ''}</span>
-                <span className="flex-none">{KIND_LABEL[e.kind] ?? e.kind}</span>
+                <span className="flex-none">{KIND_LABEL[e.kind] ?? e.kind}{e.code ? ` ${e.code}` : ''}</span>
                 <span className="min-w-0 flex-1 truncate">{e.name ?? ''}</span>
               </li>
             ))}
@@ -434,6 +485,12 @@ function EventsPanel({
               {sheet.players.map((p) => (<option key={p.player_id} value={p.player_id}>{p.number != null ? `${p.number} ` : ''}{p.name}</option>))}
             </select>
             <input value={minute} onChange={(e) => setMinute(e.target.value)} inputMode="numeric" placeholder="min" className="w-14 rounded-lg border px-2 py-1.5 text-xs tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Minute" />
+            {(kind === 'yellow' || kind === 'red') && (
+              <select value={code} onChange={(e) => setCode(e.target.value)} className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="Sanction code">
+                <option value="">Code…</option>
+                {SANCTION_CODES[kind].map(([c, l]) => (<option key={c} value={c}>{c} · {l}</option>))}
+              </select>
+            )}
             <button onClick={add} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
               {busy ? '…' : 'Add'}
             </button>
@@ -542,6 +599,145 @@ function Lifecycle({ fixtureId, mayEnd, mayReopen, onDone }: { fixtureId: string
       )}
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
     </div>
+  )
+}
+
+/** L-18: the scorer's phone, in the referee's hands. */
+function Handover({ fixtureId, refereeName, onDone }: { fixtureId: string; refereeName: string | null; onDone: () => Promise<void> }) {
+  const [open, setOpen] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [word, setWord] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function verify() {
+    setBusy(true)
+    setError(null)
+    const { data, error } = await createClient().rpc('referee_verify_by_phone', { p_fixture: fixtureId, p_phone: phone, p_word: word })
+    setBusy(false)
+    if (error) return setError(error.message)
+    const r = data as unknown as { ok: boolean; reason?: string; tries_left?: number }
+    if (!r?.ok) return setError(`${r?.reason ?? 'Not verified.'}${r?.tries_left != null ? ` ${r.tries_left} ${r.tries_left === 1 ? 'try' : 'tries'} left.` : ''}`)
+    setOpen(false)
+    await onDone()
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }} data-handover>
+        Hand your phone to the referee
+      </button>
+    )
+  }
+  return (
+    <div className="mt-2 rounded-lg border p-2.5" style={{ borderColor: 'var(--brand)' }} data-handover>
+      <p className="text-xs font-semibold">For the referee{refereeName ? ` — ${refereeName}` : ''}</p>
+      <p className="mt-0.5 text-xs text-ink-3">Check the sheets, the events and the score above. Then your mobile number, and the word Confirm. That ends the game in your name.</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Your mobile" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Referee's mobile" />
+        <input value={word} onChange={(e) => setWord(e.target.value)} placeholder="Confirm" className="w-24 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Type Confirm" />
+        <button onClick={verify} disabled={busy || !phone.trim() || !word.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Verify</button>
+        <button onClick={() => setOpen(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+      </div>
+      {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
+    </div>
+  )
+}
+
+const FORFEIT_STATUS: Record<Forfeit['status'], string> = {
+  proposed: 'Waiting for the club', club_approved: 'Club agrees — the league decides', approved: 'Forfeit', declined: 'Declined — play the game', withdrawn: 'Withdrawn',
+}
+
+/** L-22: a forfeit is asked for by the coach, approved by the club, decided by the league. */
+function ForfeitPanel({ fixtureId, entryId, entryName, forfeits, canAsk, canClubDecide, canLeagueDecide, onChanged, onError }: {
+  fixtureId: string; entryId: string; entryName: string; forfeits: Forfeit[]
+  canAsk: boolean; canClubDecide: boolean; canLeagueDecide: boolean
+  onChanged: () => Promise<void>; onError: (m: string | null) => void
+}) {
+  const [asking, setAsking] = useState(false)
+  const [reason, setReason] = useState('')
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const mine = forfeits.filter((r) => r.entry_id === entryId)
+  const open = mine.find((r) => r.status === 'proposed' || r.status === 'club_approved')
+
+  async function call(fn: 'request_forfeit' | 'club_decide_forfeit' | 'league_decide_forfeit' | 'withdraw_forfeit_request', args: Record<string, unknown>) {
+    setBusy(true)
+    onError(null)
+    const { error } = await createClient().rpc(fn, args as never)
+    setBusy(false)
+    if (error) return onError(error.message)
+    setAsking(false)
+    setReason('')
+    setNote('')
+    await onChanged()
+  }
+
+  if (mine.length === 0 && !canAsk) return null
+  return (
+    <section className="mt-4" data-forfeits>
+      <div className="flex items-center justify-between px-1 pb-1.5">
+        <h3 className="eyebrow">Forfeit</h3>
+        {canAsk && !open && !asking && (
+          <button onClick={() => setAsking(true)} className="text-xs underline underline-offset-2" style={{ color: 'var(--no)' }}>
+            We can&apos;t field a team
+          </button>
+        )}
+      </div>
+      {asking && (
+        <div className="card mb-2 p-3">
+          <p className="text-xs text-ink-3">{entryName} ask to forfeit. The club approves, then the league decides; only then does the forfeit score apply.</p>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder="Why" className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+          <div className="mt-2 flex gap-2">
+            <button onClick={() => call('request_forfeit', { p_fixture: fixtureId, p_entry: entryId, p_reason: reason })} disabled={busy || !reason.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>
+              {busy ? '…' : 'Ask to forfeit'}
+            </button>
+            <button onClick={() => setAsking(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {mine.length > 0 && (
+        <ul className="card divide-y" style={{ borderColor: 'var(--line-2)' }}>
+          {mine.map((r) => (
+            <li key={r.id} className="p-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">{r.entry ?? entryName}</span>
+                <span className="pill" style={r.status === 'approved' ? { background: 'var(--no-bg)', color: 'var(--no)' } : r.status === 'declined' ? { background: 'var(--yes-bg)', color: 'var(--yes)' } : undefined}>
+                  {FORFEIT_STATUS[r.status]}
+                </span>
+              </div>
+              <p className="mt-0.5 text-ink-2">{r.reason}</p>
+              <p className="mt-0.5 text-xs text-ink-3">
+                {r.requested_by ?? 'Somebody'} · {new Date(r.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                {r.club_note ? ` · club: ${r.club_note}` : ''}{r.league_note ? ` · league: ${r.league_note}` : ''}
+              </p>
+              {(r.status === 'proposed' || r.status === 'club_approved') && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {((r.status === 'proposed' && canClubDecide) || (r.status === 'club_approved' && canLeagueDecide) || (r.status === 'proposed' && canLeagueDecide)) && (
+                    <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="note" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} />
+                  )}
+                  {r.status === 'proposed' && canClubDecide && (
+                    <>
+                      <button onClick={() => call('club_decide_forfeit', { p_request: r.id, p_approve: true, p_note: note || undefined })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Club: approve</button>
+                      <button onClick={() => call('club_decide_forfeit', { p_request: r.id, p_approve: false, p_note: note || undefined })} disabled={busy} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Play the game</button>
+                    </>
+                  )}
+                  {canLeagueDecide && (
+                    <>
+                      <button onClick={() => call('league_decide_forfeit', { p_request: r.id, p_approve: true, p_note: note || undefined })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>League: forfeit</button>
+                      <button onClick={() => call('league_decide_forfeit', { p_request: r.id, p_approve: false, p_note: note || undefined })} disabled={busy} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>League: play it</button>
+                    </>
+                  )}
+                  {canAsk && (
+                    <button onClick={() => call('withdraw_forfeit_request', { p_request: r.id })} disabled={busy} className="text-xs underline underline-offset-2 text-ink-3">Withdraw</button>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 

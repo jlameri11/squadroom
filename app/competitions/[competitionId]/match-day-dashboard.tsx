@@ -11,8 +11,10 @@ type Ops = {
   not_ended: Game[]
   pending_reports: Game[]
   unfilled: Game[]
-  suspensions: { player: string; team: string | null; reason: string; left: number }[]
+  suspensions: { player: string; team: string | null; reason: string; left: number; code?: string | null }[]
   corrections: { id: string; fixture_id: string; kind: string; detail: string; home: string; away: string; created_at: string }[]
+  /** L-22 (0190): forfeits asked for, waiting on the club or the league. */
+  forfeits?: { id: string; fixture_id: string; reason: string; status: string; entry: string | null; home: string; away: string; starts_at: string; created_at: string }[]
   change_requests: number
   flowing_until: string | null
 }
@@ -53,7 +55,8 @@ export function MatchDayDashboard({ competitionId }: { competitionId: string }) 
     { label: 'Referee reports due', items: ops.pending_reports, tint: 'var(--maybe)' },
     { label: 'No referee this week', items: ops.unfilled, tint: 'var(--maybe)' },
   ]
-  const total = rows.reduce((n, r) => n + r.items.length, 0) + ops.corrections.length + ops.change_requests
+  const forfeits = ops.forfeits ?? []
+  const total = rows.reduce((n, r) => n + r.items.length, 0) + ops.corrections.length + forfeits.length + ops.change_requests
 
   return (
     <section className="mx-4 mb-3 mt-3 rounded-xl border p-3 text-sm" style={{ borderColor: total > 0 ? 'var(--maybe)' : 'var(--line)' }} data-match-day-ops>
@@ -65,6 +68,7 @@ export function MatchDayDashboard({ competitionId }: { competitionId: string }) 
               ? 'Nothing outstanding.'
               : rows.filter((r) => r.items.length > 0).map((r) => `${r.items.length} ${r.label.toLowerCase()}`)
                   .concat(ops.corrections.length ? [`${ops.corrections.length} corrections`] : [])
+                  .concat(forfeits.length ? [`${forfeits.length} forfeits asked for`] : [])
                   .concat(ops.change_requests ? [`${ops.change_requests} change requests`] : [])
                   .join(' · ')}
             {ops.suspensions.length ? ` · ${ops.suspensions.length} suspended` : ''}
@@ -102,6 +106,21 @@ export function MatchDayDashboard({ competitionId }: { competitionId: string }) 
                       {c.home} v {c.away} · {c.kind}
                     </Link>
                     <span className="text-ink-3"> — {c.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {forfeits.length > 0 && (
+            <div>
+              <span className="eyebrow" style={{ color: 'var(--no)' }}>Forfeits asked for</span>
+              <ul className="mt-0.5 flex flex-col gap-0.5 text-xs">
+                {forfeits.map((r) => (
+                  <li key={r.id}>
+                    <Link href={`/competitions/${competitionId}/match/${r.fixture_id}`} className="underline decoration-dotted underline-offset-2">
+                      {when(r.starts_at)} · {r.entry ?? '?'} · {r.home} v {r.away}
+                    </Link>
+                    <span className="text-ink-3"> — {r.status === 'club_approved' ? 'club agrees, your call' : 'waiting for the club'} · {r.reason}</span>
                   </li>
                 ))}
               </ul>

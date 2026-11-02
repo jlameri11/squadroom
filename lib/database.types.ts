@@ -2160,6 +2160,8 @@ export type Database = {
           id: string
           notes: string | null
           pinned: boolean
+          referee_verified_at: string | null
+          referee_verified_by: string | null
           round: string | null
           score_disputed: boolean
           score_entered_at: string | null
@@ -2192,6 +2194,8 @@ export type Database = {
           id?: string
           notes?: string | null
           pinned?: boolean
+          referee_verified_at?: string | null
+          referee_verified_by?: string | null
           round?: string | null
           score_disputed?: boolean
           score_entered_at?: string | null
@@ -2224,6 +2228,8 @@ export type Database = {
           id?: string
           notes?: string | null
           pinned?: boolean
+          referee_verified_at?: string | null
+          referee_verified_by?: string | null
           round?: string | null
           score_disputed?: boolean
           score_entered_at?: string | null
@@ -2265,6 +2271,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fixtures_referee_verified_by_fkey"
+            columns: ["referee_verified_by"]
+            isOneToOne: false
+            referencedRelation: "referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fixtures_score_entered_by_fkey"
             columns: ["score_entered_by"]
             isOneToOne: false
@@ -2276,6 +2289,100 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forfeit_requests: {
+        Row: {
+          club_decided_at: string | null
+          club_decided_by: string | null
+          club_note: string | null
+          competition_id: string
+          created_at: string
+          entry_id: string
+          fixture_id: string
+          id: string
+          league_decided_at: string | null
+          league_decided_by: string | null
+          league_note: string | null
+          reason: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          club_decided_at?: string | null
+          club_decided_by?: string | null
+          club_note?: string | null
+          competition_id: string
+          created_at?: string
+          entry_id: string
+          fixture_id: string
+          id?: string
+          league_decided_at?: string | null
+          league_decided_by?: string | null
+          league_note?: string | null
+          reason: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          club_decided_at?: string | null
+          club_decided_by?: string | null
+          club_note?: string | null
+          competition_id?: string
+          created_at?: string
+          entry_id?: string
+          fixture_id?: string
+          id?: string
+          league_decided_at?: string | null
+          league_decided_by?: string | null
+          league_note?: string | null
+          reason?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forfeit_requests_club_decided_by_fkey"
+            columns: ["club_decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forfeit_requests_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forfeit_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forfeit_requests_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forfeit_requests_league_decided_by_fkey"
+            columns: ["league_decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forfeit_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2831,6 +2938,7 @@ export type Database = {
           minute: number | null
           note: string | null
           player_id: string | null
+          sanction_code: string | null
         }
         Insert: {
           competition_id: string
@@ -2843,6 +2951,7 @@ export type Database = {
           minute?: number | null
           note?: string | null
           player_id?: string | null
+          sanction_code?: string | null
         }
         Update: {
           competition_id?: string
@@ -2855,6 +2964,7 @@ export type Database = {
           minute?: number | null
           note?: string | null
           player_id?: string | null
+          sanction_code?: string | null
         }
         Relationships: [
           {
@@ -5350,6 +5460,7 @@ export type Database = {
           note: string | null
           player_id: string
           reason: string
+          sanction_code: string | null
           served: number
           status: Database["public"]["Enums"]["suspension_status"]
         }
@@ -5370,6 +5481,7 @@ export type Database = {
           note?: string | null
           player_id: string
           reason: string
+          sanction_code?: string | null
           served?: number
           status?: Database["public"]["Enums"]["suspension_status"]
         }
@@ -5390,6 +5502,7 @@ export type Database = {
           note?: string | null
           player_id?: string
           reason?: string
+          sanction_code?: string | null
           served?: number
           status?: Database["public"]["Enums"]["suspension_status"]
         }
@@ -5975,6 +6088,10 @@ export type Database = {
           verified_by: string
         }[]
       }
+      club_decide_forfeit: {
+        Args: { p_approve: boolean; p_note?: string; p_request: string }
+        Returns: undefined
+      }
       competition_appointments: {
         Args: { p_competition: string; p_division?: string }
         Returns: Json
@@ -6280,6 +6397,28 @@ export type Database = {
         Args: { p_fixture: string; p_forfeiting_entry: string; p_note?: string }
         Returns: undefined
       }
+      forfeit_requests_view: {
+        Args: { p_competition: string }
+        Returns: {
+          away: string
+          club_decided_at: string
+          club_note: string
+          created_at: string
+          division: string
+          entry_id: string
+          entry_name: string
+          fixture_id: string
+          home: string
+          id: string
+          league_decided_at: string
+          league_note: string
+          reason: string
+          requested_by_name: string
+          round: string
+          starts_at: string
+          status: string
+        }[]
+      }
       generate_fixtures: {
         Args: {
           p_competition: string
@@ -6359,6 +6498,10 @@ export type Database = {
       is_academy_coach: { Args: { p_academy: string }; Returns: boolean }
       is_team_coach: { Args: { p_team: string }; Returns: boolean }
       kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
+      league_decide_forfeit: {
+        Args: { p_approve: boolean; p_note?: string; p_request: string }
+        Returns: undefined
+      }
       league_officials: { Args: { p_competition: string }; Returns: Json }
       make_offer: {
         Args: {
@@ -6772,6 +6915,7 @@ export type Database = {
       }
       record_match_event: {
         Args: {
+          p_code?: string
           p_entry: string
           p_fixture: string
           p_kind: Database["public"]["Enums"]["match_event_kind"]
@@ -6806,6 +6950,10 @@ export type Database = {
         }[]
       }
       referee_pool: { Args: { p_competition: string }; Returns: Json }
+      referee_verify_by_phone: {
+        Args: { p_fixture: string; p_phone: string; p_word: string }
+        Returns: Json
+      }
       refunds_to_issue: { Args: { p_academy: string }; Returns: Json }
       registration_queue: {
         Args: { p_academy?: string; p_status?: string }
@@ -6860,6 +7008,10 @@ export type Database = {
           p_slug: string
           p_team_name: string
         }
+        Returns: string
+      }
+      request_forfeit: {
+        Args: { p_entry: string; p_fixture: string; p_reason: string }
         Returns: string
       }
       request_match_correction: {
@@ -7161,6 +7313,10 @@ export type Database = {
         Returns: undefined
       }
       withdraw_fixture_change: {
+        Args: { p_request: string }
+        Returns: undefined
+      }
+      withdraw_forfeit_request: {
         Args: { p_request: string }
         Returns: undefined
       }
