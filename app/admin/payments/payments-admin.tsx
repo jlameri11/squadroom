@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Outstanding } from './outstanding'
 import { RefundsPanel } from './refunds-panel'
+import { VouchersPanel } from './vouchers-panel'
 import { createClient } from '@/lib/supabase/client'
 
 export type BillingStatus = {
@@ -95,6 +96,7 @@ export function PaymentsAdmin({
       </p>
 
       <RefundsPanel academyId={academyId} />
+      <VouchersPanel academyId={academyId} />
 
       <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
         <h2 className="font-semibold">Where the money goes</h2>

@@ -99,7 +99,9 @@ if (!owner || !marcus || !vera || !parent) {
   await cleanup()
   process.exit(2)
 }
-const startAt = hours(5 * 24)   // five days out, so round one is inside the ops window
+// Five days out, so round one is inside the ops window — at 9am Sydney, so a
+// game three hours later is still the same day (it was not, run at 10pm).
+const startAt = new Date(new Date(Date.now() + 5 * 864e5).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' }) + 'T09:00:00+11:00').toISOString()
 
 head('1. L-24: the draw read back the way an organiser checks it')
 {

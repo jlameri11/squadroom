@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export type Owing = {
   request_id: string
@@ -16,6 +18,9 @@ export type Owing = {
   status: string
   paid_at: string | null
   can_pay: boolean
+  /** B-07 (0193): a voucher already on this fee. */
+  voucher_cents?: number
+  voucher_label?: string | null
 }
 
 /** A fill keeps the club's colour; text uses INK. See --brand-text. */
@@ -38,6 +43,25 @@ export function PaymentsList({
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  // B-07: a voucher code typed on one child's fee.
+  const [codeFor, setCodeFor] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [applied, setApplied] = useState<string | null>(null)
+
+  async function redeem(row: Owing) {
+    const key = row.request_id + (row.player_id ?? '')
+    setBusy(key)
+    setError(null)
+    const { data, error } = await createClient().rpc('redeem_voucher', { p_code: code, p_request: row.request_id, p_player: row.player_id } as never)
+    setBusy(null)
+    if (error) return setError(error.message)
+    const r = data as unknown as { voucher: string; off_cents: number }
+    setApplied(`${r.voucher}: ${money(r.off_cents, row.currency)} off.`)
+    setCodeFor(null)
+    setCode('')
+    router.refresh()
+  }
 
   async function pay(row: Owing) {
     setBusy(row.request_id + (row.player_id ?? ''))
@@ -104,9 +128,30 @@ export function PaymentsList({
                   )}
                 </div>
                 <div className="flex-none text-right font-semibold tabular-nums" style={{ color: INK }}>
-                  {money(row.amount_cents, row.currency)}
+                  {row.voucher_cents ? (
+                    <>
+                      <span className="block text-xs font-normal text-ink-3 line-through">{money(row.amount_cents, row.currency)}</span>
+                      {money(Math.max(0, row.amount_cents - row.voucher_cents), row.currency)}
+                    </>
+                  ) : money(row.amount_cents, row.currency)}
                 </div>
               </div>
+              {row.voucher_cents ? (
+                <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }} data-voucher-applied>
+                  {row.voucher_label ?? 'Voucher'} — {money(row.voucher_cents, row.currency)} off
+                </p>
+              ) : codeFor === key ? (
+                <div className="mt-2 flex gap-2">
+                  <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Voucher code" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm uppercase" style={{ borderColor: 'var(--line)' }} aria-label="Voucher code" />
+                  <button onClick={() => redeem(row)} disabled={busy === key || !code.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: NAVY }}>Apply</button>
+                  <button onClick={() => setCodeFor(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+                </div>
+              ) : (
+                <button onClick={() => { setCodeFor(key); setCode('') }} className="mt-1 text-xs underline underline-offset-2 text-ink-3" data-have-a-code>
+                  Have a voucher code?
+                </button>
+              )}
+              {applied && codeFor === null && <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }}>{applied}</p>}
 
               {row.due_on && (
                 <div className={`mt-2 text-xs ${overdue ? 'font-semibold ' : 'text-ink-2'}`}>

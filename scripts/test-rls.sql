@@ -914,6 +914,42 @@ begin
   execute 'reset role';
   insert into rls_results values (98,'referee rules, nominations, bulk scores and round moves are the league''s',
     case when n=4 and b then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0192. The setup checklist is the club's staff's: a parent gets nothing,
+  -- another tenant asking for ours gets their own, and neither sets a crest.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := public.setup_progress(ACAD_A) is null;
+  b2 := false;
+  begin
+    perform public.set_academy_logo(ACAD_A, 'https://x/storage/v1/object/public/club-logos/' || ACAD_A || '/crest.png');
+  exception when others then b2 := true;
+  end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from (select public.setup_progress(ACAD_A) as s) x where (x.s->>'academy_id')::uuid = ACAD_A;
+  execute 'reset role';
+  insert into rls_results values (99,'the setup checklist and the crest are the club''s staff''s alone',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
+  -- 0193. Vouchers are the club's: a parent lists none and cannot make one;
+  -- another tenant's staff see none of ours.
+  insert into public.vouchers (academy_id, code, label, kind, amount_cents) values (ACAD_A, 'RLSPROBE', 'rls probe', 'club', 1000);
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.vouchers;
+  b := false;
+  begin
+    insert into public.vouchers (academy_id, code, label, kind, amount_cents) values (ACAD_A, 'PARENTPROBE', 'nope', 'club', 1000);
+  exception when others then b := true;
+  end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select n + count(*) into n from public.vouchers where academy_id = ACAD_A;
+  execute 'reset role';
+  delete from public.vouchers where code in ('RLSPROBE', 'PARENTPROBE');
+  insert into rls_results values (100,'vouchers are the club''s staff''s: a parent sees and makes none, another tenant sees none of ours',
+    case when n=0 and b then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
