@@ -7,6 +7,7 @@
 // are captured and carried onto the roster. A program without the switch
 // is untouched.
 import { createClient } from '@supabase/supabase-js'
+import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -25,13 +26,9 @@ const OWNER = '00000000-0000-0000-0000-0000000000a1'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const TAG = 'C2602'
 
-async function signInEmail(email) {
-  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
-  if (!link?.properties?.hashed_token) return null
-  const client = createClient(URL_, PUB, { auth: { persistSession: false } })
-  const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
-  return data?.session ? { client, session: data.session } : null
-}
+// Sessions are cached across suites (scripts/_auth.mjs), so a full run no
+// longer trips the auth rate limit.
+const signInEmail = (email) => signInBoth(admin, email)
 function cookieFor(session) {
   const ref = URL_.split('//')[1].split('.')[0]
   return `sb-${ref}-auth-token=base64-${Buffer.from(JSON.stringify(session)).toString('base64')}`

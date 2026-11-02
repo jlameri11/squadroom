@@ -55,10 +55,25 @@ function run(file) {
   })
 }
 
+// How many times a suite that hit the auth rate limit is tried again, and
+// how long to wait first. The limit is per five minutes; `_auth.mjs` reuses
+// sessions and `configure-auth-limits.mjs` raised the dev project's ceiling,
+// so this should rarely fire — but when it does, waiting is right and
+// reporting a failure is wrong.
+const RETRIES = Number(process.env.TEST_RETRIES ?? 2)
+const RETRY_WAIT_MS = Number(process.env.TEST_RETRY_WAIT_MS ?? 60_000)
+
 const results = []
 for (const file of suites) {
   const name = file.replace(/^test-|\.mjs$|\.ts$/g, '')
-  const { code, out } = await run(file)
+  let { code, out } = await run(file)
+  for (let attempt = 1; attempt <= RETRIES && /auth rate limit|reading 'access_token'|reading 'hashed_token'/.test(out); attempt++) {
+    console.log(dim(`  ${name.padEnd(22)} rate limited — waiting ${Math.round(RETRY_WAIT_MS / 1000)}s, retry ${attempt}/${RETRIES}`))
+    await new Promise((r) => setTimeout(r, RETRY_WAIT_MS))
+    const again = await run(file)
+    code = again.code
+    out = again.out
+  }
   const passed = (out.match(/✓/g) ?? []).length
   const failed = (out.match(/✗/g) ?? []).length
   const crashed = code !== 0 && failed === 0

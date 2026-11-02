@@ -3,6 +3,7 @@
 // L-15: the competition's CSV reports through the real route — results,
 // ladders, discipline, entries — answering exactly what the caller may see.
 import { createClient } from '@supabase/supabase-js'
+import { signInSession } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -19,13 +20,9 @@ const head = (m) => console.log(`\n${m}`)
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
 const STRANGER_EMAIL = 'lreports-stranger@squadroom.invalid'
 
-async function signInEmail(email) {
-  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
-  if (!link?.properties?.hashed_token) return null
-  const client = createClient(URL_, PUB, { auth: { persistSession: false } })
-  const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
-  return data?.session ?? null
-}
+// Sessions are cached across suites (scripts/_auth.mjs), so a full run no
+// longer trips the auth rate limit.
+const signInEmail = (email) => signInSession(admin, email)
 const cookieFor = (session) => {
   const ref = URL_.split('//')[1].split('.')[0]
   return `sb-${ref}-auth-token=base64-${Buffer.from(JSON.stringify(session)).toString('base64')}`

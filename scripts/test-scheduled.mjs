@@ -7,6 +7,7 @@
 // time. Cancel or move it before then. Same posting rules as a message
 // sent now.
 import { createClient } from '@supabase/supabase-js'
+import { signInClient } from './_auth.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -25,13 +26,9 @@ const OUTSIDER = '00000000-0000-0000-0000-0000000000c2'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const TAG = 'SCHED'
 
-async function signInEmail(email) {
-  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
-  if (!link?.properties?.hashed_token) return null
-  const client = createClient(URL_, PUB, { auth: { persistSession: false } })
-  const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
-  return data?.session ? client : null
-}
+// Sessions are cached across suites (scripts/_auth.mjs), so a full run no
+// longer trips the auth rate limit.
+const signInEmail = (email) => signInClient(admin, email)
 const { data: ch } = await admin.from('channels').select('id, name, posting_mode').eq('team_id', U8).eq('status', 'active').limit(1).single()
 async function cleanup() {
   const { data: msgs } = await admin.from('messages').select('id').like('body', `${TAG}%`)

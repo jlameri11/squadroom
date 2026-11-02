@@ -6,6 +6,7 @@
 // managers that a parent never sees. And the overdue-fee block: on, a
 // family with a fee past due cannot say yes until it is paid.
 import { createClient } from '@supabase/supabase-js'
+import { signInClient } from './_auth.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -30,13 +31,9 @@ const RAVENS_U8 = '00000000-0000-0000-0000-0000000d0099'
 const TAG = 'FXCHG'
 const OFFICIAL_EMAIL = 'fxchg-official@squadroom.invalid'
 
-async function signInEmail(email) {
-  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
-  if (!link?.properties?.hashed_token) return null
-  const client = createClient(URL_, PUB, { auth: { persistSession: false } })
-  const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
-  return data?.session ? client : null
-}
+// Sessions are cached across suites (scripts/_auth.mjs), so a full run no
+// longer trips the auth rate limit.
+const signInEmail = (email) => signInClient(admin, email)
 async function cleanup() {
   const { data: comps } = await admin.from('competitions').select('id').like('name', `${TAG} %`)
   for (const c of comps ?? []) {

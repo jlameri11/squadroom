@@ -21,3 +21,6 @@ next-env.d.ts
 
 # a test build, served on :3100 by npm run serve:test
 .next-test/
+
+# Cached test sessions (scripts/_auth.mjs). Tokens, never committed.
+.cache/

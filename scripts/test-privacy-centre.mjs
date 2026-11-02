@@ -5,6 +5,7 @@
 // wins over the club's rule on the public page at once; nobody outside the
 // family and the club can ask; the notice is public and cookie-less.
 import { createClient } from '@supabase/supabase-js'
+import { signInClient } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -23,13 +24,9 @@ const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const OUTSIDER = '00000000-0000-0000-0000-0000000000c2'
 
-async function signInEmail(email) {
-  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
-  if (!link?.properties?.hashed_token) return null
-  const client = createClient(URL_, PUB, { auth: { persistSession: false } })
-  const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
-  return data?.session ? client : null
-}
+// Sessions are cached across suites (scripts/_auth.mjs), so a full run no
+// longer trips the auth rate limit.
+const signInEmail = (email) => signInClient(admin, email)
 const parent = await signInEmail((await admin.auth.admin.getUserById(PARENT)).data.user.email)
 const outsider = await signInEmail((await admin.auth.admin.getUserById(OUTSIDER)).data.user.email)
 if (!parent || !outsider) {
