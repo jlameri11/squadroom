@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { setOrg } from '@/lib/org'
 
 const TYPES = [
   { value: 'academy', label: 'Academy', hint: 'Several teams across age groups' },
@@ -34,14 +35,16 @@ export default function Start() {
     // A security-definer function, not an insert: creating the organisation
     // and becoming its owner has to happen together, and the RLS policy on
     // academy_members quite rightly will not let you add yourself.
-    const { error } = await supabase.rpc('create_academy', {
+    const { data, error } = await supabase.rpc('create_academy', {
       p_name: name,
       p_type: type,
     })
 
     setBusy(false)
     if (error) return setError(error.message)
-    router.replace('/')
+    // G-01: straight into the half-hour setup, looking at the new club.
+    if (data) setOrg(data as unknown as string)
+    router.replace('/start/setup')
     router.refresh()
   }
 

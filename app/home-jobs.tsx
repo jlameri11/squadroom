@@ -64,15 +64,25 @@ const PERSONA_WORD: Record<Persona, string> = {
  * the tiles are the one-tap switch. The crest in the app bar still opens the
  * full sheet; this is the shortcut for the coach who also runs the league.
  */
+type Setup = { done: number; total: number; minutes: number; complete: boolean; completed_at: string | null; grandfathered?: boolean }
+
 export function HomeJobs() {
   const [data, setData] = useState<Jobs | null>(null)
+  const [setup, setSetup] = useState<Setup | null>(null)
 
   useEffect(() => {
     let live = true
     ;(async () => {
-      const { data } = await createClient().rpc('home_jobs', { p_academy: getOrg() ?? undefined })
+      const supabase = createClient()
+      const { data } = await supabase.rpc('home_jobs', { p_academy: getOrg() ?? undefined })
       if (!live) return
-      setData((data as unknown as Jobs | null) ?? null)
+      const jobs = (data as unknown as Jobs | null) ?? null
+      setData(jobs)
+      // G-01: a club still being set up gets the checklist first.
+      if (jobs?.persona === 'owner') {
+        const { data: s } = await supabase.rpc('setup_progress', { p_academy: getOrg() ?? undefined })
+        if (live) setSetup((s as unknown as Setup | null) ?? null)
+      }
     })()
     return () => {
       live = false
@@ -111,6 +121,24 @@ export function HomeJobs() {
             </button>
           ))}
         </div>
+      )}
+
+      {setup && !setup.complete && !setup.completed_at && (
+        <Link
+          href="/start/setup"
+          data-setup-card
+          className="card mb-3 flex items-center gap-3 p-3.5"
+          style={{ borderColor: 'var(--brand)' }}
+        >
+          <span className="display grid h-9 w-9 flex-none place-items-center rounded-full text-sm" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
+            {setup.done}/{setup.total}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Finish setting up the club</span>
+            <span className="block text-xs text-ink-3">{setup.total - setup.done} steps left · {setup.minutes} min so far · aim for under 30</span>
+          </span>
+          <span className="flex-none text-lg text-ink-3">›</span>
+        </Link>
       )}
 
       <div className="sect">
