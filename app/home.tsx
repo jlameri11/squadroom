@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { SignOut } from '@/components/sign-out'
 import { NeedsYou } from './needs-you'
+import { HomeJobs } from './home-jobs'
 import { HomeCalendar } from './home-calendar'
 import { HomeCompetitions } from './home-competitions'
 import { HomeOwing } from './home-owing'
@@ -156,6 +157,10 @@ function HomeScreen({
   const unread = channels.reduce((sum, c) => sum + (c.muted ? 0 : c.unread_count), 0)
   const isStaff = role === 'owner' || role === 'admin'
   const isCoach = isStaff || role === 'coach'
+  // A league's owner is its organiser; "run the club" is the wrong sentence
+  // for somebody whose organisation has no squads of its own.
+  const isLeague = academy.type === 'league'
+  const roleWord = isLeague && isStaff ? 'Organiser' : `${role[0].toUpperCase()}${role.slice(1)}`
   const tint = academy.primary_colour || 'var(--brand)'
 
   // Which child's Saturday this is. Null is everyone, which is the default
@@ -310,7 +315,7 @@ function HomeScreen({
     >
       <AppBar
         title={academy.name}
-        meta={`${role[0].toUpperCase()}${role.slice(1)} · ${todayLabel()}`}
+        meta={`${roleWord} · ${todayLabel()}`}
         crest={academy.name.slice(0, 2).toUpperCase()}
         action={
           layoutState.available.length > 0 && (
@@ -339,6 +344,13 @@ function HomeScreen({
           </span>
         </Link>
       )}
+
+      {/*
+        Who you are here and your three jobs, first. Product direction, 2 Nov
+        2026: each of the four roles sees its own priorities, reaches each
+        job in two taps, and switches organisation in one.
+      */}
+      <HomeJobs />
 
       {/*
         Everything waiting on this person, in one strip. It replaced a
@@ -407,10 +419,10 @@ function HomeScreen({
         >
           <span>
             <span className="block text-sm font-semibold" style={{ color: 'var(--brand-text)' }}>
-              Run the club
+              {isLeague ? 'Run the league' : 'Run the club'}
             </span>
             <span className="block text-xs text-ink-3">
-              Squads, fixtures, registrations, payments
+              {isLeague ? 'Competitions, officials, clubs, members' : 'Squads, fixtures, registrations, payments'}
             </span>
           </span>
           <span className="flex-none text-lg text-ink-3">›</span>

@@ -1,0 +1,166 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { getOrg, setOrg } from '@/lib/org'
+import { invalidateScreen } from '@/lib/hooks/use-screen'
+
+type Job = { id: string; label: string; detail: string | null; href: string; count: number }
+type Today = { label: string; detail: string; count: number; href: string }
+type Announcement = {
+  id: string
+  channel_id: string
+  channel_name: string | null
+  body: string | null
+  sender_name: string | null
+  created_at: string
+  reply_count: number
+}
+type Elsewhere = {
+  id: string
+  name: string
+  type: string
+  role: string
+  persona: Persona
+  primary_colour: string | null
+}
+type Persona = 'parent' | 'coach' | 'owner' | 'league'
+type Jobs = {
+  academy_id: string
+  role: string | null
+  persona: Persona
+  jobs: Job[]
+  today: Today | null
+  announcement: Announcement | null
+  switch: Elsewhere[]
+}
+
+const HEADING: Record<Persona, string> = {
+  parent: 'Your jobs',
+  coach: 'Coaching',
+  owner: 'Run the club',
+  league: 'Run the league',
+}
+
+const PERSONA_WORD: Record<Persona, string> = {
+  parent: 'Parent',
+  coach: 'Coach',
+  owner: 'Admin',
+  league: 'Organiser',
+}
+
+/**
+ * The top of Home: who you are here, and the three things you are here to do.
+ *
+ * Product direction (CLAUDE.md, 2 Nov 2026). One strip, driven by
+ * `home_jobs`, which decides from the membership which of the four people is
+ * looking — parent, coach, owner, league organiser — and answers with that
+ * person's three jobs, each already pointing at the exact page that does it.
+ * A tile is one tap; the thing on the page it opens is the second. Nothing
+ * here is greyed out: a job that is not this person's is not shown at all.
+ *
+ * For somebody who belongs to more than one organisation, the chips above
+ * the tiles are the one-tap switch. The crest in the app bar still opens the
+ * full sheet; this is the shortcut for the coach who also runs the league.
+ */
+export function HomeJobs() {
+  const [data, setData] = useState<Jobs | null>(null)
+
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().rpc('home_jobs', { p_academy: getOrg() ?? undefined })
+      if (!live) return
+      setData((data as unknown as Jobs | null) ?? null)
+    })()
+    return () => {
+      live = false
+    }
+  }, [])
+
+  if (!data || !data.jobs?.length) return null
+
+  function switchTo(id: string) {
+    setOrg(id)
+    invalidateScreen()
+    window.location.replace('/')
+  }
+
+  const ann = data.announcement
+
+  return (
+    <section className="px-3.5 pt-4" data-persona={data.persona}>
+      {data.switch.length > 0 && (
+        <div className="-mx-3.5 mb-3 flex gap-2 overflow-x-auto px-3.5 pb-0.5" role="group" aria-label="Switch organisation">
+          <span
+            className="flex-none rounded-full px-3 py-1.5 text-xs font-semibold"
+            style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+          >
+            {PERSONA_WORD[data.persona]} here
+          </span>
+          {data.switch.map((o) => (
+            <button
+              key={o.id}
+              data-switch={o.id}
+              onClick={() => switchTo(o.id)}
+              className="flex-none rounded-full border px-3 py-1.5 text-xs font-semibold"
+              style={{ borderColor: 'var(--line)', background: 'var(--surface)', color: 'var(--ink-2)' }}
+            >
+              {o.name} · {PERSONA_WORD[o.persona]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="sect">
+        <span className="eyebrow">{HEADING[data.persona]}</span>
+        {data.today && (
+          <Link href={data.today.href} className="text-xs text-ink-3 underline underline-offset-2" data-today>
+            {data.today.label}: {data.today.detail}
+          </Link>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {data.jobs.map((j) => (
+          <Link
+            key={j.id}
+            href={j.href}
+            data-job={j.id}
+            className="card flex min-h-[88px] flex-col justify-between p-2.5"
+          >
+            <span className="flex items-start justify-between gap-1">
+              <span className="text-sm font-semibold leading-tight" style={{ color: 'var(--brand-text)' }}>
+                {j.label}
+              </span>
+              {j.count > 0 && <span className="pill flex-none">{j.count}</span>}
+            </span>
+            <span className="mt-1 line-clamp-2 text-[11px] leading-snug text-ink-3">{j.detail}</span>
+          </Link>
+        ))}
+      </div>
+
+      {data.persona === 'parent' && ann && (
+        <Link
+          href={`/chat/${ann.channel_id}`}
+          data-announcement
+          className="card mt-3 block p-3.5"
+          style={{ borderColor: 'var(--brand)' }}
+        >
+          <span className="eyebrow">Latest announcement · {ann.channel_name}</span>
+          <span className="mt-1.5 block text-sm font-medium">{ann.body ?? 'An announcement'}</span>
+          <span className="mt-1 block text-xs text-ink-3">
+            {ann.sender_name ?? 'Coach'} · {when(ann.created_at)}
+            {ann.reply_count > 0 ? ` · ${ann.reply_count} ${ann.reply_count === 1 ? 'reply' : 'replies'}` : ''}
+          </span>
+        </Link>
+      )}
+    </section>
+  )
+}
+
+function when(iso: string) {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+}

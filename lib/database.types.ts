@@ -6196,6 +6196,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      home_jobs: { Args: { p_academy?: string }; Returns: Json }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
       import_league_draw: {

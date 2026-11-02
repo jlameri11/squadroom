@@ -103,6 +103,13 @@ for (const theme of ['light', 'dark']) {
   await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 2 })
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }])
   await page.setCookie(cookie)
+  // ORG=<academy id> looks as that organisation — the choice lives in the
+  // browser (lib/org.ts), so it is set before the first page script runs.
+  if (process.env.ORG) {
+    await page.evaluateOnNewDocument((org) => {
+      try { localStorage.setItem('squadroom.org', org) } catch {}
+    }, process.env.ORG)
+  }
 
   for (const [name, path] of screens) {
     try {

@@ -50,9 +50,11 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries, entriesOpen = false,
+  competitionId, initialTab, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries, entriesOpen = false,
 }: {
   competitionId: string
+  /** The tab to open first, from `?tab=`; anything unknown opens the first. */
+  initialTab?: string
   mode: string
   isOrganiser: boolean
   /** L-13: 'staff', 'competition', 'referees', 'discipline', 'grounds' — what this person may run here. */
@@ -75,7 +77,9 @@ export function CompetitionView({
     ? (['send', 'clubs'] as const)
     : (['run', 'ladder', 'discipline', 'referees', 'clubs', 'send'] as const)
 
-  const [tab, setTab] = useState<string>(tabs[0])
+  const [tab, setTab] = useState<string>(
+    initialTab && (tabs as readonly string[]).includes(initialTab) ? initialTab : tabs[0]
+  )
   const [division, setDivision] = useState(divisions[0] ?? '')
 
   const LABEL: Record<string, string> = {

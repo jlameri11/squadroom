@@ -5,8 +5,11 @@ import { CompetitionView, type Fixture, type LadderRow } from './competition-vie
 
 export default async function CompetitionPage(props: {
   params: Promise<{ competitionId: string }>
+  /** `?tab=run|ladder|discipline|referees|clubs|send` opens that tab — what Home links to. */
+  searchParams: Promise<{ tab?: string }>
 }) {
   const { competitionId } = await props.params
+  const { tab: initialTab } = await props.searchParams
   const supabase = await createClient()
 
   const userId = await getUserId()
@@ -78,6 +81,7 @@ export default async function CompetitionPage(props: {
 
       <CompetitionView
         competitionId={comp.id}
+        initialTab={initialTab}
         mode={comp.mode}
         isOrganiser={isOrganiser}
         areas={areas}
