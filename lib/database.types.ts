@@ -21,6 +21,7 @@ export type Database = {
           created_by: string | null
           directory_visibility: Database["public"]["Enums"]["directory_visibility"]
           dm_policy: Database["public"]["Enums"]["dm_policy"]
+          fee_reminders: boolean
           id: string
           logo_url: string | null
           name: string
@@ -30,6 +31,8 @@ export type Database = {
           playfootball_fees_disclosed_season: string | null
           primary_colour: string
           public_player_names: Database["public"]["Enums"]["public_names_mode"]
+          setup_completed_at: string | null
+          setup_started_at: string
           sibling_discount_bps: number[]
           slug: string
           timezone: string
@@ -42,6 +45,7 @@ export type Database = {
           created_by?: string | null
           directory_visibility?: Database["public"]["Enums"]["directory_visibility"]
           dm_policy?: Database["public"]["Enums"]["dm_policy"]
+          fee_reminders?: boolean
           id?: string
           logo_url?: string | null
           name: string
@@ -51,6 +55,8 @@ export type Database = {
           playfootball_fees_disclosed_season?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          setup_completed_at?: string | null
+          setup_started_at?: string
           sibling_discount_bps?: number[]
           slug: string
           timezone?: string
@@ -63,6 +69,7 @@ export type Database = {
           created_by?: string | null
           directory_visibility?: Database["public"]["Enums"]["directory_visibility"]
           dm_policy?: Database["public"]["Enums"]["dm_policy"]
+          fee_reminders?: boolean
           id?: string
           logo_url?: string | null
           name?: string
@@ -72,6 +79,8 @@ export type Database = {
           playfootball_fees_disclosed_season?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          setup_completed_at?: string | null
+          setup_started_at?: string
           sibling_discount_bps?: number[]
           slug?: string
           timezone?: string
@@ -5894,6 +5903,148 @@ export type Database = {
           },
         ]
       }
+      voucher_redemptions: {
+        Row: {
+          academy_id: string
+          amount_cents: number
+          created_at: string
+          id: string
+          player_id: string | null
+          profile_id: string
+          request_id: string
+          voucher_id: string
+        }
+        Insert: {
+          academy_id: string
+          amount_cents: number
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          profile_id: string
+          request_id: string
+          voucher_id: string
+        }
+        Update: {
+          academy_id?: string
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          profile_id?: string
+          request_id?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_redemptions_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vouchers: {
+        Row: {
+          academy_id: string
+          active: boolean
+          amount_cents: number | null
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_on: string | null
+          id: string
+          kind: string
+          label: string
+          max_uses: number | null
+          percent_bps: number | null
+          program_id: string | null
+          used_count: number
+        }
+        Insert: {
+          academy_id: string
+          active?: boolean
+          amount_cents?: number | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          kind?: string
+          label: string
+          max_uses?: number | null
+          percent_bps?: number | null
+          program_id?: string | null
+          used_count?: number
+        }
+        Update: {
+          academy_id?: string
+          active?: boolean
+          amount_cents?: number | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_on?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          max_uses?: number | null
+          percent_bps?: number | null
+          program_id?: string | null
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -6727,6 +6878,8 @@ export type Database = {
           status: string
           team_name: string
           title: string
+          voucher_cents: number
+          voucher_label: string
         }[]
       }
       my_poll_votes: {
@@ -6973,6 +7126,7 @@ export type Database = {
       publish_scheduled_messages: { Args: never; Returns: number }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
+      queue_fee_reminders: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
       quote_payment: {
         Args: { p_player?: string; p_request: string }
@@ -7023,6 +7177,10 @@ export type Database = {
           p_player?: string
         }
         Returns: string
+      }
+      redeem_voucher: {
+        Args: { p_code: string; p_player: string; p_request: string }
+        Returns: Json
       }
       referee_availability: { Args: { p_fixture: string }; Returns: Json }
       referee_check_in: { Args: { p_appointment: string }; Returns: string }
@@ -7238,6 +7396,10 @@ export type Database = {
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
       self_appoint: { Args: { p_fixture: string }; Returns: string }
+      set_academy_logo: {
+        Args: { p_academy: string; p_url: string }
+        Returns: undefined
+      }
       set_bye: { Args: { p_fixture: string }; Returns: undefined }
       set_chat_language: { Args: { p_lang: string }; Returns: undefined }
       set_child_public_name: {
@@ -7357,6 +7519,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      setup_progress: { Args: { p_academy?: string }; Returns: Json }
       shift_round: {
         Args: {
           p_competition: string

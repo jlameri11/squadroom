@@ -137,6 +137,10 @@ Exact steps are in NEEDS JOEY below.
 | **R-14** PlayFootball status | **Done.** Status + FFA number on the roster; count per squad; parent's view; weekly reminder to the family a fortnight before the next match — for 'pending' only, after the first version queued 30 against the seed | test-official-rego 14 |
 | **Parity tracker** | `docs/DRIBL_PARITY.md` — 20 rows against Dribl Connect, each with a spec ID and an honest status. Three new IDs: B-07 vouchers, B-08 bank transfer / pay later, B-09 fee split | — |
 
+| **G-08** the public "for academies, clubs and leagues" page with the free trial (STEP 3 item 7) | **Done** (`/for-clubs`). Static and cookie-less, no tab bar; what Squadroom does for a club and for a league, how the trial works, the club-pays rule said plainly, no price. "Start free" → sign up by email → found the club → the half-hour checklist | test-for-clubs 10, navigation and screens suites re-run, screens both themes |
+| **M7** native app — what can be done without the Apple account (STEP 3 item 5) | **Blocked on tools, not on the account.** The shell, the adapters and the push server side were done in an earlier phase. This machine has no Xcode, CocoaPods or JDK, so `npx cap add ios` cannot run — and a simulator build, which needs no paid account, cannot either. `native/README.md` gains the App Store review notes and the deep-link steps. NEEDS JOEY #5 reworded: install the free tools first | — |
+| **B-07 / B-12 / B-04** vouchers and the overdue chase — the money polish that needs no key (STEP 3 item 4) | **Done** (0193). Vouchers per club: a code with a dollar value or a percentage, a kind (Active Kids-style government, club, coach, volunteer, scholarship, sibling), uses, an expiry; a family types it on one child's fee and the redemption is recorded for the books; the one price function takes it off after the family discount, so who-owes, the family's list, Needs you and the checkout agree. The chase: a daily sweep tells the family three days before a fee is due and at 3, 7 and 14 days overdue, then fortnightly, once each; a club can switch it off. What still needs the key — the charge itself, instalment retry, several children in one checkout, bank transfer, the league–club split, issuing a refund — stays under NEEDS JOEY #1 | test-vouchers, test-rls 100, payments / fees / program-fees / finance-export / withdrawals / fee-settings / trial-offers suites re-run, screens both themes |
+| **G-01** self-onboarding in under 30 minutes (STEP 3 item 3) | **Done** (0192, `/start/setup`). Founding a club lands on a six-step checklist with a clock: crest and colours inline (swatches, any colour, the crest into a public crests bucket in the club's folder — the one picture that belongs on the public page), then squads, roster, programs, coaches and first training, each one tap to the page that already does it and each tick read from the data, never from the list. The moment the five core steps are first all done is recorded on the club, so the half hour is measured on every club that signs up. The owner's Home shows "Finish setting up — n of 6 · m min" until then | test-self-onboarding, test-rls 99, first-run / role-nav / organisations suites re-run, screens both themes |
 | **L-25 / L-27 / L-28** referee extras, nominations, bulk tools — **M9 complete bar the Stripe halves** | **Done** (0191). Referees: a decline needs a reason, a late pull-out is refused, referees of the allowed grades take open games from their own page, a club puts up its own referee inside the window (unpaid, marked as the club's), an under-18 names who is paid; rules per competition on the Refs tab. Nominations: a club proposes a division with a comment and the squad locks; the league sets the division and unlocks; a date-of-birth band per division enforced on the sheet with an exemption. Bulk: scores for many games, a round moved by days (every family told, games pinned), a round called off; on the run sheet | test-league-tools, test-rls 98, referees / referee-auto / referee-payments / match-sheets / sheet-rules / league-season / draw-and-ops / chain suites re-run, screens both themes |
 | **L-18 / L-20 / L-22** scorer handoff, sanction codes and one-card-away, forfeit chain (M9 remainder, P2) | **Done** (0190). Cards take the federation's codes (Y1–Y6, R1–R8); a suspension carries the code of the card that tipped it; the club is pushed when a player is one yellow out and again when it lands or a red is shown; the discipline tab shows the codes and the warning. A forfeit is asked for by the coach, approved by the club, decided by the league — only then the forfeit score — with each step pushed, club staff skipping the club step, and the league seeing waiting forfeits on the match-day list. The scorer hands their phone to the referee, who types the mobile the league holds (any format) and Confirm: verified and ended in the referee's name, failed tries on the record, no referee account needed; a referee ending from their own phone verifies too | test-match-day-chain, test-rls 97, discipline / match-sheets / sheet-rules suites re-run, screens both themes |
 | **L-23 / L-24 / L-26** fixture flowing, draw quality, match-day ops (M9 remainder, P1) | **Done** (0189). Fixture flowing: the league opens a window (until when, days either side); inside it a home club's move that the other club agrees to is done on the spot and everyone is told; an away club's, a far-off, or an after-the-window move waits for the league as 0174 had it. Draw quality: pairs, home/away and slot balance per team, two teams of one club on at once, double headers, travel, empty slots; a closed field's impact before it is closed. One source of truth: a game moved by hand is pinned and a rebuild draws around it. Match-day ops: the league's live list on the run sheet — sheets missing, scores to resolve, not ended, referee reports due, no referee this week, suspended, corrections, change requests. The existing `match-day-ops.tsx` was briefly overwritten by a file of the same name and restored from git within the minute; the dashboard lives in `match-day-dashboard.tsx` | test-draw-and-ops 30, test-rls 96, fixture-changes / league-draw / fixture-generation / match-day / finals suites re-run, screens both themes |
@@ -375,12 +379,25 @@ privacy notice written for children and a lawyer's read of it. This has a
 real deadline (the Children's Online Privacy Code) and I cannot write the
 legal review.
 
-### 5. Apple Developer account + Xcode — blocks M7, and M7 blocks contacts
+### 5. Xcode and CocoaPods first (free), then the Apple Developer account — blocks M7, and M7 blocks contacts
 
-The Capacitor shell has never been compiled. Both on-device contact matching
-(C-10) and reliable iPhone push need a native build, so this gates more than
-it looks like it does. Apple Developer is US$99/year — flagging the cost
-rather than assuming it, given the standing rule about spending.
+The Capacitor shell has never been compiled, and on 2 Nov I checked why it
+cannot be here: this Mac has only the Command Line Tools — no Xcode, no
+CocoaPods, no JDK. A **simulator build needs no paid account**, so the free
+tools alone would let me generate the iOS project, build it and run it in a
+simulator in one session:
+
+1. Install Xcode from the Mac App Store (~7 GB), open it once, then
+   `sudo xcode-select -s /Applications/Xcode.app`.
+2. `brew install cocoapods`.
+3. Tell me. I will run `npx cap add ios`, sync, build for the simulator and
+   write up what works.
+
+The Apple Developer Program (US$99/year — flagged rather than assumed, per
+the spending rule) is needed only after that, for a real phone, APNs and
+TestFlight. Both on-device contact matching (C-10) and reliable iPhone push
+wait on the build, so this gates more than it looks like it does.
+`native/README.md` has the review notes and deep-link steps ready.
 
 ---
 

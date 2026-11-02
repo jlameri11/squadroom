@@ -183,7 +183,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | ID | Task | Detail |
 |---|---|---|
 | — | Production Supabase project | New project in Sydney; apply migrations from scratch; separate Netlify env; a promotion script dev → prod for migrations only, **never data** |
-| G-01 | Self-serve onboarding | `/start`: name, crest, colours → create squads → import the roster → invite coaches → first program. Timed: under 30 minutes |
+| G-01 | Self-serve onboarding | **DONE (0192).** `/start` → `/start/setup`: crest and colours inline, then squads, roster, programs, coaches, first training as one-tap steps; ticks from the data; the time to the five core steps recorded on the club |
 | B-06 | Squadroom billing | Plans by team count via Stripe Billing on a **separate code path** from academy collections. Free trial. Parents never pay Squadroom |
 | G-03 | Support | In-app "Help" → a support channel to Squadroom staff; status page |
 | X-08 | Sponsor slots | The academy uploads sponsor logos; slots on the match centre, Player of the Match and share cards; simple impressions count |
@@ -348,15 +348,28 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    NEEDS JOEY #1). `test-league-season` stays the acceptance test and
    passes.
 3. **G-01 academy self-onboarding in under 30 minutes:** logo, colours,
-   programs, roster import, invite coaches — timed.
+   programs, roster import, invite coaches — timed. **Done 2 Nov (0192):**
+   `/start/setup`, six steps read from the data, the clock recorded per club.
 4. **Academy and club money polish:** term fees, trials, camps, instalments,
    "who owes". Every step that needs the Stripe key goes under NEEDS JOEY.
+   **2 Nov:** instalments (B-02 UI), trials → offers (R-13), camps and term
+   classes (program kinds), who owes (outstanding + the owner's Home tile)
+   were already in; added vouchers with named types (B-07/B-12) and the
+   overdue chase (B-04) in 0193. Left for the key: the charge, retry, one
+   checkout for siblings, bank transfer / Afterpay, the league split, issuing
+   refunds (NEEDS JOEY #1).
 5. **M7 native iPhone/Android** — everything that can be prepared without the
-   Apple account; the Apple steps under NEEDS JOEY.
+   Apple account; the Apple steps under NEEDS JOEY. **2 Nov:** the shell,
+   adapters and push server side were already done; this machine has no
+   Xcode, CocoaPods or JDK, so the iOS and Android projects cannot be
+   generated here yet — `native/README.md` now carries the review notes and
+   deep-link steps, and NEEDS JOEY #5 asks for the free tools first (a
+   simulator build needs no paid account).
 6. **The rest of M3** (WhatsApp feel), then **development features** (player
    reports, clips on profiles — G-05, W-09's first items).
 7. **A public "for academies, clubs and leagues" page with a free-trial
-   sign-up** (no billing — pricing is Joey's, CLAUDE.md).
+   sign-up** (no billing — pricing is Joey's, CLAUDE.md). **Done 2 Nov:**
+   `/for-clubs` (G-08), "Start free" into the setup checklist.
 8. **Then the remaining plan items in their current order:** the rest of
    M4 / M5, M1 + M6's Stripe halves when the key exists, M8 SaaS.
 

@@ -16,7 +16,7 @@ Statuses: **DONE** · **PARTIAL** (what is missing is named) · **MISSING** ·
 | 3 | Emergency contacts | On `player_medical`; family edits them in Settings → My family | **DONE** | R-05, R-17 |
 | 4 | Registration photo | `players.photo_url` exists; **no upload at registration** | **PARTIAL** — upload needs the same anon-upload decision as file questions | R-05, NEEDS JOEY #6 |
 | 5 | Custom questions per product | Builder, four types, validated, answers checked | **PARTIAL** — file-upload type not built (decision) | R-11 |
-| 6 | **Government vouchers (Active Kids) and club vouchers** — a code with a value, applied at checkout | Nothing | **MISSING** → new **B-07**: voucher code + value per registration; Active Kids is a $-value code the club redeems with Service NSW, so we record code, value, and the net; club vouchers are our own promo codes | B-03, **B-07** |
+| 6 | **Government vouchers (Active Kids) and club vouchers** — a code with a value, applied at checkout | A code with a value or a percentage, a kind, uses and an expiry; applied by the family to one child's fee; the redemption recorded per fee; the price function takes it off | **DONE** bar the card charge for the remainder (0193, 2 Nov) | **B-07** |
 | 7 | **Fee split per product** — e.g. $100 to the association + $165 to the club | Fees go to one connected account (the academy's). No split | **MISSING** → **B-09** (academy side) and **L-02** (league side): one checkout, two transfers, each party's share landing in its own Stripe account; Squadroom still takes nothing | **B-09**, L-02 |
 | 8 | **Payment: card, bank transfer, or pay later** via Stripe Connect Express | Card only (and untested — no Stripe key). `payment_required=false` is the nearest thing to pay later | **PARTIAL** → **B-08**: bank transfer (Stripe `au_becs_debit`) and an explicit "pay later by [date]" with a reminder | B-01, **B-08**, NEEDS JOEY #1 |
 | 9 | Instalments | Built in 0102; **no UI turns it on**; no retry on failure | **PARTIAL** | B-02 |
@@ -64,7 +64,7 @@ expect. Same statuses as above.
 | S13 | Bulk score upload, bulk reschedule, move a competition | Scores in bulk, a round moved or called off; call off a day / ground (L-09) | **DONE** (0191, 2 Nov) — "move a competition" has no equivalent here | L-28 |
 | S14 | Multi-level fee split, each level refunds its share; finance per org | Entry fees owed to the league per entry, paid by bank/cash and ticked off (L-02); the Stripe split (B-09) is key-blocked | PARTIAL | B-10 |
 | S15 | De-registration approval chain with automatic refunds; voucher carve-outs | Withdraw with refund (R-15) | PARTIAL | B-11 |
-| S16 | Named voucher types with limits and expiry | Vouchers B-07 (Stripe-blocked) | MISSING | B-12 |
+| S16 | Named voucher types with limits and expiry | Government, club, coach, volunteer, scholarship, sibling; uses and an expiry per voucher | **DONE** (0193, 2 Nov) | B-12 |
 | S17 | Direct debit, Afterpay | Card and bank transfer (B-08) | MISSING — and we add **pay instalments early**, which Squadi cannot | B-13 |
 | S18 | Notice of Offer to returning players | Rollover (R-12) + offers (R-13) | PARTIAL | R-19 |
 | S19 | Shop at checkout and standalone, inventory, variants, shipping, partial refunds | Kit add-ons at checkout (catalogue) | PARTIAL | B-14 |
