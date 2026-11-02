@@ -155,7 +155,8 @@ export function RefereesTab({
   }
 
   async function copyLink(ref: PoolRef) {
-    const url = `${window.location.origin}/ref/${ref.claim_token}`
+    const path = `/ref/${ref.claim_token}`
+    const url = `${window.location.origin}${path}`
     try {
       await navigator.clipboard.writeText(url)
       setCopied(ref.id)

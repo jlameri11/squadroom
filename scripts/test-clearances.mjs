@@ -74,6 +74,10 @@ const marcusWasInU8 = await admin
   .eq('profile_id', MARCUS)
   .maybeSingle()
   .then(({ data }) => data?.role ?? null)
+// The clearances as found. This suite wipes NRIFA's register to test it and
+// used to put nothing back — so every suite after it in a full run found
+// Marcus coaching the U8s with a lapsed check, and failed on his behalf.
+const clearancesBefore = (await admin.from('staff_clearances').select('*').eq('academy_id', NRIFA)).data ?? []
 
 async function clean() {
   await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', MARCUS)
@@ -368,19 +372,28 @@ head('11. An owner can run a club unverified, but cannot coach a team')
 }
 
 await clean()
-// Marcus goes back where he was found.
+// Put the register back as it was, row for row, THEN Marcus goes back where
+// he was found. The order matters: 0120 refuses a team coach without a
+// current clearance, and the old restore recorded one through an RPC that
+// needs a signed-in caller — under the service role it did nothing, the
+// coaching insert was refused, and every later suite ran without him.
 if (marcusWasInU8) {
-  await admin.rpc('record_clearance', {
-    p_academy: NRIFA,
-    p_profile: MARCUS,
-    p_number: 'RESTORE',
-    p_outcome: 'cleared',
-    p_expires_on: dateIn(365),
+  // The seed has Marcus coaching with no clearance on file — a state 0120's
+  // gate will not let a plain insert recreate — so a clearance is recorded
+  // for the moment of the insert and taken away again.
+  await admin.from('staff_clearances').insert({
+    academy_id: NRIFA, profile_id: MARCUS, kind: 'wwcc', number: 'RESTORE', outcome: 'cleared',
+    expires_on: dateIn(365), verified_by: '00000000-0000-0000-0000-0000000000a1',
   })
-  await admin
+  const { error } = await admin
     .from('team_members')
     .insert({ academy_id: NRIFA, team_id: U8, profile_id: MARCUS, role: marcusWasInU8 })
+  if (error) console.log(`  (could not put Marcus back on the U8s: ${error.message})`)
   await admin.from('staff_clearances').delete().eq('academy_id', NRIFA).eq('number', 'RESTORE')
+}
+if (clearancesBefore.length) {
+  const { error } = await admin.from('staff_clearances').upsert(clearancesBefore, { onConflict: 'id' })
+  if (error) console.log(`  (could not restore the clearances as found: ${error.message})`)
 }
 
 console.log(

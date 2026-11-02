@@ -73,6 +73,12 @@ type Tab = (typeof TABS)[number]
  * Nothing here is interactive beyond choosing what to look at. There is no
  * sign-in prompt, nothing to tap that asks who you are, and no analytics.
  */
+/** The competition's slug, from the canonical page URL. */
+function slugOf(shareUrl: string) {
+  const parts = shareUrl.split('/c/')
+  return parts[1] ?? ''
+}
+
 export function MatchCentre({
   centre,
   embed = false,
@@ -89,6 +95,7 @@ export function MatchCentre({
   shareUrl?: string
 }) {
   const { competition, fixtures, ladder, divisions } = centre
+  const slug = slugOf(shareUrl ?? '')
   const [division, setDivision] = useState(initialDivision && divisions.includes(initialDivision) ? initialDivision : divisions[0] ?? '')
   const [tab, setTab] = useState<Tab>((TABS as readonly string[]).includes(initialTab ?? '') ? (initialTab as Tab) : 'fixtures')
 
@@ -118,7 +125,7 @@ export function MatchCentre({
             {shareUrl && <ShareButton title={competition.name} url={shareUrl} />}
           </div>
           {centre.entries_open && shareUrl && (
-            <a href={`${shareUrl}/enter`} className="mt-3 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold" style={{ background: '#fff', color: 'var(--brand)' }}>
+            <a href={`/c/${slug}/enter`} className="mt-3 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold" style={{ background: '#fff', color: 'var(--brand)' }}>
               Enter a team ›
             </a>
           )}

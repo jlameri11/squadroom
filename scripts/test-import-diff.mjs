@@ -432,9 +432,15 @@ head('12. A coach cannot import into a squad they do not coach')
     expires_on: new Date(Date.now() + 365 * 864e5).toISOString().slice(0, 10),
     verified_by: '00000000-0000-0000-0000-0000000000a1',
   })
-  await admin
-    .from('team_members')
-    .insert({ academy_id: NRIFA, team_id: U8, profile_id: marcus.id, role: 'coach' })
+  // Marcus coaches the U8s in the seed. Added only if missing, and removed
+  // only if added here — this used to delete the seed row at the end, and
+  // every suite after it in a full run found the U8s with no coach.
+  const wasU8Coach = Boolean((await admin.from('team_members').select('id').eq('team_id', U8).eq('profile_id', marcus.id).maybeSingle()).data)
+  if (!wasU8Coach) {
+    await admin
+      .from('team_members')
+      .insert({ academy_id: NRIFA, team_id: U8, profile_id: marcus.id, role: 'coach' })
+  }
 
   const sneaky = [{ ...row('sneak', DAY1, '09:00'), team_id: U12 }]
   const { error } = await commitAs(marcus, sneaky, { team: U8 })
@@ -450,7 +456,7 @@ head('12. A coach cannot import into a squad they do not coach')
       ? ok('and their own squad still imports')
       : bad(`created ${fine?.created}`)
 
-  await admin.from('team_members').delete().eq('profile_id', marcus.id).eq('team_id', U8)
+  if (!wasU8Coach) await admin.from('team_members').delete().eq('profile_id', marcus.id).eq('team_id', U8)
   await admin.from('staff_clearances').delete().eq('number', `${TAG}-WWC`)
 }
 

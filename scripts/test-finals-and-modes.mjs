@@ -127,9 +127,9 @@ nrifaMsgs.length === 2 ? ok('one message per club, in their own channel') : bad(
 nrifaMsgs.every(m => m.is_announcement) ? ok('sent as an announcement, so a muted channel still shows it') : bad('not an announcement')
 new Set(nrifaMsgs.map(m=>m.academy_id)).size === 2 ? ok('no shared channel — the clubs never see each other') : bad('clubs share a channel')
 
-head('9. A parent sees it in their own club, and nothing of the other')
+head('9. A parent sees none of it — a league broadcast goes to club staff (0157)')
 const { data: samSees } = await sam.client.from('messages').select('body').ilike('body','%grounds closed%')
-samSees.length === 1 ? ok('exactly one copy, their own') : bad(`saw ${samSees.length}`)
+samSees.length === 0 ? ok('a parent sees no copy; the coaches channel carries it (test-league-comms proves who does)') : bad(`saw ${samSees.length}`)
 
 head('10. Only the organiser can broadcast')
 const { error: pe } = await sam.client.rpc('broadcast_to_competition', {

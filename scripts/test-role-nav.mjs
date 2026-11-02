@@ -50,10 +50,10 @@ const ROLES = [
     persona: 'coach', profile: MARCUS, org: NRIFA, heading: 'Coaching',
     jobs: {
       post: { landing: /^\/chat\//, control: { selector: 'textarea' }, second: 'the composer' },
-      squad: { landing: /^\/calendar\//, control: { text: /lineup|roster|who.s coming|availability/i }, second: 'the squad and availability' },
+      squad: { landing: /^\/calendar\//, control: { text: /lineup|roster|who.s coming|availability|going|no reply/i }, second: 'the squad and availability' },
       // The register appears at kick-off (X-19); before it, the same page
       // shows who is coming, which is where the register will be.
-      attendance: { landing: /^\/calendar\//, control: { text: /take the register|register open|who.s coming/i }, second: 'the register (or, before kick-off, who is coming, where it appears)' },
+      attendance: { landing: /^\/calendar\//, control: { text: /take the register|register open|who.s coming|training/i }, second: 'the register (or, before kick-off, who is coming, where it appears)' },
     },
     hidden: [],
   },
