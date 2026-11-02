@@ -328,24 +328,33 @@ Look and feel: keep the current design language (navy bar, academy `--brand`, ca
 
 ## 6. Order at a glance
 
-**Revised 29 Oct 2026.** M0 and M2 are done; M1, M4 and M5 are largely done.
-Nothing has been dropped — M9 and C-10 are *added*.
+**Revised 2 Nov 2026 (Joey's STEP 3).** Done before this list: M0, M2, M9's
+core (acceptance test passes), M10 bar W-09, and M3's C-01…C-07. The
+security sweep, test reliability and the four-role navigation (CLAUDE.md
+"Product direction") came first, as asked.
 
-1. **M1 + M6 together — registration and the money that goes with it.** They
-   are one job, not two: a sibling discount, an instalment plan and a refund
-   are all the same checkout seen at different moments, and building the form
-   now and the money later means building the checkout twice. **Eight of these
-   items are blocked on a free Stripe test key** (NIGHT_LOG, NEEDS JOEY #1).
-2. **M9 League mode.** The one milestone that lets a league leave Dribl.
-   - **Then M10 Differentiators** (added 30 Oct 2026 from `SQUADI_INTEL.md`
-     §6C), straight after M9's core as the intel recommends. Joey to confirm
-     the slot; nothing else moves.
-3. **M7 native, pulled forward** from its old slot. Both C-10 contacts and
-   reliable iPhone push need a real build, so it gates more than it looks
-   like it does. Needs Joey's Apple account.
-4. **M3 the WhatsApp feel.**
-5. The rest of **M4 / M5**.
-6. **M8 SaaS.**
+1. **Finish what is left of M10 and the M3 item in progress.** M10: W-01…W-08
+   are done; W-09 is "later" by design. M3: C-05 and C-06 landed 1–2 Nov; what
+   is left is the "small polish" row (link previews, maps, typing, ticks,
+   swipe to reply).
+2. **Finish what is left of M9 League mode** — the Squadi-parity rows
+   L-17…L-28 (sheet lock, scorer handoff, match lifecycle, one-card-away,
+   finals eligibility, forfeit chain, Fixture Flowing, draw quality, referee
+   extras, the ops dashboard L-26 — partly on the league's Home now —,
+   nominations, bulk tools). `test-league-season` stays the acceptance test
+   and passes (44).
+3. **G-01 academy self-onboarding in under 30 minutes:** logo, colours,
+   programs, roster import, invite coaches — timed.
+4. **Academy and club money polish:** term fees, trials, camps, instalments,
+   "who owes". Every step that needs the Stripe key goes under NEEDS JOEY.
+5. **M7 native iPhone/Android** — everything that can be prepared without the
+   Apple account; the Apple steps under NEEDS JOEY.
+6. **The rest of M3** (WhatsApp feel), then **development features** (player
+   reports, clips on profiles — G-05, W-09's first items).
+7. **A public "for academies, clubs and leagues" page with a free-trial
+   sign-up** (no billing — pricing is Joey's, CLAUDE.md).
+8. **Then the remaining plan items in their current order:** the rest of
+   M4 / M5, M1 + M6's Stripe halves when the key exists, M8 SaaS.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
-Roughly 15–20 sessions, plus 4–6 for M9.
+The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

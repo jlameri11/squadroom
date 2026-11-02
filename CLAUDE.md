@@ -66,16 +66,50 @@ one and is meant to reach hundreds of academies.
   - Transparent, published pricing. A family sees one clear total, never
     stacked fees.
 
-- **Deployment, Joey's rule (30 Oct 2026).** Production deploys **once a
-  week**, in the first session after **Sunday 8pm Sydney time** — after the
-  weekend's games, never on a match day. Run the full tests first; deploy
-  only if they pass, otherwise log why in `docs/NIGHT_LOG.md` and try again
-  next session. **Exception: an urgent security fix deploys immediately.**
-  Every deploy is noted in `docs/NIGHT_LOG.md` with the date and what it
-  includes. (A one-off deploy was authorised on 30 Oct because the live
-  site was missing the Next.js security fix.)
+- **Deployment, Joey's rule (replaced 2 Nov 2026; the weekly Sunday slot
+  is gone).** Production deploys **only when a major milestone is complete
+  and the full tests pass**, and **never on a Saturday or Sunday** (match
+  days). **Exception: an urgent security fix deploys immediately.** Every
+  deploy is noted in `docs/NIGHT_LOG.md` (Deploys table) with the date and
+  what it includes; a deploy that could not happen is logged there too with
+  why. If `NETLIFY_AUTH_TOKEN` is missing from `.env.local`, it goes under
+  NEEDS JOEY and the milestone's deploy waits.
   - Pushing to GitHub is not deploying. The remote is a backup; production
     moves only by the rule above.
+
+- **Session logging (Joey, 2 Nov 2026).** Whenever a session stops, record
+  in `docs/NIGHT_LOG.md` **when it stopped and why**: finished, waiting on
+  Joey, an error, or the usage limit. An overnight run also leaves a morning
+  summary at the top of the file.
+
+## Product direction (Joey, 2 Nov 2026)
+
+1. **Customers: academies, clubs AND leagues.** Academies and clubs are the
+   main business. Leagues (starting with the SPL) are the shop window that
+   brings academies in. Parents never pay.
+2. **Navigation is easy for four roles:** parent, coach, owner / club admin,
+   league organiser.
+   - **The same 5 tabs for everyone.** Each role's Home shows only its
+     priorities:
+     - **parent:** the kids' next games · "needs you" (RSVP / payment / form)
+       · the latest announcement
+     - **coach:** the next event · non-responders · unread chat
+     - **owner:** registrations waiting · who owes · today across all teams
+     - **league organiser:** this weekend · missing team sheets · unfilled
+       referees · disputes
+   - **Hide, don't grey out,** what a role doesn't need.
+   - **One-tap switch** for people with several roles.
+   - **Each role's top 3 jobs are reachable in 2 taps or fewer** from Home,
+     and an automated test per role proves it (`scripts/test-role-nav.mjs`):
+     - **parent:** RSVP · team chat · pay
+     - **coach:** post · availability / squad · attendance
+     - **owner:** approve registrations · chase payments · message everyone
+     - **league organiser:** change the draw / call off a day · appoint
+       referees · resolve results
+   - Every role gets a 375px light/dark walkthrough when its Home changes.
+3. **Deploys:** see the Deployment rule above — milestone complete + full
+   tests green, never Sat/Sun, security fixes at once, every deploy logged.
+4. **Session logging:** see the Session logging rule above.
 
 ## Decisions already made — do not relitigate
 
@@ -404,6 +438,23 @@ one and is meant to reach hundreds of academies.
 
 - Migrations are SQL files in `supabase/migrations`, never dashboard changes.
 - Run `scripts/test-rls.sql` after every migration. It is idempotent.
+- **A stranger can call exactly five functions** (0185): the ones in
+  `app_private.anon_callable`, each with a reason. Everything else in
+  `public` has no anon grant, and test-rls 92 fails the day one appears.
+  A new public-facing function is added to that table in the same
+  migration, or it is not public. `create or replace` keeps a function's
+  old ACL — revoke explicitly. test-rls 93 also fails if a security-definer
+  function a member can call never names its caller.
+- **Tests sign in through `scripts/_auth.mjs`**, which caches sessions in
+  `.cache/` across suites so a full `npm run test:all` does not trip the
+  auth rate limit. The dev project's limits were raised to 1000 per five
+  minutes by `scripts/configure-auth-limits.mjs` (dev only; production
+  keeps Supabase's defaults). `scripts/_sql.mjs` runs a read-only query
+  against the catalog, which is how the sweep asked what is TRUE rather
+  than what a migration said.
+- **The four-role Home** is `home_jobs` (0186) + `app/home-jobs.tsx`;
+  `scripts/test-role-nav.mjs` proves the two-tap rule in a real browser.
+  A new job for a role is a change to `home_jobs` and a row in that test.
 - **RLS costs are per row SCANNED, not per row returned.** Measured on
   60,000 messages: filtered by channel it is an index scan at ~1ms; an
   unfiltered `select from messages` is a seq scan at ~836ms, because the
