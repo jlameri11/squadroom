@@ -8,6 +8,8 @@ import { ReportsCard } from './reports-card'
 import { EntriesAndFees, ClubFees } from './entries-and-fees'
 import { ChangeRequests, ProposeChange } from './change-requests'
 import { CallOffDay, FixtureOps } from './match-day-ops'
+import { MatchDayDashboard } from './match-day-dashboard'
+import { DrawCheck } from './draw-check'
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -126,13 +128,17 @@ export function CompetitionView({
       )}
 
       {tab === 'run' && (
-        <RunSheet
-          competitionId={competitionId}
-          isOrganiser={isOrganiser}
-          grounds={areas.includes('grounds')}
-          division={division}
-          fixtures={fixtures.filter((f) => divisions.length <= 1 || f.division === division)}
-        />
+        <>
+          {/* L-26: the league's live list, for whoever runs any part of it. */}
+          {areas.length > 0 && !commsOnly && <MatchDayDashboard competitionId={competitionId} />}
+          <RunSheet
+            competitionId={competitionId}
+            isOrganiser={isOrganiser}
+            grounds={areas.includes('grounds')}
+            division={division}
+            fixtures={fixtures.filter((f) => divisions.length <= 1 || f.division === division)}
+          />
+        </>
       )}
       {tab === 'ladder' && (
         <Ladder rows={ladders[division] ?? []} competitionId={competitionId} division={division} isOrganiser={isOrganiser} />
@@ -270,6 +276,8 @@ function RunSheet({
   return (
     <div>
       {isOrganiser && <SetUpFinals competitionId={competitionId} division={division} />}
+      {/* L-24: the sanity check before the draw goes out, and "a field is out". */}
+      {isOrganiser && <DrawCheck competitionId={competitionId} division={division} />}
       {/* L-09: a wet Saturday in one tap. Every affected club's squad is
           told through the fixture → event → push chain, with the reason. */}
       {grounds && <CallOffDay competitionId={competitionId} />}
@@ -934,7 +942,10 @@ function EmbedSnippet({ url, name }: { url: string; name: string }) {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'ladder' | 'fixtures' | 'scorers'>('ladder')
   const [copied, setCopied] = useState(false)
-  const src = `${url}/embed?view=${view}`
+  // The path is written out so test-navigation can see /c/[slug]/embed is linked.
+  const [origin, slug] = url.split('/c/')
+  const path = `/c/${slug}/embed?view=${view}`
+  const src = `${origin}${path}`
   const snippet = `<iframe src="${src}" title="${name.replace(/"/g, '&quot;')}" width="100%" height="640" style="border:0;max-width:560px" loading="lazy"></iframe>`
   if (!open) {
     return (

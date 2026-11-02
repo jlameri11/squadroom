@@ -65,11 +65,13 @@ export function ChangeRequests({ competitionId }: { competitionId: string }) {
     await load()
   }
 
-  if (!rows || rows.length === 0) return null
+  const league = rows?.some((r) => r.league) ?? false
+  if (!rows || (rows.length === 0 && !league)) return <FlowingWindow competitionId={competitionId} />
   return (
     <div className="m-3.5 rounded-xl border p-3.5" style={{ borderColor: 'var(--line)' }}>
       <h3 className="text-sm font-semibold">Game changes</h3>
-      <p className="mt-0.5 text-xs text-ink-2">A club proposes, the other agrees, the league decides. Talk about it here, not in the team chat.</p>
+      <p className="mt-0.5 text-xs text-ink-2">A club proposes, the other agrees, the league decides — unless fixture flowing is open, when a home club&apos;s agreed move is done at once. Talk about it here, not in the team chat.</p>
+      <FlowingWindow competitionId={competitionId} inline />
       {error && <p className="mt-2 rounded-lg p-2 text-xs" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>{error}</p>}
       <ul className="mt-2 divide-y text-sm" style={{ borderColor: 'var(--line-2)' }}>
         {rows.map((r) => (
@@ -120,6 +122,79 @@ export function ChangeRequests({ competitionId }: { competitionId: string }) {
 }
 
 /** The club manager's button on a run-sheet row. */
+/**
+ * L-23: the fixture-flowing window. While it is open, a HOME club's proposed
+ * move of its own game, within a few days of the drawn time, applies the
+ * moment the other club agrees — no league decision. The league opens and
+ * closes it; everyone sees whether it is open.
+ */
+export function FlowingWindow({ competitionId, inline = false }: { competitionId: string; inline?: boolean }) {
+  const [state, setState] = useState<{ until: string | null; days: number; league: boolean } | null>(null)
+  const [until, setUntil] = useState('')
+  const [days, setDays] = useState('3')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const [{ data: comp }, { data: access }] = await Promise.all([
+      supabase.from('competitions').select('flowing_until, flowing_window_days').eq('id', competitionId).maybeSingle(),
+      supabase.rpc('my_competition_access', { p_competition: competitionId }),
+    ])
+    const areas = ((access as unknown as { areas?: string[] } | null)?.areas ?? []) as string[]
+    setState({ until: comp?.flowing_until ?? null, days: comp?.flowing_window_days ?? 3, league: areas.includes('grounds') })
+  }, [competitionId])
+
+  useEffect(() => {
+    ;(async () => {
+      await load()
+    })()
+  }, [load])
+
+  async function set(open: boolean) {
+    setBusy(true)
+    setError(null)
+    const { error } = await createClient().rpc('set_fixture_flowing', {
+      p_competition: competitionId,
+      p_until: open ? new Date(until).toISOString() : null,
+      p_days: Number(days) || 3,
+    } as never)
+    setBusy(false)
+    if (error) return setError(error.message)
+    await load()
+  }
+
+  if (!state) return null
+  const isOpen = Boolean(state.until && new Date(state.until) > new Date())
+  if (!isOpen && !state.league) return null
+
+  return (
+    <div className={inline ? 'mt-2 rounded-lg border p-2.5 text-xs' : 'm-3.5 rounded-xl border p-3.5 text-xs'} style={{ borderColor: isOpen ? 'var(--yes)' : 'var(--line)' }} data-flowing>
+      <span className="block font-semibold" style={{ color: isOpen ? 'var(--yes)' : undefined }}>
+        {isOpen
+          ? `Fixture flowing is open until ${new Date(state.until!).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })} — home clubs move their own games within ${state.days} ${state.days === 1 ? 'day' : 'days'} of the draw, and an agreed move is done.`
+          : 'Fixture flowing is closed — the league decides every move.'}
+      </span>
+      {state.league && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {!isOpen && (
+            <>
+              <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} className="rounded-lg border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="Open until" />
+              <input value={days} onChange={(e) => setDays(e.target.value)} inputMode="numeric" className="w-12 rounded-lg border px-2 py-1 text-center text-xs tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Days either side" />
+              <span className="text-ink-3">days either side</span>
+              <button onClick={() => set(true)} disabled={busy || !until} className="rounded-lg px-2.5 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Open flowing</button>
+            </>
+          )}
+          {isOpen && (
+            <button onClick={() => set(false)} disabled={busy} className="rounded-lg border px-2.5 py-1 font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Close it</button>
+          )}
+        </div>
+      )}
+      {error && <p className="mt-1" style={{ color: 'var(--no)' }}>{error}</p>}
+    </div>
+  )
+}
+
 export function ProposeChange({ fixtureId, startsAt, onDone }: { fixtureId: string; startsAt: string | null; onDone: () => void }) {
   const [open, setOpen] = useState(false)
   const [at, setAt] = useState(() => (startsAt ? new Date(new Date(startsAt).getTime() - new Date(startsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''))

@@ -50,16 +50,16 @@ expect. Same statuses as above.
 | # | Squadi does | Squadroom | Status | Where |
 |---|---|---|---|---|
 | S1 | PlayFootball first, then "Competition Access" (Circular 26-02) | Per-program requirement; FFA/FIFA ID captured; approval blocked until confirmed (route and trigger); export import; fee-disclosure tick per season | **DONE** (0162, 30 Oct) | R-18 |
-| S2 | Team-sheet lock at T-30/T-15, referee-only edits after | — | MISSING | L-17 |
+| S2 | Team-sheet lock at T-30/T-15, referee-only edits after | Per-division lock minutes; referee or league only after it, logged | **DONE** (0187, 2 Nov) | L-17 |
 | S3 | Scorer handoff, referee verifies, typed Confirm | Both sides enter; a mismatch is a dispute (L-05) | PARTIAL — no handoff or typed confirm | L-18 |
-| S4 | Match lifecycle Editable → Ended → correction request | Final is final; organiser rules on disputes | PARTIAL — no correction request | L-19 |
+| S4 | Match lifecycle Editable → Ended → correction request | Ended by the referee or the league; corrections requested, pushed, applied or declined with a note; reopen with a reason; all logged | **DONE** (0187, 2 Nov) | L-19 |
 | S5 | Card accumulation, auto-suspension, sheet block, sanction codes, "one card away" push | Accumulation, auto-suspension, sheet block (L-08) | PARTIAL — no warning push, no sanction codes | L-20 |
-| S6 | Attendance-driven finals eligibility; borrowing caps | Playing up by rank (L-03) | MISSING | L-21 |
+| S6 | Attendance-driven finals eligibility; borrowing caps | Games-on-a-sheet before a final; a cap on playing up; both per division, both refused on the sheet | **DONE** (0187, 2 Nov) | L-21 |
 | S7 | Forfeit request coach → club → league | Organiser forfeits (L-09) | PARTIAL — no request chain | L-22 |
-| S8 | Fixture Flowing with club-to-club chat on a fixture | — | MISSING | L-23 |
-| S9 | Draw quality summary; field-impact pop-up; one source of truth | Draw generation with clash avoidance | PARTIAL — no quality view | L-24 |
+| S8 | Fixture Flowing with club-to-club chat on a fixture | A window the league opens; a home club's agreed move is done at once inside it; 0174's notes thread | **DONE** (0189, 2 Nov) | L-23 |
+| S9 | Draw quality summary; field-impact pop-up; one source of truth | Pairs, balance, slots, club clashes, double headers, travel, empty slots; a closed field's impact; moved games pinned and kept on a rebuild | **DONE** (0189, 2 Nov) | L-24 |
 | S10 | Referees: accept/decline with reason, late-decline block, self-appointment, club-allocated refs, Connect payouts (parent for U18), payments in app | Pool, block-outs, offer/accept/decline with a note, withdraw, check-in, report (L-06); fees, runs, bank-transfer payment, CSV, in-app view of what is owed and paid (L-07) | PARTIAL — the Stripe transfer needs the key and referee accounts; late-decline block, self-appointment and club-allocated refs are L-25 | L-06, L-07, L-25 |
-| S11 | Live match-day ops dashboard | — | MISSING | L-26 |
+| S11 | Live match-day ops dashboard | The match-day list on the run sheet plus the organiser's Home counts | **DONE** (0186 + 0189, 2 Nov) | L-26 |
 | S12 | Nominations: drag into teams, propose division, lock on submit, DOB override | Entries per division | PARTIAL | L-27 |
 | S13 | Bulk score upload, bulk reschedule, move a competition | Call off a day / ground (L-09) | PARTIAL | L-28 |
 | S14 | Multi-level fee split, each level refunds its share; finance per org | Entry fees owed to the league per entry, paid by bank/cash and ticked off (L-02); the Stripe split (B-09) is key-blocked | PARTIAL | B-10 |
@@ -95,7 +95,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 | D2 | Confusing family/child profiles | Profiles are the child's; parents edit their own child's photo | DONE (X-06, R-17) |
 | D3 | Notifications that open the home screen | Every push carries the exact item's URL | DONE (every kind has a `url`) |
 | D4 | Ladders nobody can audit | Tap a ladder row to see how every point was earned | PARTIAL — adjustments listed (L-10); per-row breakdown not yet |
-| D5 | Draws published with holes | A sanity check before publishing (empty slots, travel, same-club clashes) | MISSING (L-24) |
+| D5 | Draws published with holes | A sanity check before publishing (empty slots, travel, same-club clashes) | DONE (L-24, 0189: "Check the draw" on the run sheet) |
 | D6 | "All photos" permission | Ask for selected photos only, never the whole library | DONE (the card asks for one file) |
 | D7 | Support that blames organisers | Fast human replies, a match-day hotline, staged rollouts, never blaming publicly | Operational — G-03 |
 | D8 | Stacked fees | One clear total to a family; Squadroom never charges parents | DONE by rule (CLAUDE.md) |

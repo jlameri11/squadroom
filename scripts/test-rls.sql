@@ -842,6 +842,32 @@ begin
   insert into rls_results values (94,'another tenant asking for our home jobs gets their own',
     case when n=0 then 'PASS' else 'FAIL' end);
   execute 'reset role';
+  -- 0187. A parent can neither end a game nor read the corrections table.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.end_match((select f.id from public.fixtures f order by f.created_at limit 1));
+  exception when others then b := true;
+  end;
+  select count(*) into n from public.match_corrections;
+  execute 'reset role';
+  insert into rls_results values (95,'a parent cannot end a game and sees no correction requests',
+    case when b and n=0 then 'PASS' else 'FAIL' end);
+  -- 0189. The draw check and the match-day list are the league's: a parent
+  -- gets nothing, and cannot open fixture flowing.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from (select public.match_day_ops(v_comp) as o) x where x.o is not null;
+  select n + count(*) into n from (select public.draw_quality(v_comp, 'U8s') as q) x where x.q is not null;
+  b := false;
+  begin
+    perform public.set_fixture_flowing(v_comp, now() + interval '7 days', 3);
+  exception when others then b := true;
+  end;
+  execute 'reset role';
+  insert into rls_results values (96,'the draw check, the match-day list and fixture flowing are the league''s alone',
+    case when n=0 and b then 'PASS' else 'FAIL' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

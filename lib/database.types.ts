@@ -553,8 +553,10 @@ export type Database = {
         Row: {
           age_group: string | null
           allow_playing_up: boolean
+          borrow_cap: number | null
           competition_id: string
           division: string
+          finals_min_games: number | null
           forfeit_score: number
           grading_note: string | null
           id: string
@@ -565,6 +567,7 @@ export type Database = {
           points_win: number
           rank: number | null
           scores_public: boolean
+          sheet_lock_mins: number
           squad_size_max: number | null
           tie_break: string
           updated_at: string
@@ -572,8 +575,10 @@ export type Database = {
         Insert: {
           age_group?: string | null
           allow_playing_up?: boolean
+          borrow_cap?: number | null
           competition_id: string
           division: string
+          finals_min_games?: number | null
           forfeit_score?: number
           grading_note?: string | null
           id?: string
@@ -584,6 +589,7 @@ export type Database = {
           points_win?: number
           rank?: number | null
           scores_public?: boolean
+          sheet_lock_mins?: number
           squad_size_max?: number | null
           tie_break?: string
           updated_at?: string
@@ -591,8 +597,10 @@ export type Database = {
         Update: {
           age_group?: string | null
           allow_playing_up?: boolean
+          borrow_cap?: number | null
           competition_id?: string
           division?: string
+          finals_min_games?: number | null
           forfeit_score?: number
           grading_note?: string | null
           id?: string
@@ -603,6 +611,7 @@ export type Database = {
           points_win?: number
           rank?: number | null
           scores_public?: boolean
+          sheet_lock_mins?: number
           squad_size_max?: number | null
           tie_break?: string
           updated_at?: string
@@ -921,6 +930,8 @@ export type Database = {
           created_by: string | null
           ends_on: string | null
           entries_open: boolean
+          flowing_until: string | null
+          flowing_window_days: number
           id: string
           mode: Database["public"]["Enums"]["competition_mode"]
           name: string
@@ -941,6 +952,8 @@ export type Database = {
           created_by?: string | null
           ends_on?: string | null
           entries_open?: boolean
+          flowing_until?: string | null
+          flowing_window_days?: number
           id?: string
           mode?: Database["public"]["Enums"]["competition_mode"]
           name: string
@@ -961,6 +974,8 @@ export type Database = {
           created_by?: string | null
           ends_on?: string | null
           entries_open?: boolean
+          flowing_until?: string | null
+          flowing_window_days?: number
           id?: string
           mode?: Database["public"]["Enums"]["competition_mode"]
           name?: string
@@ -2134,6 +2149,8 @@ export type Database = {
           created_at: string
           division: string
           duration_mins: number | null
+          ended_at: string | null
+          ended_by: string | null
           external_ref: string | null
           field_label: string | null
           group_label: string | null
@@ -2142,6 +2159,7 @@ export type Database = {
           home_source: string | null
           id: string
           notes: string | null
+          pinned: boolean
           round: string | null
           score_disputed: boolean
           score_entered_at: string | null
@@ -2163,6 +2181,8 @@ export type Database = {
           created_at?: string
           division: string
           duration_mins?: number | null
+          ended_at?: string | null
+          ended_by?: string | null
           external_ref?: string | null
           field_label?: string | null
           group_label?: string | null
@@ -2171,6 +2191,7 @@ export type Database = {
           home_source?: string | null
           id?: string
           notes?: string | null
+          pinned?: boolean
           round?: string | null
           score_disputed?: boolean
           score_entered_at?: string | null
@@ -2192,6 +2213,8 @@ export type Database = {
           created_at?: string
           division?: string
           duration_mins?: number | null
+          ended_at?: string | null
+          ended_by?: string | null
           external_ref?: string | null
           field_label?: string | null
           group_label?: string | null
@@ -2200,6 +2223,7 @@ export type Database = {
           home_source?: string | null
           id?: string
           notes?: string | null
+          pinned?: boolean
           round?: string | null
           score_disputed?: boolean
           score_entered_at?: string | null
@@ -2224,6 +2248,13 @@ export type Database = {
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixtures_ended_by_fkey"
+            columns: ["ended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2695,6 +2726,93 @@ export type Database = {
           {
             foreignKeyName: "league_roles_profile_id_fkey"
             columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_corrections: {
+        Row: {
+          competition_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          detail: string
+          entry_id: string | null
+          fixture_id: string
+          id: string
+          kind: string
+          proposed_away: number | null
+          proposed_home: number | null
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          detail: string
+          entry_id?: string | null
+          fixture_id: string
+          id?: string
+          kind: string
+          proposed_away?: number | null
+          proposed_home?: number | null
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          detail?: string
+          entry_id?: string | null
+          fixture_id?: string
+          id?: string
+          kind?: string
+          proposed_away?: number | null
+          proposed_home?: number | null
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_corrections_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_corrections_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_corrections_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_corrections_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_corrections_requested_by_fkey"
+            columns: ["requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -6025,8 +6143,16 @@ export type Database = {
         Args: { p_approve: boolean; p_note?: string; p_request: string }
         Returns: undefined
       }
+      decide_match_correction: {
+        Args: { p_apply: boolean; p_correction: string; p_note?: string }
+        Returns: undefined
+      }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
+      draw_quality: {
+        Args: { p_competition: string; p_division: string }
+        Returns: Json
+      }
       end_event_series: {
         Args: {
           p_delete?: boolean
@@ -6035,6 +6161,10 @@ export type Database = {
           p_series: string
         }
         Returns: Json
+      }
+      end_match: {
+        Args: { p_fixture: string; p_note?: string }
+        Returns: string
       }
       enqueue_event_reminders: { Args: never; Returns: number }
       ensure_system_channel: {
@@ -6094,6 +6224,15 @@ export type Database = {
       expire_stale_join_requests: { Args: never; Returns: number }
       expire_stale_registrations: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
+      field_impact: {
+        Args: {
+          p_competition: string
+          p_date: string
+          p_field?: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
       file_conduct_report: {
         Args: {
           p_academy: string
@@ -6244,6 +6383,28 @@ export type Database = {
         Returns: undefined
       }
       mark_scan_purged: { Args: { p_scan: string }; Returns: undefined }
+      match_corrections_view: {
+        Args: { p_competition: string }
+        Returns: {
+          away: string
+          created_at: string
+          decided_at: string
+          decision_note: string
+          detail: string
+          division: string
+          entry_name: string
+          fixture_id: string
+          home: string
+          id: string
+          kind: string
+          proposed_away: number
+          proposed_home: number
+          requested_by_name: string
+          round: string
+          status: string
+        }[]
+      }
+      match_day_ops: { Args: { p_competition: string }; Returns: Json }
       match_sheet_view: { Args: { p_fixture: string }; Returns: Json }
       member_contact: {
         Args: { p_academy: string; p_profile: string }
@@ -6674,6 +6835,10 @@ export type Database = {
           status: string
         }[]
       }
+      reopen_match: {
+        Args: { p_fixture: string; p_note: string }
+        Returns: undefined
+      }
       reping_unread: { Args: { p_message: string }; Returns: Json }
       report_message: {
         Args: {
@@ -6694,6 +6859,16 @@ export type Database = {
           p_note: string
           p_slug: string
           p_team_name: string
+        }
+        Returns: string
+      }
+      request_match_correction: {
+        Args: {
+          p_away?: number
+          p_detail: string
+          p_fixture: string
+          p_home?: number
+          p_kind: string
         }
         Returns: string
       }
@@ -6839,6 +7014,10 @@ export type Database = {
           p_ours?: number
           p_theirs?: number
         }
+        Returns: undefined
+      }
+      set_fixture_flowing: {
+        Args: { p_competition: string; p_days?: number; p_until: string }
         Returns: undefined
       }
       set_home_sections: { Args: { p_sections: Json }; Returns: Json }

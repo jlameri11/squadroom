@@ -338,11 +338,13 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    is left is the "small polish" row (link previews, maps, typing, ticks,
    swipe to reply).
 2. **Finish what is left of M9 League mode** — the Squadi-parity rows
-   L-17…L-28 (sheet lock, scorer handoff, match lifecycle, one-card-away,
-   finals eligibility, forfeit chain, Fixture Flowing, draw quality, referee
-   extras, the ops dashboard L-26 — partly on the league's Home now —,
-   nominations, bulk tools). `test-league-season` stays the acceptance test
-   and passes (44).
+   L-17…L-28. **Done 2 Nov:** L-17 sheet lock, L-19 match lifecycle and
+   corrections, L-21 finals eligibility and borrowing caps (0187); L-23
+   Fixture Flowing, L-24 draw quality and pinned games, L-26 match-day ops
+   (0189). **Left (P2):** L-18 scorer handoff, L-20 one-card-away and
+   sanction codes, L-22 forfeit chain, L-25 referee extras, L-27
+   nominations, L-28 bulk tools. `test-league-season` stays the acceptance
+   test and passes.
 3. **G-01 academy self-onboarding in under 30 minutes:** logo, colours,
    programs, roster import, invite coaches — timed.
 4. **Academy and club money polish:** term fees, trials, camps, instalments,
