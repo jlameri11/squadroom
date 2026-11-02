@@ -802,6 +802,46 @@ begin
   select count(*) into n from storage.buckets b where b.id = 'attachments' and b.public;
   insert into rls_results values (91,'the attachments bucket stays private with voice and video in it',
     case when n=0 then 'PASS' else 'FAIL' end);
+  -- 0185. A stranger can call exactly the functions on the allow-list and
+  -- nothing else. This fails the day a migration adds an anon-callable
+  -- function without adding it to app_private.anon_callable with a reason.
+  select count(*) into n
+    from pg_proc p
+    join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public'
+     and p.prokind = 'f'
+     and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+     and has_function_privilege('anon', p.oid, 'execute')
+     and p.proname not in (select proname from app_private.anon_callable);
+  insert into rls_results values (92,'no function outside the allow-list is callable by a stranger',
+    case when n=0 then 'PASS' else 'FAIL ('||n||' off-list: '||(
+      select string_agg(p.proname, ', ') from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+       where ns.nspname = 'public' and p.prokind = 'f'
+         and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+         and has_function_privilege('anon', p.oid, 'execute')
+         and p.proname not in (select proname from app_private.anon_callable))||')' end);
+  -- And every security-definer function a signed-in person can call names
+  -- its caller somewhere in its body, bar the public five.
+  select count(*) into n
+    from pg_proc p
+    join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public' and p.prokind = 'f' and p.prosecdef
+     and p.prorettype <> 'trigger'::regtype
+     and has_function_privilege('authenticated', p.oid, 'execute')
+     and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+     and p.proname not in (select proname from app_private.anon_callable)
+     and pg_get_functiondef(p.oid) !~ '(auth\.uid|app_private\.|is_platform_admin|may_run|is_competition_organiser|is_academy_|is_team_|is_channel_|is_guardian|current_setting\(.request)';
+  insert into rls_results values (93,'every security-definer function a member can call checks who is calling',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0186. Home's jobs strip is resolved to the caller's own organisation:
+  -- asking for ours from another club answers about theirs, never ours.
+  perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from (select public.home_jobs(ACAD_A) as j) x
+   where (x.j->>'academy_id')::uuid = ACAD_A;
+  insert into rls_results values (94,'another tenant asking for our home jobs gets their own',
+    case when n=0 then 'PASS' else 'FAIL' end);
+  execute 'reset role';
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
