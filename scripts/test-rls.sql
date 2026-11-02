@@ -805,18 +805,20 @@ begin
   -- 0185. A stranger can call exactly the functions on the allow-list and
   -- nothing else. This fails the day a migration adds an anon-callable
   -- function without adding it to app_private.anon_callable with a reason.
+  -- (Trigger functions are left out: PostgREST cannot call one whatever its grant.)
   select count(*) into n
     from pg_proc p
     join pg_namespace ns on ns.oid = p.pronamespace
    where ns.nspname = 'public'
      and p.prokind = 'f'
+     and p.prorettype <> 'trigger'::regtype
      and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
      and has_function_privilege('anon', p.oid, 'execute')
      and p.proname not in (select proname from app_private.anon_callable);
   insert into rls_results values (92,'no function outside the allow-list is callable by a stranger',
     case when n=0 then 'PASS' else 'FAIL ('||n||' off-list: '||(
       select string_agg(p.proname, ', ') from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
-       where ns.nspname = 'public' and p.prokind = 'f'
+       where ns.nspname = 'public' and p.prokind = 'f' and p.prorettype <> 'trigger'::regtype
          and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
          and has_function_privilege('anon', p.oid, 'execute')
          and p.proname not in (select proname from app_private.anon_callable))||')' end);
@@ -887,6 +889,31 @@ begin
   execute 'reset role';
   insert into rls_results values (97,'a parent cannot ask for a forfeit, verify a game, or read forfeit requests',
     case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
+  -- 0191. The referee rules, a nomination, a bulk score and a round's move
+  -- are all refused to a parent; the nominations list is empty for them.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  n := 0;
+  begin
+    perform public.set_referee_rules(v_comp, 12, true, null, 24);
+  exception when others then n := n + 1;
+  end;
+  begin
+    perform public.bulk_scores(v_comp, '[]'::jsonb);
+  exception when others then n := n + 1;
+  end;
+  begin
+    perform public.shift_round(v_comp, 'U8s', 'Round 1', 7);
+  exception when others then n := n + 1;
+  end;
+  begin
+    perform public.nominate_entry((select e.id from public.competition_entries e where e.competition_id = v_comp limit 1), 'Division 1', null);
+  exception when others then n := n + 1;
+  end;
+  b := public.entry_nominations(v_comp) is null;
+  execute 'reset role';
+  insert into rls_results values (98,'referee rules, nominations, bulk scores and round moves are the league''s',
+    case when n=4 and b then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

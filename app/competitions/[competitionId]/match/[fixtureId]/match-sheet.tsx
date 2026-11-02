@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+// (useEffect is also used by ClubAllocate below.)
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { RespectPanel } from '@/components/respect-marks'
@@ -168,6 +169,10 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
         )}
         {/* L-18: the scorer hands the phone over; the referee confirms on it. */}
         {view.can_hand_over && <Handover fixtureId={f.id} refereeName={view.referee_name} onDone={load} />}
+        {/* L-25: no referee, close to kick-off — the club puts up its own. */}
+        {(view.can_manage_home || view.can_manage_away) && !view.referee_name && f.status === 'scheduled' && (
+          <ClubAllocate fixtureId={f.id} onDone={load} />
+        )}
 
         {/* W-06: the code the referee scans at the ground. */}
         {inside && !closed && (
@@ -637,6 +642,63 @@ function Handover({ fixtureId, refereeName, onDone }: { fixtureId: string; refer
         <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Your mobile" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Referee's mobile" />
         <input value={word} onChange={(e) => setWord(e.target.value)} placeholder="Confirm" className="w-24 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Type Confirm" />
         <button onClick={verify} disabled={busy || !phone.trim() || !word.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Verify</button>
+        <button onClick={() => setOpen(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+      </div>
+      {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
+    </div>
+  )
+}
+
+/** L-25: inside the league's window, a club allocates its own referee to a game nobody has taken. */
+function ClubAllocate({ fixtureId, onDone }: { fixtureId: string; onDone: () => Promise<void> }) {
+  const [win, setWin] = useState<{ mine: boolean; hours: number; has_referee: boolean; open: boolean } | null>(null)
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [grade, setGrade] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().rpc('club_allocate_window', { p_fixture: fixtureId })
+      if (live) setWin((data as unknown as typeof win) ?? null)
+    })()
+    return () => {
+      live = false
+    }
+  }, [fixtureId])
+
+  async function allocate() {
+    setBusy(true)
+    setError(null)
+    const { error } = await createClient().rpc('club_allocate_referee', { p_fixture: fixtureId, p_full_name: name, p_phone: phone || undefined, p_grade: grade || undefined })
+    setBusy(false)
+    if (error) return setError(error.message)
+    setOpen(false)
+    await onDone()
+  }
+
+  if (!win || !win.mine || win.has_referee || win.hours <= 0) return null
+  if (!win.open) {
+    return <p className="mt-2 text-xs text-ink-3">No referee yet. Inside {win.hours} hours of kick-off your club may put up its own.</p>
+  }
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--maybe)', color: 'var(--maybe)' }} data-club-allocate>
+        No referee — put up your own
+      </button>
+    )
+  }
+  return (
+    <div className="mt-2 rounded-lg border p-2.5" style={{ borderColor: 'var(--maybe)' }} data-club-allocate>
+      <p className="text-xs text-ink-3">Nobody from the league&apos;s pool has this game. Your referee goes on the record and the league is told; the league does not pay them.</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Referee's name" />
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Mobile" className="w-32 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Mobile" />
+        <input value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Grade" className="w-24 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Grade" />
+        <button onClick={allocate} disabled={busy || !name.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Allocate</button>
         <button onClick={() => setOpen(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
       </div>
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}

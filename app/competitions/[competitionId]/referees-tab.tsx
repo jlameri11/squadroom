@@ -248,6 +248,8 @@ export function RefereesTab({
 
       {isOrganiser && <RefereeAuto competitionId={competitionId} onDone={load} />}
 
+      {isOrganiser && <RefereeRules competitionId={competitionId} />}
+
       <h3 className="eyebrow px-1 pb-1.5">Games</h3>
       {games.length === 0 ? (
         <p className="card p-5 text-center text-sm text-ink-3">No games in this division yet.</p>
@@ -386,6 +388,92 @@ export function RefereesTab({
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * L-25: the league's referee rules — how late a referee may pull out, whether
+ * referees of some grades may take open games themselves, and how close to
+ * kick-off a club may put up its own referee for a game nobody has.
+ */
+function RefereeRules({ competitionId }: { competitionId: string }) {
+  const [rules, setRules] = useState<{ late_decline_hours: number; self_appoint: boolean; self_appoint_grades: string[] | null; club_allocate_hours: number } | null>(null)
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const { data } = await createClient().from('competitions').select('late_decline_hours, self_appoint, self_appoint_grades, club_allocate_hours').eq('id', competitionId).maybeSingle()
+    if (data) setRules(data as typeof rules)
+  }, [competitionId])
+
+  useEffect(() => {
+    ;(async () => {
+      await load()
+    })()
+  }, [load])
+
+  async function save() {
+    if (!rules) return
+    setBusy(true)
+    setError(null)
+    const { error } = await createClient().rpc('set_referee_rules', {
+      p_competition: competitionId,
+      p_late_decline_hours: rules.late_decline_hours,
+      p_self_appoint: rules.self_appoint,
+      p_grades: rules.self_appoint_grades?.length ? rules.self_appoint_grades : undefined,
+      p_club_allocate_hours: rules.club_allocate_hours,
+    } as never)
+    setBusy(false)
+    if (error) return setError(error.message)
+    setOpen(false)
+    await load()
+  }
+
+  if (!rules) return null
+  return (
+    <section className="card mb-4 p-3.5" data-referee-rules>
+      <div className="flex items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Referee rules</span>
+          <span className="block text-xs text-ink-3">
+            {rules.late_decline_hours > 0 ? `No pulling out inside ${rules.late_decline_hours} h` : 'Pull out any time'}
+            {' · '}{rules.self_appoint ? `self-appointment on${rules.self_appoint_grades?.length ? ` (${rules.self_appoint_grades.join(', ')})` : ''}` : 'league appoints'}
+            {' · '}{rules.club_allocate_hours > 0 ? `clubs may allocate inside ${rules.club_allocate_hours} h` : 'no club allocation'}
+          </span>
+        </span>
+        <button onClick={() => setOpen((v) => !v)} className="flex-none rounded-xl px-3.5 py-2 text-sm font-semibold" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }}>
+          {open ? 'Close' : 'Edit'}
+        </button>
+      </div>
+      {open && (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <label>
+            <span className="text-ink-2">Late decline (hours before)</span>
+            <input type="number" min={0} max={168} value={rules.late_decline_hours} onChange={(e) => setRules({ ...rules, late_decline_hours: Number(e.target.value) })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
+          </label>
+          <label>
+            <span className="text-ink-2">Clubs may allocate (hours before)</span>
+            <input type="number" min={0} max={168} value={rules.club_allocate_hours} onChange={(e) => setRules({ ...rules, club_allocate_hours: Number(e.target.value) })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
+          </label>
+          <label className="col-span-2 flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={rules.self_appoint} onChange={(e) => setRules({ ...rules, self_appoint: e.target.checked })} />
+            Referees may take open games themselves
+          </label>
+          {rules.self_appoint && (
+            <label className="col-span-2">
+              <span className="text-ink-2">Only these grades (comma-separated; blank for any)</span>
+              <input value={(rules.self_appoint_grades ?? []).join(', ')} onChange={(e) => setRules({ ...rules, self_appoint_grades: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} placeholder="Level 3, Level 4" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+            </label>
+          )}
+          <div className="col-span-2 flex gap-2">
+            <button onClick={save} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>{busy ? 'Saving…' : 'Save'}</button>
+            <button onClick={() => setOpen(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+          </div>
+          {error && <p className="col-span-2" style={{ color: 'var(--no)' }}>{error}</p>}
+        </div>
+      )}
+    </section>
   )
 }
 

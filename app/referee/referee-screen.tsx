@@ -6,7 +6,9 @@ import { MarksPicker, type Marks } from '@/components/respect-marks'
 
 const SYDNEY = 'Australia/Sydney'
 
-type Pool = { id: string; league: string; grade: string | null; status: 'active' | 'inactive'; bank_details: string | null }
+type Pool = { id: string; league: string; grade: string | null; status: 'active' | 'inactive'; bank_details: string | null; payee_name?: string | null; under_18?: boolean }
+/** L-25 (0191): an unfilled game this referee may take themselves. */
+type OpenGame = { fixture_id: string; starts_at: string | null; competition: string; competition_id: string; division: string; round: string | null; venue: string | null; field: string | null; home: string | null; away: string | null; unavailable: string | null }
 type Appointment = {
   id: string
   role: 'referee' | 'assistant' | 'fourth'
@@ -38,7 +40,7 @@ type Appointment = {
   paid_at: string | null
 }
 type Blockout = { id: string; referee_id: string; starts_at: string; ends_at: string; reason: string | null }
-type Mine = { pools: Pool[]; appointments: Appointment[]; blockouts: Blockout[] }
+type Mine = { pools: Pool[]; appointments: Appointment[]; blockouts: Blockout[]; open_games?: OpenGame[] }
 
 const ROLE: Record<Appointment['role'], string> = { referee: 'Referee', assistant: 'Assistant referee', fourth: '4th official' }
 
@@ -68,6 +70,16 @@ export function RefereeScreen() {
   const blank: Marks = { players: 4, coaches: 4, spectators: 4, note: '' }
   const [marks, setMarks] = useState<{ home: Marks; away: Marks }>({ home: blank, away: blank })
   const [bank, setBank] = useState<string | null>(null)
+  const [payee, setPayee] = useState('')
+  const [under18, setUnder18] = useState(false)
+  async function takeGame(fixtureId: string) {
+    setBusy(fixtureId)
+    setError(null)
+    const { error } = await createClient().rpc('self_appoint', { p_fixture: fixtureId })
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
+  }
   const [addingBlock, setAddingBlock] = useState(false)
   const [block, setBlock] = useState({ from: '', to: '', reason: '' })
   // The clock is state, not a call during render: the check-in window
@@ -90,12 +102,17 @@ export function RefereeScreen() {
     })()
   }, [load])
 
-  async function respond(id: string, accept: boolean) {
+  // L-25: a decline carries a reason, and taking an open game is one tap.
+  const [declining, setDeclining] = useState<string | null>(null)
+  const [declineNote, setDeclineNote] = useState('')
+  async function respond(id: string, accept: boolean, note?: string) {
     setBusy(id)
     setError(null)
-    const { error } = await createClient().rpc('respond_appointment', { p_appointment: id, p_accept: accept })
+    const { error } = await createClient().rpc('respond_appointment', { p_appointment: id, p_accept: accept, p_note: note || undefined })
     setBusy(null)
     if (error) return setError(error.message)
+    setDeclining(null)
+    setDeclineNote('')
     await load()
   }
 
@@ -172,7 +189,7 @@ export function RefereeScreen() {
     setBusy('bank')
     setError(null)
     for (const p of mine.pools) {
-      const { error } = await createClient().rpc('set_my_bank_details', { p_referee: p.id, p_details: bank })
+      const { error } = await createClient().rpc('set_my_bank_details', { p_referee: p.id, p_details: bank, p_payee_name: payee || undefined, p_under_18: under18 } as never)
       if (error) {
         setBusy(null)
         return setError(error.message)
@@ -231,10 +248,39 @@ export function RefereeScreen() {
                   <button onClick={() => respond(a.id, true)} disabled={busy === a.id} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                     Yes, I&apos;ll take it
                   </button>
-                  <button onClick={() => respond(a.id, false)} disabled={busy === a.id} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
+                  <button onClick={() => setDeclining(declining === a.id ? null : a.id)} disabled={busy === a.id} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
                     Can&apos;t
                   </button>
                 </div>
+                {declining === a.id && (
+                  <div className="mt-2 flex gap-2">
+                    <input value={declineNote} onChange={(e) => setDeclineNote(e.target.value)} placeholder="Why — the league sees this" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Reason" />
+                    <button onClick={() => respond(a.id, false, declineNote)} disabled={busy === a.id || !declineNote.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>Decline</button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {(mine.open_games ?? []).length > 0 && (
+        <>
+          <h3 className="eyebrow px-1 pb-1.5">Open games — take one</h3>
+          <ul className="card mb-4 divide-y overflow-hidden" style={{ borderColor: 'var(--line-2)' }} data-open-games>
+            {(mine.open_games ?? []).map((g) => (
+              <li key={g.fixture_id} className="flex items-center gap-2 px-3.5 py-3 text-sm">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{g.home ?? 'TBC'} v {g.away ?? 'TBC'}</span>
+                  <span className="block truncate text-xs text-ink-3">
+                    {g.starts_at ? new Date(g.starts_at).toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Australia/Sydney' }) : 'TBC'}
+                    {g.venue ? ` · ${g.venue}` : ''}{g.field ? ` ${g.field}` : ''} · {g.competition} {g.division}
+                    {g.unavailable ? ` · you are ${g.unavailable}` : ''}
+                  </span>
+                </span>
+                <button onClick={() => takeGame(g.fixture_id)} disabled={busy === g.fixture_id || Boolean(g.unavailable)} className="flex-none rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                  Take it
+                </button>
               </li>
             ))}
           </ul>
@@ -303,14 +349,24 @@ export function RefereeScreen() {
         <p className="mt-0.5 text-xs text-ink-3">A game counts once you check in at the ground. The league pays runs of games, by bank transfer or Stripe.</p>
         {bank === null ? (
           <p className="mt-2 flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-xs text-ink-2">{mine.pools[0]?.bank_details ?? 'No bank details given yet.'}</span>
-            <button onClick={() => setBank(mine.pools[0]?.bank_details ?? '')} className="flex-none rounded-lg border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
+            <span className="min-w-0 flex-1 truncate text-xs text-ink-2">
+              {mine.pools[0]?.bank_details ?? 'No bank details given yet.'}
+              {mine.pools[0]?.payee_name ? ` · paid to ${mine.pools[0].payee_name}` : ''}
+            </span>
+            <button onClick={() => { setBank(mine.pools[0]?.bank_details ?? ''); setPayee(mine.pools[0]?.payee_name ?? ''); setUnder18(Boolean(mine.pools[0]?.under_18)) }} className="flex-none rounded-lg border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }}>
               {mine.pools[0]?.bank_details ? 'Change' : 'Add bank details'}
             </button>
           </p>
         ) : (
           <div className="mt-2 grid gap-2">
             <input value={bank} onChange={(e) => setBank(e.target.value)} placeholder="Name, BSB and account number" className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }} />
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={under18} onChange={(e) => setUnder18(e.target.checked)} />
+              I am under 18 — pay a parent or guardian
+            </label>
+            {under18 && (
+              <input value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Who is paid — their name" className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Payee" />
+            )}
             <p className="text-xs text-ink-3">Seen by the league&apos;s treasurer and nobody else.</p>
             <div className="flex gap-2">
               <button onClick={saveBank} disabled={busy === 'bank'} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>

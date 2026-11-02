@@ -10,6 +10,8 @@ import { ChangeRequests, ProposeChange } from './change-requests'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 import { MatchDayDashboard } from './match-day-dashboard'
 import { DrawCheck } from './draw-check'
+import { Nominations, MyNominations } from './nominations'
+import { RoundTools } from './round-tools'
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -175,6 +177,9 @@ export function CompetitionView({
           )}
           {areas.includes('staff') && <LeagueOfficials competitionId={competitionId} />}
           {isOrganiser && !commsOnly && <EntriesAndFees competitionId={competitionId} divisions={divisions} entriesOpen={entriesOpen} />}
+          {/* L-27: clubs propose a division per team; the league sets it. */}
+          {isOrganiser && !commsOnly && <Nominations competitionId={competitionId} />}
+          {!isOrganiser && !commsOnly && <MyNominations competitionId={competitionId} />}
           {!isOrganiser && <ClubFees competitionId={competitionId} />}
           {!commsOnly && <ChangeRequests competitionId={competitionId} />}
           {!commsOnly && <ReportsCard competitionId={competitionId} referees={areas.includes('referees')} />}
@@ -278,6 +283,8 @@ function RunSheet({
       {isOrganiser && <SetUpFinals competitionId={competitionId} division={division} />}
       {/* L-24: the sanity check before the draw goes out, and "a field is out". */}
       {isOrganiser && <DrawCheck competitionId={competitionId} division={division} />}
+      {/* L-28: a whole round at once — scores, a move, a call-off. */}
+      {(isOrganiser || grounds) && <RoundTools competitionId={competitionId} division={division} fixtures={fixtures} grounds={grounds} />}
       {/* L-09: a wet Saturday in one tap. Every affected club's squad is
           told through the fixture → event → push chain, with the reason. */}
       {grounds && <CallOffDay competitionId={competitionId} />}
