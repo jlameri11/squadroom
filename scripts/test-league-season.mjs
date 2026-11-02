@@ -184,12 +184,21 @@ let redCarded
   const { data: nsq } = await admin.from('entry_squads').select('player_id').eq('entry_id', nrifaEntry)
   const { data: rsq } = await admin.from('entry_squads').select('player_id').eq('entry_id', ravensEntry)
   const rows = (sq) => sq.slice(0, 9).map((x, i) => ({ player_id: x.player_id, number: i + 1, starting: true }))
+  // L-17 (0187): sheets lock thirty minutes before kick-off, so they go in
+  // first — an hour out — and kick-off is moved back afterwards for the
+  // events and the scores, which is the order of a real match day.
+  await admin.from('fixtures').update({ starts_at: new Date(Date.now() + 60 * 60_000).toISOString() }).eq('id', game.fixture_id)
   const { error: s1 } = await nrifa.rpc('submit_match_sheet', { p_fixture: game.fixture_id, p_entry: nrifaEntry, p_players: rows(nsq) })
   const { error: s2 } = await ravens.rpc('submit_match_sheet', { p_fixture: game.fixture_id, p_entry: ravensEntry, p_players: rows(rsq) })
-  s1 || s2 ? bad(`sheets: ${s1?.message ?? s2?.message}`) : ok('both managers submit a sheet of nine')
+  s1 || s2 ? bad(`sheets: ${s1?.message ?? s2?.message}`) : ok('both managers submit a sheet of nine, an hour before kick-off')
   const { error: c1 } = await ravens.rpc('confirm_match_sheet', { p_fixture: game.fixture_id, p_entry: nrifaEntry })
   const { error: c2 } = await nrifa.rpc('confirm_match_sheet', { p_fixture: game.fixture_id, p_entry: ravensEntry })
   c1 || c2 ? bad(`confirm: ${c1?.message ?? c2?.message}`) : ok("each confirms the other's")
+  await admin.from('fixtures').update({ starts_at: new Date(Date.now() - 30 * 60_000).toISOString() }).eq('id', game.fixture_id)
+  // (NRIFA's owner also runs the SPL, so for them the lock does not apply —
+  // test-sheet-rules proves the refusal with a coach who only coaches.)
+  const { data: lockedView } = await ravens.rpc('match_sheet_view', { p_fixture: game.fixture_id })
+  lockedView?.fixture?.locked === true ? ok('after kick-off the sheets are locked (L-17)') : bad(`locked: ${lockedView?.fixture?.locked}`)
   redCarded = nsq[1].player_id
   const { error: g } = await nrifa.rpc('record_match_event', { p_fixture: game.fixture_id, p_entry: nrifaEntry, p_kind: 'goal', p_player: nsq[0].player_id, p_minute: 12 })
   const { error: r } = await ravens.rpc('record_match_event', { p_fixture: game.fixture_id, p_entry: nrifaEntry, p_kind: 'red', p_player: redCarded, p_minute: 33, p_note: 'violent conduct' })

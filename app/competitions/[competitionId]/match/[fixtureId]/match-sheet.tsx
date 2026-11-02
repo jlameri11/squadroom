@@ -18,21 +18,34 @@ type Sheet = {
   confirmed_at: string | null
   players: SheetPlayer[]
 }
+type Correction = {
+  id: string; kind: string; detail: string; proposed_home: number | null; proposed_away: number | null
+  status: 'open' | 'applied' | 'declined'; requested_by: string | null; created_at: string
+  decided_at: string | null; decision_note: string | null
+}
 type View = {
   fixture: {
-    id: string; division: string; round: string | null; starts_at: string | null
+    id: string; division: string; round: string | null; starts_at: string | null; stage: string | null
     status: string; home_score: number | null; away_score: number | null; score_disputed: boolean; notes: string | null
     home_entry_id: string; away_entry_id: string; home: string; away: string
+    /** L-17 / L-19 (0187). */
+    ended_at: string | null; lock_at: string | null; locked: boolean
   }
   can_manage_home: boolean
   can_manage_away: boolean
   is_organiser: boolean
-  rules: { squad_size_max: number | null; match_length_mins: number | null } | null
+  is_referee: boolean
+  may_end: boolean
+  may_reopen: boolean
+  rules: { squad_size_max: number | null; match_length_mins: number | null; sheet_lock_mins: number | null } | null
   sheets: { home?: Sheet; away?: Sheet }
   squads: { home: SquadPlayer[]; away: SquadPlayer[] }
   events: { id: string; entry_id: string; player_id: string | null; name: string | null; kind: string; minute: number | null; note: string | null }[]
+  corrections: Correction[]
   log: { action: string; detail: Record<string, unknown>; at: string; by: string | null }[]
 }
+
+const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
 
 const KIND_LABEL: Record<string, string> = {
   goal: '⚽ Goal', assist: 'Assist', yellow: '🟨 Yellow', red: '🟥 Red', blue: '🟦 Blue',
@@ -74,11 +87,15 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
 
   const f = view.fixture
   const entryId = side === 'home' ? f.home_entry_id : f.away_entry_id
-  const canManage = side === 'home' ? view.can_manage_home : view.can_manage_away
-  const canConfirm = side === 'home' ? view.can_manage_away : view.can_manage_home
+  const ended = Boolean(f.ended_at)
+  // L-17: after the lock a manager reads; the referee and the league write.
+  const official = view.is_referee || view.is_organiser
+  const canManage = (side === 'home' ? view.can_manage_home : view.can_manage_away) && !(f.locked && !official) || (official && !ended)
+  const canConfirm = (side === 'home' ? view.can_manage_away : view.can_manage_home) || official
   const sheet = view.sheets[side]
   const squad = view.squads[side]
-  const closed = ['final', 'forfeit', 'bye', 'cancelled'].includes(f.status)
+  const closed = ['final', 'forfeit', 'bye', 'cancelled'].includes(f.status) || ended
+  const inside = view.can_manage_home || view.can_manage_away || official
 
   return (
     <div className="p-3.5">
@@ -101,9 +118,26 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
             The two teams entered different scores. The ladder does not move until the organiser rules.
           </p>
         )}
-        {view.is_organiser && f.score_disputed && <RuleOnScore fixtureId={f.id} onDone={load} />}
+        {view.is_organiser && f.score_disputed && !ended && <RuleOnScore fixtureId={f.id} onDone={load} />}
+
+        {/* L-17 / L-19: where the game is in its life. */}
+        {inside && (
+          <p className="mt-2 text-xs" style={{ color: ended ? 'var(--ink-3)' : f.locked ? 'var(--maybe)' : 'var(--ink-3)' }} data-lifecycle>
+            {ended
+              ? `Ended ${clock(f.ended_at!)} · locked. What is wrong now goes to the league as a correction.`
+              : f.locked
+                ? `Sheets locked${f.lock_at ? ` at ${clock(f.lock_at)}` : ''} — only the referee or the league can change them now.`
+                : f.lock_at
+                  ? `Sheets lock at ${clock(f.lock_at)}${view.rules?.sheet_lock_mins != null ? ` (${view.rules.sheet_lock_mins} min before kick-off)` : ''}.`
+                  : ''}
+          </p>
+        )}
+        {(view.may_end || view.may_reopen) && (
+          <Lifecycle fixtureId={f.id} mayEnd={view.may_end} mayReopen={view.may_reopen} onDone={load} />
+        )}
+
         {/* W-06: the code the referee scans at the ground. */}
-        {(view.can_manage_home || view.can_manage_away || view.is_organiser) && !closed && (
+        {inside && !closed && (
           <Link href={`/competitions/${competitionId}/match/${f.id}/qr`} className="mt-2 inline-block text-xs underline underline-offset-2 text-ink-3">
             Referee check-in code ›
           </Link>
@@ -150,13 +184,26 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
         entryId={entryId}
         sheet={sheet}
         events={view.events.filter((e) => e.entry_id === entryId)}
-        canRecord={(canManage || canConfirm || view.is_organiser) && !closed}
+        canRecord={(canManage || canConfirm || official) && !closed}
         onChanged={load}
         onError={setError}
       />
 
-      {canManage && !closed && (
+      {(side === 'home' ? view.can_manage_home : view.can_manage_away) && !closed && (
         <ScorePanel fixtureId={f.id} entryId={entryId} sheet={sheet} onChanged={load} onError={setError} />
+      )}
+
+      {/* L-19: once the game has ended (or is final), what is wrong is a
+          request to the league, with the answer and the reason on record. */}
+      {inside && (ended || ['final', 'forfeit'].includes(f.status)) && (
+        <CorrectionsPanel
+          fixtureId={f.id}
+          corrections={view.corrections ?? []}
+          canAsk={inside}
+          canDecide={view.is_organiser}
+          onChanged={load}
+          onError={setError}
+        />
       )}
 
       {/* W-01: after the game, the other side marks this team — you are
@@ -444,6 +491,166 @@ function ScorePanel({
           {result ?? 'The other team enters theirs too. If the two agree the game is final; if not, the organiser rules — never an average.'}
         </p>
       </div>
+    </section>
+  )
+}
+
+/** L-19: end the game (referee or league) or reopen it (league, with a reason). */
+function Lifecycle({ fixtureId, mayEnd, mayReopen, onDone }: { fixtureId: string; mayEnd: boolean; mayReopen: boolean; onDone: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false)
+  const [reopening, setReopening] = useState(false)
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  async function end() {
+    setBusy(true)
+    setError(null)
+    const { error } = await createClient().rpc('end_match', { p_fixture: fixtureId })
+    setBusy(false)
+    if (error) return setError(error.message)
+    await onDone()
+  }
+  async function reopen() {
+    setBusy(true)
+    setError(null)
+    const { error } = await createClient().rpc('reopen_match', { p_fixture: fixtureId, p_note: note })
+    setBusy(false)
+    if (error) return setError(error.message)
+    setReopening(false)
+    setNote('')
+    await onDone()
+  }
+
+  return (
+    <div className="mt-2">
+      {mayEnd && (
+        <button onClick={end} disabled={busy} className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-end-match>
+          {busy ? '…' : 'End the match — lock the sheets and the score'}
+        </button>
+      )}
+      {mayReopen && !reopening && (
+        <button onClick={() => setReopening(true)} className="text-xs underline underline-offset-2 text-ink-3">
+          Reopen for a change
+        </button>
+      )}
+      {mayReopen && reopening && (
+        <div className="flex gap-2">
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why — this goes on the record" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+          <button onClick={reopen} disabled={busy || !note.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--maybe)' }}>Reopen</button>
+          <button onClick={() => setReopening(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+        </div>
+      )}
+      {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
+    </div>
+  )
+}
+
+const CORRECTION_KIND: Record<string, string> = { score: 'The score', event: 'A goal or card', sheet: 'The team sheet', other: 'Something else' }
+
+/** L-19: corrections after the end — asked by a team, the referee or the league; decided by the league. */
+function CorrectionsPanel({ fixtureId, corrections, canAsk, canDecide, onChanged, onError }: {
+  fixtureId: string; corrections: Correction[]; canAsk: boolean; canDecide: boolean
+  onChanged: () => Promise<void>; onError: (m: string | null) => void
+}) {
+  const [asking, setAsking] = useState(false)
+  const [kind, setKind] = useState('score')
+  const [detail, setDetail] = useState('')
+  const [home, setHome] = useState('')
+  const [away, setAway] = useState('')
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function ask() {
+    setBusy(true)
+    onError(null)
+    const { error } = await createClient().rpc('request_match_correction', {
+      p_fixture: fixtureId, p_kind: kind, p_detail: detail,
+      p_home: kind === 'score' && home !== '' ? Number(home) : undefined,
+      p_away: kind === 'score' && away !== '' ? Number(away) : undefined,
+    })
+    setBusy(false)
+    if (error) return onError(error.message)
+    setAsking(false)
+    setDetail('')
+    setHome('')
+    setAway('')
+    await onChanged()
+  }
+  async function decide(id: string, apply: boolean) {
+    setBusy(true)
+    onError(null)
+    const { error } = await createClient().rpc('decide_match_correction', { p_correction: id, p_apply: apply, p_note: note || undefined })
+    setBusy(false)
+    if (error) return onError(error.message)
+    setNote('')
+    await onChanged()
+  }
+
+  return (
+    <section className="mt-4" data-corrections>
+      <div className="flex items-center justify-between px-1 pb-1.5">
+        <h3 className="eyebrow">Corrections</h3>
+        {canAsk && !asking && (
+          <button onClick={() => setAsking(true)} className="text-xs underline underline-offset-2" style={{ color: 'var(--brand-text)' }}>
+            Ask for a correction
+          </button>
+        )}
+      </div>
+      {asking && (
+        <div className="card mb-2 p-3">
+          <div className="flex flex-wrap gap-1.5">
+            <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="What is wrong">
+              {Object.entries(CORRECTION_KIND).map(([k, l]) => (<option key={k} value={k}>{l}</option>))}
+            </select>
+            {kind === 'score' && (
+              <>
+                <input value={home} onChange={(e) => setHome(e.target.value)} inputMode="numeric" placeholder="home" className="w-16 rounded-lg border px-2 py-1.5 text-center text-xs tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Home score" />
+                <input value={away} onChange={(e) => setAway(e.target.value)} inputMode="numeric" placeholder="away" className="w-16 rounded-lg border px-2 py-1.5 text-center text-xs tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Away score" />
+              </>
+            )}
+          </div>
+          <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} placeholder="What is wrong, and how you know" className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+          <div className="mt-2 flex gap-2">
+            <button onClick={ask} disabled={busy || !detail.trim() || (kind === 'score' && (home === '' || away === ''))} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+              {busy ? '…' : 'Send to the league'}
+            </button>
+            <button onClick={() => setAsking(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {corrections.length === 0 ? (
+        <p className="card p-4 text-center text-sm text-ink-3">Nothing asked for.</p>
+      ) : (
+        <ul className="card divide-y" style={{ borderColor: 'var(--line-2)' }}>
+          {corrections.map((c) => (
+            <li key={c.id} className="p-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">
+                  {CORRECTION_KIND[c.kind] ?? c.kind}
+                  {c.kind === 'score' && c.proposed_home != null ? ` → ${c.proposed_home}–${c.proposed_away}` : ''}
+                </span>
+                <span className="pill" style={c.status === 'open' ? { background: 'var(--maybe-bg)', color: 'var(--maybe)' } : c.status === 'applied' ? { background: 'var(--yes-bg)', color: 'var(--yes)' } : undefined}>
+                  {c.status}
+                </span>
+              </div>
+              <p className="mt-0.5 text-ink-2">{c.detail}</p>
+              <p className="mt-0.5 text-xs text-ink-3">
+                {c.requested_by ?? 'Somebody'} · {new Date(c.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                {c.decision_note ? ` · ${c.decision_note}` : ''}
+              </p>
+              {canDecide && c.status === 'open' && (
+                <div className="mt-2 flex gap-2">
+                  <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="note" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} />
+                  <button onClick={() => decide(c.id, true)} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--yes)' }}>
+                    {c.kind === 'score' ? 'Apply' : 'Reopen to fix'}
+                  </button>
+                  <button onClick={() => decide(c.id, false)} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>Decline</button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }

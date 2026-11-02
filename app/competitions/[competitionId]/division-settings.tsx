@@ -15,6 +15,11 @@ type Rules = {
   match_length_mins: number | null
   squad_size_max: number | null
   grading_note: string | null
+  /** L-17: minutes before kick-off the sheet locks. */
+  sheet_lock_mins: number
+  /** L-21: games on a sheet needed before a final; games a player may play up. */
+  finals_min_games: number | null
+  borrow_cap: number | null
 }
 
 const DEFAULTS = (division: string): Rules => ({
@@ -29,6 +34,9 @@ const DEFAULTS = (division: string): Rules => ({
   match_length_mins: null,
   squad_size_max: null,
   grading_note: null,
+  sheet_lock_mins: 30,
+  finals_min_games: null,
+  borrow_cap: null,
 })
 
 /**
@@ -56,7 +64,7 @@ export function DivisionSettings({
   const load = useCallback(async () => {
     const { data } = await createClient()
       .from('competition_divisions')
-      .select('division, age_group, scores_public, ladder_enabled, points_win, points_draw, points_loss, tie_break, match_length_mins, squad_size_max, grading_note')
+      .select('division, age_group, scores_public, ladder_enabled, points_win, points_draw, points_loss, tie_break, match_length_mins, squad_size_max, grading_note, sheet_lock_mins, finals_min_games, borrow_cap')
       .eq('competition_id', competitionId)
     const map: Record<string, Rules> = {}
     for (const r of (data ?? []) as Rules[]) map[r.division] = r
@@ -97,6 +105,9 @@ export function DivisionSettings({
             r.scores_public ? 'scores public' : 'scores hidden',
             r.ladder_enabled && r.scores_public ? 'ladder' : 'no ladder',
             r.match_length_mins ? `${r.match_length_mins} min` : null,
+            `sheets lock T-${r.sheet_lock_mins ?? 30}`,
+            r.finals_min_games ? `finals need ${r.finals_min_games} games` : null,
+            r.borrow_cap != null ? `play up ×${r.borrow_cap}` : null,
           ]
             .filter(Boolean)
             .join(' · ')
@@ -171,6 +182,22 @@ export function DivisionSettings({
                       <input type="number" min={5} max={30} value={draft.squad_size_max ?? ''} onChange={(e) => setDraft({ ...draft, squad_size_max: e.target.value ? Number(e.target.value) : null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
                     </label>
                   </div>
+                  {/* L-17 and L-21: the match-day rules Squadi leagues expect. */}
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    <label className="text-xs">
+                      <span className="text-ink-2">Sheet locks (min before)</span>
+                      <input type="number" min={0} max={180} value={draft.sheet_lock_mins ?? 30} onChange={(e) => setDraft({ ...draft, sheet_lock_mins: Number(e.target.value) })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
+                    </label>
+                    <label className="text-xs">
+                      <span className="text-ink-2">Finals need (games)</span>
+                      <input type="number" min={1} max={50} value={draft.finals_min_games ?? ''} onChange={(e) => setDraft({ ...draft, finals_min_games: e.target.value ? Number(e.target.value) : null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
+                    </label>
+                    <label className="text-xs">
+                      <span className="text-ink-2">Play up (max games)</span>
+                      <input type="number" min={0} max={50} value={draft.borrow_cap ?? ''} onChange={(e) => setDraft({ ...draft, borrow_cap: e.target.value ? Number(e.target.value) : null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
+                    </label>
+                  </div>
+                  <p className="mt-1 text-[11px] text-ink-3">After the lock only the referee or the league changes a sheet. Leave finals and play-up blank for no rule.</p>
                   <label className="mt-2 block text-xs">
                     <span className="text-ink-2">Age group / grading note</span>
                     <input value={draft.grading_note ?? ''} onChange={(e) => setDraft({ ...draft, grading_note: e.target.value || null })} placeholder="e.g. U10, graded after round 3" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
