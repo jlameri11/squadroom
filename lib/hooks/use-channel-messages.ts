@@ -72,11 +72,19 @@ export type ChatMessage = {
  * All three go through `catchUp`, which merges by id — so an overlap costs
  * nothing and a duplicate is impossible.
  */
+/** Who is typing right now: sender id → name and when they last said so. */
+type Typing = Record<string, { name: string; at: number }>
+const TYPING_TTL_MS = 4000
+
 export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
   const [messages, setMessages] = useState<ChatMessage[]>(initial)
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [hasMore, setHasMore] = useState(initial.length >= 50)
+  const [typing, setTyping] = useState<Typing>({})
   const supabase = useRef(createClient())
+  // The live channel, so the composer can say "typing" on the same topic
+  // the messages arrive on (0194 lets a member send on it).
+  const live = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
 
   /**
    * Fetch the recent messages and merge in anything we do not have.
@@ -137,6 +145,14 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
           // and merges, so a burst cannot outrun it.
           void catchUp()
         })
+        // "Sarah is typing…" — a name and an id, nothing else, sent by the
+        // composer and forgotten four seconds later.
+        .on('broadcast', { event: 'typing' }, ({ payload }) => {
+          const p = payload as { id?: string; name?: string }
+          if (!p?.id || !p.name) return
+          const now = Date.now()
+          setTyping((prev) => ({ ...prev, [p.id as string]: { name: p.name as string, at: now } }))
+        })
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
@@ -161,9 +177,24 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
             )
           }
         })
+      live.current = channel
     }
 
     void start()
+
+    // Typing nudges expire on their own: no "stopped typing" message, the
+    // way WhatsApp does it, because the one that never arrives would leave
+    // a name on screen for good.
+    const typingSweep = setInterval(() => {
+      const cutoff = Date.now() - TYPING_TTL_MS
+      setTyping((prev) => {
+        const stale = Object.keys(prev).filter((id) => prev[id].at < cutoff)
+        if (stale.length === 0) return prev
+        const next = { ...prev }
+        for (const id of stale) delete next[id]
+        return next
+      })
+    }, 1000)
 
     // A phone that sleeps kills the socket. Coming back to the app is the
     // moment a parent most expects to see what they missed.
@@ -185,10 +216,20 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
       document.removeEventListener('visibilitychange', onWake)
       window.removeEventListener('focus', onWake)
       clearInterval(timer)
+      clearInterval(typingSweep)
       cancelled = true
+      live.current = null
+      setTyping({})
       if (channel) client.removeChannel(channel)
     }
   }, [channelId, catchUp])
+
+  /** The composer calls this while somebody types; throttled there. */
+  const sayTyping = useCallback((id: string, name: string) => {
+    const channel = live.current
+    if (!channel || channel.state !== 'joined') return
+    void channel.send({ type: 'broadcast', event: 'typing', payload: { id, name } })
+  }, [])
 
   const loadOlder = useCallback(async () => {
     if (loadingOlder || messages.length === 0) return
@@ -220,5 +261,5 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
     )
   }, [])
 
-  return { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic }
+  return { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic, typing, sayTyping }
 }

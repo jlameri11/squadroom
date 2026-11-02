@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type TouchEvent } from 'react'
 import { ReportMessage } from './report-message'
 import { createClient } from '@/lib/supabase/client'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
+import { firstUrl } from '@/lib/links'
 import { MessageAttachments } from './attachments'
 import { EventCard, type CardEvent } from './event-card'
 import { ContactSheet } from './contact-sheet'
+import { LinkPreview } from './link-preview'
 import { PollCard, type CardPoll } from './poll-card'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
@@ -22,14 +24,50 @@ function withMentions(body: string, mine: boolean) {
   )
 }
 
+/** A link in a message is a link: tappable, in the same bubble. */
+function withLinks(body: string, mine: boolean) {
+  const parts = body.split(/(https?:\/\/[^\s<>"')\]]+)/i)
+  if (parts.length === 1) return withMentions(body, mine)
+  return parts.map((p, i) => {
+    if (i % 2 === 0) return <span key={i}>{withMentions(p, mine)}</span>
+    // Trailing punctuation belongs to the sentence, not the link.
+    const m = p.match(/^(.*?)([.,;:!?]*)$/) ?? [p, p, '']
+    return (
+      <span key={i}>
+        <a href={m[1]} target="_blank" rel="noopener noreferrer" className="break-all underline underline-offset-2">{m[1]}</a>
+        {m[2]}
+      </span>
+    )
+  })
+}
+
+type Receipt = { read: number; total: number }
+
+/**
+ * One tick: sent. Two: some of the others have opened the channel since.
+ * Two in blue: all of them have. The same fact the announcement "seen by"
+ * uses (channel_members.last_read_at), so it never claims more than that.
+ */
+function Ticks({ receipt }: { receipt: Receipt | null }) {
+  const state = !receipt || receipt.total === 0 || receipt.read === 0 ? 'sent' : receipt.read >= receipt.total ? 'all' : 'some'
+  const title = !receipt || receipt.total === 0 ? 'Sent' : `Seen by ${receipt.read} of ${receipt.total}`
+  return (
+    <span data-ticks={state} title={title} aria-label={title} className="ml-1" style={{ color: state === 'all' ? 'var(--tick-read)' : undefined }}>
+      {state === 'sent' ? '✓' : '✓✓'}
+    </span>
+  )
+}
+
 type Count = { emoji: string; reaction_count: number; reacted_by_me: boolean }
 
 export function MessageBubble({
-  message, mine, isHost, academyId, myId, showDay, onReply, translation = null,
+  message, mine, isHost, academyId, myId, showDay, onReply, translation = null, receipt = null,
 }: {
   message: ChatMessage
   /** W-08: the body in the reader's language, when they chose one and it exists. */
   translation?: string | null
+  /** 0194: for my own messages, how many of the others have seen it. */
+  receipt?: Receipt | null
   mine: boolean
   isHost: boolean
   academyId: string
@@ -46,6 +84,39 @@ export function MessageBubble({
   const [showContact, setShowContact] = useState(false)
   const [showOriginal, setShowOriginal] = useState(false)
   const supabase = createClient()
+
+  // Swipe right to reply, the gesture every parent already has in their
+  // thumb. Horizontal only: a vertical move is the list scrolling and the
+  // bubble must not follow the finger.
+  const [swipeX, setSwipeX] = useState(0)
+  const touch = useRef<{ x: number; y: number; dx: number; locked: boolean } | null>(null)
+  function onTouchStart(e: TouchEvent) {
+    const t = e.touches[0]
+    touch.current = { x: t.clientX, y: t.clientY, dx: 0, locked: false }
+  }
+  function onTouchMove(e: TouchEvent) {
+    const s = touch.current
+    if (!s) return
+    const t = e.touches[0]
+    const dx = t.clientX - s.x
+    const dy = t.clientY - s.y
+    if (!s.locked) {
+      if (Math.abs(dy) > 8) {
+        touch.current = null
+        return
+      }
+      if (dx < 8) return
+      s.locked = true
+    }
+    s.dx = dx
+    setSwipeX(Math.max(0, Math.min(dx, 72)))
+  }
+  function onTouchEnd() {
+    const s = touch.current
+    touch.current = null
+    setSwipeX(0)
+    if (s && s.dx > 56 && !message.deleted_at) onReply()
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -95,6 +166,8 @@ export function MessageBubble({
   }
 
   const day = new Date(message.created_at)
+  // The first link in the message, previewed by the server (0194).
+  const previewUrl = message.deleted_at ? null : firstUrl(message.body)
   const time = day.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
 
   async function saveEdit() {
@@ -129,7 +202,24 @@ export function MessageBubble({
         </div>
       )}
 
-      <div className={`mb-2.5 flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`relative mb-2.5 flex flex-col ${mine ? 'items-end' : 'items-start'}`}
+        style={{
+          transform: swipeX ? `translateX(${swipeX}px)` : undefined,
+          transition: swipeX ? 'none' : 'transform 160ms ease-out',
+          touchAction: 'pan-y',
+        }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+        data-swipe-reply
+      >
+        {swipeX > 20 && (
+          <span aria-hidden className="absolute -left-7 top-1/2 -translate-y-1/2 text-base text-ink-3" style={{ opacity: Math.min(1, swipeX / 56) }}>
+            ↩
+          </span>
+        )}
         {!mine && (
           <button
             onClick={() => message.sender_id && setShowContact(true)}
@@ -244,7 +334,7 @@ export function MessageBubble({
               </span>
             ) : (
               <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">
-                {withMentions((translation && !showOriginal ? translation : message.body) ?? '', mine && !message.is_announcement)}
+                {withLinks((translation && !showOriginal ? translation : message.body) ?? '', mine && !message.is_announcement)}
                 {translation && translation !== message.body && (
                   <button onClick={() => setShowOriginal((v) => !v)} className="ml-1.5 text-[11px] underline underline-offset-2 opacity-70">
                     {showOriginal ? 'translation' : 'original'}
@@ -254,8 +344,13 @@ export function MessageBubble({
             ))
           )}
 
+          {previewUrl && editing === null && (
+            <LinkPreview url={previewUrl} mine={mine && !message.is_announcement} />
+          )}
+
           <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-[var(--bubble-out-ink-2)]' : 'text-ink-3'}`}>
             {time}{message.edited_at && ' · edited'}
+            {mine && !message.is_announcement && !message.deleted_at && <Ticks receipt={receipt} />}
           </span>
         </div>
 

@@ -2891,6 +2891,36 @@ export type Database = {
           },
         ]
       }
+      link_previews: {
+        Row: {
+          description: string | null
+          fetched_at: string
+          image_url: string | null
+          ok: boolean
+          site_name: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          description?: string | null
+          fetched_at?: string
+          image_url?: string | null
+          ok?: boolean
+          site_name?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          description?: string | null
+          fetched_at?: string
+          image_url?: string | null
+          ok?: boolean
+          site_name?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       match_corrections: {
         Row: {
           competition_id: string
@@ -7139,6 +7169,14 @@ export type Database = {
           message_id: string
           reacted_by_me: boolean
           reaction_count: number
+        }[]
+      }
+      read_receipts: {
+        Args: { p_channel: string; p_message_ids: string[] }
+        Returns: {
+          member_count: number
+          message_id: string
+          read_count: number
         }[]
       }
       recent_wake_calls: {

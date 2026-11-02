@@ -26,17 +26,58 @@ export function ChannelView({
   myId: string
   initialMessages: ChatMessage[]
 }) {
-  const { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic } =
+  const { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic, typing, sayTyping } =
     useChannelMessages(channelId, initialMessages)
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null)
   // W-08: the language this person reads in (Settings); null is as written.
   const [lang, setLang] = useState<string | null>(null)
+  // The name the "typing…" line shows other people.
+  const [myName, setMyName] = useState<string | null>(null)
   useEffect(() => {
     ;(async () => {
-      const { data } = await createClient().from('profiles').select('chat_language').eq('id', myId).maybeSingle()
+      const { data } = await createClient().from('profiles').select('chat_language, full_name').eq('id', myId).maybeSingle()
       setLang(data?.chat_language ?? null)
+      setMyName(data?.full_name ?? null)
     })()
   }, [myId])
+
+  // Ticks on my own messages: how many of the others have opened the
+  // channel since each was sent (0194 read_receipts). The last thirty are
+  // enough — nobody checks the ticks on last month's message.
+  const [receipts, setReceipts] = useState<Record<string, { read: number; total: number }>>({})
+  const myIdsKey = useMemo(
+    () => messages.filter((m) => m.sender_id === myId && !m.deleted_at && /^[0-9a-f-]{36}$/.test(m.id)).slice(-30).map((m) => m.id).join(','),
+    [messages, myId]
+  )
+  useEffect(() => {
+    if (!myIdsKey) return
+    let live = true
+    const load = async () => {
+      const { data } = await supabase.current.rpc('read_receipts', { p_channel: channelId, p_message_ids: myIdsKey.split(',') })
+      if (!live || !data) return
+      setReceipts((prev) => {
+        const next = { ...prev }
+        for (const r of data) next[r.message_id] = { read: r.read_count, total: r.member_count }
+        return next
+      })
+    }
+    void load()
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') void load()
+    }, 15_000)
+    return () => {
+      live = false
+      clearInterval(timer)
+    }
+  }, [channelId, myIdsKey])
+
+  // "Sarah is typing…" — everyone but me, newest first is not needed.
+  const typingNames = Object.entries(typing).filter(([id]) => id !== myId).map(([, v]) => v.name.split(' ')[0])
+  const typingLine =
+    typingNames.length === 0 ? null
+      : typingNames.length === 1 ? `${typingNames[0]} is typing…`
+      : typingNames.length === 2 ? `${typingNames[0]} and ${typingNames[1]} are typing…`
+      : `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
   const translations = useTranslations(messages, lang)
   const [showSettings, setShowSettings] = useState(false)
   // C-04: bumps when a message is queued for later, so the strip reloads.
@@ -163,6 +204,7 @@ export function ChannelView({
               myId={myId}
               showDay={showDaySeparator(topLevel, i)}
               onReply={() => setReplyTo(m)}
+              receipt={m.sender_id === myId ? receipts[m.id] ?? null : null}
             />
             {threads.has(m.id) && (
               <div className="mb-2 ml-4">
@@ -184,6 +226,7 @@ export function ChannelView({
                     myId={myId}
                     showDay={false}
                     onReply={() => setReplyTo(m)}
+                    receipt={r.sender_id === myId ? receipts[r.id] ?? null : null}
                   />
                 ))}
               </div>
@@ -193,9 +236,15 @@ export function ChannelView({
         <div ref={bottom} />
       </div>
 
+      {typingLine && (
+        <p data-typing className="px-4 py-1 text-xs italic text-ink-2" style={{ background: 'var(--paper)' }} aria-live="polite">
+          {typingLine}
+        </p>
+      )}
       <ScheduledStrip channelId={channelId} refreshKey={scheduledKey} />
       <Composer
         onScheduled={() => setScheduledKey((k) => k + 1)}
+        onTyping={() => { if (myName) sayTyping(myId, myName) }}
         channelId={channelId}
         academyId={academyId}
         teamId={teamId}

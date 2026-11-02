@@ -11,8 +11,10 @@ const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
 export function Composer({
   channelId, academyId, teamId, myId, canPost, isHost, archived, postingMode,
-  replyTo, onCancelReply, lastMessageId, addOptimistic, replaceOptimistic, onScheduled,
+  replyTo, onCancelReply, lastMessageId, addOptimistic, replaceOptimistic, onScheduled, onTyping,
 }: {
+  /** 0194: called while this person types, so the others see "typing…". */
+  onTyping?: () => void
   channelId: string
   academyId: string
   teamId: string | null
@@ -30,6 +32,15 @@ export function Composer({
   replaceOptimistic: (tempId: string, real: ChatMessage | null) => void
 }) {
   const [text, setText] = useState('')
+  // "typing…" for the others, at most once every 2.5 seconds; the hook
+  // forgets a nudge after four, so a pause reads as a pause.
+  const typedAt = useRef(0)
+  function nudgeTyping() {
+    const now = Date.now()
+    if (now - typedAt.current < 2500) return
+    typedAt.current = now
+    onTyping?.()
+  }
   // C-03: who can be named here, fetched once; the ids of those named so far.
   const [people, setPeople] = useState<{ id: string; name: string; label: string | null }[] | null>(null)
   const [mentioned, setMentioned] = useState<{ id: string; name: string }[]>([])
@@ -570,7 +581,7 @@ export function Composer({
         )}
         <textarea
           value={text}
-          onChange={(e) => { setText(e.target.value); if (e.target.value.includes('@')) void loadPeople() }}
+          onChange={(e) => { setText(e.target.value); if (e.target.value.includes('@')) void loadPeople(); if (e.target.value) nudgeTyping() }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()

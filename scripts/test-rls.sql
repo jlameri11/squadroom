@@ -950,6 +950,25 @@ begin
   delete from public.vouchers where code in ('RLSPROBE', 'PARENTPROBE');
   insert into rls_results values (100,'vouchers are the club''s staff''s: a parent sees and makes none, another tenant sees none of ours',
     case when n=0 and b then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0194. A channel's members may say they are typing on their own topic and
+  -- nobody else's; link previews are read by anyone signed in and written
+  -- by nobody but the server; a parent reads receipts for their own
+  -- messages only.
+  b := exists (select 1 from pg_policies where schemaname = 'realtime' and tablename = 'messages'
+                 and policyname = 'channel_members_may_say_they_are_typing' and cmd = 'INSERT');
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b2 := false;
+  begin
+    insert into public.link_previews (url, ok, title) values ('https://example.invalid/rls', true, 'rls probe');
+  exception when others then b2 := true;
+  end;
+  select count(*) into n from public.read_receipts(
+    (select m.channel_id from public.messages m where m.sender_id = COACH and m.status = 'published' order by m.created_at desc limit 1),
+    array[(select m.id from public.messages m where m.sender_id = COACH and m.status = 'published' order by m.created_at desc limit 1)]);
+  execute 'reset role';
+  insert into rls_results values (101,'typing is a member''s own topic; previews are read-only; receipts are the sender''s or a host''s',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

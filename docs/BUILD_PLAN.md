@@ -125,7 +125,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | C-04 | Scheduled messages | "Send Thursday 7pm". Shown as scheduled to the sender, with edit/cancel |
 | C-06 | Threads on announcements | Replies collapse under the announcement ("8 replies") and don't notify the whole channel |
 | C-07 | Digest | Non-urgent pushes batched (e.g. "5 new messages in U9 Navy"). Urgent ones (cancellations, mentions, announcements) are never batched |
-| — | Small polish | Link previews; tap an address to open maps; "typing…"; message delivery ticks; swipe to reply |
+| C-11 | Small polish | Link previews; tap an address to open maps; "typing…"; message delivery ticks; swipe to reply — **done 2 Nov (0194)**; maps were already on the event page and card |
 
 ### M4: The Dribl side — fixtures, availability, squad (2 sessions)
 | ID | Task | Detail |
@@ -334,9 +334,10 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
 "Product direction") came first, as asked.
 
 1. **Finish what is left of M10 and the M3 item in progress.** M10: W-01…W-08
-   are done; W-09 is "later" by design. M3: C-05 and C-06 landed 1–2 Nov; what
-   is left is the "small polish" row (link previews, maps, typing, ticks,
-   swipe to reply).
+   are done; W-09 is "later" by design. M3: C-05 and C-06 landed 1–2 Nov; the
+   "small polish" row (link previews, typing, ticks, swipe to reply; maps
+   were already on the event page and card) landed late on 2 Nov as C-11
+   (0194). **M3 is complete.**
 2. **Finish what is left of M9 League mode** — the Squadi-parity rows
    L-17…L-28. **Done 2 Nov:** L-17 sheet lock, L-19 match lifecycle and
    corrections, L-21 finals eligibility and borrowing caps (0187); L-23
@@ -365,8 +366,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    generated here yet — `native/README.md` now carries the review notes and
    deep-link steps, and NEEDS JOEY #5 asks for the free tools first (a
    simulator build needs no paid account).
-6. **The rest of M3** (WhatsApp feel), then **development features** (player
-   reports, clips on profiles — G-05, W-09's first items).
+6. **The rest of M3** (WhatsApp feel) — **done 2 Nov** (C-11, 0194) — then
+   **development features** (player reports, clips on profiles — G-05,
+   W-09's first items).
 7. **A public "for academies, clubs and leagues" page with a free-trial
    sign-up** (no billing — pricing is Joey's, CLAUDE.md). **Done 2 Nov:**
    `/for-clubs` (G-08), "Start free" into the setup checklist.
