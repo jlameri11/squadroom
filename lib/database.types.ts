@@ -573,6 +573,7 @@ export type Database = {
           id: string
           ladder_enabled: boolean
           match_length_mins: number | null
+          pitch_size: string | null
           points_draw: number
           points_loss: number
           points_win: number
@@ -597,6 +598,7 @@ export type Database = {
           id?: string
           ladder_enabled?: boolean
           match_length_mins?: number | null
+          pitch_size?: string | null
           points_draw?: number
           points_loss?: number
           points_win?: number
@@ -621,6 +623,7 @@ export type Database = {
           id?: string
           ladder_enabled?: boolean
           match_length_mins?: number | null
+          pitch_size?: string | null
           points_draw?: number
           points_loss?: number
           points_win?: number
@@ -2212,6 +2215,7 @@ export type Database = {
           id: string
           notes: string | null
           pinned: boolean
+          pitch_id: string | null
           referee_verified_at: string | null
           referee_verified_by: string | null
           round: string | null
@@ -2246,6 +2250,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pinned?: boolean
+          pitch_id?: string | null
           referee_verified_at?: string | null
           referee_verified_by?: string | null
           round?: string | null
@@ -2280,6 +2285,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pinned?: boolean
+          pitch_id?: string | null
           referee_verified_at?: string | null
           referee_verified_by?: string | null
           round?: string | null
@@ -2320,6 +2326,13 @@ export type Database = {
             columns: ["home_entry_id"]
             isOneToOne: false
             referencedRelation: "competition_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixtures_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitches"
             referencedColumns: ["id"]
           },
           {
@@ -3882,6 +3895,141 @@ export type Database = {
             columns: ["request_id", "academy_id"]
             isOneToOne: false
             referencedRelation: "payment_requests"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      pitch_availability: {
+        Row: {
+          academy_id: string
+          closes: string
+          id: string
+          opens: string
+          pitch_id: string
+          weekday: number
+        }
+        Insert: {
+          academy_id: string
+          closes: string
+          id?: string
+          opens: string
+          pitch_id: string
+          weekday: number
+        }
+        Update: {
+          academy_id?: string
+          closes?: string
+          id?: string
+          opens?: string
+          pitch_id?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_availability_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitch_availability_pitch_id_academy_id_fkey"
+            columns: ["pitch_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "pitches"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      pitch_size_rules: {
+        Row: {
+          academy_id: string
+          age_group: string
+          size: string
+        }
+        Insert: {
+          academy_id: string
+          age_group: string
+          size: string
+        }
+        Update: {
+          academy_id?: string
+          age_group?: string
+          size?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_size_rules_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pitches: {
+        Row: {
+          academy_id: string
+          created_at: string
+          h: number
+          id: string
+          name: string
+          parent_id: string | null
+          size: string
+          sort: number
+          venue_id: string
+          w: number
+          x: number
+          y: number
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          h?: number
+          id?: string
+          name: string
+          parent_id?: string | null
+          size?: string
+          sort?: number
+          venue_id: string
+          w?: number
+          x?: number
+          y?: number
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          h?: number
+          id?: string
+          name?: string
+          parent_id?: string | null
+          size?: string
+          sort?: number
+          venue_id?: string
+          w?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitches_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitches_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "pitches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitches_venue_id_academy_id_fkey"
+            columns: ["venue_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
             referencedColumns: ["id", "academy_id"]
           },
         ]
@@ -6037,26 +6185,38 @@ export type Database = {
         Row: {
           academy_id: string
           address: string | null
+          amenities: Json
           created_at: string
           id: string
+          lat: number | null
+          lng: number | null
           name: string
           notes: string | null
+          updated_at: string
         }
         Insert: {
           academy_id: string
           address?: string | null
+          amenities?: Json
           created_at?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           name: string
           notes?: string | null
+          updated_at?: string
         }
         Update: {
           academy_id?: string
           address?: string | null
+          amenities?: Json
           created_at?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           name?: string
           notes?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -6244,6 +6404,7 @@ export type Database = {
         Args: { p_body: string; p_request: string }
         Returns: string
       }
+      add_pitch: { Args: { p_name?: string; p_venue: string }; Returns: string }
       add_player_clip: {
         Args: {
           p_event?: string
@@ -6373,6 +6534,7 @@ export type Database = {
           p_competition: string
           p_date: string
           p_note?: string
+          p_pitch?: string
           p_reason: string
           p_venue?: string
         }
@@ -6805,6 +6967,7 @@ export type Database = {
         Returns: Json
       }
       fixture_checkin_key: { Args: { p_fixture: string }; Returns: string }
+      fixture_pitch: { Args: { p_fixture: string }; Returns: Json }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json
@@ -6862,6 +7025,19 @@ export type Database = {
           p_venue_label?: string
         }
         Returns: number
+      }
+      generate_fixtures_on_pitches: {
+        Args: {
+          p_competition: string
+          p_division: string
+          p_first_date: string
+          p_game_mins?: number
+          p_gap_mins?: number
+          p_replace?: boolean
+          p_round_every_days?: number
+          p_venue: string
+        }
+        Returns: Json
       }
       get_reaction_voters: {
         Args: { p_emoji: string; p_message: string }
@@ -7000,6 +7176,10 @@ export type Database = {
           has_match: boolean
           on_date: string
         }[]
+      }
+      move_pitch: {
+        Args: { p_pitch: string; p_x: number; p_y: number }
+        Returns: undefined
       }
       move_players: {
         Args: { p_academy: string; p_moves: Json }
@@ -7209,6 +7389,7 @@ export type Database = {
         }[]
       }
       photo_consent_check: { Args: { p_channel: string }; Returns: Json }
+      pitch_size_rules_for: { Args: { p_academy: string }; Returns: Json }
       platform_overview: {
         Args: never
         Returns: {
@@ -7675,6 +7856,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_pitch_hours: {
+        Args: { p_hours: Json; p_pitch: string }
+        Returns: number
+      }
+      set_pitch_size_rules: {
+        Args: { p_academy: string; p_rules: Json }
+        Returns: number
+      }
       set_player_photo: {
         Args: { p_path: string; p_player: string }
         Returns: undefined
@@ -7732,6 +7921,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      split_pitch: {
+        Args: { p_into: number; p_pitch: string }
+        Returns: number
+      }
       submit_concussion_clearance: {
         Args: { p_concussion: string; p_note?: string; p_path: string }
         Returns: undefined
@@ -7776,6 +7969,7 @@ export type Database = {
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
+      venue_layout: { Args: { p_venue: string }; Returns: Json }
       void_referee_run: { Args: { p_run: string }; Returns: undefined }
       whats_on: {
         Args: { p_academy: string; p_date: string }

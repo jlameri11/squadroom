@@ -89,6 +89,12 @@
      no computed background to measure. Some things still need an eye. */
   --bubble-out-ink-2: #56636F;
   --tick-read: #1E7FD6;
+  /* L-29: the ground, drawn. Grass, a pitch, a sub-pitch, the lines. */
+  --pitch-ground: #DCEBDD;
+  --pitch: #9CCB9F;
+  --pitch-sub: #B9DCBB;
+  --pitch-line: #4F7F55;
+  --pitch-ink: #1E3A22;
 
   --shadow: 0 1px 2px #0e17260f, 0 8px 24px #0e172614;
   --radius: 14px;
@@ -146,6 +152,11 @@
     --bubble-out: #23405C;
     --bubble-out-ink-2: #A8BAD0;
     --tick-read: #5CB8FF;
+    --pitch-ground: #14241A;
+    --pitch: #2E5A38;
+    --pitch-sub: #244A2E;
+    --pitch-line: #7FB987;
+    --pitch-ink: #DFF3E2;
 
     --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
     color-scheme: dark;

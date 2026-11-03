@@ -1003,6 +1003,34 @@ begin
   delete from public.player_clips where id = '00000000-0000-0000-0000-00000000ee03';
   insert into rls_results values (103,'a coach''s note never reaches the family, a shared report does, a parent writes none, a stranger sees none',
     case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
+  -- 0198. A ground's layout: the club's members read it, its staff draw it,
+  -- another club sees none of it through the tables and a parent cannot
+  -- draw on it.
+  insert into public.venues (id, academy_id, name) values ('00000000-0000-0000-0000-00000000ee10', '00000000-0000-0000-0000-0000000a0001', 'rls probe ground')
+    on conflict (id) do nothing;
+  insert into public.pitches (id, academy_id, venue_id, name) values ('00000000-0000-0000-0000-00000000ee11', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee10', 'rls probe pitch');
+  insert into public.pitch_availability (academy_id, pitch_id, weekday, opens, closes) values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee11', 6, '08:00', '12:00');
+  insert into public.pitch_size_rules (academy_id, age_group, size) values ('00000000-0000-0000-0000-0000000a0001', 'U99', 'third') on conflict do nothing;
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.pitches where id = '00000000-0000-0000-0000-00000000ee11';
+  b := (n = 1);
+  select count(*) into n from public.pitch_availability where pitch_id = '00000000-0000-0000-0000-00000000ee11';
+  b := b and n = 1;
+  b2 := false;
+  begin
+    insert into public.pitches (academy_id, venue_id, name) values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee10', 'rls parent pitch');
+  exception when others then b2 := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-0000000000c1','role','authenticated')::text, true);
+  select count(*) into n from public.pitches where venue_id = '00000000-0000-0000-0000-00000000ee10';
+  select n + count(*) into n from public.pitch_size_rules where academy_id = '00000000-0000-0000-0000-0000000a0001' and age_group = 'U99';
+  execute 'reset role';
+  delete from public.pitch_size_rules where academy_id = '00000000-0000-0000-0000-0000000a0001' and age_group = 'U99';
+  delete from public.pitches where id = '00000000-0000-0000-0000-00000000ee11';
+  delete from public.venues where id = '00000000-0000-0000-0000-00000000ee10';
+  insert into rls_results values (104,'a ground''s layout: members read it, staff draw it, a parent cannot, another club sees none',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

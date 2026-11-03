@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Chase } from './chase'
+import { PitchMap } from './pitch-map'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -148,6 +149,9 @@ export function EventDetail({
         {event.opponent && (<><dt className="text-ink-2">Against</dt><dd>{event.opponent}</dd></>)}
         {event.kit_colour && (<><dt className="text-ink-2">Kit</dt><dd>{event.kit_colour}</dd></>)}
       </dl>
+
+      {/* L-29: the ground drawn, their pitch marked, directions. */}
+      {event.fixture_id && <PitchMap fixtureId={event.fixture_id} />}
 
       {event.notes && <p className="mt-3 rounded-xl bg-[var(--surface-2)] p-3 text-sm">{event.notes}</p>}
 

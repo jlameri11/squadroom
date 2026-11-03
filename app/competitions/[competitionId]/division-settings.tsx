@@ -17,6 +17,8 @@ type Rules = {
   grading_note: string | null
   /** L-17: minutes before kick-off the sheet locks. */
   sheet_lock_mins: number
+  /** L-29: the pitch size this division plays on; null = the organiser's rule for its age group. */
+  pitch_size?: string | null
   /** L-21: games on a sheet needed before a final; games a player may play up. */
   finals_min_games: number | null
   borrow_cap: number | null
@@ -69,7 +71,7 @@ export function DivisionSettings({
   const load = useCallback(async () => {
     const { data } = await createClient()
       .from('competition_divisions')
-      .select('division, age_group, scores_public, ladder_enabled, points_win, points_draw, points_loss, tie_break, match_length_mins, squad_size_max, grading_note, sheet_lock_mins, finals_min_games, borrow_cap, born_after, born_before')
+      .select('division, age_group, scores_public, ladder_enabled, points_win, points_draw, points_loss, tie_break, match_length_mins, squad_size_max, grading_note, sheet_lock_mins, finals_min_games, borrow_cap, born_after, born_before, pitch_size')
       .eq('competition_id', competitionId)
     const map: Record<string, Rules> = {}
     for (const r of (data ?? []) as Rules[]) map[r.division] = r
@@ -215,6 +217,16 @@ export function DivisionSettings({
                     </label>
                   </div>
                   <p className="mt-1 text-[11px] text-ink-3">A player outside the band is refused on the sheet by name; the league can exempt one from Nominations.</p>
+                  <label className="mt-2 block text-xs">
+                    <span className="text-ink-2">Pitch size</span>
+                    <select value={draft.pitch_size ?? ''} onChange={(e) => setDraft({ ...draft, pitch_size: e.target.value || null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} data-pitch-size>
+                      <option value="">By age group (the league&apos;s rules in Venues)</option>
+                      <option value="full">Full pitch</option>
+                      <option value="half">Half</option>
+                      <option value="third">Third</option>
+                      <option value="quarter">Quarter</option>
+                    </select>
+                  </label>
                   <label className="mt-2 block text-xs">
                     <span className="text-ink-2">Age group / grading note</span>
                     <input value={draft.grading_note ?? ''} onChange={(e) => setDraft({ ...draft, grading_note: e.target.value || null })} placeholder="e.g. U10, graded after round 3" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />

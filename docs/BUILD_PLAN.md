@@ -166,6 +166,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | B-11 | De-registration approval chain (§6B.15) | Extends R-15: club → league approval where a league runs the competition; automatic refunds per level; voucher carve-outs |
 | B-12 | Named voucher types (§6B.16) | Extends B-07: coach, volunteer, scholarship, sibling, government — each with limits and expiry |
 | B-13 | Direct debit and Afterpay (§6B.17) | Stripe BECS and Afterpay at checkout; **instalments can be paid early** (Squadi cannot). Stripe |
+| L-29 | Venue & pitch layout designer (Joey, 3 Nov; asked for as "L-27", which is Nominations) | Each venue: address, map pin, amenities; a visual layout of full pitches split into halves/thirds/quarters, dragged into place, named; sizes mapped to age groups/divisions; a clash rule (a full pitch and its sub-pitches never booked at once); availability windows per pitch per day; many venues per league or academy; the draw builder, washouts and referee assignment use them; families see their pitch on each game with directions. See "6b" in the order below for the plan |
 | R-20 | Notice of Offer (§6B.18) | Extends R-12 and R-13: a dated offer to every returning player at rollover, accepted into next season's program with the fee. (Was R-19 until 3 Nov; Joey filed the graded new season as R-19) |
 | R-12 | Season rollover | Clone teams → move everyone up an age group → keep numbers where possible → re-registration invites prefilled → report on who hasn't re-registered |
 | R-19 | New season, graded (Joey, 3 Nov) | Extends R-12: re-grade in the preview (move players between the new squads, split, merge, leave out); new intake squad with its registration open; players ageing out of the oldest group listed separately (up / keep / leave); a bulk "move players" tool outside rollover. Chats, numbers and calendars follow. Preview first, nothing changes until confirmed. **Done 3 Nov (0197)** |
@@ -375,6 +376,54 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    - **6a. R-19 New season, graded** (Joey, 3 Nov, slotted here): re-grading
      in the rollover preview, new intake, ageing out, bulk move players.
      **Done 3 Nov (0197)** — see the R-19 row above and SQUADROOM_SPEC.
+   - **6b. L-29 Venue & pitch layout designer** (Joey, 3 Nov, asked for as
+     "L-27" — that ID is already Nominations, built 2 Nov, so this is
+     **L-29**). The plan, before the build:
+     1. **Data (0198), reusing `venues`:** `venues` + map pin (lat/lng) and
+        amenities (parking, toilets, canteen); new `pitches` (venue, optional
+        parent, name, size full/half/third/quarter, x/y/w/h on a 100×100
+        canvas); `pitch_availability` (pitch, weekday, opens, closes — many
+        per day); `pitch_size_rules` (club → age group → size, seeded with
+        MiniRoos-style defaults, editable); `competition_divisions.pitch_size`
+        override; `fixtures.pitch_id` (the text `field_label` stays and is
+        filled from the pitch name, so every existing screen and the public
+        match centre keep working).
+     2. **Clash rule, in the database:** a trigger on `fixtures` refuses a
+        booking on a pitch while its parent, itself or any of its sub-pitches
+        has a game overlapping in time (cancelled games ignored); siblings do
+        not clash. Availability: when a pitch (or its parent) has windows for
+        that weekday, a game outside them is refused.
+     3. **Draw builder, washouts, referees use them:**
+        `generate_fixtures_on_pitches(competition, division, venue, first
+        date, …)` resolves the division's size (override → rule by age group →
+        rule by the age token in the division name → full), takes that size's
+        pitches at the venue, builds the draw with the existing generator
+        (pairs, rounds, no team playing twice in a slot) on those pitch names,
+        then fits each pitch's games into its windows per date and skips a
+        slot the clash rule would refuse; reports what did not fit. Call-off
+        gains `p_pitch` (a waterlogged Field 2 while Field 1 plays; the family
+        is covered). Referee appointments carry venue + pitch as now (0161).
+     4. **Families:** on a game's page, a small SVG of the venue layout with
+        their pitch highlighted, the pitch name, and directions (the existing
+        maps link). Read through `fixture_pitch(p_fixture)` — anyone who can
+        see the game, across clubs; never edit.
+     5. **UI, 375px both themes:** Admin → Venues (list; venue editor: name,
+        address, pin, amenities; layout editor: add a full pitch, split into
+        halves/thirds/quarters, drag to position (pointer events — a touch
+        gesture, not a hover), nudge arrows, rename, remove; availability per
+        pitch per day; the club's size rules). Draw builder: a "Venue"
+        choice that uses pitches. Division settings: pitch size. Call-off:
+        a pitch choice.
+     6. **Tests:** `test-pitches` (layout, clash matrix, windows, size
+        resolution, a draw on pitches with no clash and the overflow report,
+        washout by pitch, cross-club isolation, family read-only), test-rls
+        rows for the three new tables; test-draw-and-ops and test-league-
+        season still green.
+     **Status: done 3 Nov (0198)** — test-pitches 48, test-rls 104; venues,
+     the layout editor, the game page's map and the call-off shot at 375px
+     in both themes. One reading, logged: calling off a sub-pitch also
+     takes its parent (the full pitch cannot be used while a third is
+     waterlogged); calling off the full pitch takes every sub-pitch.
 7. **A public "for academies, clubs and leagues" page with a free-trial
    sign-up** (no billing — pricing is Joey's, CLAUDE.md). **Done 2 Nov:**
    `/for-clubs` (G-08), "Start free" into the setup checklist.

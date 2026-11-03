@@ -536,12 +536,45 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
   // exposed it, so a league season could only be built by a script.
   const [shape, setShape] = useState<'day' | 'weekly'>('day')
   const [madeCount, setMadeCount] = useState<number | null>(null)
+  // L-29: draw on a venue's pitches of this division's size, inside their
+  // hours, instead of typed field names. The league's own grounds.
+  const [venues, setVenues] = useState<{ id: string; name: string; pitches: number }[]>([])
+  const [venueId, setVenueId] = useState('')
+  const [fit, setFit] = useState<{ placed: number; overflow: number; size: string; pitches: string[]; venue: string } | null>(null)
+  useEffect(() => {
+    ;(async () => {
+      const supabase = createClient()
+      const { data: c } = await supabase.from('competitions').select('organiser_id').eq('id', competitionId).maybeSingle()
+      if (!c) return
+      const [{ data: v }, { data: p }] = await Promise.all([
+        supabase.from('venues').select('id, name').eq('academy_id', c.organiser_id).order('name'),
+        supabase.from('pitches').select('venue_id').eq('academy_id', c.organiser_id),
+      ])
+      const counts: Record<string, number> = {}
+      for (const row of p ?? []) counts[row.venue_id] = (counts[row.venue_id] ?? 0) + 1
+      setVenues((v ?? []).filter((x) => counts[x.id]).map((x) => ({ id: x.id, name: x.name, pitches: counts[x.id] })))
+    })()
+  }, [competitionId])
 
   async function build() {
     if (!date) return setError('Pick a start time.')
     setBusy(true)
     setError(null)
     const supabase = createClient()
+    if (venueId) {
+      const { data, error } = await supabase.rpc('generate_fixtures_on_pitches', {
+        p_competition: competitionId, p_division: division, p_venue: venueId,
+        p_first_date: date.slice(0, 10), p_game_mins: Number(gameMins), p_gap_mins: Number(gapMins),
+        p_round_every_days: shape === 'weekly' ? 7 : 0,
+      })
+      setBusy(false)
+      if (error) return setError(error.message)
+      const r = data as unknown as { games: number; placed: number; overflow: number; size: string; pitches: string[]; venue: string }
+      setMadeCount(r.games)
+      setFit(r)
+      router.refresh()
+      return
+    }
     const { data, error } = await supabase.rpc('generate_fixtures', {
       p_competition: competitionId,
       p_division: division,
@@ -599,18 +632,39 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
                className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5" />
       </label>
 
-      <label className="mt-3 block">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
-          {shape === 'weekly' ? 'Grounds in use each week' : 'Fields'}
-        </span>
-        <input value={fields} onChange={(e) => setFields(e.target.value)}
-               className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm" />
-        <span className="mt-1 block text-xs text-ink-3">
-          {shape === 'weekly'
-            ? 'Each round is laid out across these, a week after the last.'
-            : 'Games fill these in parallel, back to back.'}
-        </span>
-      </label>
+      {venues.length > 0 && (
+        <label className="mt-3 block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Venue</span>
+          <select value={venueId} onChange={(e) => setVenueId(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm" data-draw-venue>
+            <option value="">Type the fields instead</option>
+            {venues.map((v) => (
+              <option key={v.id} value={v.id}>{v.name} · {v.pitches} {v.pitches === 1 ? 'pitch' : 'pitches'}</option>
+            ))}
+          </select>
+          {venueId && (
+            <span className="mt-1 block text-xs text-ink-3">
+              On this division&apos;s size of pitch, inside each pitch&apos;s hours, around anything already booked.
+              Families see their pitch on the game.
+            </span>
+          )}
+        </label>
+      )}
+
+      {!venueId && (
+        <label className="mt-3 block">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+            {shape === 'weekly' ? 'Grounds in use each week' : 'Fields'}
+          </span>
+          <input value={fields} onChange={(e) => setFields(e.target.value)}
+                 className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm" />
+          <span className="mt-1 block text-xs text-ink-3">
+            {shape === 'weekly'
+              ? 'Each round is laid out across these, a week after the last.'
+              : 'Games fill these in parallel, back to back.'}
+          </span>
+        </label>
+      )}
 
       <div className="mt-3 flex gap-3">
         <label className="flex-1">
@@ -635,7 +689,9 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
       {madeCount !== null && !error && (
         <p className="mt-2 rounded-lg p-2.5 text-sm"
            style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}>
-          {madeCount} {madeCount === 1 ? 'game' : 'games'} drawn.
+          {madeCount} {madeCount === 1 ? 'game' : 'games'} drawn
+          {fit ? ` at ${fit.venue} on ${fit.pitches.join(', ')} (${fit.size} size)` : ''}.
+          {fit && fit.overflow > 0 && ` ${fit.overflow} did not fit the pitches' hours and have no pitch yet — move them by hand.`}
         </p>
       )}
 

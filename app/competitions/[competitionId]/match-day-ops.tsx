@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -31,6 +31,27 @@ export function CallOffDay({ competitionId }: { competitionId: string }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<{ affected: number; games: string[]; status: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // L-29: the league's grounds and their pitches, so one waterlogged third
+  // can be called off while the rest of the ground plays.
+  const [venues, setVenues] = useState<{ id: string; name: string }[]>([])
+  const [pitches, setPitches] = useState<{ id: string; name: string; venue_id: string; parent_id: string | null }[]>([])
+  const [pitchId, setPitchId] = useState('')
+  useEffect(() => {
+    if (!open) return
+    ;(async () => {
+      const supabase = createClient()
+      const { data: c } = await supabase.from('competitions').select('organiser_id').eq('id', competitionId).maybeSingle()
+      if (!c) return
+      const [{ data: v }, { data: p }] = await Promise.all([
+        supabase.from('venues').select('id, name').eq('academy_id', c.organiser_id).order('name'),
+        supabase.from('pitches').select('id, name, venue_id, parent_id').eq('academy_id', c.organiser_id).order('name'),
+      ])
+      setVenues(v ?? [])
+      setPitches(p ?? [])
+    })()
+  }, [open, competitionId])
+  const venueRow = venues.find((v) => v.name === venue)
+  const venuePitches = venueRow ? pitches.filter((p) => p.venue_id === venueRow.id) : []
 
   async function go() {
     setBusy(true)
@@ -38,6 +59,7 @@ export function CallOffDay({ competitionId }: { competitionId: string }) {
     const { data, error } = await createClient().rpc('call_off_fixtures', {
       p_competition: competitionId, p_date: date, p_reason: reason,
       p_venue: venue.trim() || undefined, p_cancel: cancel,
+      p_pitch: pitchId || undefined,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -66,8 +88,24 @@ export function CallOffDay({ competitionId }: { competitionId: string }) {
         </label>
         <label>
           <span className="text-ink-2">Ground (blank = all)</span>
-          <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="e.g. ELS Hall" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+          {venues.length > 0 ? (
+            <select value={venue} onChange={(e) => { setVenue(e.target.value); setPitchId('') }} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} data-call-off-venue>
+              <option value="">All grounds</option>
+              {venues.map((v) => (<option key={v.id} value={v.name}>{v.name}</option>))}
+            </select>
+          ) : (
+            <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="e.g. ELS Hall" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+          )}
         </label>
+        {venuePitches.length > 0 && (
+          <label>
+            <span className="text-ink-2">Pitch (blank = the whole ground)</span>
+            <select value={pitchId} onChange={(e) => setPitchId(e.target.value)} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} data-call-off-pitch>
+              <option value="">Every pitch</option>
+              {venuePitches.map((p) => (<option key={p.id} value={p.id}>{p.parent_id ? '· ' : ''}{p.name}</option>))}
+            </select>
+          </label>
+        )}
         <label>
           <span className="text-ink-2">Why</span>
           <select value={reason} onChange={(e) => setReason(e.target.value)} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }}>

@@ -120,6 +120,7 @@ export default async function AdminHub() {
         <ul className="card mb-5 overflow-hidden">
           <Row href="/admin/teams" label="Teams and players" hint="Squads, seasons, join links" />
           <Row href="/admin/season" label="New season" hint="Roll every squad up an age group, then chase re-registrations" />
+          <Row href="/admin/venues" label="Venues and pitches" hint="Grounds, the pitch layout, hours, and which size each age group plays on" />
           <Row href="/admin/requests" label="Join requests" hint="Approve new families" />
           <Row
             href="/admin/programs"
