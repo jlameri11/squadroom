@@ -181,6 +181,21 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | X-10 | Accessibility | Dynamic Type, VoiceOver labels, contrast in both themes, 44px tap targets; strings extracted for translation |
 | — | Reliability | Error monitoring (e.g. Sentry); uptime check; a nightly `smoke-demo` against dev; rate limits on every public endpoint |
 
+### M7b: Analysis Pro — paid add-on, bought per individual account (PLAN ONLY, after M7)
+
+Joey, 3 Nov 2026. Not built yet; nothing below is started until M7 (the
+native app) is done and Joey has priced it.
+
+| Piece | What |
+|---|---|
+| Who buys | An **individual account**, never a club: a coach's purchase covers the squads they coach; a parent's covers their own child's games; both can hold it at once. Core Squadroom stays free to parents (CLAUDE.md pricing rule, refined 3 Nov). |
+| What it opens | The **Matchday videos** (6c above — uploads and links on played games) with Analysis Pro's tools: clip, crop, draw, tag, highlight reels. |
+| Where clips go | A clip saves to the **player's profile** (G-05's clips, 0196 — the same `player_clips` row, source "analysis_pro") and can be shared to the **team chat** as a message with the clip. |
+| Who sees a clip | A clip featuring **other children stays inside the squad**; downloads and sharing outside the app follow the **academy's settings and photo consent** (0146's consent, the directory/photo visibility settings). Never on the public match centre, never on a share card. |
+| How it is sold | **Via the website first** — a Stripe Checkout on our own account (Squadroom's product, NOT a club's connected account), a `pro_entitlements` row per account with what it covers (coach → their teams at purchase time, refreshed as their coaching changes; parent → their children) and an expiry; the app reads the entitlement, the website sells it. Pricing: **Joey decides** (NEEDS JOEY when the build starts). |
+| What it needs first | M7 (the native app: video on a phone is where this lives), the Matchday videos (6c), the Stripe key (NEEDS JOEY #1), a decision on which video tools to license or build (clip/crop/draw are ours to build; "Analysis Pro" is the product name, not a vendor). |
+| Tests when built | Entitlement scope (a coach's covers exactly their squads; a parent's exactly their children; neither covers another family's child); a clip of another child never leaves the squad; consent and settings honoured on download/share; the website checkout and webhook on Squadroom's own account; never a charge to a family through a club. |
+
 ### M8: SaaS — the second academy (2 sessions + Joey's admin work)
 | ID | Task | Detail |
 |---|---|---|
@@ -376,6 +391,22 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    - **6a. R-19 New season, graded** (Joey, 3 Nov, slotted here): re-grading
      in the rollover preview, new intake, ageing out, bulk move players.
      **Done 3 Nov (0197)** — see the R-19 row above and SQUADROOM_SPEC.
+   - **6c. Matchdays** (Joey, 3 Nov evening; core, free): inside the
+     Fixtures tab a second tab, Upcoming | Matchdays — played games with the
+     score, the scorers and the game video; no Player of the Match there. A
+     coach adds the video by pasting a link (Veo, YouTube unlisted, Google
+     Drive…) or uploading the file; one push to the squad's families
+     ("U8 SPL v Hornsby — video is up"); only the squad's and club's members
+     see it; coaches are told that links follow those services' privacy
+     settings and can be forwarded, while uploads stay private to the squad.
+     375px, light/dark, tests. **Status:** building, 3 Nov evening (0206).
+   - **R-19 extras** (Joey's second list, 3 Nov evening) — **already built
+     in 0197 above:** re-grade / split / merge / leave out in the preview,
+     the intake squad with its program, ageing-out listed separately, the
+     mid-season move tool, chats/numbers/calendars following, preview first.
+     Nothing to add.
+   - **Analysis Pro — PLAN ONLY, slotted after M7** (Joey, 3 Nov evening):
+     see "M7b" below.
    - **6b. L-29 Venue & pitch layout designer** (Joey, 3 Nov, asked for as
      "L-27" — that ID is already Nominations, built 2 Nov, so this is
      **L-29**). The plan, before the build:

@@ -7,6 +7,7 @@ import { NewSessions } from './new-sessions'
 import { CallOffDay } from './call-off-day'
 import { DrawFilters, applyDrawFilter, type DrawFilter } from './draw-filters'
 import { AcademyTable } from './academy-table'
+import { Matchdays } from './matchdays'
 import { ShareDraw } from './share-draw'
 import { ShareCard } from '@/components/share-card'
 import { AppBar, Screen } from '@/components/app-shell'
@@ -39,6 +40,9 @@ export function FixturesScreen() {
     team: params.get('squad'),
     what: null,
   })
+  // Upcoming | Matchdays: what is coming, and what has been played — the
+  // score, the scorers, the video. ?view=matchdays opens the second.
+  const [view, setView] = useState<'upcoming' | 'matchdays'>(params.get('view') === 'matchdays' ? 'matchdays' : 'upcoming')
 
   // Screen is the scroll container, so everything sticky inside it sticks to
   // the SAME top. The filter bar and the day headings both did, and the day
@@ -93,6 +97,26 @@ export function FixturesScreen() {
         }
       />
       <Screen>
+        <div className="flex gap-1 px-4 pb-2 pt-3" role="tablist" data-fixtures-tabs>
+          {(['upcoming', 'matchdays'] as const).map((v) => (
+            <button
+              key={v}
+              role="tab"
+              aria-selected={view === v}
+              onClick={() => setView(v)}
+              className="flex-1 rounded-xl px-3 py-2 text-sm font-semibold"
+              style={view === v ? { background: 'var(--surface-2)', color: 'var(--ink)' } : { color: 'var(--ink-3)' }}
+              data-fixtures-tab={v}
+            >
+              {v === 'upcoming' ? 'Upcoming' : 'Matchdays'}
+            </button>
+          ))}
+        </div>
+
+        {view === 'matchdays' ? (
+          <Matchdays academyId={data.academy.id} />
+        ) : (
+          <>
         {/*
           FOLDED AWAY, because these five controls were the first screen of
           this page. A coach opening Fixtures is looking for a fixture — the
@@ -180,6 +204,8 @@ export function FixturesScreen() {
           </div>
         ) : (
           <CalendarList academyId={data.academy.id} events={shown} stickyTop={barHeight} />
+        )}
+          </>
         )}
       </Screen>
 

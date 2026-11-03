@@ -1140,6 +1140,28 @@ begin
   delete from public.academy_sponsors where id = '00000000-0000-0000-0000-00000000ee61';
   insert into rls_results values (109,'a support request is its writer''s; a club''s sponsors are its members'' to see, its staff''s to keep, nobody else''s',
     case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0206. A game's video is the squad's to see, the coach's to add, and
+  -- nobody's to write directly.
+  insert into public.events (id, academy_id, team_id, type, title, starts_at, created_by)
+    values ('00000000-0000-0000-0000-00000000ee70', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000d0008', 'match', 'rls probe video', now() - interval '1 day', COACH);
+  insert into public.event_videos (academy_id, event_id, kind, url, added_by)
+    values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee70', 'link', 'https://example.com/rls', COACH);
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.event_videos where event_id = '00000000-0000-0000-0000-00000000ee70';
+  b := (n = 1);
+  b2 := false;
+  begin
+    insert into public.event_videos (academy_id, event_id, kind, url, added_by)
+      values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee70', 'link', 'https://example.com/parent', PARENT);
+  exception when others then b2 := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-0000000000c1','role','authenticated')::text, true);
+  select count(*) into n from public.event_videos where event_id = '00000000-0000-0000-0000-00000000ee70';
+  execute 'reset role';
+  delete from public.events where id = '00000000-0000-0000-0000-00000000ee70';
+  insert into rls_results values (110,'a game''s video is the squad''s to see, nobody''s to write directly, and another club sees none',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

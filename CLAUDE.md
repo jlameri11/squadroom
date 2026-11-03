@@ -32,12 +32,17 @@ one and is meant to reach hundreds of academies.
     no scraping, no Fixturefeed code. The line is the handover: a human
     exports their own data and hands it over. We never reach across.
 
-- **Pricing, Joey's rule (30 Oct 2026): Squadroom is paid by clubs,
-  academies and leagues, never by parents.** Do not build any Squadroom
-  billing or plans yet — pricing is decided later, by Joey
-  (`SQUADI_INTEL.md` §6E is open). B-06 stays unbuilt until then. A
-  parent's payment goes to their club in full; there is no code path that
-  could add our fee to it (see 0065, below).
+- **Pricing, Joey's rule (30 Oct 2026, refined 3 Nov 2026): core Squadroom
+  is paid by clubs, academies and leagues, and is never charged to
+  parents.** Optional paid extras — Analysis Pro is the first — can be
+  bought by any individual account (a coach, a parent), on their own
+  behalf, through the website first (Stripe); pricing is Joey's. Do not
+  build Squadroom billing or plans for the core yet (`SQUADI_INTEL.md` §6E
+  is open); B-06 stays unbuilt until Joey prices it. A parent's payment to
+  their club goes to the club in full; there is no code path that could
+  add our fee to it (see 0065, below). An extra's purchase is a separate
+  product on a separate code path, never a line on a club's invoice to a
+  family.
 
 - **PlayFootball and Circular 26-02 (FA, 1 Oct 2026).** For any affiliated
   club, program or competition the order is **PlayFootball first, Squadroom
