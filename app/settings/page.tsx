@@ -67,6 +67,17 @@ export default async function SettingsPage() {
           </li>
         )}
         <li>
+          <Link href="/settings/help" className="row justify-between">
+            <span className="min-w-0">
+              <span className="block truncate font-medium">Help and support</span>
+              <span className="block truncate text-sm text-ink-3">
+                Ask Squadroom — a person replies, and you get a push
+              </span>
+            </span>
+            <span className="flex-none text-lg text-ink-3">›</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/settings/report" className="row justify-between">
             <span className="min-w-0">
               <span className="block truncate font-medium">Report a concern</span>

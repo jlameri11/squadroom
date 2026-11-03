@@ -21,12 +21,15 @@ export async function GET(request: Request, ctx: { params: Promise<{ eventId: st
   const { data: event } = await supabase.from('events').select('id, academy_id, title, opponent, starts_at, round').eq('id', eventId).maybeSingle()
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const [{ data: stats }, { data: academy }, { data: result }, { data: team }] = await Promise.all([
+  const [{ data: stats }, { data: academy }, { data: result }, { data: team }, { data: sponsors }] = await Promise.all([
     supabase.rpc('event_stats', { p_event: eventId }),
     supabase.from('academies').select('name, primary_colour').eq('id', event.academy_id).maybeSingle(),
     supabase.rpc('event_result', { p_event: eventId }),
     supabase.from('events').select('teams(name)').eq('id', eventId).maybeSingle(),
+    supabase.rpc('card_sponsors', { p_academy: event.academy_id }),
   ])
+  const thanks = ((sponsors as unknown as { name: string }[] | null) ?? []).map((s) => s.name)
+  const footer = (academy?.name ?? 'Squadroom') + (thanks.length ? ` · with thanks to ${thanks.join(', ')}` : '')
   const s = stats as unknown as { players: { potm: boolean; note: string | null }[] } | null
   const star = s?.players.find((p) => p.potm)
   if (!star) return NextResponse.json({ error: 'No Player of the Match picked for that game yet.' }, { status: 409 })
@@ -40,7 +43,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ eventId: st
 
   return new ImageResponse(
     (
-      <Frame brand={brand} width={width} height={height} footer={academy?.name ?? 'Squadroom'}>
+      <Frame brand={brand} width={width} height={height} footer={footer}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Eyebrow ink={ink}>{squad ? `${squad} · Player of the Match` : 'Player of the Match'}</Eyebrow>
           <div style={{ display: 'flex', fontSize: Math.round(width / 9), fontWeight: 800, color: ink, lineHeight: 1.05, marginTop: 12 }}>

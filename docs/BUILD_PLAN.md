@@ -187,8 +187,8 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | — | Production Supabase project | New project in Sydney; apply migrations from scratch; separate Netlify env; a promotion script dev → prod for migrations only, **never data** |
 | G-01 | Self-serve onboarding | **DONE (0192).** `/start` → `/start/setup`: crest and colours inline, then squads, roster, programs, coaches, first training as one-tap steps; ticks from the data; the time to the five core steps recorded on the club |
 | B-06 | Squadroom billing | Plans by team count via Stripe Billing on a **separate code path** from academy collections. Free trial. Parents never pay Squadroom |
-| G-03 | Support | In-app "Help" → a support channel to Squadroom staff; status page |
-| X-08 | Sponsor slots | The academy uploads sponsor logos; slots on the match centre, Player of the Match and share cards; simple impressions count |
+| G-03 | Support | In-app "Help" → a support channel to Squadroom staff; status page. **Done 3 Nov (0205)** — Settings → Help, the inbox on /platform, /status |
+| X-08 | Sponsor slots | The academy uploads sponsor logos; slots on the match centre, Player of the Match and share cards; simple impressions count. **Done 3 Nov (0205)** — Admin → Sponsors, the strip, the card footers, views per day |
 | F-06 | Squadi adapter | Fixture import mapping for QLD/WA/Northern NSW exports |
 | S-05 | Legal | Privacy lawyer review (Children's Online Privacy Code, Child Safe Standards); terms for academies; data processing terms |
 

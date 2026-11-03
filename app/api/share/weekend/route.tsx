@@ -81,9 +81,13 @@ export async function GET(request: Request) {
 
   const { data: academyRow } = await supabase
     .from('academies')
-    .select('primary_colour')
+    .select('id, primary_colour')
     .eq('slug', data.academy.slug)
     .maybeSingle()
+  // X-08: "with thanks to" on the club's cards.
+  const { data: sponsors } = academyRow ? await supabase.rpc('card_sponsors', { p_academy: academyRow.id }) : { data: null }
+  const thanks = ((sponsors as unknown as { name: string }[] | null) ?? []).map((s) => s.name)
+  const footer = data.academy.name + (thanks.length ? ` · with thanks to ${thanks.join(', ')}` : '')
 
   const { width, height } = sizeOf(url.searchParams.get('size'))
   const brand = safeColour(academyRow?.primary_colour)
@@ -102,7 +106,7 @@ export async function GET(request: Request) {
 
   return new ImageResponse(
     (
-      <Frame brand={brand} width={width} height={height} footer={data.academy.name}>
+      <Frame brand={brand} width={width} height={height} footer={footer}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Eyebrow ink={ink}>This weekend</Eyebrow>
           <div

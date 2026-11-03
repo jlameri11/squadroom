@@ -41,14 +41,18 @@ export async function GET(
     .maybeSingle()
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const [{ data: result }, { data: academy }] = await Promise.all([
+  const [{ data: result }, { data: academy }, { data: sponsors }] = await Promise.all([
     supabase.rpc('event_result', { p_event: eventId }),
     supabase
       .from('academies')
       .select('name, primary_colour')
       .eq('id', event.academy_id)
       .maybeSingle(),
+    // X-08: "with thanks to" on the club's cards.
+    supabase.rpc('card_sponsors', { p_academy: event.academy_id }),
   ])
+  const thanks = ((sponsors as unknown as { name: string }[] | null) ?? []).map((s) => s.name)
+  const footer = (academy?.name ?? 'Squadroom') + (thanks.length ? ` · with thanks to ${thanks.join(', ')}` : '')
 
   const score = result?.[0]
   if (!score) {
@@ -71,7 +75,7 @@ export async function GET(
 
   return new ImageResponse(
     (
-      <Frame brand={brand} width={width} height={height} footer={academy?.name ?? 'Squadroom'}>
+      <Frame brand={brand} width={width} height={height} footer={footer}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Eyebrow ink={ink}>{event.round ? `${outcome} · ${event.round}` : outcome}</Eyebrow>
 

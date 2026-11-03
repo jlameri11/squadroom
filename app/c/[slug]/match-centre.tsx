@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { SponsorStrip, type PublicSponsor } from './sponsor-strip'
 
 export type Fixture = {
   id: string
@@ -85,6 +86,7 @@ export function MatchCentre({
   initialTab,
   initialDivision,
   shareUrl,
+  sponsors = [],
 }: {
   centre: Centre
   /** L-12: inside a league's own website. No header, a footer link out. */
@@ -93,6 +95,8 @@ export function MatchCentre({
   initialDivision?: string
   /** The canonical page, for the Share button and the embed's footer. */
   shareUrl?: string
+  /** X-08: the organiser's sponsors for the strip under the header. */
+  sponsors?: PublicSponsor[]
 }) {
   const { competition, fixtures, ladder, divisions } = centre
   const slug = slugOf(shareUrl ?? '')
@@ -131,6 +135,9 @@ export function MatchCentre({
           )}
         </header>
       )}
+
+      {/* X-08: the organiser's sponsors — a name, a logo, a link. */}
+      <SponsorStrip sponsors={sponsors} slug={slug} />
 
       {divisions.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto px-3.5 pt-3.5 pb-1">

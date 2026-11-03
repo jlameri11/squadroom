@@ -214,8 +214,9 @@ const BARE = [
   // link, or anyone with a public competition link. Offering them Home and
   // Chat would be offering a sign-in screen to someone who must not have one.
   '/my', '/c',
-  // The front door for a club that has heard of us, and the privacy page.
-  '/for-clubs', '/privacy',
+  // The front door for a club that has heard of us, the privacy page, and
+  // the status page ("is it just me?") — none of them wants a sign-in.
+  '/for-clubs', '/privacy', '/status',
 ]
 
 /**
@@ -231,7 +232,7 @@ const BARE = [
 const APP_ROOTS = new Set([
   'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'competitions', 'directory',
   'for-clubs', 'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'privacy', 'programs', 'ref', 'referee',
-  'scan', 'settings', 'signin', 'signup', 'start',
+  'scan', 'settings', 'signin', 'signup', 'start', 'status',
 ])
 
 /** A page opened by somebody who must not be offered a sign-in screen. */

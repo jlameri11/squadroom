@@ -1116,6 +1116,30 @@ begin
   delete from public.events where id = '00000000-0000-0000-0000-00000000ee50';
   insert into rls_results values (108,'a family''s pulse is its own: another parent sees none and cannot write one directly',
     case when n=0 and b2 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0205. A support request is its writer's and Squadroom's; a club's
+  -- sponsors are its members' to see, its staff's to keep.
+  insert into public.support_requests (id, academy_id, profile_id, subject, body)
+    values ('00000000-0000-0000-0000-00000000ee60', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000000b2', 'rls probe', 'rls probe');
+  insert into public.academy_sponsors (id, academy_id, name)
+    values ('00000000-0000-0000-0000-00000000ee61', '00000000-0000-0000-0000-0000000a0001', 'rls probe sponsor');
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.support_requests where id = '00000000-0000-0000-0000-00000000ee60';
+  b := (n = 0);   -- another family's request
+  select count(*) into n from public.academy_sponsors where id = '00000000-0000-0000-0000-00000000ee61';
+  b := b and n = 1;   -- the club's sponsor, readable
+  b2 := false;
+  begin
+    insert into public.academy_sponsors (academy_id, name) values ('00000000-0000-0000-0000-0000000a0001', 'rls parent sponsor');
+  exception when others then b2 := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-0000000000c1','role','authenticated')::text, true);
+  select count(*) into n from public.academy_sponsors where id = '00000000-0000-0000-0000-00000000ee61';
+  execute 'reset role';
+  delete from public.support_requests where id = '00000000-0000-0000-0000-00000000ee60';
+  delete from public.academy_sponsors where id = '00000000-0000-0000-0000-00000000ee61';
+  insert into rls_results values (109,'a support request is its writer''s; a club''s sponsors are its members'' to see, its staff''s to keep, nobody else''s',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

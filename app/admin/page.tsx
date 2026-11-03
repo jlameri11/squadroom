@@ -180,6 +180,7 @@ export default async function AdminHub() {
                 }
               />
               <Row href="/admin/kit" label="Kit list" hint="What to order, and who has not been asked" />
+              <Row href="/admin/sponsors" label="Sponsors" hint="Your sponsors on the match centre and the share cards; Squadroom takes nothing" />
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
             </ul>
           </>

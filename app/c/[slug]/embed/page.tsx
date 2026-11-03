@@ -1,5 +1,5 @@
 import { MatchCentre } from '../match-centre'
-import { load } from '../load'
+import { load, loadSponsors } from '../load'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -24,9 +24,11 @@ export default async function EmbedPage(ctx: {
       </main>
     )
   }
+  const sponsors = await loadSponsors(slug)
   return (
     <MatchCentre
       centre={centre}
+      sponsors={sponsors}
       embed
       initialTab={view}
       initialDivision={division}

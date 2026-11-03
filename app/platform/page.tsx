@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { AppShellPage } from '@/components/shell-page'
+import { SupportInbox } from './support-inbox'
 
 /**
  * The platform owner's page. Nobody else's.
@@ -47,6 +48,9 @@ export default async function PlatformPage() {
           <Stat label="Active this week" value={t.active_7d} highlight />
         </div>
       )}
+
+      {/* G-03: what people wrote to Squadroom, and the status notices. */}
+      <SupportInbox />
 
       <h2 className="mt-7 text-xs font-semibold uppercase tracking-wide text-ink-2">
         Organisations

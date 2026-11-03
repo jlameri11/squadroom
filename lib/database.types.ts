@@ -263,6 +263,53 @@ export type Database = {
           },
         ]
       }
+      academy_sponsors: {
+        Row: {
+          academy_id: string
+          active: boolean
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          slots: string[]
+          sort: number
+          tagline: string | null
+          url: string | null
+        }
+        Insert: {
+          academy_id: string
+          active?: boolean
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          slots?: string[]
+          sort?: number
+          tagline?: string | null
+          url?: string | null
+        }
+        Update: {
+          academy_id?: string
+          active?: boolean
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slots?: string[]
+          sort?: number
+          tagline?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_sponsors_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_feeds: {
         Row: {
           created_at: string
@@ -4317,6 +4364,44 @@ export type Database = {
           },
         ]
       }
+      platform_status: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          resolved_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          resolved_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          resolved_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_status_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_clips: {
         Row: {
           academy_id: string
@@ -6014,6 +6099,32 @@ export type Database = {
           },
         ]
       }
+      sponsor_impressions: {
+        Row: {
+          day: string
+          sponsor_id: string
+          views: number
+        }
+        Insert: {
+          day: string
+          sponsor_id: string
+          views?: number
+        }
+        Update: {
+          day?: string
+          sponsor_id?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_impressions_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "academy_sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squad_numbers: {
         Row: {
           academy_id: string
@@ -6127,6 +6238,96 @@ export type Database = {
           {
             foreignKeyName: "staff_clearances_verified_by_fkey"
             columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_replies: {
+        Row: {
+          body: string
+          created_at: string
+          from_staff: boolean
+          id: string
+          profile_id: string | null
+          request_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_staff?: boolean
+          id?: string
+          profile_id?: string | null
+          request_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_staff?: boolean
+          id?: string
+          profile_id?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_replies_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_replies_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "support_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_requests: {
+        Row: {
+          academy_id: string | null
+          body: string
+          created_at: string
+          id: string
+          profile_id: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          profile_id: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -6867,6 +7068,7 @@ export type Database = {
         Args: { p_message: string }
         Returns: undefined
       }
+      card_sponsors: { Args: { p_academy: string }; Returns: Json }
       cast_poll_vote: {
         Args: {
           p_note?: string
@@ -6970,6 +7172,7 @@ export type Database = {
           verified_by: string
         }[]
       }
+      close_support_request: { Args: { p_request: string }; Returns: undefined }
       club_allocate_referee: {
         Args: {
           p_fixture: string
@@ -7056,6 +7259,7 @@ export type Database = {
         }
         Returns: string
       }
+      count_sponsor_views: { Args: { p_slug: string }; Returns: number }
       create_academy: {
         Args: {
           p_colour?: string
@@ -7661,6 +7865,10 @@ export type Database = {
         Args: { p_event: string; p_open?: boolean }
         Returns: Json
       }
+      open_support_request: {
+        Args: { p_academy?: string; p_body: string; p_subject: string }
+        Returns: string
+      }
       outstanding_consents: {
         Args: { p_player: string }
         Returns: {
@@ -7828,6 +8036,8 @@ export type Database = {
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
+      public_sponsors: { Args: { p_slug: string }; Returns: Json }
+      public_status: { Args: never; Returns: Json }
       publish_lineup: {
         Args: { p_event: string; p_published?: boolean; p_tell_out?: boolean }
         Returns: undefined
@@ -7967,6 +8177,10 @@ export type Database = {
         Returns: undefined
       }
       reping_unread: { Args: { p_message: string }; Returns: Json }
+      reply_support: {
+        Args: { p_body: string; p_request: string }
+        Returns: string
+      }
       report_message: {
         Args: {
           p_message: string
@@ -8295,6 +8509,7 @@ export type Database = {
         Args: { p_appointment: string; p_report: Json }
         Returns: undefined
       }
+      support_threads: { Args: { p_inbox?: boolean }; Returns: Json }
       take_register: {
         Args: { p_event: string; p_marks: Json }
         Returns: number

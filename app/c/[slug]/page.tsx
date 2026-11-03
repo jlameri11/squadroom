@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { MatchCentre } from './match-centre'
-import { load } from './load'
+import { load, loadSponsors } from './load'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -78,5 +78,6 @@ export default async function PublicCompetitionPage(ctx: {
     )
   }
 
-  return <MatchCentre centre={centre} shareUrl={`${siteUrl()}/c/${slug}`} />
+  const sponsors = await loadSponsors(slug)
+  return <MatchCentre centre={centre} shareUrl={`${siteUrl()}/c/${slug}`} sponsors={sponsors} />
 }
