@@ -1031,6 +1031,25 @@ begin
   delete from public.venues where id = '00000000-0000-0000-0000-00000000ee10';
   insert into rls_results values (104,'a ground''s layout: members read it, staff draw it, a parent cannot, another club sees none',
     case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
+  -- 0200. The match-day list's ticks are the squad's coaches'; a parent
+  -- neither reads nor makes one.
+  insert into public.events (id, academy_id, team_id, type, title, starts_at, created_by)
+    values ('00000000-0000-0000-0000-00000000ee20', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000d0008', 'match', 'rls probe match', now() + interval '2 days', COACH);
+  insert into public.event_checklist_ticks (academy_id, event_id, item, ticked_by)
+    values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee20', 'kit', COACH);
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.event_checklist_ticks where event_id = '00000000-0000-0000-0000-00000000ee20';
+  b2 := false;
+  begin
+    insert into public.event_checklist_ticks (academy_id, event_id, item, ticked_by)
+      values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee20', 'sheet', PARENT);
+  exception when others then b2 := true;
+  end;
+  execute 'reset role';
+  delete from public.events where id = '00000000-0000-0000-0000-00000000ee20';
+  insert into rls_results values (105,'the match-day list''s ticks are the coaches'': a parent neither reads nor makes one',
+    case when n=0 and b2 then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

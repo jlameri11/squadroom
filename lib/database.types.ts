@@ -1520,6 +1520,52 @@ export type Database = {
           },
         ]
       }
+      event_checklist_ticks: {
+        Row: {
+          academy_id: string
+          event_id: string
+          item: string
+          ticked_at: string
+          ticked_by: string | null
+        }
+        Insert: {
+          academy_id: string
+          event_id: string
+          item: string
+          ticked_at?: string
+          ticked_by?: string | null
+        }
+        Update: {
+          academy_id?: string
+          event_id?: string
+          item?: string
+          ticked_at?: string
+          ticked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_checklist_ticks_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_checklist_ticks_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_checklist_ticks_ticked_by_fkey"
+            columns: ["ticked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineup_players: {
         Row: {
           academy_id: string
@@ -6882,6 +6928,7 @@ export type Database = {
       entry_nominations: { Args: { p_competition: string }; Returns: Json }
       entry_requests: { Args: { p_competition: string }; Returns: Json }
       erase_me: { Args: never; Returns: Json }
+      event_checklist: { Args: { p_event: string }; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
       event_register: {
         Args: { p_event: string }
@@ -7501,6 +7548,7 @@ export type Database = {
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       queue_fee_reminders: { Args: never; Returns: number }
+      queue_match_day_pushes: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
       quote_payment: {
         Args: { p_player?: string; p_request: string }
@@ -7958,6 +8006,10 @@ export type Database = {
           player_id: string
           player_name: string
         }[]
+      }
+      tick_checklist: {
+        Args: { p_done?: boolean; p_event: string; p_item: string }
+        Returns: Json
       }
       to_e164: {
         Args: { p_default_country?: string; p_raw: string }

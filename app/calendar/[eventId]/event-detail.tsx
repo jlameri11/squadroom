@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Chase } from './chase'
 import { PitchMap } from './pitch-map'
+import { MatchDayChecklist } from './match-day-checklist'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -170,6 +171,9 @@ export function EventDetail({
           match day: who is playing, then what happened. Renders nothing for a
           parent until the coach publishes, and nothing at all for a training
           session. */}
+      {/* F-07: the coach's match-day list — what ticks itself and what to tick. */}
+      {!cancelled && isCoach && event.type === 'match' && <MatchDayChecklist eventId={event.id} />}
+
       {!cancelled && (event.type === 'match' || event.type === 'tournament') && (
         <Lineup eventId={event.id} canSee={isCoach} />
       )}

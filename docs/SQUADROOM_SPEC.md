@@ -131,7 +131,7 @@
 | F-04 | Retire fixturefeed: once Joey has club-admin export access, the weekly routine becomes "export → drop into /admin/import" (Fri 3pm + Sat/Sun morning). Keep fixturefeed running until then | TODO | P1 |
 | F-05 | Results/ladder import for official comps (if the export carries scores) | MISSING | P2 |
 | F-06 | Provider adapter interface (Squadi for QLD/WA/Northern NSW) | MISSING | P3 |
-| F-07 | Match-day checklist push to managers: "Submit your Dribl team sheet" (late sheets are fined $25) with a deep link | MISSING | P2 |
+| F-07 | Match-day checklist push to managers: "Submit your Dribl team sheet" (late sheets are fined $25) with a deep link | **DONE** (0200, 3 Nov). On every match, for the squad's coaches, a five-item list: the team sheet (ours → a link to our sheet, ticked when submitted; a league export's → "Submit the team sheet at the league — a late sheet is fined", ticked by hand, because we never link into Dribl), publish the side, kit/balls/bibs/first aid, the register at kick-off, the score. The items the database can see tick themselves. A pg_cron sweep every ten minutes pushes each coach of a squad with a game 50–70 minutes out what is still to do (`match_day`, opening the game), once; nothing for training, a called-off game or a parent. Proven by test-match-day-list (22), test-rls 105 | P2 |
 
 ### F. Academy billing (on top of existing Connect)
 | ID | Feature | Status | Pri |
