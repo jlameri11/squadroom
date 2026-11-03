@@ -5,6 +5,7 @@ import { Chase } from './chase'
 import { PitchMap } from './pitch-map'
 import { MatchDayChecklist } from './match-day-checklist'
 import { EventStats } from './stats'
+import { LiveScore } from './live'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -178,6 +179,9 @@ export function EventDetail({
       {!cancelled && (event.type === 'match' || event.type === 'tournament') && (
         <Lineup eventId={event.id} canSee={isCoach} />
       )}
+
+      {/* X-01: the game as it happens — the coach taps, the chat and the timeline follow. */}
+      {!cancelled && (event.type === 'match' || event.type === 'tournament') && <LiveScore eventId={event.id} />}
 
       {!cancelled && (
         <Result

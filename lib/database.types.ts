@@ -1967,6 +1967,94 @@ export type Database = {
           },
         ]
       }
+      event_ticker: {
+        Row: {
+          academy_id: string
+          assist_id: string | null
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          kind: string
+          message_id: string | null
+          minute: number | null
+          note: string | null
+          player_id: string | null
+          undone_at: string | null
+        }
+        Insert: {
+          academy_id: string
+          assist_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          kind: string
+          message_id?: string | null
+          minute?: number | null
+          note?: string | null
+          player_id?: string | null
+          undone_at?: string | null
+        }
+        Update: {
+          academy_id?: string
+          assist_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          kind?: string
+          message_id?: string | null
+          minute?: number | null
+          note?: string | null
+          player_id?: string | null
+          undone_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_ticker_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_ticker_assist_id_academy_id_fkey"
+            columns: ["assist_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_ticker_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_ticker_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_ticker_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_ticker_player_id_academy_id_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       events: {
         Row: {
           academy_id: string
@@ -7058,6 +7146,7 @@ export type Database = {
       erase_me: { Args: never; Returns: Json }
       event_checklist: { Args: { p_event: string }; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
+      event_live: { Args: { p_event: string }; Returns: Json }
       event_register: {
         Args: { p_event: string }
         Returns: {
@@ -7275,6 +7364,17 @@ export type Database = {
         Returns: undefined
       }
       league_officials: { Args: { p_competition: string }; Returns: Json }
+      live_tick: {
+        Args: {
+          p_assist?: string
+          p_event: string
+          p_kind: string
+          p_minute?: number
+          p_note?: string
+          p_player?: string
+        }
+        Returns: Json
+      }
       lock_entry_squad: {
         Args: { p_entry: string; p_locked: boolean }
         Returns: undefined
@@ -8168,6 +8268,7 @@ export type Database = {
         Returns: Json
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
+      undo_last_tick: { Args: { p_event: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
       venue_layout: { Args: { p_venue: string }; Returns: Json }
       void_referee_run: { Args: { p_run: string }; Returns: undefined }

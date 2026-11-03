@@ -1076,6 +1076,27 @@ begin
   delete from public.events where id = '00000000-0000-0000-0000-00000000ee30';
   insert into rls_results values (106,'a game''s stats are the squad''s: its parent reads, cannot write, another club sees none; a vote is the voter''s',
     case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0203. The ticker is the squad's to read and nobody's to write directly.
+  insert into public.events (id, academy_id, team_id, type, title, starts_at, created_by)
+    values ('00000000-0000-0000-0000-00000000ee40', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000d0008', 'match', 'rls probe live', now() - interval '1 hour', COACH);
+  insert into public.event_ticker (academy_id, event_id, kind, created_by)
+    values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee40', 'kick_off', COACH);
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.event_ticker where event_id = '00000000-0000-0000-0000-00000000ee40';
+  b := (n = 1);
+  b2 := false;
+  begin
+    insert into public.event_ticker (academy_id, event_id, kind, created_by)
+      values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee40', 'goal_for', PARENT);
+  exception when others then b2 := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-0000000000c1','role','authenticated')::text, true);
+  select count(*) into n from public.event_ticker where event_id = '00000000-0000-0000-0000-00000000ee40';
+  execute 'reset role';
+  delete from public.events where id = '00000000-0000-0000-0000-00000000ee40';
+  insert into rls_results values (107,'the ticker is the squad''s to read and nobody''s to write directly; another club sees none',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
