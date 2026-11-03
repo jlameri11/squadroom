@@ -10,6 +10,7 @@ type Live = {
   can_tap: boolean
   opponent: string | null
   window_open: boolean
+  over: boolean
   kicked_off: boolean
   kick_off_at: string | null
   finished: boolean
@@ -57,10 +58,12 @@ export function LiveScore({ eventId }: { eventId: string }) {
   }, [load])
 
   if (!live) return null
-  const on = live.window_open && !live.finished
+  // Taps are offered from half an hour before kick-off until full time —
+  // but not on a game that ended hours ago with no ticker at all.
+  const on = live.window_open && !live.finished && !(live.over && !live.kicked_off)
   // Nothing to show a family before anything has happened.
   if (!live.can_tap && live.ticks.length === 0) return null
-  if (live.can_tap && !live.window_open && live.ticks.length === 0) return null
+  if (live.can_tap && !on && live.ticks.length === 0) return null
 
   async function tap(kind: string, extra: { p_player?: string; p_assist?: string; p_note?: string } = {}) {
     setBusy(true)

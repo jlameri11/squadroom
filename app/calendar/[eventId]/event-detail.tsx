@@ -6,6 +6,7 @@ import { PitchMap } from './pitch-map'
 import { MatchDayChecklist } from './match-day-checklist'
 import { EventStats } from './stats'
 import { LiveScore } from './live'
+import { ParentPulse } from './pulse'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -195,6 +196,9 @@ export function EventDetail({
 
       {/* X-02 / X-03: who scored, who starred — after the whistle. */}
       {!cancelled && (event.type === 'match' || event.type === 'tournament') && <EventStats eventId={event.id} />}
+
+      {/* X-11: how was today? One tap from the family; the coaches see it. */}
+      {!cancelled && (event.type === 'match' || event.type === 'tournament') && <ParentPulse eventId={event.id} />}
 
       {isCoach && <CallItOff event={event} />}
 

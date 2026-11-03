@@ -1744,6 +1744,58 @@ export type Database = {
           },
         ]
       }
+      event_pulse: {
+        Row: {
+          academy_id: string
+          created_at: string
+          event_id: string
+          mood: number
+          note: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          event_id: string
+          mood: number
+          note?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          event_id?: string
+          mood?: number
+          note?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_pulse_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_pulse_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_pulse_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_rsvps: {
         Row: {
           academy_id: string
@@ -6657,6 +6709,7 @@ export type Database = {
           status: Database["public"]["Enums"]["member_status"]
         }[]
       }
+      academy_results: { Args: { p_academy: string }; Returns: Json }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
       add_fixture_change_note: {
         Args: { p_body: string; p_request: string }
@@ -7147,6 +7200,7 @@ export type Database = {
       event_checklist: { Args: { p_event: string }; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
       event_live: { Args: { p_event: string }; Returns: Json }
+      event_pulse_view: { Args: { p_event: string }; Returns: Json }
       event_register: {
         Args: { p_event: string }
         Returns: {
@@ -7779,6 +7833,10 @@ export type Database = {
         Returns: undefined
       }
       publish_scheduled_messages: { Args: never; Returns: number }
+      pulse_in: {
+        Args: { p_event: string; p_mood: number; p_note?: string }
+        Returns: Json
+      }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       queue_fee_reminders: { Args: never; Returns: number }

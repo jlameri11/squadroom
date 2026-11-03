@@ -6,6 +6,7 @@ import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { NewSessions } from './new-sessions'
 import { CallOffDay } from './call-off-day'
 import { DrawFilters, applyDrawFilter, type DrawFilter } from './draw-filters'
+import { AcademyTable } from './academy-table'
 import { ShareDraw } from './share-draw'
 import { ShareCard } from '@/components/share-card'
 import { AppBar, Screen } from '@/components/app-shell'
@@ -158,6 +159,9 @@ export function FixturesScreen() {
             </div>
           </details>
         )}
+
+        {/* X-07: every squad's season, folded, above the draw. */}
+        <AcademyTable academyId={data.academy.id} />
 
         <div ref={barRef} className="sticky top-0 z-20">
           <DrawFilters events={all} filter={filter} onChange={setFilter} />

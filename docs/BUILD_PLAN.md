@@ -151,8 +151,8 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | X-03 | Player of the Match | Coach picks; optional parent/player vote (closes 24h after the game). A celebration card in chat with photo and sponsor slot. **Done 3 Nov (0202)** — a 🏆 announcement in the squad's chat (no photo: consent; sponsor slot waits for X-08) |
 | X-06 | Player card | Photo, squad, number, season stats, Player of the Match count. It's also the academy member card |
 | X-04 | Share cards | Generated images in academy colours: result, Player of the Match, weekend fixtures (port fixturefeed's card generator). Share to Instagram/WhatsApp. Respects photo consent and public-name settings |
-| X-07 | Academy table | All squads' results this season on one screen |
-| X-11 | Parent pulse | After the game: "How was today?" (😀😐🙁 + optional note), seen only by coaches |
+| X-07 | Academy table | All squads' results this season on one screen. **Done 3 Nov (0204)** — folded above the draw on the Fixtures tab |
+| X-11 | Parent pulse | After the game: "How was today?" (😀😐🙁 + optional note), seen only by coaches. **Done 3 Nov (0204)** |
 
 ### M6: Money and the season cycle (2 sessions)
 | ID | Task | Detail |

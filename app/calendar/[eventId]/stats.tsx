@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ShareCard } from '@/components/share-card'
 
 type Row = { id: string; name: string; preferred_name: string | null; number: number | null; goals: number; assists: number; minutes: number | null; potm: boolean; note: string | null; votes: number | null }
 type Stats = {
@@ -155,6 +156,9 @@ export function EventStats({ eventId }: { eventId: string }) {
               </label>
             </div>
           )}
+          {/* X-04: the star as a picture the club can post — no child named on
+              it, like every card. Staff only. */}
+          {s.can_edit && potm && <ShareCard endpoint={`/api/share/potm/${eventId}`} label="Share the star (no name on the card)" filename="player-of-the-match" />}
           {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
         </div>
       )}

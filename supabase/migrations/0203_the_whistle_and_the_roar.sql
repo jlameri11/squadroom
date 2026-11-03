@@ -76,6 +76,9 @@ begin
   return jsonb_build_object(
     'event_id', e.id, 'can_tap', v_coach, 'opponent', e.opponent,
     'window_open', now() >= e.starts_at - interval '30 minutes' and e.cancelled_at is null,
+    -- Long over: a game that finished hours ago with no ticker is not
+    -- offered a kick-off button; one with a ticker may still be finished.
+    'over', now() > coalesce(e.ends_at, e.starts_at + interval '2 hours') + interval '3 hours',
     'kicked_off', exists (select 1 from public.event_ticker t where t.event_id = p_event and t.kind = 'kick_off' and t.undone_at is null),
     'kick_off_at', (select min(t.created_at) from public.event_ticker t where t.event_id = p_event and t.kind = 'kick_off' and t.undone_at is null),
     'finished', exists (select 1 from public.event_ticker t where t.event_id = p_event and t.kind = 'full_time' and t.undone_at is null),
