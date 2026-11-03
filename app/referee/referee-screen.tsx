@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MarksPicker, type Marks } from '@/components/respect-marks'
-import { RefereeStripe } from './referee-stripe'
 
 const SYDNEY = 'Australia/Sydney'
 
@@ -347,8 +346,7 @@ export function RefereeScreen() {
             </p>
           )
         })()}
-        <p className="mt-0.5 text-xs text-ink-3">A game counts once you check in at the ground. The league pays runs of games, by bank transfer or Stripe.</p>
-        <RefereeStripe />
+        <p className="mt-0.5 text-xs text-ink-3">A game counts once you check in at the ground. The league pays runs of games by bank transfer.</p>
         {bank === null ? (
           <p className="mt-2 flex items-center gap-2">
             <span className="min-w-0 flex-1 truncate text-xs text-ink-2">

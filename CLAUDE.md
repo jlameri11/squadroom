@@ -398,6 +398,36 @@ one and is meant to reach hundreds of academies.
     the coach wrote $45. Changing this must be a migration and a conversation.
   - Platform billing and academy collections never share a code path — a bug
     that crosses them charges the wrong party.
+  - **Proven on Stripe test mode, 3 Nov 2026** (`scripts/test-stripe-e2e.mjs`,
+    run by hand with `STRIPE_E2E=1` and `stripe listen` up): a fee, a
+    family of two in one checkout with the sibling ladder, a voucher and
+    instalments, a refund, a league entry fee, a referee's account. What
+    that taught:
+    - A club's account is an **Accounts v2 Express** account (`dashboard:
+      'express'`, `fees_collector: 'application_express'`, `losses_collector:
+      'application'`): Stripe no longer lets a new platform make the old
+      `type: 'express'`. **Stripe owns requirement collection for Express:**
+      once the onboarding link exists the API refuses its identity, people
+      and terms, and the hosted test-mode pages sit behind a captcha no
+      script passes. Only a person finishes one. The suite proves the route,
+      then moves money on a test-mode account the API can activate
+      (`scripts/_stripe-test-accounts.mjs`), and closes what it made.
+    - Accounts v2 raise no `account.updated`; status is read back on demand
+      (`lib/stripe/billing.ts`) and on `capability.updated`.
+    - **Checkout is cards only.** Stripe's AU defaults add Klarna, Zip and
+      Link to a junior club's fee page; Checkout also pre-ticks "Save with
+      Link", which demands a phone number. One line per checkout route.
+    - **Refunds arrive as `refund.created/updated`.** The Charge no longer
+      lists its refunds on current API versions, so matching through
+      `charge.refunds` silently matched nothing. `charge.refunded` is kept
+      only for a charge refunded in full from the club's own dashboard.
+    - **Stripe will not transfer between two connected accounts** ("Cannot
+      create transfers between connected accounts"), so a league cannot pay
+      a referee's Stripe account from its own. **Referee payouts are PARKED
+      (Joey, 3 Nov 2026): tracking only** — who refereed, the fee owed, the
+      treasurer marks the run paid. No Stripe payouts, no bank files; the
+      routes and the referee's "Connect Stripe" were removed. Do not
+      rebuild them without Joey.
   - `profiles.phone` is a DOMAIN, not text. A set-returning function
     declaring `text` fails with "structure of query does not match function
     result type", which names neither the column nor the type.

@@ -172,10 +172,10 @@ could add one.
 
 | | |
 |---|---|
-| **Taking a payment** | Needs a Stripe test key (free, `sk_test_…`). A parent sees the bill and the screen says the club is still setting up, rather than offering a dead button. |
+| **Taking a payment** | Works end to end on Stripe test mode on the laptop (3 Nov, `test-stripe-e2e`). **On the live site** the Stripe keys are not on Netlify yet and NRIFA's Stripe onboarding has not been clicked through, so a parent sees the bill and the screen says the club is still setting up, rather than offering a dead button (NIGHT_LOG, NEEDS JOEY #14). |
 | **Push on a phone** | Works, but needs the PWA installed on a device. No notifications in a desktop browser. |
 | **Live chat delivery** | Fixed (X-18): messages arrive by broadcast, 40 of 40 in the measurement. Still worth two phones in your hands at a ground before a club sees it. |
 | **Native iOS app** | Needs an Apple Developer account. The Capacitor shell is written and has never been compiled. |
 | **Match sheets, referees, discipline** | League mode (M9) — being built now so the SPL can run a season without Dribl. Until then, Dribl's. |
-| **Refunds, instalments, vouchers, one checkout for several children** | Everything up to the Stripe call is built and tested; the call needs the free test key. |
-| **The live site** | At least three days behind this build until a Netlify token is on the laptop (NIGHT_LOG, NEEDS JOEY #7). |
+| **Refunds, instalments, vouchers, one checkout for several children** | All proven on Stripe test mode on 3 Nov, including the webhook marking each row. Live, they wait on the same two steps as "Taking a payment". |
+| **Referee payouts through Stripe** | Parked (Joey, 3 Nov): Stripe will not move money between two connected accounts. Squadroom tracks who refereed and what is owed; the treasurer pays by bank transfer and marks the run paid. |

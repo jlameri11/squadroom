@@ -34,8 +34,10 @@ function isoDate(d: Date) {
 /**
  * L-07, the organiser's side: match fees per role, what is owed to
  * referees who turned up and is not yet in a run, build a run for a
- * period, mark it paid (bank transfer today; Stripe through the route when
- * the league's and the referees' accounts exist), and the CSV.
+ * period, mark it paid by bank transfer, and the CSV. Tracking only:
+ * paying referees through Stripe is PARKED (Joey, 3 Nov 2026) — Stripe
+ * will not transfer between two connected accounts, and the treasurer
+ * pays from the run sheet.
  */
 export function RefereePayments({ competitionId }: { competitionId: string }) {
   const [data, setData] = useState<Payments | null>(null)
@@ -102,16 +104,6 @@ export function RefereePayments({ competitionId }: { competitionId: string }) {
     const { error } = await createClient().rpc('mark_referee_run_paid', { p_run: run.id, p_method: method })
     setBusy(null)
     if (error) return setError(error.message)
-    await load()
-  }
-
-  async function payWithStripe(run: Run) {
-    setBusy(run.id)
-    setError(null)
-    const res = await fetch('/api/payments/referees', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ runId: run.id }) })
-    const body = await res.json().catch(() => ({}))
-    setBusy(null)
-    if (!res.ok) return setError(body.error ?? (body.failed ?? []).join('; ') ?? 'Stripe refused')
     await load()
   }
 
@@ -235,9 +227,6 @@ export function RefereePayments({ competitionId }: { competitionId: string }) {
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button onClick={() => markPaid(run, 'bank')} disabled={busy === run.id} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                         Paid by bank transfer
-                      </button>
-                      <button onClick={() => payWithStripe(run)} disabled={busy === run.id} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
-                        Pay through Stripe
                       </button>
                       <button onClick={() => voidRun(run)} disabled={busy === run.id} className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-50" style={{ borderColor: 'var(--line)', color: 'var(--no)' }}>
                         Void

@@ -54,12 +54,12 @@ async function findHarness(key, value) {
   return (await openAccounts()).find((a) => isHarness(a) && a.metadata[key] === value)?.id ?? null
 }
 
-async function activated(stripe, id, { merchant }) {
+async function activated(stripe, id) {
   for (let i = 0; i < 10; i++) {
     const a = await stripe.v2.core.accounts.retrieve(id, { include: ['configuration.merchant', 'configuration.recipient'] })
     const cards = a.configuration?.merchant?.capabilities?.card_payments?.status
     const transfers = a.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status
-    if ((merchant ? cards === 'active' : true) && transfers === 'active') return true
+    if (cards === 'active' && transfers === 'active') return true
     await new Promise((r) => setTimeout(r, 2000))
   }
   return false
@@ -68,7 +68,7 @@ async function activated(stripe, id, { merchant }) {
 /** A club's stand-in: takes card payments, receives transfers, pays out. Reused across runs. */
 export async function testMerchantAccount(stripe, { academyId, name, email, url }) {
   const existing = await findHarness('academy_id', academyId)
-  if (existing && (await activated(stripe, existing, { merchant: true }))) return { id: existing, reused: true }
+  if (existing && (await activated(stripe, existing))) return { id: existing, reused: true }
   const account = await stripe.v2.core.accounts.create({
     display_name: `${name} (test harness)`,
     contact_email: email,
@@ -88,26 +88,7 @@ export async function testMerchantAccount(stripe, { academyId, name, email, url 
     metadata: { test_harness: 'true', academy_id: academyId },
   })
   await stripe.accounts.createExternalAccount(account.id, { external_account: { ...TEST_BANK, account_holder_name: name } })
-  if (!(await activated(stripe, account.id, { merchant: true }))) throw new Error(`${account.id} did not activate`)
-  return { id: account.id, reused: false }
-}
-
-/** A referee's stand-in: receives transfers and pays out, charges nobody. Keyed by email, since the suite's referee users are remade each run. */
-export async function testRecipientAccount(stripe, { name, email }) {
-  const existing = await findHarness('email', email)
-  if (existing && (await activated(stripe, existing, { merchant: false }))) return { id: existing, reused: true }
-  const account = await stripe.v2.core.accounts.create({
-    display_name: `${name} (test harness)`,
-    contact_email: email,
-    dashboard: 'none',
-    // A recipient still owes Stripe a business URL; nothing else beyond the person and a bank.
-    defaults: { responsibilities: { fees_collector: 'application', losses_collector: 'application' }, profile: { business_url: 'https://squadroom-dev.netlify.app/referee' }, currency: 'aud', locales: ['en-AU'] },
-    identity: { country: 'AU', entity_type: 'individual', individual: individual(name, email, '+61400000003'), attestations: attested() },
-    configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
-    metadata: { test_harness: 'true', email, role: 'referee' },
-  })
-  await stripe.accounts.createExternalAccount(account.id, { external_account: { ...TEST_BANK, account_holder_name: name } })
-  if (!(await activated(stripe, account.id, { merchant: false }))) throw new Error(`${account.id} did not activate`)
+  if (!(await activated(stripe, account.id))) throw new Error(`${account.id} did not activate`)
   return { id: account.id, reused: false }
 }
 

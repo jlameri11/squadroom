@@ -6,6 +6,59 @@ every item on it is something no amount of building can get past.
 
 ---
 
+## Evening summary — 3 Nov 2026: the money moves (Stripe test mode), and the first deploy
+
+Joey pasted the Stripe **test** key and, an hour later, a Netlify token.
+Both are in `.env.local` only (gitignored; the file was checked). Stripe
+confirms `livemode: false` before anything runs; the test card is
+4242 4242 4242 4242 and nobody is charged.
+
+**Proven end to end on Stripe test mode** — `scripts/test-stripe-e2e.mjs`,
+run by hand with `STRIPE_E2E=1`, the dev server and `stripe listen`
+forwarding platform and Connect events to the webhook (migration 0207):
+
+| | What Stripe and the webhook did |
+|---|---|
+| Connect | `POST /api/payments/connect` makes the club's **Accounts v2 Express** account and an onboarding link; status read back on demand and on every `capability.updated`. |
+| Registration fee | Leo's $45 paid on Checkout; charged on the club's own account, **no application fee**; the webhook marks the row paid; the family's list shows it. |
+| Several kids, one checkout | One session, a line per child, a payments row per child; $30 + $27 (the seed's 10% second-child ladder); both rows paid by one event. |
+| Voucher + instalments | $20 off an $80 camp in four parts; the first checkout charges exactly part 1 ($15); the schedule then shows part 1 paid, part 2 next, and the next checkout is part 2. |
+| Refund | The club issues $15 of the $45 on its own account; Stripe says succeeded; the webhook marks the one row the refund named; a parent cannot issue one; twice is refused. |
+| League entry fee | The Ravens' owner pays the SPL's $120 on the **league's** account; a parent cannot; the webhook marks it paid; the league's fees view shows it; the league's balance is $120. |
+| Referee payout | **Stripe refuses:** *"Cannot create transfers between connected accounts."* The route marked nothing; the run stayed draft for the treasurer. **Joey, the same evening: parked** — tracking only, no Stripe payouts, no bank files; the referee's "Connect Stripe", the league's "Pay through Stripe" and both routes removed. |
+
+**Three things found and fixed on the way:**
+- Stripe's AU defaults put **Klarna, Zip and Link** on a junior club's fee
+  page; Checkout is now **cards only** (one line in each checkout route;
+  reversible if a club asks). Checkout also pre-ticks "Save my information
+  with Link", which adds a required phone number.
+- The webhook matched refunds through `charge.refunds`, which current API
+  versions no longer send; it now listens to `refund.created/updated`.
+- `test-payments` deleted the club's real billing row at the end of every
+  run — it now puts back what it found.
+
+**What a script cannot do:** finish an Express account's onboarding. Stripe
+owns requirement collection for Express — the API refuses to write its
+identity, people or terms acceptance once the link exists, and the hosted
+test-mode pages (with their "Use test phone number" shortcuts) sit behind
+an hCaptcha that answers "Challenge closed" to any automated browser,
+headless or not. So the suite proves the route and then moves the money on
+a test-mode account the API *can* activate (`scripts/_stripe-test-accounts.mjs`:
+no dashboard, platform collecting fees and losses, Stripe's test values),
+and closes everything it made at the end. Clicking through NRIFA's real
+Express onboarding in test mode is a two-minute job for a person (NEEDS
+JOEY #14).
+
+**Also today:** the Supabase personal access token in `.env.local` began
+answering `401 Invalid access token` mid-afternoon (NEEDS JOEY #12). It was
+valid an hour earlier; nothing here changed it. It blocks `npm run
+db:migrate`, `scripts/_sql.mjs` and `test-rls` until a new one exists; 0207
+was applied before it died.
+
+**Deploy:** see the Deploys table.
+
+**Session log:** see the line under the Deploys table.
+
 ## Morning summary — 3 Nov 2026 (the 2–3 Nov run; Joey sent two more items during the day)
 
 **Done, in the order asked (STEP 0–3, then Joey's two daytime messages):**
@@ -264,6 +317,7 @@ Exact steps are in NEEDS JOEY below.
 | **B-05** finance export | **Done.** Two CSVs from Collect payments — every fee per child with Stripe ids, and totals by program / squad / family. Money from the one price function | test-finance-export 14 |
 | **R-13** trials → offer → pay | **Done.** Offer control on the trial's list (squad program + days); guardians notified; `/offer/[id]` to accept (pre-approved, into the squad, then the fee) or decline; lapses by date. Two of its own bugs caught by the suite and fixed (0141, 0142) | test-trial-offers 26, test-rls 48–49 |
 | **R-12** season rollover | **Done.** Admin → New season: preview, then clone / move / keep numbers / open next season's squad program / end the old squad; "not yet re-registered" report with a weekly nudge | test-season-rollover 20, screens both themes |
+| **The Stripe half** (3 Nov, Joey's key): B-01 card step, R-04 one checkout for the family, B-02 instalments, B-03 siblings, B-07 vouchers, B-04 refunds, L-02/L-16 entry fees; L-07 referee payouts tried and **parked** | **Done** (0207: one payments row per child per session; `entry_fees` remember their session). Routes: connect (Express, v2) · checkout (many children) · entry-fee · refund (named refunds) · webhook (`capability.updated`, `refund.*`). Screens: Admin → Payments reads the status back on return; the family's list gets "Pay … for X and Y in one go". Checkout cards only. Referee payouts: Stripe refuses connected-to-connected transfers; Joey parked them (tracking only) and the referee Stripe button, the league's "Pay through Stripe" and both routes came out. See the evening summary | test-stripe-e2e (by hand, 36 checks, every money path green), payments / fees / program-fees / fee-settings / league-entry / referee-payments / vouchers suites green, tsc + eslint clean |
 
 ### Deploys
 
@@ -291,7 +345,49 @@ after M7 or M8 instead; nothing else moves.
 academies and leagues, never parents; no billing or plans built yet — is in
 CLAUDE.md.
 
-**7. A Netlify token, so I can deploy — ~2 minutes, free.** The site is
+**12. (3 Nov, afternoon) The Supabase personal access token has stopped
+working.** `SUPABASE_ACCESS_TOKEN` in `.env.local` (an `sbp_…` token) now
+gets `401 Invalid access token` from the management API — from
+`scripts/_sql.mjs`, `npx supabase projects list` and a plain
+`GET /v1/profile`. It worked at 20:30; the file is intact (checked line by
+line, nothing printed). Until a new one exists: no migrations can be
+applied, `test-rls` cannot run (it exits 1), and `test-match-day-list`
+skips its cron check. To fix (free, ~1 minute): Supabase dashboard → your
+avatar → **Account → Access tokens → Generate new token**, name it
+"squadroom laptop", and replace the `SUPABASE_ACCESS_TOKEN=` line in
+`.env.local`. Then tell me; `npm run test:all` re-runs the RLS suite.
+
+**13. — decided.** Referee payouts through Stripe are **parked** (Joey, 3
+Nov, evening): no Stripe payouts and no bank files for referees; tracking
+only — who refereed, the fee owed, the treasurer marks the run paid. The
+"Pay through Stripe" button, the referee's "Connect Stripe" and both routes
+were removed the same evening; `referees.stripe_account_id`,
+`referee_payment_items.stripe_transfer_id` and `paid_method = 'stripe'`
+stay in the database until a migration day (NEEDS JOEY #12 first). Noted
+as parked in BUILD_PLAN under L-07.
+
+**14. Stripe on the live site, and NRIFA's real onboarding — two small
+things only you can do.**
+- The test key and webhook secret are on the laptop only. If you want the
+  live demo to take test payments, say so and I will add
+  `STRIPE_SECRET_KEY` to Netlify and register the live webhook endpoint
+  with Stripe (it gives the secret). Nothing is charged in test mode.
+- NRIFA's Stripe account is an Express one and only a person can finish
+  its onboarding (see the evening summary). Admin → Payments → **Set up
+  payments** opens Stripe's test-mode pages: "Use test phone number" →
+  Submit → "Use test code", then test data through the rest. Two minutes.
+  Until then the suite stands in with a test-mode account it makes and
+  closes itself.
+
+**1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
+than the file; it is in `.env.local` now and nowhere else, but a key that
+has been in a chat window is a key worth rolling one day (Developers → API
+keys → Roll key, then replace the line). Everything it blocked is proven —
+see the evening summary.
+
+**7. Netlify token — DONE 3 Nov.** In `.env.local`; the deploy is in the
+Deploys table. The old steps, for the record:
+The site is
 linked (`.netlify/state.json` has the id) but there is no login or token
 here, and `netlify login` needs a browser. Steps:
 1. Netlify → your avatar → **User settings → Applications → Personal

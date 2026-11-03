@@ -4,9 +4,9 @@
 // Stripe account made through our own route; a registration fee paid on
 // Stripe Checkout with the test card; two children in one checkout; the
 // sibling discount and a voucher in the amount charged; an instalment; a
-// refund; a league's entry fee paid by a club; a referee's account and a
-// referee payout. The webhook arrives through `stripe listen` forwarding
-// to the dev server.
+// refund; a league's entry fee paid by a club. The webhook arrives through
+// `stripe listen` forwarding to the dev server. (Referee payouts through
+// Stripe are parked — see test-referee-payments for the tracking.)
 //
 // The club's real account is an Express one, and only Stripe's hosted
 // onboarding can finish it (see scripts/_stripe-test-accounts.mjs for why
@@ -25,7 +25,7 @@
 import { createClient } from '@supabase/supabase-js'
 import puppeteer from 'puppeteer-core'
 import { signInBoth } from './_auth.mjs'
-import { testStripe, testMerchantAccount, testRecipientAccount, closeTestAccount, openAccounts, isHarness } from './_stripe-test-accounts.mjs'
+import { testStripe, testMerchantAccount, closeTestAccount, openAccounts, isHarness } from './_stripe-test-accounts.mjs'
 
 if (process.env.STRIPE_E2E !== '1') {
   console.log('  STRIPE_E2E is not set — the Stripe end-to-end suite only runs by hand, with the CLI listener up')
@@ -56,8 +56,6 @@ const U8 = '00000000-0000-0000-0000-0000000d0008'
 const LEO = '00000000-0000-0000-0000-0000000e0001'
 const ZOE = '00000000-0000-0000-0000-0000000e0006'
 const TAG = 'STRIPE-E2E'
-const REF_EMAIL = 'stripe-e2e-ref@squadroom.invalid'
-const REF2_EMAIL = 'stripe-e2e-ref2@squadroom.invalid'
 const findings = []
 
 // Stripe, straight: for reading back what the webhook should have done.
@@ -182,7 +180,6 @@ async function payOnCheckout(url, label, card = '4242424242424242') {
 }
 
 // ------------------------------------------------------------------ tidy
-const refereeAccounts = []
 async function tidy() {
   const { data: reqs } = await admin.from('payment_requests').select('id').like('title', `${TAG}%`)
   for (const r of reqs ?? []) {
@@ -200,12 +197,6 @@ async function tidy() {
   await admin.from('vouchers').delete().like('code', `${TAG.replace('-', '')}%`)
   const { data: comps } = await admin.from('competitions').select('id').like('name', `${TAG}%`)
   for (const c of comps ?? []) await admin.from('competitions').delete().eq('id', c.id)
-  await admin.from('referees').delete().like('full_name', `% ${TAG}`)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  for (const e of [REF_EMAIL, REF2_EMAIL]) {
-    const u = users?.users?.find((x) => x.email === e)
-    if (u) await admin.auth.admin.deleteUser(u.id)
-  }
   // Billing rows back as they were; everything this run made at Stripe closed.
   for (const c of connected) {
     if (c.before) await admin.from('academy_billing').upsert(c.before, { onConflict: 'academy_id' })
@@ -213,7 +204,6 @@ async function tidy() {
     if (c.harness) console.log(`  stand-in ${c.harness}: ${await closeTestAccount(stripe, c.harness)}`)
     if (c.routeMadeIt) console.log(`  express ${c.routeAccount}: ${await closeTestAccount(stripe, c.routeAccount)}`)
   }
-  for (const id of refereeAccounts) console.log(`  referee ${id}: ${await closeTestAccount(stripe, id)}`)
   await admin.from('payment_requests').delete().eq('title', `${TAG} Probe`)
 }
 // A crashed earlier run can leave a billing row on a stand-in. Put it back on
@@ -340,8 +330,8 @@ if (splAcct) {
   const ef = await api(ravens, '/api/payments/entry-fee', { feeId: fee?.id })
   ef.status === 200 && ef.url ? ok("the Ravens' owner gets a Checkout Session on the league's account") : bad(`entry fee checkout: ${ef.status} ${ef.error ?? ''}`)
   if (ef.url) {
-    // The card that skips the pending balance, so the league has the money
-    // available for the referee transfer below.
+    // The card that skips the pending balance, so the league's available
+    // balance can be read back at once.
     await payOnCheckout(ef.url, 'Ravens entry fee', '4000000000000077')
     const paidFee = await until(async () => { const { data } = await admin.from('entry_fees').select('status, method, stripe_payment_intent').eq('id', fee.id).single(); return data?.status === 'paid' ? data : null }, 30000, 1500)
     paidFee?.method === 'stripe' ? ok('the webhook marked the entry fee paid by Stripe') : bad(`entry fee after: ${JSON.stringify(paidFee)}`)
@@ -354,80 +344,10 @@ if (splAcct) {
   }
 } else bad('the SPL is not connected — skipped')
 
-head("6. A referee's account, and a payout from the league")
-if (splAcct && comp) {
-  const mkUser = async (email, name) => {
-    const { data, error } = await admin.auth.admin.createUser({ email, email_confirm: true })
-    if (error) { bad(`user ${email}: ${error.message}`); return null }
-    await admin.from('profiles').upsert({ id: data.user.id, full_name: name })
-    return data.user.id
-  }
-  const refId = await mkUser(REF_EMAIL, `Pat Whistle ${TAG}`)
-  const ref2Id = await mkUser(REF2_EMAIL, `Robin Flag ${TAG}`)
-  const { data: pool } = await admin.from('referees').insert({ academy_id: SPL, profile_id: refId, full_name: `Pat Whistle ${TAG}`, grade: 'Level 3', claimed_at: new Date().toISOString() }).select('id').single()
-  const { data: pool2 } = await admin.from('referees').insert({ academy_id: SPL, profile_id: ref2Id, full_name: `Robin Flag ${TAG}`, grade: 'Level 4', claimed_at: new Date().toISOString() }).select('id').single()
-  const referee = await signInBoth(admin, REF_EMAIL)
-  const referee2 = await signInBoth(admin, REF2_EMAIL)
-
-  // 6a. The route, for a referee with nothing yet: a recipient account and a link.
-  const none = await api(referee2, '/api/payments/referees/connect', null, 'GET')
-  none.started === false ? ok('a referee with no account: not started') : bad(`status: ${JSON.stringify(none)}`)
-  const made = await api(referee2, '/api/payments/referees/connect', {})
-  if (made.account_id) refereeAccounts.push(made.account_id)
-  made.status === 200 && String(made.url ?? '').startsWith('https://connect.stripe.com/') ? ok(`the route makes a recipient-only account and an onboarding link for Robin (${made.account_id})`) : bad(`referee connect: ${made.status} ${made.error ?? JSON.stringify(made).slice(0, 160)}`)
-  const { data: robin } = await admin.from('referees').select('stripe_account_id').eq('id', pool2.id).single()
-  robin?.stripe_account_id === made.account_id ? ok("written on Robin's referee row") : bad(`referee row: ${JSON.stringify(robin)}`)
-  const after = await api(referee2, '/api/payments/referees/connect', null, 'GET')
-  after.started === true && after.connected === false ? ok(`read back: started, not yet able to receive (${after.outstanding} requirements outstanding)`) : bad(`status after: ${JSON.stringify(after)}`)
-  const notRef = await api(parent, '/api/payments/referees/connect', {})
-  notRef.status === 403 ? ok('a parent is not a referee (403)') : bad(`parent as referee: ${notRef.status}`)
-
-  // 6b. Pat: a test-mode recipient account the API activates, on the referee row.
-  const pat = await testRecipientAccount(stripe, { name: 'Pat Whistle', email: REF_EMAIL })
-  refereeAccounts.push(pat.id)
-  await admin.from('referees').update({ stripe_account_id: pat.id }).eq('id', pool.id)
-  const patSt = await api(referee, '/api/payments/referees/connect', null, 'GET')
-  patSt.connected === true ? ok(`Pat's account reads back as able to receive transfers (${pat.id})`) : bad(`Pat status: ${JSON.stringify(patSt)}`)
-
-  // 6c. A game Pat refereed last Saturday, a fee, a run.
-  const { data: entries } = await admin.from('competition_entries').insert([
-    { competition_id: comp.id, academy_id: NRIFA, team_id: U8, display_name: 'NRIFA U8', division: 'U8' },
-  ]).select('id')
-  const { data: others } = await admin.from('competition_entries').select('id').eq('competition_id', comp.id).neq('id', entries[0].id).limit(1)
-  const lastSat = new Date(); lastSat.setDate(lastSat.getDate() - ((lastSat.getDay() + 1) % 7 || 7)); lastSat.setHours(9, 0, 0, 0)
-  const { data: fx, error: fxErr } = await admin.from('fixtures').insert({ competition_id: comp.id, division: 'U8', round: 'R1', home_entry_id: entries[0].id, away_entry_id: others[0].id, starts_at: lastSat.toISOString(), status: 'final', home_score: 1, away_score: 0, stage: 'group' }).select('id').single()
-  if (fxErr) bad(`fixture: ${fxErr.message}`)
-  await admin.from('referee_appointments').insert({ competition_id: comp.id, fixture_id: fx.id, referee_id: pool.id, academy_id: SPL, role: 'referee', status: 'accepted', checked_in_at: lastSat.toISOString() })
-  const { error: feeE } = await owner.client.rpc('set_referee_fee', { p_competition: comp.id, p_role: 'referee', p_fee_cents: 4500 })
-  if (feeE) bad(`set_referee_fee: ${feeE.message}`)
-  const from = lastSat.toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' })
-  const { data: runId, error: runE } = await owner.client.rpc('build_referee_payment_run', { p_competition: comp.id, p_from: from, p_to: from })
-  runId ? ok(`the league builds a run: Pat, one game, $45`) : bad(`run: ${runE?.message ?? 'nothing built'}`)
-
-  // 6d. Pay it through Stripe: a transfer from the league's account to Pat's.
-  if (runId) {
-    const notYou = await api(ravens, '/api/payments/referees', { runId })
-    notYou.status === 404 || notYou.status === 403 ? ok(`a club cannot pay the league's run (${notYou.status})`) : bad(`club paying run: ${notYou.status}`)
-    const t = await api(owner, '/api/payments/referees', { runId })
-    const { data: items } = await admin.from('referee_payment_items').select('status, stripe_transfer_id, amount_cents').eq('run_id', runId)
-    const { data: run } = await admin.from('referee_payment_runs').select('status, paid_method').eq('id', runId).single()
-    if (t.status === 200 && t.ok) {
-      items?.every((i) => i.status === 'paid' && i.stripe_transfer_id) && run?.status === 'paid' && run.paid_method === 'stripe'
-        ? ok(`Stripe moved $45 from the league to Pat (${items[0].stripe_transfer_id}); the run and its item are marked paid by Stripe`)
-        : bad(`after payout: ${JSON.stringify({ items, run })}`)
-      const tr = await stripeApi(`/transfers/${items?.[0]?.stripe_transfer_id}`, { account: splAcct })
-      tr.amount === 4500 && tr.destination === pat.id ? ok(`Stripe has the transfer: ${tr.amount} cents to ${tr.destination}`) : note(`transfer read back: ${JSON.stringify(tr).slice(0, 200)}`)
-      findings.push(`referee payout: Stripe accepted a $45 transfer from the league's connected account to the referee's (${items?.[0]?.stripe_transfer_id})`)
-    } else {
-      const why = (t.failed?.[0] ?? t.error ?? JSON.stringify(t)).slice(0, 300)
-      note(`Stripe would not move the money league → referee: ${t.status} — ${why}`)
-      items?.every((i) => i.status === 'pending' && !i.stripe_transfer_id) && run?.status === 'draft'
-        ? ok('nothing was marked paid: the run stays draft, the item pending, for the treasurer to pay by bank transfer')
-        : bad(`after a refused payout: ${JSON.stringify({ items, run })}`)
-      findings.push(`referee payout: Stripe refused the connected-to-connected transfer — ${why}`)
-    }
-  }
-} else note('skipped — needs the SPL connected and the cup from section 5')
+// Referee payouts through Stripe are PARKED (Joey, 3 Nov 2026): Stripe will
+// not transfer between two connected accounts, and the league pays referees
+// by bank transfer and marks the run paid — tracking only, proven by
+// test-referee-payments. Nothing here touches a referee.
 
 head('What works')
 for (const f of findings) console.log(`  · ${f}`)
