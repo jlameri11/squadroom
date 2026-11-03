@@ -429,6 +429,13 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    `/for-clubs` (G-08), "Start free" into the setup checklist.
 8. **Then the remaining plan items in their current order:** the rest of
    M4 / M5, M1 + M6's Stripe halves when the key exists, M8 SaaS.
+   **3 Nov, afternoon:** M4 done (E-05, E-06, F-05 for results and form,
+   F-07; E-07/E-08 were already covered; the division Table from an export
+   is the one piece not built). M5 done bar photos and X-08 sponsor slots
+   (X-01, X-02, X-03, X-04's star card, X-07, X-11; X-05 as sections on one
+   page). **Next: the Stripe halves the moment the key lands (NEEDS JOEY
+   #1), then M8** — a production project, B-06 billing on its own code
+   path, G-03 support, X-08 sponsors, F-06 Squadi adapter, S-05 legal.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

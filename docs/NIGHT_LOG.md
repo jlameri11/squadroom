@@ -36,11 +36,22 @@ every item on it is something no amount of building can get past.
   clash rule in a trigger, the draw on pitches, call-off by pitch, the
   family's map with directions.
 
+**Afternoon and evening, 3 Nov (Joey: "Stripe key next couple of days;
+continue the next phase"):** the rest of **M4** — E-05 availability grid,
+E-06 the team sheet that tells the families, F-07 the match-day list and
+the hour-before push, F-05 results from a league export and the squad's
+form (E-07 and E-08 were already done by X-19 and L-29) — then **M5** —
+X-02 goals and assists, X-03 Player of the Match with the family vote,
+X-01/G-06 the live ticker into the chat, X-07 the club table, X-11 the
+parent pulse, X-04's Player of the Match card (nameless, like every card).
+**M4 is complete; M5 is complete bar photos on the match centre and X-08
+sponsor slots (M8).** Migrations 0199–0204.
+
 **Full runs:** #3 green (pushed), #6 green bar my own premature RLS check,
 #7 green (108 suites, 2,170), #8 green bar test-search's speed check under
-load (460 ms vs 205 ms alone — a flake), #9 running at the time of writing
-with everything above; pushed after each green run. **105 → 111 suites,
-~2,300 assertions.**
+load (460 ms vs 205 ms alone — a flake), #9 green (111, 2,301), #10 green
+(115, 2,387); pushed after each green run. **105 → 117 suites, ~2,450
+assertions.**
 
 **Deploys:** M9 (and now M3) are complete milestones, so a production
 deploy is due under the new rule — **blocked: no `NETLIFY_AUTH_TOKEN` on
@@ -256,7 +267,7 @@ Exact steps are in NEEDS JOEY below.
 
 | Date | What | Outcome |
 |---|---|---|
-| 3 Nov 2026 (Tue) | Milestones complete under the new rule: **M9 League mode** (bar Stripe) and **M3 WhatsApp feel**, plus G-01, G-05, R-19, L-29 and the money polish (0168 → 0198); full run #7 green, #8/#9 green bar a timing flake | **NOT DEPLOYED — no `NETLIFY_AUTH_TOKEN` in `.env.local`** (NEEDS JOEY #7). Deploys the first weekday the token exists and the full run is green. |
+| 3 Nov 2026 (Tue) | Milestones complete under the new rule: **M9 League mode** (bar Stripe), **M3 WhatsApp feel**, **M4 the Dribl side**, **M5 match centre and stats** (bar photos and sponsor slots), plus G-01, G-05, R-19, L-29 and the money polish (0168 → 0204); full runs #7, #9, #10 green | **NOT DEPLOYED — no `NETLIFY_AUTH_TOKEN` in `.env.local`** (NEEDS JOEY #7). Deploys the first weekday the token exists and the full run is green. |
 | 1 Nov 2026 (Sun, weekly slot) | Everything from 0147 to 0167: M9 league mode, R-18, the two fixes | **NOT DEPLOYED — no Netlify token** (NEEDS JOEY #7). Next slot Sunday 8 Nov. |
 | 30 Oct 2026 | One-off deploy Joey authorised: the live site is missing the Next.js security fix (16.3.3 → 16.4.3) | **BLOCKED — no Netlify credentials on this machine.** See NEEDS JOEY #7. Probing `squadroom-dev.netlify.app` showed it is **at least three days stale** (`age: 255224`): `/nrifa/register` and `/api/share/weekend`, which have existed for days, answer 404 there. So nothing auto-deploys from GitHub, and production is on the vulnerable Next. |
 
