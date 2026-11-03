@@ -35,6 +35,9 @@ type Prepared = {
   round: string
   external_ref: string
   was_home: boolean | null
+  /** F-05: the result in the file, as ours and theirs; null when it has none. */
+  our_score: number | null
+  their_score: number | null
   /** Why this row will not be imported. */
   problem: string | null
   /** Both sides are this club's — imported once, named with both teams. */
@@ -232,6 +235,29 @@ function Importer({
       // "7" on its own is not a round, it is a number. The file means Round 7.
       const round = /^\d+$/.test(rawRound) ? `Round ${rawRound}` : rawRound
 
+      // F-05: scores, as ours and theirs. Home/away columns are turned by
+      // which side was ours; a single "2 - 1" column reads home first. A
+      // row with no score carries none, and leaves any result alone.
+      const num = (k: FieldKey) => {
+        const v = text(row, k)
+        return /^\d+$/.test(v) ? Number(v) : null
+      }
+      let our_score: number | null = num('our_score')
+      let their_score: number | null = num('their_score')
+      if (our_score === null || their_score === null) {
+        let hs = num('home_score')
+        let as = num('away_score')
+        const combined = text(row, 'score').match(/^(\d+)\s*[-–:]\s*(\d+)$/)
+        if ((hs === null || as === null) && combined) {
+          hs = Number(combined[1])
+          as = Number(combined[2])
+        }
+        if (hs !== null && as !== null && typeof sides.wasHome === 'boolean') {
+          our_score = sides.wasHome ? hs : as
+          their_score = sides.wasHome ? as : hs
+        }
+      }
+
       let problem: string | null = null
       if (isBye(text(row, 'bye'))) problem = 'Marked as a bye — not a game'
       else if (!local_date) problem = 'Could not read the date'
@@ -261,6 +287,8 @@ function Importer({
         round,
         external_ref: text(row, 'external_ref'),
         was_home: sides.wasHome,
+        our_score,
+        their_score,
         problem,
         derby: sides.derby,
         team_id: team?.id ?? null,
@@ -327,11 +355,15 @@ function Importer({
       round: p.round,
       external_ref: p.external_ref,
       was_home: p.was_home,
+      // F-05: null when the file has no score for the row.
+      our_score: p.our_score,
+      their_score: p.their_score,
       // Per row, so one export of the whole club lands in the right squads.
       // Null falls back to the squad chosen for the file.
       team_id: p.team_id,
     }))
   }
+  const scoredRows = good.filter((p) => p.our_score !== null && p.their_score !== null).length
 
   async function check() {
     setBusy('Working out what changes…')
@@ -355,8 +387,25 @@ function Importer({
       p_events: payload() as never,
       p_cancel_missing: cancelMissing,
     })
+    if (error) {
+      setBusy(null)
+      return setError(error.message)
+    }
+    // F-05: the results in the file, onto the games just imported.
+    let recorded: { results: number; unmatched: number } | null = null
+    if (scoredRows > 0) {
+      const { data: rr, error: re } = await createClient().rpc('apply_imported_results', {
+        p_academy: academyId,
+        p_team: (teamId || null) as unknown as string,
+        p_events: payload() as never,
+      })
+      if (re) {
+        setBusy(null)
+        return setError(re.message)
+      }
+      recorded = rr as unknown as { results: number; unmatched: number }
+    }
     setBusy(null)
-    if (error) return setError(error.message)
     const r = data?.[0]
     setResult(
       [
@@ -364,6 +413,8 @@ function Importer({
         r?.updated ? `${r.updated} updated` : null,
         r?.cancelled ? `${r.cancelled} called off` : null,
         r?.skipped ? `${r.skipped} skipped` : null,
+        recorded?.results ? `${recorded.results} ${recorded.results === 1 ? 'result' : 'results'} recorded` : null,
+        recorded?.unmatched ? `${recorded.unmatched} ${recorded.unmatched === 1 ? 'score' : 'scores'} for games not found` : null,
       ]
         .filter(Boolean)
         .join(', ') + '.' || 'Nothing to do.'

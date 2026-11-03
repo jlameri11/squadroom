@@ -25,6 +25,12 @@ export type FieldKey =
   | 'title'
   | 'bye'
   | 'external_ref'
+  // F-05: an export that carries scores fills the results in.
+  | 'home_score'
+  | 'away_score'
+  | 'our_score'
+  | 'their_score'
+  | 'score'
 
 export type FieldSpec = {
   /**
@@ -178,6 +184,45 @@ export const FIELDS: FieldSpec[] = [
     hint: 'A fixture id, if the file has one. This is what lets a re-import update rather than duplicate.',
     required: false,
     matches: ['match id', 'fixture id', 'id', 'reference', 'ref', 'uuid'],
+  },
+  // F-05. A results export says who scored how many. Home/away columns are
+  // turned into ours/theirs by which side was ours; "2 - 1" in one column is
+  // read the same way. A file with no scores imports exactly as before.
+  {
+    key: 'home_score',
+    label: 'Home score',
+    hint: 'Goals for the home team, if the file has results',
+    required: false,
+    matches: ['home score', 'home goals', 'home team score', 'score home', 'hs'],
+  },
+  {
+    key: 'away_score',
+    label: 'Away score',
+    hint: 'Goals for the away team',
+    required: false,
+    matches: ['away score', 'away goals', 'away team score', 'score away', 'as'],
+  },
+  {
+    key: 'our_score',
+    label: 'Our score',
+    hint: 'Goals for, when the file is written from our side',
+    required: false,
+    matches: ['our score', 'goals for', 'for', 'gf', 'our goals'],
+  },
+  {
+    key: 'their_score',
+    label: 'Their score',
+    hint: 'Goals against',
+    required: false,
+    matches: ['their score', 'goals against', 'against', 'ga', 'their goals', 'opponent score'],
+  },
+  {
+    key: 'score',
+    label: 'Score',
+    hint: 'A single "2 - 1" column (home first), if that is how the file says it',
+    required: false,
+    matches: ['score', 'result', 'full time', 'ft', 'final score'],
+    excludes: ['home', 'away', 'our', 'their'],
   },
 ]
 

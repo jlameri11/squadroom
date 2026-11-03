@@ -6496,6 +6496,10 @@ export type Database = {
         Returns: undefined
       }
       applied_migration: { Args: { p_name: string }; Returns: string }
+      apply_imported_results: {
+        Args: { p_academy: string; p_events: Json; p_team: string }
+        Returns: Json
+      }
       apply_referee_allocation: {
         Args: { p_competition: string; p_rows: Json }
         Returns: Json
@@ -8007,6 +8011,7 @@ export type Database = {
           player_name: string
         }[]
       }
+      team_form: { Args: { p_n?: number; p_team: string }; Returns: Json }
       tick_checklist: {
         Args: { p_done?: boolean; p_event: string; p_item: string }
         Returns: Json
