@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Development } from './development'
+import { SeasonStats } from './season-stats'
 
 type Card = {
   id: string
@@ -180,6 +181,9 @@ export function PlayerCard({ playerId }: { playerId: string }) {
           {error}
         </p>
       )}
+
+      {/* X-02: the season — games, goals, assists, stars. */}
+      <SeasonStats playerId={card.id} />
 
       {/* G-05: notes, reports and clips — the family sees what is shared. */}
       <Development playerId={card.id} />

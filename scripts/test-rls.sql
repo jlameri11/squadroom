@@ -1050,6 +1050,32 @@ begin
   delete from public.events where id = '00000000-0000-0000-0000-00000000ee20';
   insert into rls_results values (105,'the match-day list''s ticks are the coaches'': a parent neither reads nor makes one',
     case when n=0 and b2 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0202. A game's stats are the squad's: its parent reads them, cannot
+  -- write them, and another club sees none; a vote is the voter's own.
+  insert into public.events (id, academy_id, team_id, type, title, starts_at, created_by)
+    values ('00000000-0000-0000-0000-00000000ee30', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000d0008', 'match', 'rls probe stats', now() - interval '1 day', COACH);
+  insert into public.event_player_stats (academy_id, event_id, player_id, goals, entered_by)
+    values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee30', '00000000-0000-0000-0000-0000000e0001', 2, COACH);
+  insert into public.potm_votes (academy_id, event_id, voter_id, player_id)
+    values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-00000000ee30', COACH, '00000000-0000-0000-0000-0000000e0001');
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.event_player_stats where event_id = '00000000-0000-0000-0000-00000000ee30';
+  b := (n = 1);
+  select count(*) into n from public.potm_votes where event_id = '00000000-0000-0000-0000-00000000ee30';
+  b := b and n = 0;   -- the coach's vote is not the parent's to see
+  b2 := false;
+  begin
+    update public.event_player_stats set goals = 9 where event_id = '00000000-0000-0000-0000-00000000ee30';
+    if not found then b2 := true; end if;
+  exception when others then b2 := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-0000000000c1','role','authenticated')::text, true);
+  select count(*) into n from public.event_player_stats where event_id = '00000000-0000-0000-0000-00000000ee30';
+  execute 'reset role';
+  delete from public.events where id = '00000000-0000-0000-0000-00000000ee30';
+  insert into rls_results values (106,'a game''s stats are the squad''s: its parent reads, cannot write, another club sees none; a vote is the voter''s',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

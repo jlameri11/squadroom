@@ -147,8 +147,8 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 |---|---|---|
 | X-05 | Match centre (event detail becomes tabs) | **Overview** (time, venue + directions, kit, arrive-by, weather) · **Availability** (staff) · **Lineup** (formation picker, private to the academy) · **Live/Result** (score, timeline, scorers, cards, Player of the Match, photos) · **Table/Form** (competition or imported ladder) |
 | X-01 | Live score taps | Manager mode: big +1 buttons per team, goal → scorer/assist picker, cards, half time / full time. Each event posts a compact live card to the team channel + push to followers. Undo within 60s |
-| X-02 | Junior stats | Appearances (from attendance/selection), goals, assists, Player of the Match, minutes (optional). Season totals + history across seasons |
-| X-03 | Player of the Match | Coach picks; optional parent/player vote (closes 24h after the game). A celebration card in chat with photo and sponsor slot |
+| X-02 | Junior stats | Appearances (from attendance/selection), goals, assists, Player of the Match, minutes (optional). Season totals + history across seasons. **Done 3 Nov (0202)** — season on the card and the squad's page |
+| X-03 | Player of the Match | Coach picks; optional parent/player vote (closes 24h after the game). A celebration card in chat with photo and sponsor slot. **Done 3 Nov (0202)** — a 🏆 announcement in the squad's chat (no photo: consent; sponsor slot waits for X-08) |
 | X-06 | Player card | Photo, squad, number, season stats, Player of the Match count. It's also the academy member card |
 | X-04 | Share cards | Generated images in academy colours: result, Player of the Match, weekend fixtures (port fixturefeed's card generator). Share to Instagram/WhatsApp. Respects photo consent and public-name settings |
 | X-07 | Academy table | All squads' results this season on one screen |

@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { AttendancePanel } from './attendance-panel'
 import { AvailabilityGrid } from './availability-grid'
 import { FormStrip } from './form-strip'
+import { TeamStats } from './team-stats'
 import { redirect, notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createClient, getUserId } from '@/lib/supabase/server'
@@ -94,6 +95,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       <BulkInvite teamId={team.id} academyId={team.academy_id} />
 
       <FormStrip teamId={team.id} />
+
+      <TeamStats teamId={team.id} />
 
       <AvailabilityGrid teamId={team.id} />
 

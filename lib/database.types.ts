@@ -1676,6 +1676,74 @@ export type Database = {
           },
         ]
       }
+      event_player_stats: {
+        Row: {
+          academy_id: string
+          assists: number
+          entered_by: string | null
+          event_id: string
+          goals: number
+          minutes: number | null
+          note: string | null
+          player_id: string
+          potm: boolean
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          assists?: number
+          entered_by?: string | null
+          event_id: string
+          goals?: number
+          minutes?: number | null
+          note?: string | null
+          player_id: string
+          potm?: boolean
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          assists?: number
+          entered_by?: string | null
+          event_id?: string
+          goals?: number
+          minutes?: number | null
+          note?: string | null
+          player_id?: string
+          potm?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_player_stats_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_player_stats_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_player_stats_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_player_stats_player_id_academy_id_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       event_rsvps: {
         Row: {
           academy_id: string
@@ -1921,6 +1989,7 @@ export type Database = {
           notes: string | null
           opponent: string | null
           our_score: number | null
+          potm_vote_open: boolean
           private_to: string | null
           result_note: string | null
           round: string | null
@@ -1959,6 +2028,7 @@ export type Database = {
           notes?: string | null
           opponent?: string | null
           our_score?: number | null
+          potm_vote_open?: boolean
           private_to?: string | null
           result_note?: string | null
           round?: string | null
@@ -1997,6 +2067,7 @@ export type Database = {
           notes?: string | null
           opponent?: string | null
           our_score?: number | null
+          potm_vote_open?: boolean
           private_to?: string | null
           result_note?: string | null
           round?: string | null
@@ -4727,6 +4798,59 @@ export type Database = {
           },
         ]
       }
+      potm_votes: {
+        Row: {
+          academy_id: string
+          created_at: string
+          event_id: string
+          player_id: string
+          voter_id: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          event_id: string
+          player_id: string
+          voter_id: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          event_id?: string
+          player_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "potm_votes_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "potm_votes_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "potm_votes_player_id_academy_id_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "potm_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -6967,6 +7091,7 @@ export type Database = {
           out_count: number
         }[]
       }
+      event_stats: { Args: { p_event: string }; Returns: Json }
       exempt_player_age: {
         Args: { p_entry: string; p_exempt: boolean; p_player: string }
         Returns: undefined
@@ -7378,6 +7503,10 @@ export type Database = {
         Returns: string
       }
       open_games_for_me: { Args: never; Returns: Json }
+      open_potm_vote: {
+        Args: { p_event: string; p_open?: boolean }
+        Returns: Json
+      }
       outstanding_consents: {
         Args: { p_player: string }
         Returns: {
@@ -7476,6 +7605,7 @@ export type Database = {
       }
       player_card: { Args: { p_player: string }; Returns: Json }
       player_development: { Args: { p_player: string }; Returns: Json }
+      player_season_stats: { Args: { p_player: string }; Returns: Json }
       poll_counts: {
         Args: { p_poll: string }
         Returns: {
@@ -7920,9 +8050,17 @@ export type Database = {
         Args: { p_academy: string; p_rules: Json }
         Returns: number
       }
+      set_player_of_match: {
+        Args: { p_event: string; p_note?: string; p_player?: string }
+        Returns: Json
+      }
       set_player_photo: {
         Args: { p_path: string; p_player: string }
         Returns: undefined
+      }
+      set_player_stats: {
+        Args: { p_event: string; p_rows: Json }
+        Returns: Json
       }
       set_program_fee: {
         Args: {
@@ -8012,6 +8150,7 @@ export type Database = {
         }[]
       }
       team_form: { Args: { p_n?: number; p_team: string }; Returns: Json }
+      team_season_stats: { Args: { p_team: string }; Returns: Json }
       tick_checklist: {
         Args: { p_done?: boolean; p_event: string; p_item: string }
         Returns: Json
@@ -8032,6 +8171,10 @@ export type Database = {
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
       venue_layout: { Args: { p_venue: string }; Returns: Json }
       void_referee_run: { Args: { p_run: string }; Returns: undefined }
+      vote_player_of_match: {
+        Args: { p_event: string; p_player: string }
+        Returns: Json
+      }
       whats_on: {
         Args: { p_academy: string; p_date: string }
         Returns: {
