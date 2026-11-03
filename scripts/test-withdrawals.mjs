@@ -128,13 +128,24 @@ head('4. The treasurer sees them; issuing without Stripe is said plainly')
   try {
     const res = await fetch(`${BASE}/api/payments/refund`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: owner.cookie }, body: JSON.stringify({ refundId: mine[0].id }) })
     const body = await res.json().catch(() => ({}))
+    // Three honest answers, by environment: no key → 503 and the refund
+    // waits; a key → Stripe is asked about this suite's made-up intent and
+    // refuses (502), and the refund is marked failed with Stripe's words,
+    // for the treasurer to see; a real intent → issued (test-stripe-e2e).
+    const fakeRefused = res.status === 502 && /No such payment_intent/.test(body.error ?? '')
     res.status === 503 && /Stripe isn't set up/.test(body.error ?? '')
       ? ok(`no key: 503 "${body.error.slice(0, 44)}…"`)
-      : res.status === 200
-        ? ok('a key is configured and the refund was issued')
-        : bad(`issue → ${res.status} ${JSON.stringify(body)}`)
-    const { data: still } = await admin.from('refunds').select('status').eq('id', mine[0].id).single()
-    res.status === 503 && still?.status === 'requested' ? ok('and the refund stays requested, not lost') : res.status === 200 ? ok('issued') : bad(`status ${still?.status}`)
+      : fakeRefused
+        ? ok(`a key: Stripe refuses the made-up intent (502 "${body.error.slice(0, 40)}")`)
+        : res.status === 200
+          ? ok('a key is configured and the refund was issued')
+          : bad(`issue → ${res.status} ${JSON.stringify(body)}`)
+    const { data: still } = await admin.from('refunds').select('status, note').eq('id', mine[0].id).single()
+    res.status === 503 && still?.status === 'requested'
+      ? ok('and the refund stays requested, not lost')
+      : fakeRefused && still?.status === 'failed' && /No such payment_intent/.test(still.note ?? '')
+        ? ok("and the refund is marked failed, with Stripe's reason, not lost")
+        : res.status === 200 ? ok('issued') : bad(`status ${still?.status}`)
     const asParent = await fetch(`${BASE}/api/payments/refund`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: parent.cookie }, body: JSON.stringify({ refundId: mine[0].id }) })
     asParent.status === 403 ? ok('a parent cannot issue their own refund') : bad(`parent → ${asParent.status}`)
   } catch (e) {

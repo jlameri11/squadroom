@@ -104,9 +104,13 @@ for (const file of suites) {
     /reading 'hashed_token'/.test(out)
   // test-join-flow drives real HTTP routes and needs the app running.
   const noServer = /ECONNREFUSED/.test(out)
+  // test-stripe-e2e needs the Stripe CLI listener and a flag, says so, and
+  // exits 2: by hand, not a crash.
+  const byHand = code === 2 && /only runs by hand/i.test(out)
 
   let verdict
   if (rateLimited) verdict = 'auth rate limited'
+  else if (byHand) verdict = 'by hand'
   else if (noServer) verdict = 'needs npm run dev'
   else if (crashed) verdict = 'crashed'
   else if (failed > 0) verdict = 'failed'
@@ -117,10 +121,12 @@ for (const file of suites) {
   const tag =
     verdict === 'pass'
       ? green(`pass ${passed}`)
-      : red(`${verdict}${failed ? ' ' + failed : ''}`)
+      : verdict === 'by hand'
+        ? dim('by hand (STRIPE_E2E=1, listener up)')
+        : red(`${verdict}${failed ? ' ' + failed : ''}`)
   console.log(`  ${name.padEnd(22)} ${tag}`)
 
-  if (verdict !== 'pass') {
+  if (verdict !== 'pass' && verdict !== 'by hand') {
     const reason = out
       .split('\n')
       .filter((l) => l.includes('✗') || /Error|error:/.test(l))
@@ -131,7 +137,7 @@ for (const file of suites) {
   await new Promise((r) => setTimeout(r, PAUSE_MS))
 }
 
-const bad = results.filter((r) => r.verdict !== 'pass')
+const bad = results.filter((r) => r.verdict !== 'pass' && r.verdict !== 'by hand')
 const assertions = results.reduce((n, r) => n + r.passed, 0)
 const limited = results.filter((r) => r.verdict === 'auth rate limited')
 

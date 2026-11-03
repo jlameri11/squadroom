@@ -405,9 +405,9 @@ once.
 `app/settings/academy` takes "the first academy by name", and for you that
 is a stray organisation called **"NRIFA"** (slug `nrifa-1`) with no
 squads — probably made with `/start` during a demo — not NRIFA Football
-Academy. Two questions: may I delete `nrifa-1`? And I will fix the page to
-use the organisation the browser is showing, as the season page now does
-(a small change; not done tonight only because it is outside the feature).
+Academy. **The page is fixed** (it resolves the organisation in the browser,
+`app/settings/academy/academy-loader.tsx`). One question stays: may I
+delete `nrifa-1`?
 
 **6. File-upload questions on the public form — a decision, not a build.**
 The brief lists "file upload" among the question types. The register page
