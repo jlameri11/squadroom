@@ -6,6 +6,60 @@ every item on it is something no amount of building can get past.
 
 ---
 
+## Morning summary — 3 Nov 2026 (the 2–3 Nov run; Joey sent two more items during the day)
+
+**Done, in the order asked (STEP 0–3, then Joey's two daytime messages):**
+
+- **STEP 1 Product direction** → CLAUDE.md (customers, the four-role
+  navigation rule, the new deploy rule, session logging).
+- **STEP 2** security sweep (0185: five anon-callable functions and an
+  allow-list test), test reliability (sessions cached, dev auth limits
+  raised, retry), role navigation (0186 `home_jobs` + a browser test per
+  role proving the two-tap rule).
+- **M9 League mode complete** bar the three Stripe halves (L-17…L-28 in
+  0187–0191); `test-league-season` passes.
+- **G-01** self-onboarding checklist (0192), **money polish** without the
+  key (vouchers, overdue chase, 0193), **G-08** `/for-clubs` with the free
+  trial, **M7** prepared as far as this machine allows (NEEDS JOEY #5).
+- **M3 complete:** C-05 voice/video, C-06 threads, then **C-11** (0194:
+  typing, ticks, link previews, swipe to reply). 0195 fixed two polls from
+  before 0044 that drew blank.
+- **G-05** development (0196): coach notes, termly reports with ratings,
+  clips as links — on the player card; the family sees what is shared.
+- **R-19 New season, graded** (0197, Joey's first daytime message): the
+  rollover preview is a plan — re-grade, split, merge, leave out, the
+  oldest group kept or released, a new intake — and a mid-season "move
+  players" tool. (Notice of Offer renumbered R-20.)
+- **L-29 Venue & pitch layout designer** (0198, Joey's second daytime
+  message, asked for as "L-27" — which is Nominations): venues with a pin
+  and amenities, pitches drawn and cut up, hours, sizes per age group, the
+  clash rule in a trigger, the draw on pitches, call-off by pitch, the
+  family's map with directions.
+
+**Full runs:** #3 green (pushed), #6 green bar my own premature RLS check,
+#7 green (108 suites, 2,170), #8 green bar test-search's speed check under
+load (460 ms vs 205 ms alone — a flake), #9 running at the time of writing
+with everything above; pushed after each green run. **105 → 111 suites,
+~2,300 assertions.**
+
+**Deploys:** M9 (and now M3) are complete milestones, so a production
+deploy is due under the new rule — **blocked: no `NETLIFY_AUTH_TOKEN` on
+this machine** (NEEDS JOEY #7; it is a Tuesday, so the day is allowed).
+
+**Two ID collisions, both decided and logged:** Joey's "R-19" collided with
+the plan-only Notice of Offer → that became R-20. Joey's "L-27" collided
+with Nominations (built) → the venue designer is **L-29**. If either
+should be the other way round, say so and the docs change; nothing in the
+code carries the numbers.
+
+**Still needs Joey:** #1 Stripe test key (eight money items) — **Joey, 3 Nov
+afternoon: "next couple of days"**, so the Stripe halves are queued right
+behind it; #5 Xcode and CocoaPods (free) then the Apple account; #7 the
+Netlify token (two milestones waiting to deploy); #9–#11 unchanged.
+
+**Session log:** stopped 3 Nov 2026 at the end of L-29 — see the line under
+the Deploys table.
+
 ## Morning summary — 1 Nov 2026 (overnight run)
 
 **M9 League mode is complete bar the three Stripe halves, and its
@@ -196,6 +250,7 @@ Exact steps are in NEEDS JOEY below.
 
 | Date | What | Outcome |
 |---|---|---|
+| 3 Nov 2026 (Tue) | Milestones complete under the new rule: **M9 League mode** (bar Stripe) and **M3 WhatsApp feel**, plus G-01, G-05, R-19, L-29 and the money polish (0168 → 0198); full run #7 green, #8/#9 green bar a timing flake | **NOT DEPLOYED — no `NETLIFY_AUTH_TOKEN` in `.env.local`** (NEEDS JOEY #7). Deploys the first weekday the token exists and the full run is green. |
 | 1 Nov 2026 (Sun, weekly slot) | Everything from 0147 to 0167: M9 league mode, R-18, the two fixes | **NOT DEPLOYED — no Netlify token** (NEEDS JOEY #7). Next slot Sunday 8 Nov. |
 | 30 Oct 2026 | One-off deploy Joey authorised: the live site is missing the Next.js security fix (16.3.3 → 16.4.3) | **BLOCKED — no Netlify credentials on this machine.** See NEEDS JOEY #7. Probing `squadroom-dev.netlify.app` showed it is **at least three days stale** (`age: 255224`): `/nrifa/register` and `/api/share/weekend`, which have existed for days, answer 404 there. So nothing auto-deploys from GitHub, and production is on the vulnerable Next. |
 
