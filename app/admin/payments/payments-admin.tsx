@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Outstanding } from './outstanding'
 import { RefundsPanel } from './refunds-panel'
 import { VouchersPanel } from './vouchers-panel'
+import { ConnectStatus } from './connect-status'
 import { createClient } from '@/lib/supabase/client'
 
 export type BillingStatus = {
@@ -81,6 +82,7 @@ export function PaymentsAdmin({
         Payments
       </h1>
       <p className="mt-0.5 text-sm text-ink-2">{academyName}</p>
+      <ConnectStatus academyId={academyId} started={started} ready={ready} />
       {/* B-05. A treasurer's two downloads: every fee per child with the
           Stripe ids to match a payout, and the totals by program, squad and
           family for a committee. The database decides who may have them. */}

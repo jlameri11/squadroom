@@ -33,9 +33,13 @@ const other  = await sess('p61400000012@squadroom.invalid')
 await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title','TESTPAY%')
 
 head('1. A parent cannot see the billing configuration')
-await admin.from('academy_billing').insert({
+// The real billing row, if the club has connected Stripe, goes back at the
+// end exactly as it was: this suite used to delete it, which disconnected
+// the club every time the tests ran.
+const { data: billingBefore } = await admin.from('academy_billing').select('*').eq('academy_id', NRIFA).maybeSingle()
+await admin.from('academy_billing').upsert({
   academy_id: NRIFA, stripe_account_id: 'acct_test_squadroom', charges_enabled: true,
-})
+}, { onConflict: 'academy_id' })
 const { data: parentBilling } = await sam.client.from('academy_billing').select('stripe_account_id')
 parentBilling?.length === 0 ? ok('bank setup is invisible to parents')
                             : bad(`a parent read ${JSON.stringify(parentBilling)}`)
@@ -125,5 +129,6 @@ const { error: peek } = await sam.client.rpc('payment_register', { p_request: re
 peek ? ok(`refused: ${peek.message}`) : bad('a parent read who else has not paid')
 
 await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title','TESTPAY%')
-await admin.from('academy_billing').delete().eq('academy_id', NRIFA)
+if (billingBefore) await admin.from('academy_billing').upsert(billingBefore, { onConflict: 'academy_id' })
+else await admin.from('academy_billing').delete().eq('academy_id', NRIFA)
 console.log('\ncleaned up\n')

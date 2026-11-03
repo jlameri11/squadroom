@@ -1362,6 +1362,8 @@ export type Database = {
           note: string | null
           paid_at: string | null
           status: Database["public"]["Enums"]["entry_fee_status"]
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
         }
         Insert: {
           academy_id: string
@@ -1375,6 +1377,8 @@ export type Database = {
           note?: string | null
           paid_at?: string | null
           status?: Database["public"]["Enums"]["entry_fee_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
         }
         Update: {
           academy_id?: string
@@ -1388,6 +1392,8 @@ export type Database = {
           note?: string | null
           paid_at?: string | null
           status?: Database["public"]["Enums"]["entry_fee_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: [
           {

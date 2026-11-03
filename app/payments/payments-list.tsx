@@ -63,6 +63,21 @@ export function PaymentsList({
     router.refresh()
   }
 
+  // R-04: one checkout for every child on the same request.
+  async function payAll(requestId: string, playerIds: string[]) {
+    setBusy(requestId + ':all')
+    setError(null)
+    const response = await fetch('/api/payments/checkout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ requestId, playerIds }),
+    })
+    const payload = await response.json()
+    setBusy(null)
+    if (!response.ok) return setError(payload.error ?? 'Could not start the payment.')
+    window.location.assign(payload.url)
+  }
+
   async function pay(row: Owing) {
     setBusy(row.request_id + (row.player_id ?? ''))
     setError(null)
@@ -110,6 +125,27 @@ export function PaymentsList({
           Nothing to pay.
         </p>
       )}
+
+      {/* R-04: a family with two children on one fee pays once. */}
+      {Object.entries(
+        outstanding.reduce<Record<string, Owing[]>>((acc, r) => {
+          if (r.player_id && r.can_pay) (acc[r.request_id] ??= []).push(r)
+          return acc
+        }, {})
+      )
+        .filter(([, rows]) => rows.length > 1)
+        .map(([requestId, rows]) => (
+          <button
+            key={requestId}
+            onClick={() => payAll(requestId, rows.map((r) => r.player_id as string))}
+            disabled={busy !== null}
+            className="mb-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background: NAVY }}
+            data-pay-all={requestId}
+          >
+            {busy === requestId + ':all' ? 'Starting…' : `Pay ${rows[0].title} for ${rows.map((r) => (r.player_name ?? '').split(' ')[0]).join(' and ')} in one go`}
+          </button>
+        ))}
 
       <ul className="flex flex-col gap-3">
         {outstanding.map((row) => {

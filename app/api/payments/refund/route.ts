@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { stripeOrNull } from '@/lib/stripe/client'
 
 /**
  * Issue a refund that withdraw_registration (0145) worked out and wrote down.
@@ -58,18 +58,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'This payment has no Stripe charge to refund.' }, { status: 409 })
   }
 
-  const key = process.env.STRIPE_SECRET_KEY
-  if (!key || !billing?.stripe_account_id) {
+  const stripe = stripeOrNull()
+  if (!stripe || !billing?.stripe_account_id) {
     return NextResponse.json(
       { error: "Stripe isn't set up for this club yet. The refund is recorded and can be issued once it is." },
       { status: 503 }
     )
   }
 
-  const stripe = new Stripe(key)
   try {
     const issued = await stripe.refunds.create(
-      { payment_intent: payment.stripe_payment_intent, amount: refund.amount_cents },
+      // The payment it is for, by id: a family's checkout has a row per child
+      // on one intent, and the webhook must refund only this one.
+      { payment_intent: payment.stripe_payment_intent, amount: refund.amount_cents, metadata: { payment_id: refund.payment_id ?? '', refund_id: refund.id } },
       { stripeAccount: billing.stripe_account_id }
     )
     await admin

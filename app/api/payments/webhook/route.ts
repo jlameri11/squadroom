@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stripeOrNull } from '@/lib/stripe/client'
+import { syncBillingByAccount } from '@/lib/stripe/billing'
 
 /**
- * Stripe telling us what actually happened.
+ * The only thing that may mark a payment paid.
  *
- * This is the ONLY thing allowed to mark a payment paid. A browser returning
- * to /payments?paid=1 is a claim, not a fact — anyone can type that URL, and
- * a parent whose phone died between the card and the redirect has still paid.
- * So the success page says "checking with your bank" and this says paid.
- *
- * The signature check is the whole security model. Without it this is an
- * open endpoint where anyone who knows a request id can mark a season's fees
- * settled, so an unverified body is never read, never logged, never parsed.
- *
- * Connected-account events arrive here too (the charge lives on the academy's
- * account, not ours) and carry the same signing secret.
+ * Signature verification on the raw body is the whole security model: parse
+ * first and re-serialise, and the bytes change and it never verifies. A
+ * session completing is not a payment: payment_status is. Refunds are
+ * matched to the one row they were for (a family's checkout has a row per
+ * child) by the metadata the refund route put on them, else to the intent.
+ * The league's entry fee rides the same session event, told apart by its
+ * metadata. 200 for anything ignored on purpose — Stripe retries a non-2xx
+ * for days, and retrying what we chose to ignore is noise.
  */
 export async function POST(request: Request) {
   const stripe = stripeOrNull()
@@ -23,12 +21,8 @@ export async function POST(request: Request) {
   if (!stripe || !secret) {
     return NextResponse.json({ error: 'Payments are not configured.' }, { status: 503 })
   }
-
   const signature = request.headers.get('stripe-signature')
   if (!signature) return new Response('No signature', { status: 400 })
-
-  // The RAW body. Parsing it first and re-serialising changes the bytes and
-  // the signature will never verify.
   const raw = await request.text()
 
   let event
@@ -43,9 +37,14 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
 
   switch (event.type) {
-    // Onboarding progress. An academy can submit everything and still not be
-    // able to charge for days while identity checks run, so these three flags
-    // are stored separately rather than collapsed into "connected".
+    // Accounts v2 raise no account.updated, but every capability change
+    // arrives as a Connect event naming the account: read it back then.
+    case 'capability.updated': {
+      if (event.account) await syncBillingByAccount(event.account)
+      break
+    }
+
+    // Classic accounts only; Accounts v2 are read back on demand (connect GET).
     case 'account.updated': {
       const account = event.data.object
       await admin
@@ -61,31 +60,26 @@ export async function POST(request: Request) {
       break
     }
 
-    case 'checkout.session.completed': {
+    case 'checkout.session.completed':
+    case 'checkout.session.async_payment_succeeded': {
       const session = event.data.object
       // payment_status, not the session being complete. A session can finish
       // with the payment still processing — BECS direct debit takes days —
       // and calling that paid would tell a coach money had arrived when it
       // had not.
       if (session.payment_status !== 'paid') break
-
+      const intent = typeof session.payment_intent === 'string' ? session.payment_intent : null
+      if (session.metadata?.kind === 'entry_fee' && session.metadata.entry_fee_id) {
+        await admin
+          .from('entry_fees')
+          .update({ status: 'paid', paid_at: new Date().toISOString(), method: 'stripe', stripe_payment_intent: intent })
+          .eq('id', session.metadata.entry_fee_id)
+          .eq('stripe_session_id', session.id)
+        break
+      }
       await admin
         .from('payments')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          stripe_payment_intent:
-            typeof session.payment_intent === 'string' ? session.payment_intent : null,
-        })
-        .eq('stripe_session_id', session.id)
-      break
-    }
-
-    case 'checkout.session.async_payment_succeeded': {
-      const session = event.data.object
-      await admin
-        .from('payments')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent: intent })
         .eq('stripe_session_id', session.id)
       break
     }
@@ -103,20 +97,29 @@ export async function POST(request: Request) {
       break
     }
 
+    // The refund route names the payment it was for; a family's checkout
+    // has several rows on one intent and only that one is refunded. The
+    // Refund object carries that name — the Charge no longer lists its
+    // refunds on current API versions, so charge.refunded cannot.
+    case 'refund.created':
+    case 'refund.updated': {
+      const refund = event.data.object
+      const paymentId = refund.metadata?.payment_id
+      if (refund.status !== 'succeeded' || !paymentId) break
+      await admin.from('payments').update({ status: 'refunded', refunded_at: new Date().toISOString() }).eq('id', paymentId)
+      break
+    }
+
+    // A refund issued elsewhere (the club's own Stripe dashboard) names no
+    // row; only a charge refunded in full is safe to apply to all of them.
     case 'charge.refunded': {
       const charge = event.data.object
       const intent = typeof charge.payment_intent === 'string' ? charge.payment_intent : null
-      if (!intent) break
-      await admin
-        .from('payments')
-        .update({ status: 'refunded', refunded_at: new Date().toISOString() })
-        .eq('stripe_payment_intent', intent)
+      if (!intent || !charge.refunded) break
+      await admin.from('payments').update({ status: 'refunded', refunded_at: new Date().toISOString() }).eq('stripe_payment_intent', intent).neq('status', 'refunded')
       break
     }
   }
 
-  // 200 for anything we chose not to act on. Stripe retries a non-2xx for
-  // days, and retrying an event we deliberately ignore is noise that hides
-  // the ones that genuinely failed.
   return NextResponse.json({ received: true })
 }
