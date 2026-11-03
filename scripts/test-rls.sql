@@ -969,6 +969,13 @@ begin
   execute 'reset role';
   insert into rls_results values (101,'typing is a member''s own topic; previews are read-only; receipts are the sender''s or a host''s',
     case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
+  -- 0195. Every poll option is an object with an id and a label; a plain
+  -- string renders as a blank option with no votes.
+  select count(*) into n from public.polls p
+   where exists (select 1 from jsonb_array_elements(case when jsonb_typeof(p.options) = 'array' then p.options else '[]'::jsonb end) o
+                  where jsonb_typeof(o) <> 'object' or o ->> 'id' is null or o ->> 'label' is null);
+  insert into rls_results values (102,'every poll option is an object with an id and a label',
+    case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
