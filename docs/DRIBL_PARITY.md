@@ -66,7 +66,7 @@ expect. Same statuses as above.
 | S15 | De-registration approval chain with automatic refunds; voucher carve-outs | Withdraw with refund (R-15) | PARTIAL | B-11 |
 | S16 | Named voucher types with limits and expiry | Government, club, coach, volunteer, scholarship, sibling; uses and an expiry per voucher | **DONE** (0193, 2 Nov) | B-12 |
 | S17 | Direct debit, Afterpay | Card and bank transfer (B-08) | MISSING — and we add **pay instalments early**, which Squadi cannot | B-13 |
-| S18 | Notice of Offer to returning players | Rollover (R-12) + offers (R-13) | PARTIAL | R-19 |
+| S18 | Notice of Offer to returning players | Rollover (R-12) + offers (R-13) | PARTIAL | R-20 (was R-19 until 3 Nov) |
 | S19 | Shop at checkout and standalone, inventory, variants, shipping, partial refunds | Kit add-ons at checkout (catalogue) | PARTIAL | B-14 |
 | S20 | Mandatory 2FA for admins | Magic link / password | MISSING | S-07 |
 | S21 | Registration dashboard: new vs returning, age, gender, targets | Queue counts | MISSING | R-20 |

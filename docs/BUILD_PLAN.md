@@ -166,8 +166,9 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | B-11 | De-registration approval chain (§6B.15) | Extends R-15: club → league approval where a league runs the competition; automatic refunds per level; voucher carve-outs |
 | B-12 | Named voucher types (§6B.16) | Extends B-07: coach, volunteer, scholarship, sibling, government — each with limits and expiry |
 | B-13 | Direct debit and Afterpay (§6B.17) | Stripe BECS and Afterpay at checkout; **instalments can be paid early** (Squadi cannot). Stripe |
-| R-19 | Notice of Offer (§6B.18) | Extends R-12 and R-13: a dated offer to every returning player at rollover, accepted into next season's program with the fee |
+| R-20 | Notice of Offer (§6B.18) | Extends R-12 and R-13: a dated offer to every returning player at rollover, accepted into next season's program with the fee. (Was R-19 until 3 Nov; Joey filed the graded new season as R-19) |
 | R-12 | Season rollover | Clone teams → move everyone up an age group → keep numbers where possible → re-registration invites prefilled → report on who hasn't re-registered |
+| R-19 | New season, graded (Joey, 3 Nov) | Extends R-12: re-grade in the preview (move players between the new squads, split, merge, leave out); new intake squad with its registration open; players ageing out of the oldest group listed separately (up / keep / leave); a bulk "move players" tool outside rollover. Chats, numbers and calendars follow. Preview first, nothing changes until confirmed. **Done 3 Nov (0197)** |
 | R-14 | Official rego status | Per player: PlayFootball done/pending, manual or via import; reminders to pending families before round 1 |
 
 ### M7: Native app, offline, reliability (2–3 sessions; needs Joey's Apple account)
@@ -371,6 +372,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    W-09's first items) — **done 3 Nov** (0196: notes, termly reports with
    ratings, clips as links; all on the player card, family sees what is
    shared).
+   - **6a. R-19 New season, graded** (Joey, 3 Nov, slotted here): re-grading
+     in the rollover preview, new intake, ageing out, bulk move players.
+     **Done 3 Nov (0197)** — see the R-19 row above and SQUADROOM_SPEC.
 7. **A public "for academies, clubs and leagues" page with a free-trial
    sign-up** (no billing — pricing is Joey's, CLAUDE.md). **Done 2 Nov:**
    `/for-clubs` (G-08), "Start free" into the setup checklist.
