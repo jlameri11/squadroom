@@ -3912,6 +3912,74 @@ export type Database = {
           },
         ]
       }
+      player_clips: {
+        Row: {
+          academy_id: string
+          added_by: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          note: string | null
+          player_id: string
+          shared_with_family: boolean
+          title: string
+          url: string
+        }
+        Insert: {
+          academy_id: string
+          added_by?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          note?: string | null
+          player_id: string
+          shared_with_family?: boolean
+          title: string
+          url: string
+        }
+        Update: {
+          academy_id?: string
+          added_by?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          note?: string | null
+          player_id?: string
+          shared_with_family?: boolean
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_clips_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_clips_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_clips_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_clips_player_id_academy_id_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       player_concussions: {
         Row: {
           academy_id: string
@@ -4136,6 +4204,73 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_reports: {
+        Row: {
+          academy_id: string
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          player_id: string
+          published_at: string | null
+          ratings: Json
+          shared_with_family: boolean
+          term: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          kind?: string
+          player_id: string
+          published_at?: string | null
+          ratings?: Json
+          shared_with_family?: boolean
+          term?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          player_id?: string
+          published_at?: string | null
+          ratings?: Json
+          shared_with_family?: boolean
+          term?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_reports_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_reports_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_reports_player_id_academy_id_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
           },
         ]
       }
@@ -6109,6 +6244,17 @@ export type Database = {
         Args: { p_body: string; p_request: string }
         Returns: string
       }
+      add_player_clip: {
+        Args: {
+          p_event?: string
+          p_note?: string
+          p_player: string
+          p_share?: boolean
+          p_title: string
+          p_url: string
+        }
+        Returns: string
+      }
       add_referee: {
         Args: {
           p_competition: string
@@ -6855,6 +7001,10 @@ export type Database = {
           on_date: string
         }[]
       }
+      move_players: {
+        Args: { p_academy: string; p_moves: Json }
+        Returns: Json
+      }
       my_appointments: { Args: never; Returns: Json }
       my_calendar_token: { Args: { p_rotate?: boolean }; Returns: string }
       my_channels: {
@@ -7089,6 +7239,7 @@ export type Database = {
         }[]
       }
       player_card: { Args: { p_player: string }; Returns: Json }
+      player_development: { Args: { p_player: string }; Returns: Json }
       poll_counts: {
         Args: { p_poll: string }
         Returns: {
@@ -7125,6 +7276,14 @@ export type Database = {
       }
       preview_imported_events: {
         Args: { p_academy: string; p_events: Json; p_team: string }
+        Returns: Json
+      }
+      preview_player_moves: {
+        Args: { p_academy: string; p_moves: Json }
+        Returns: Json
+      }
+      preview_season_plan: {
+        Args: { p_academy: string; p_from: string; p_to: string }
         Returns: Json
       }
       preview_season_rollover: {
@@ -7375,7 +7534,7 @@ export type Database = {
         Returns: number
       }
       roll_over_season: {
-        Args: { p_academy: string; p_from: string; p_to: string }
+        Args: { p_academy: string; p_from: string; p_plan?: Json; p_to: string }
         Returns: Json
       }
       rollover_report: {
@@ -7558,6 +7717,10 @@ export type Database = {
         Returns: undefined
       }
       setup_progress: { Args: { p_academy?: string }; Returns: Json }
+      share_player_report: {
+        Args: { p_report: string; p_share: boolean }
+        Returns: undefined
+      }
       shift_round: {
         Args: {
           p_competition: string
@@ -7652,6 +7815,17 @@ export type Database = {
       withdraw_registration: {
         Args: { p_reason?: string; p_registration: string }
         Returns: Json
+      }
+      write_player_report: {
+        Args: {
+          p_body: string
+          p_kind: string
+          p_player: string
+          p_ratings?: Json
+          p_share?: boolean
+          p_term?: string
+        }
+        Returns: string
       }
       zone_time: { Args: { p_zone: string }; Returns: string }
     }

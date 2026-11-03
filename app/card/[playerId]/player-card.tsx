@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { Development } from './development'
 
 type Card = {
   id: string
@@ -179,6 +180,9 @@ export function PlayerCard({ playerId }: { playerId: string }) {
           {error}
         </p>
       )}
+
+      {/* G-05: notes, reports and clips — the family sees what is shared. */}
+      <Development playerId={card.id} />
     </div>
   )
 }

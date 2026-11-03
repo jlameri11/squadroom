@@ -368,7 +368,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    simulator build needs no paid account).
 6. **The rest of M3** (WhatsApp feel) — **done 2 Nov** (C-11, 0194) — then
    **development features** (player reports, clips on profiles — G-05,
-   W-09's first items).
+   W-09's first items) — **done 3 Nov** (0196: notes, termly reports with
+   ratings, clips as links; all on the player card, family sees what is
+   shared).
 7. **A public "for academies, clubs and leagues" page with a free-trial
    sign-up** (no billing — pricing is Joey's, CLAUDE.md). **Done 2 Nov:**
    `/for-clubs` (G-08), "Start free" into the setup checklist.

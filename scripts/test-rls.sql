@@ -976,6 +976,33 @@ begin
                   where jsonb_typeof(o) <> 'object' or o ->> 'id' is null or o ->> 'label' is null);
   insert into rls_results values (102,'every poll option is an object with an id and a label',
     case when n=0 then 'PASS' else 'FAIL ('||n||')' end);
+  -- 0196. A coach's note never reaches the family; a shared report does; an
+  -- unshared clip does not; a parent writes none; a stranger sees none.
+  insert into public.player_reports (id, academy_id, player_id, author_id, kind, body)
+    values ('00000000-0000-0000-0000-00000000ee01', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000e0001', COACH, 'note', 'rls probe note');
+  insert into public.player_reports (id, academy_id, player_id, author_id, kind, body, shared_with_family, published_at)
+    values ('00000000-0000-0000-0000-00000000ee02', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000e0001', COACH, 'report', 'rls probe report', true, now());
+  insert into public.player_clips (id, academy_id, player_id, added_by, url, title, shared_with_family)
+    values ('00000000-0000-0000-0000-00000000ee03', '00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000e0001', COACH, 'https://example.com/rls-clip', 'rls probe clip', false);
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.player_reports where body like 'rls probe%';
+  b := (n = 1);
+  select count(*) into n from public.player_clips where title = 'rls probe clip';
+  b := b and n = 0;
+  b2 := false;
+  begin
+    insert into public.player_reports (academy_id, player_id, author_id, kind, body)
+      values ('00000000-0000-0000-0000-0000000a0001', '00000000-0000-0000-0000-0000000e0001', PARENT, 'note', 'rls parent note');
+  exception when others then b2 := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub','00000000-0000-0000-0000-0000000000c2','role','authenticated')::text, true);
+  select count(*) into n from public.player_reports where body like 'rls probe%';
+  execute 'reset role';
+  delete from public.player_reports where id in ('00000000-0000-0000-0000-00000000ee01', '00000000-0000-0000-0000-00000000ee02');
+  delete from public.player_clips where id = '00000000-0000-0000-0000-00000000ee03';
+  insert into rls_results values (103,'a coach''s note never reaches the family, a shared report does, a parent writes none, a stranger sees none',
+    case when b and b2 and n=0 then 'PASS' else 'FAIL' end);
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
