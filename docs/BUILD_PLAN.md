@@ -464,9 +464,18 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    F-07; E-07/E-08 were already covered; the division Table from an export
    is the one piece not built). M5 done bar photos and X-08 sponsor slots
    (X-01, X-02, X-03, X-04's star card, X-07, X-11; X-05 as sections on one
-   page). **Next: the Stripe halves the moment the key lands (NEEDS JOEY
-   #1), then M8** — a production project, B-06 billing on its own code
-   path, G-03 support, X-08 sponsors, F-06 Squadi adapter, S-05 legal.
+   page). **3 Nov, evening: the Stripe halves are done** (the key landed; see
+   NIGHT_LOG's evening summary) and **referee payouts are parked** (L-07).
+   **M8 as it stands:** G-03 support and X-08 sponsors are done; a
+   production project is Joey's (NEEDS JOEY); B-06 billing waits on
+   Joey's pricing (CLAUDE.md); F-06 the Squadi adapter needs one real
+   Squadi export to map from (NEEDS JOEY #15 — never guessed); S-05 is
+   the lawyer's (NEEDS JOEY #4). **Until a new Supabase access token
+   exists (NEEDS JOEY #12) nothing that needs a migration can be built**,
+   which rules out M4's division table from an export and M5's match-centre
+   photos. Buildable meanwhile, in this order: the 375px light/dark pass on
+   the three payment screens that changed today; the M7 preparation that
+   needs no Xcode; test and doc hygiene.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

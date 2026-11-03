@@ -379,6 +379,13 @@ things only you can do.**
   Until then the suite stands in with a test-mode account it makes and
   closes itself.
 
+**15. One real Squadi export, for F-06.** The importer maps whatever
+headers a file has, but a Squadi *adapter* (M8) means knowing Squadi's
+column names, and `SQUADI_INTEL.md` describes the product, not its export
+format. If you know a club or league on Squadi (QLD, WA, Northern NSW),
+one exported fixture list or roster — their own data, handed over — is all
+it takes. Without one, F-06 stays unbuilt rather than guessed.
+
 **1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
 than the file; it is in `.env.local` now and nowhere else, but a key that
 has been in a chat window is a key worth rolling one day (Developers → API
