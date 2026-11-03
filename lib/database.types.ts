@@ -6476,6 +6476,10 @@ export type Database = {
           unmarked: number
         }[]
       }
+      availability_grid: {
+        Args: { p_past?: number; p_team: string; p_upcoming?: number }
+        Returns: Json
+      }
       broadcast_to_competition: {
         Args: { p_body: string; p_competition: string; p_urgent?: boolean }
         Returns: number
@@ -7490,7 +7494,7 @@ export type Database = {
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
       publish_lineup: {
-        Args: { p_event: string; p_published?: boolean }
+        Args: { p_event: string; p_published?: boolean; p_tell_out?: boolean }
         Returns: undefined
       }
       publish_scheduled_messages: { Args: never; Returns: number }

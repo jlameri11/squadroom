@@ -134,9 +134,9 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | F-03 | Import diff preview | Before confirming a Dribl export: "3 moved · 1 new · 1 removed · 40 unchanged", each with old → new. Moved games fire the existing alerts |
 | F-04 | Retire fixturefeed | Once Joey has club-admin export access, the weekly routine becomes export → drop into `/admin/import` on Fri 3pm and Sat/Sun morning. Saved column mapping so it's one click. Push to admins if no import has happened by Friday 4pm |
 | F-05 | Results/ladders import | If the export has scores, fill in results; show Table/Form for official comps |
-| E-05 | Availability grid | Players × next 4 events, colour-coded, tap a cell to see the reason |
-| E-06 | Squad selection | Pick from the available players → positions (optional), meet time, kit → "Selected" push to those families; "Not selected this week" handled gently |
-| E-08 | Venues table | Maps link, parking, field map photo, toilets/canteen notes; reused by events and competitions |
+| E-05 | Availability grid | Players × next 4 events, colour-coded, tap a cell to see the reason. **Done 3 Nov (0199)** — on the team page, with the last two registers alongside |
+| E-06 | Squad selection | Pick from the available players → positions (optional), meet time, kit → "Selected" push to those families; "Not selected this week" handled gently. **Done 3 Nov (0199)** — publishing the sheet (0125) now tells the selected families once per role; the left-out families only when the coach ticks it, gently |
+| E-08 | Venues table | Maps link, parking, field map photo, toilets/canteen notes; reused by events and competitions. **Done 3 Nov (L-29, 0198)** |
 | E-01b | Edit one occurrence | Change a single training session's time/venue without breaking the series |
 | F-07 | Match-day checklist | Push to the manager 60 min before kick-off: "Submit the team sheet in Dribl (fines apply)" with a deep link; tick-off list |
 

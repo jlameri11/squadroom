@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { AttendancePanel } from './attendance-panel'
+import { AvailabilityGrid } from './availability-grid'
 import { redirect, notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createClient, getUserId } from '@/lib/supabase/server'
@@ -90,6 +91,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       />
 
       <BulkInvite teamId={team.id} academyId={team.academy_id} />
+
+      <AvailabilityGrid teamId={team.id} />
 
       <AttendancePanel academyId={team.academy_id} teamId={team.id} />
 

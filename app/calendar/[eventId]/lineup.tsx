@@ -115,12 +115,16 @@ export function Lineup({ eventId, canSee }: { eventId: string; canSee: boolean }
     await load()
   }
 
+  // E-06: publishing tells the selected families (meet time, ground, kit).
+  // The left-out families are told only if the coach ticks this, gently.
+  const [tellOut, setTellOut] = useState(false)
   async function publish(on: boolean) {
     setBusy(true)
     setError(null)
     const { error } = await createClient().rpc('publish_lineup', {
       p_event: eventId,
       p_published: on,
+      p_tell_out: on && tellOut,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -269,6 +273,15 @@ export function Lineup({ eventId, canSee }: { eventId: string; canSee: boolean }
           </span>
         )}
       </div>
+      {data.can_pick && !l.published_at && (
+        <>
+          <p className="mt-1 text-[11px] text-ink-3">Publishing tells each selected family: meet time, ground, kit, and their spot.</p>
+          <label className="mt-1 flex items-center gap-2 text-xs text-ink-2">
+            <input type="checkbox" checked={tellOut} onChange={(e) => setTellOut(e.target.checked)} data-tell-out />
+            Also tell the families not in the side this week (gently)
+          </label>
+        </>
+      )}
 
       <div className="mt-1 rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-baseline justify-between">
