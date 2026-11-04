@@ -103,6 +103,12 @@ export function useScreen<T>(fn: string, args?: Record<string, unknown>) {
           return
         }
         if (error || data == null) {
+          // A failure with no session is a signed-out visitor, not a bad
+          // connection: PostgREST answers a missing token with an error
+          // body, which used to read as "Couldn't load" (Joey, 4 Nov 2026).
+          void createClient().auth.getSession().then(({ data: s }) => {
+            if (live && !s.session) window.location.replace('/signin')
+          })
           // A cached screen stays on display rather than being replaced by an
           // error. A flaky moment on a train should not blank the fixtures.
           if (cache.get(key) === undefined) setFailed(true)

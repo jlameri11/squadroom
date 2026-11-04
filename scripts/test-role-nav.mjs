@@ -38,7 +38,9 @@ const RAVENS_OWNER = '00000000-0000-0000-0000-0000000000c1'
 // second tap that must be waiting there.
 const ROLES = [
   {
-    persona: 'parent', profile: PARENT, org: NRIFA, heading: 'Your jobs',
+    // A parent's jobs are rows in Needs you (one list, 4 Nov 2026), each
+    // still carrying data-job for the two-tap rule.
+    persona: 'parent', profile: PARENT, org: NRIFA, heading: 'Needs you',
     jobs: {
       rsvp: { landing: /^\/calendar/, control: { selector: 'button::-p-text(Going)' }, second: 'the Going / Maybe / Out buttons' },
       chat: { landing: /^\/chat\//, control: { selector: 'textarea' }, second: 'the composer' },

@@ -66,7 +66,15 @@ const PERSONA_WORD: Record<Persona, string> = {
  */
 type Setup = { done: number; total: number; minutes: number; complete: boolean; completed_at: string | null; grandfathered?: boolean }
 
-export function HomeJobs() {
+/** What Home hands to Needs you for a parent: the jobs, already pointing at the exact page. */
+export type JobsHandoff = { persona: Persona; jobs: Job[] }
+
+/** An announcement is news for a fortnight; after that it is history, and history is in the channel. */
+export const ANNOUNCEMENT_DAYS = 14
+export const isFreshAnnouncement = (createdAt: string, now = Date.now()) =>
+  now - new Date(createdAt).getTime() < ANNOUNCEMENT_DAYS * 864e5
+
+export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
   const [data, setData] = useState<Jobs | null>(null)
   const [setup, setSetup] = useState<Setup | null>(null)
 
@@ -78,6 +86,7 @@ export function HomeJobs() {
       if (!live) return
       const jobs = (data as unknown as Jobs | null) ?? null
       setData(jobs)
+      if (jobs) onJobs?.({ persona: jobs.persona, jobs: jobs.jobs ?? [] })
       // G-01: a club still being set up gets the checklist first.
       if (jobs?.persona === 'owner') {
         const { data: s } = await supabase.rpc('setup_progress', { p_academy: getOrg() ?? undefined })
@@ -87,6 +96,8 @@ export function HomeJobs() {
     return () => {
       live = false
     }
+    // onJobs is a state setter from Home; stable for the life of the screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (!data || !data.jobs?.length) return null
@@ -97,7 +108,11 @@ export function HomeJobs() {
     window.location.replace('/')
   }
 
-  const ann = data.announcement
+  // Hidden once it is a fortnight old (Joey, 4 Nov 2026): a parent was
+  // reading about a presentation day two months gone at the top of Home.
+  const ann = data.announcement && isFreshAnnouncement(data.announcement.created_at) ? data.announcement : null
+  // A parent's jobs are rows in Needs you, not a strip above it: one list.
+  const tiles = data.persona !== 'parent'
 
   return (
     <section className="px-3.5 pt-4" data-persona={data.persona}>
@@ -141,39 +156,43 @@ export function HomeJobs() {
         </Link>
       )}
 
-      <div className="sect">
-        <span className="eyebrow">{HEADING[data.persona]}</span>
-        {data.today && (
-          <Link href={data.today.href} className="text-xs text-ink-3 underline underline-offset-2" data-today>
-            {data.today.label}: {data.today.detail}
-          </Link>
-        )}
-      </div>
+      {tiles && (
+        <>
+          <div className="sect">
+            <span className="eyebrow">{HEADING[data.persona]}</span>
+            {data.today && (
+              <Link href={data.today.href} className="text-xs text-ink-3 underline underline-offset-2" data-today>
+                {data.today.label}: {data.today.detail}
+              </Link>
+            )}
+          </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {data.jobs.map((j) => (
-          <Link
-            key={j.id}
-            href={j.href}
-            data-job={j.id}
-            className="card flex min-h-[88px] flex-col justify-between p-2.5"
-          >
-            <span className="flex items-start justify-between gap-1">
-              <span className="text-sm font-semibold leading-tight" style={{ color: 'var(--brand-text)' }}>
-                {j.label}
-              </span>
-              {j.count > 0 && <span className="pill flex-none">{j.count}</span>}
-            </span>
-            <span className="mt-1 line-clamp-2 text-[11px] leading-snug text-ink-3">{j.detail}</span>
-          </Link>
-        ))}
-      </div>
+          <div className="grid grid-cols-3 gap-2">
+            {data.jobs.map((j) => (
+              <Link
+                key={j.id}
+                href={j.href}
+                data-job={j.id}
+                className="card flex min-h-[88px] flex-col justify-between p-2.5"
+              >
+                <span className="flex items-start justify-between gap-1">
+                  <span className="text-sm font-semibold leading-tight" style={{ color: 'var(--brand-text)' }}>
+                    {j.label}
+                  </span>
+                  {j.count > 0 && <span className="pill flex-none">{j.count}</span>}
+                </span>
+                <span className="mt-1 line-clamp-2 text-[11px] leading-snug text-ink-3">{j.detail}</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       {data.persona === 'parent' && ann && (
         <Link
           href={`/chat/${ann.channel_id}`}
           data-announcement
-          className="card mt-3 block p-3.5"
+          className="card block p-3.5"
           style={{ borderColor: 'var(--brand)' }}
         >
           <span className="eyebrow">Latest announcement · {ann.channel_name}</span>

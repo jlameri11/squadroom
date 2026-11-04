@@ -1163,6 +1163,30 @@ begin
   insert into rls_results values (110,'a game''s video is the squad''s to see, nobody''s to write directly, and another club sees none',
     case when b and b2 and n=0 then 'PASS' else 'FAIL ('||n||')' end);
 
+  -- 0208. A coach runs their squad, not the club: starting a competition
+  -- is the staff's. (0022 let any coach of the organisation do it, and the
+  -- Admin hub offered it; both changed on 4 Nov 2026.)
+  perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by)
+      values (ACAD_A, 'rls probe coach cup', 'tournament', '2026', 'active', 'managed', 'participants', MARCUS);
+  exception when others then b := true;
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  b2 := false;
+  begin
+    insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by)
+      values (ACAD_A, 'rls probe owner cup', 'tournament', '2026', 'active', 'managed', 'participants', COACH);
+    b2 := true;
+  exception when others then b2 := false;
+  end;
+  execute 'reset role';
+  delete from public.competitions where name in ('rls probe coach cup', 'rls probe owner cup');
+  insert into rls_results values (111,'a coach cannot start a competition under the club''s name; its owner can',
+    case when b and b2 then 'PASS' else 'FAIL (coach refused '||b||', owner allowed '||b2||')' end);
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

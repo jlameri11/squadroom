@@ -498,6 +498,16 @@ one and is meant to reach hundreds of academies.
 - **The four-role Home** is `home_jobs` (0186) + `app/home-jobs.tsx`;
   `scripts/test-role-nav.mjs` proves the two-tap rule in a real browser.
   A new job for a role is a change to `home_jobs` and a row in that test.
+  **Simplicity rules (Joey, 4 Nov 2026):** a parent's Home is at most a
+  screen and a half at 375px and has ONE list (their three jobs are rows in
+  Needs you, never a strip as well); one orange card at a time; no Channels
+  list on Home (the Chat tab); the next two fixtures for a parent, three
+  for a coach; announcements older than 14 days are not shown; "to answer"
+  is one number everywhere — games and sessions in the next three weeks a
+  child has not been answered for; plain words ("17 not answered", never
+  "quiet"); the home editor is a button that says Edit, not ☰. A coach who
+  is not staff sees on the Admin hub only what the database lets them do
+  (`scripts/test-coach-scope.mjs`).
 - **RLS costs are per row SCANNED, not per row returned.** Measured on
   60,000 messages: filtered by channel it is an index scan at ~1ms; an
   unfiltered `select from messages` is a seq scan at ~836ms, because the

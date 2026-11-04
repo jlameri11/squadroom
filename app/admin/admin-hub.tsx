@@ -101,11 +101,17 @@ export function AdminHub() {
           </Link>
         ) : null}
 
-        <h2 className="eyebrow px-1 pb-2">The team</h2>
+        {/* A coach who is not staff sees only what the database lets them
+            do: their squads, the families waiting on them, the programs they
+            decide registrations for, and a file to import for their squad.
+            Rolling the season over, laying out grounds and starting a
+            competition are the club's, and a row that ends in "only an
+            admin can…" is a row that should not be there (Joey, 4 Nov 2026). */}
+        <h2 className="eyebrow px-1 pb-2">{isStaff ? 'The team' : 'Your squads'}</h2>
         <ul className="card mb-5 overflow-hidden">
           <Row href="/admin/teams" label="Teams and players" hint="Squads, seasons, join links" />
-          <Row href="/admin/season" label="New season" hint="Roll every squad up an age group, then chase re-registrations" />
-          <Row href="/admin/venues" label="Venues and pitches" hint="Grounds, the pitch layout, hours, and which size each age group plays on" />
+          {isStaff && <Row href="/admin/season" label="New season" hint="Roll every squad up an age group, then chase re-registrations" />}
+          {isStaff && <Row href="/admin/venues" label="Venues and pitches" hint="Grounds, the pitch layout, hours, and which size each age group plays on" />}
           <Row href="/admin/requests" label="Join requests" hint="Approve new families" />
           <Row
             href="/admin/programs"
@@ -124,7 +130,7 @@ export function AdminHub() {
         <h2 className="eyebrow px-1 pb-2">Competitions</h2>
         <ul className="card mb-5 overflow-hidden">
           <Row href="/competitions" label="Competitions" hint="Tournaments, cups and gala days" />
-          <Row href="/competitions/new" label="Start a competition" />
+          {isStaff && <Row href="/competitions/new" label="Start a competition" />}
         </ul>
 
         {isStaff && (

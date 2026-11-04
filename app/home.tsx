@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { SignOut } from '@/components/sign-out'
 import { NeedsYou } from './needs-you'
-import { HomeJobs } from './home-jobs'
+import { HomeJobs, type JobsHandoff } from './home-jobs'
 import { HomeCalendar } from './home-calendar'
 import { HomeCompetitions } from './home-competitions'
 import { HomeOwing } from './home-owing'
@@ -80,6 +80,24 @@ export function Home() {
   // has left.
   useReconcileOrg(data?.academy?.id)
 
+  // A signed-out visit to / goes to /signin, not to "Couldn't load": the
+  // screen fetch fails for them too, and a failure with no session is not a
+  // connection problem.
+  const [signedOut, setSignedOut] = useState<boolean | null>(null)
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data: s } = await createClient().auth.getSession()
+      if (!live) return
+      if (!s.session) window.location.replace('/signin')
+      setSignedOut(!s.session)
+    })()
+    return () => {
+      live = false
+    }
+  }, [])
+
+  if (failed && signedOut !== false) return <ScreenSkeleton />
   if (failed) {
     return (
       <div className="mx-auto grid min-h-dvh w-full max-w-md place-items-center p-6">
@@ -106,17 +124,8 @@ export function Home() {
       childList={data.children ?? []}
       me={data.profile?.full_name ?? null}
       events={data.events ?? []}
-      channels={data.channels ?? []}
     />
   )
-}
-
-const TYPE_TINT: Record<string, string> = {
-  match: 'var(--brand)',
-  tournament: 'var(--maybe)',
-  training: 'var(--ink-2)',
-  social: 'var(--yes)',
-  other: 'var(--ink-2)',
 }
 
 /**
@@ -140,7 +149,6 @@ function HomeScreen({
   me,
   childList,
   events,
-  channels,
 }: {
   academy: Academy
   otherAcademies: { id: string; name: string; type: string }[]
@@ -152,9 +160,7 @@ function HomeScreen({
   /** This person's own children in this academy, for the filter chips. */
   childList: Child[]
   events: HomeEvent[]
-  channels: HomeChannel[]
 }) {
-  const unread = channels.reduce((sum, c) => sum + (c.muted ? 0 : c.unread_count), 0)
   const isStaff = role === 'owner' || role === 'admin'
   const isCoach = isStaff || role === 'coach'
   // A league's owner is its organiser; "run the club" is the wrong sentence
@@ -177,6 +183,10 @@ function HomeScreen({
     ? events.filter((e) => (e.rsvps ?? []).some((r) => r.player_id === onlyChild))
     : events
 
+  // The parent's three jobs, from home_jobs, folded into Needs you (Joey,
+  // 4 Nov 2026: one list, never a strip and a list). The strip fetches them
+  // and hands them here; Needs you draws them as rows.
+  const [jobs, setJobs] = useState<JobsHandoff | null>(null)
 
   // The layout, resolved by the database so the client never holds a second
   // opinion about what a new person sees. Falls back to the two sections the
@@ -186,7 +196,7 @@ function HomeScreen({
     sections: SectionId[]
     available: SectionId[]
     customised: boolean
-  }>({ sections: ['needs', 'upcoming', 'chats'], available: [], customised: false })
+  }>({ sections: ['needs', 'upcoming'], available: [], customised: false })
   const [editing, setEditing] = useState(false)
 
   useEffect(() => {
@@ -208,19 +218,31 @@ function HomeScreen({
     }
   }, [editing])
 
-  const layout = layoutState.sections
+  // The Channels list is gone from Home (Joey, 4 Nov 2026): the Chat tab is
+  // one tap away and carries the same list with the same counts, and a parent
+  // was scrolling past it to reach nothing. The stored layout may still name
+  // it, so it is dropped here rather than offered.
+  const layout = layoutState.sections.filter((id) => id !== 'chats')
+  const available = layoutState.available.filter((id) => id !== 'chats')
+
+  // Home shows the next few things, not the next three weeks: a parent's
+  // screen is at most a screen and a half (Joey, 4 Nov 2026), and the
+  // Fixtures tab has the rest. A parent's card carries a row per child to
+  // answer, so two of them is a screen's worth; a coach's is a line.
+  const grouped = groupTraining(shownEvents)
+  const shownItems = grouped.slice(0, isCoach ? 3 : 2)
 
   // Each section, keyed by the id the database stores. Every one renders
   // nothing when it has nothing, so a section somebody has turned on but has
   // no data for costs them no space.
   const panels: Record<SectionId, React.ReactNode> = {
-    needs: <NeedsYou />,
+    needs: <NeedsYou jobs={role === 'parent' ? jobs : null} />,
     upcoming: (
           <section className="px-3.5 pb-5 pt-4">
             <div className="sect">
-              <span className="eyebrow">Upcoming · next 3 weeks</span>
+              <span className="eyebrow">Coming up</span>
               <Link href="/calendar" className="text-xs text-ink-3 underline underline-offset-2">
-                All fixtures
+                {grouped.length > shownItems.length ? `All ${shownEvents.length} in the next 3 weeks` : 'All fixtures'}
               </Link>
             </div>
 
@@ -241,7 +263,7 @@ function HomeScreen({
                     filling three of the five slots here with the same date,
                     the same venue and the same word — so the Saturday match
                     started below the fold. */}
-                {groupTraining(shownEvents).map((item) =>
+                {shownItems.map((item) =>
                   item.kind === 'training' ? (
                     <TrainingBlock
                       key={item.events[0].id}
@@ -264,46 +286,7 @@ function HomeScreen({
           </section>
     ),
     calendar: <HomeCalendar />,
-    chats: (
-          <section className="px-3.5 pb-5">
-            <div className="sect">
-              <span className="eyebrow">Channels</span>
-              {unread > 0 ? (
-                <span className="pill">{unread}</span>
-              ) : (
-                <Link href="/chat" className="text-xs text-ink-3 underline underline-offset-2">
-                  All chats
-                </Link>
-              )}
-            </div>
-
-            {channels.length === 0 ? (
-              <p className="card p-6 text-center text-sm text-ink-3">You&apos;re not in any chats yet.</p>
-            ) : (
-              <div className="card overflow-hidden">
-                {channels.slice(0, 5).map((c) => (
-                  <Link key={c.channel_id} href={`/chat/${c.channel_id}`} className="chan">
-                    <span className={`av ${c.unread_count > 0 ? '' : 'alt'}`}>
-                      {initials(c.name)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold">{c.name}</span>
-                        {c.muted && <span className="badge">muted</span>}
-                      </span>
-                      <span className="block truncate text-xs text-ink-2">
-                        {c.last_message_body
-                          ? `${c.last_sender_name ? `${c.last_sender_name.split(' ')[0]}: ` : ''}${c.last_message_body}`
-                          : 'No messages yet'}
-                      </span>
-                    </span>
-                    {c.unread_count > 0 && <span className="pill flex-none">{c.unread_count}</span>}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-    ),
+    chats: null,
     competitions: <HomeCompetitions />,
     owing: <HomeOwing />,
   }
@@ -318,14 +301,16 @@ function HomeScreen({
         meta={`${roleWord} · ${todayLabel()}`}
         crest={academy.name.slice(0, 2).toUpperCase()}
         action={
-          layoutState.available.length > 0 && (
+          available.length > 0 && (
+            // The word, not a glyph. ☰ reads as a menu, and this is not one.
             <button
               onClick={() => setEditing(true)}
-              className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-base"
+              className="flex h-9 flex-none items-center gap-1 rounded-[10px] px-2.5 text-xs font-semibold"
               style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
-              aria-label="Choose what you see on this screen"
+              aria-label="Edit this screen"
+              data-edit-home
             >
-              ☰
+              <span aria-hidden>✎</span> Edit
             </button>
           )
         }
@@ -350,13 +335,14 @@ function HomeScreen({
         2026: each of the four roles sees its own priorities, reaches each
         job in two taps, and switches organisation in one.
       */}
-      <HomeJobs />
+      <HomeJobs onJobs={setJobs} />
 
       {/*
         Everything waiting on this person, in one strip. It replaced a
         bespoke card that only ever counted join requests — two things
         telling a coach the same number is one too many, and the strip
-        covers registrations, registers, fees and consents as well.
+        covers registrations, registers, fees and consents as well. For a
+        parent the three jobs live inside it (one list, 4 Nov 2026).
       */}
 
       {/*
@@ -381,7 +367,7 @@ function HomeScreen({
       {editing && (
         <EditHome
           sections={layout}
-          available={layoutState.available}
+          available={available}
           customised={layoutState.customised}
           onClose={() => setEditing(false)}
           onSaved={() => setEditing(false)}
@@ -641,35 +627,3 @@ function EventCard({
   )
 }
 
-function initials(name: string) {
-  return (
-    (name ?? '')
-      .replace(/[^A-Za-z0-9 ]/g, '')
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase() || '··'
-  )
-}
-
-function Item({ href, label, hint }: { href: string; label: string; hint?: string }) {
-  return (
-    <li>
-      <Link href={href} className="row justify-between">
-        <span className="min-w-0">
-          <span className="block truncate font-medium">{label}</span>
-          {hint && <span className="block truncate text-sm text-ink-3">{hint}</span>}
-        </span>
-        <span className="flex-none text-lg text-ink-3">›</span>
-      </Link>
-    </li>
-  )
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="p-5 text-center text-sm text-ink-3">{children}</p>
-  )
-}

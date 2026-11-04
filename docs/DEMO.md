@@ -32,8 +32,9 @@ once. Showing the coach and the parent side by side is the demo.
 ## The ten minutes that sell it
 
 ### 1. The coach's morning — sign in as yourself
-The home screen is the next fixtures and the chats with unread counts. Nothing
-to navigate to.
+The home screen is the three things you are here to do, what needs you, and
+the next fixtures — a screen and a half at most. Nothing to navigate to; the
+chats are one tap away on the Chat tab.
 
 ### 2. One account, two organisations — tap the crest, top left
 NRIFA Football Academy (an academy) and Sydney Premier League (a league).
@@ -110,7 +111,9 @@ one. Six boxes, no account needed. It lands **pending** — a short code is not
 a shortcut past the coach.
 
 ### 10. The parent's side — sign in as Sam Whitfield
-Fixtures with **a row per child**: Leo and Zoe answered separately. Two bills
+One list — **Needs you** — with the fees, the agreements, "10 to answer" and
+the team chat, one orange card for the most urgent, then the next two
+fixtures with **a row per child**: Leo and Zoe answered separately. Two bills
 on **Payments**. **Sign up** shows the three open programs, and the camp says
 which child is waitlisted and at what position.
 

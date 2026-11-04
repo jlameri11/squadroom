@@ -151,13 +151,14 @@ function Row({ e }: { e: UpcomingEvent }) {
                 </span>
 
                 <span className="flex-none text-right">
-                  {owed && (
-                    <span className="pill">{e.my_children - e.my_replies} to answer</span>
-                  )}
+                  {/* No number here: this is one game, and "2 to answer" on
+                      a single row read as two games. The count of games lives
+                      on Home's Needs you and on the training row's total. */}
+                  {owed && <span className="pill">To answer</span>}
                   {!owed && e.going !== null && (
                     <span className="text-xs text-ink-3">
                       <b style={{ color: 'var(--yes)' }}>{e.going} in</b>
-                      {e.no_reply ? ` · ${e.no_reply} quiet` : ''}
+                      {e.no_reply ? ` · ${e.no_reply} not answered` : ''}
                     </span>
                   )}
                 </span>
@@ -184,7 +185,8 @@ function Row({ e }: { e: UpcomingEvent }) {
 function TrainingRow({ group }: { group: UpcomingEvent[] }) {
   const first = group[0]
   const venues = [...new Set(group.map((g) => g.venue).filter(Boolean))]
-  const owed = group.reduce((n, g) => n + Math.max(g.my_children - g.my_replies, 0), 0)
+  // Sessions not yet answered for — the same count as Home's.
+  const owed = group.filter((g) => g.my_children > g.my_replies).length
 
   return (
     <div className="row items-start" style={{ borderColor: 'var(--line-2)' }}>
@@ -221,7 +223,7 @@ function TrainingRow({ group }: { group: UpcomingEvent[] }) {
                 {g.team_name ?? g.title}
               </span>
               {g.my_children > g.my_replies && (
-                <span className="pill flex-none">{g.my_children - g.my_replies}</span>
+                <span className="pill flex-none">To answer</span>
               )}
             </Link>
           ))}

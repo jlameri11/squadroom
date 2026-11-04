@@ -40,10 +40,14 @@ export function TrainingBlock({
   const venues = [...new Set(events.map((e) => e.venue).filter(Boolean))]
   const venue = venues.length === 1 ? venues[0] : null
 
-  const owed = events.reduce((n, e) => n + Math.max(e.my_children - e.my_replies, 0), 0)
+  // Sessions a child of theirs has not been answered for — the same count
+  // Home's Needs you uses, so the two never disagree.
+  const owed = events.filter((e) => e.my_children > e.my_replies).length
 
   return (
-    <article className="card">
+    // `ev` for the padding the event card has; without it the times sat on
+    // the card's edge.
+    <article className="card ev">
       <div className="ev-top">
         <Link href={`/calendar/${first.id}`} className="datechip">
           <div className="d">{when.getDate()}</div>
@@ -81,7 +85,7 @@ export function TrainingBlock({
             </span>
             <span className="min-w-0 flex-1 truncate">{e.team_name ?? e.title}</span>
             {isCoach && e.no_reply ? (
-              <span className="flex-none text-xs text-ink-3">{e.no_reply} quiet</span>
+              <span className="flex-none text-xs text-ink-3">{e.no_reply} not answered</span>
             ) : null}
           </Link>
         ))}
