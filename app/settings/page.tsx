@@ -6,6 +6,7 @@ import { createClient, getUserId } from '@/lib/supabase/server'
 import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
+import { TwoStep } from './two-step'
 import { MyData } from './my-data'
 import { ChatLanguage } from './chat-language'
 import { NotificationPrefs } from './notification-prefs'
@@ -126,6 +127,8 @@ export default async function SettingsPage() {
       {/* Before push and the calendar feed, because somebody who has just
           arrived by emailed link has no way back in until they do this. */}
       <SetPassword />
+      {/* S-07. Next to the password, because it is the other half of it. */}
+      <TwoStep />
 
       <PushToggle />
       <CalendarFeed />

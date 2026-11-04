@@ -487,6 +487,13 @@ one and is meant to reach hundreds of academies.
   keeps Supabase's defaults). `scripts/_sql.mjs` runs a read-only query
   against the catalog, which is how the sweep asked what is TRUE rather
   than what a migration said.
+- **Two-step sign-in (S-07) is half built.** The app's half: enrol in
+  Settings, a gate in the root layout (`components/two-step-gate.tsx`) that
+  shows nothing until an AAL1 session with a verified factor types its six
+  digits, a nag card for staff without it. The database's half is NOT
+  there: no policy checks `auth.jwt()->>'aal'`, so staff writes still
+  accept a password-only session. Do not call it "mandatory" until that
+  migration exists. TOTP codes are accepted once per thirty-second period.
 - **Every control can be read aloud and hit with a thumb** (X-10, 4 Nov
   2026): an icon button carries `aria-label`, a field has a `<label>` or
   `aria-label` (a placeholder is not a label), an image has `alt`, a

@@ -4,6 +4,7 @@ import './globals.css'
 import { HashSession } from '@/components/hash-session'
 import { TabBar } from '@/components/app-shell'
 import { OfflineBanner } from '@/components/offline-banner'
+import { TwoStepGate } from '@/components/two-step-gate'
 
 const plex = IBM_Plex_Sans({
   variable: '--font-plex',
@@ -64,6 +65,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />
+        {/* Above every page: somebody with two-step sign-in on sees nothing
+            until the second step is done (S-07). Renders nothing otherwise. */}
+        <TwoStepGate />
         {/*
           Rendered once, above every page, so it survives navigation.
           It used to be rendered BY each screen, which meant it unmounted and

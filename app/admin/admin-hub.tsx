@@ -9,6 +9,22 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 
 type Counts = { pending: number; pendingRegistrations: number; pendingSignups: number }
 
+/** Whether this person has two-step sign-in on (S-07): the club's admins are asked to. */
+function useTwoStep() {
+  const [on, setOn] = useState<boolean | null>(null)
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().auth.mfa.listFactors()
+      if (live) setOn(Boolean(data?.totp?.some((f) => f.status === 'verified')))
+    })()
+    return () => {
+      live = false
+    }
+  }, [])
+  return on
+}
+
 /**
  * Where running the club lives.
  *
@@ -23,6 +39,7 @@ type Counts = { pending: number; pendingRegistrations: number; pendingSignups: n
 export function AdminHub() {
   const org = useCurrentOrg()
   const [counts, setCounts] = useState<Counts | null>(null)
+  const twoStep = useTwoStep()
 
   useEffect(() => {
     if (!org) return
@@ -100,6 +117,18 @@ export function AdminHub() {
             </span>
           </Link>
         ) : null}
+
+        {/* S-07: the people who run a club are asked for two-step sign-in.
+            A card until the database can insist (the migration half). */}
+        {isStaff && twoStep === false && (
+          <Link href="/settings#two-step" className="card mb-4 flex items-center gap-3 p-3.5 text-sm" style={{ borderColor: 'var(--brand)' }} data-two-step-nag>
+            <span className="min-w-0 flex-1">
+              <b className="block">Turn on two-step sign-in</b>
+              <span className="block text-xs text-ink-3">Your account reaches every family&apos;s details. A six-digit code from an authenticator app keeps a stolen password out.</span>
+            </span>
+            <span className="flex-none text-lg text-ink-3">›</span>
+          </Link>
+        )}
 
         {/* A coach who is not staff sees only what the database lets them
             do: their squads, the families waiting on them, the programs they
