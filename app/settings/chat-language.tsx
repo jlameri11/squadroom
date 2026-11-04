@@ -46,7 +46,7 @@ export function ChatLanguage({ initial }: { initial: string | null }) {
       <p className="mt-0.5 text-sm text-ink-2">
         Messages show in your language, with what was actually written one tap away. Names, times and scores are kept as they are.
       </p>
-      <select value={lang} disabled={busy} onChange={(e) => void set(e.target.value)} className="mt-2 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: 'var(--line)' }}>
+      <select value={lang} disabled={busy} onChange={(e) => void set(e.target.value)} aria-label="Read messages in" className="mt-2 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: 'var(--line)' }}>
         {LANGUAGES.map(([code, label]) => <option key={code} value={code}>{label}</option>)}
       </select>
       {saved && <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }}>Saved</p>}

@@ -94,7 +94,12 @@ export async function POST(request: Request) {
       identity: { country: 'AU', entity_type: 'company' },
       configuration: {
         merchant: {
-          capabilities: { card_payments: { requested: true } },
+          // Cards now; BECS direct debit asked for so Stripe's review of it
+          // starts with the club's onboarding (B-08). Checkout offers BECS
+          // only once the capability is active AND the payments row can say
+          // "processing" for the days a debit takes to clear — the second
+          // half is a migration (SPEC B-08).
+          capabilities: { card_payments: { requested: true }, au_becs_debit_payments: { requested: true } },
           // Direct charges: the club is the merchant of record, so their name
           // is what a parent sees on their statement rather than ours.
           support: undefined,

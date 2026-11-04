@@ -487,6 +487,12 @@ one and is meant to reach hundreds of academies.
   keeps Supabase's defaults). `scripts/_sql.mjs` runs a read-only query
   against the catalog, which is how the sweep asked what is TRUE rather
   than what a migration said.
+- **Every control can be read aloud and hit with a thumb** (X-10, 4 Nov
+  2026): an icon button carries `aria-label`, a field has a `<label>` or
+  `aria-label` (a placeholder is not a label), an image has `alt`, a
+  text-styled button gets the `.tap` class (32px of hit area in place), and
+  the tab bar marks the current tab. `scripts/test-a11y.mjs` walks the
+  main screens as four people and fails on any of these.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

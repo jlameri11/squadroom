@@ -418,7 +418,7 @@ function ConsentsSection({ child: c, onChanged }: { child: Child; onChanged: () 
             <button
               onClick={() => set(k.document_id, k.accepted !== true)}
               disabled={busy === k.document_id}
-              className="flex-none rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50"
+              className="flex-none rounded-lg border px-2.5 py-2 text-xs font-semibold disabled:opacity-50"
               style={k.accepted === true ? { borderColor: 'var(--line)', color: 'var(--ink-2)' } : { borderColor: 'var(--brand)', color: 'var(--brand-text)' }}
             >
               {busy === k.document_id ? '…' : k.accepted === true ? 'Withdraw' : 'Agree'}

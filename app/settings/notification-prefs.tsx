@@ -34,7 +34,7 @@ export function NotificationPrefs({ initialDigest }: { initialDigest: number }) 
       <p className="mt-0.5 text-sm text-ink-2">
         A busy chat can be one push per channel instead of one per message — &ldquo;5 new messages in U8 SPL&rdquo;. Announcements, mentions, a game called off, reminders and direct messages always come straight away.
       </p>
-      <select value={minutes} disabled={busy} onChange={(e) => void set(Number(e.target.value))} className="mt-2 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: 'var(--line)' }}>
+      <select value={minutes} disabled={busy} onChange={(e) => void set(Number(e.target.value))} aria-label="Message pushes" className="mt-2 w-full rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: 'var(--line)' }}>
         {OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
       </select>
       {saved && <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }}>Saved</p>}

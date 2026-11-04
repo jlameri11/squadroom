@@ -223,7 +223,7 @@ export function MessageBubble({
         {!mine && (
           <button
             onClick={() => message.sender_id && setShowContact(true)}
-            className="mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-ink-2 underline-offset-2 hover:underline"
+            className="tap mb-0.5 flex items-center gap-1.5 px-1 text-xs font-medium text-ink-2 underline-offset-2 hover:underline"
           >
             {message.sender_name ?? 'Unknown'}
             {/*
@@ -313,6 +313,7 @@ export function MessageBubble({
               <span className="block">
                 <textarea
                   value={editing}
+                  aria-label="Edit message"
                   onChange={(e) => setEditing(e.target.value)}
                   rows={2}
                   autoFocus
@@ -371,14 +372,14 @@ export function MessageBubble({
 
           <button
             onClick={() => setPicking((v) => !v)}
-            className="rounded-full border border-dashed border-[var(--line)] px-1.5 py-0.5 text-xs text-ink-3"
+            className="grid min-h-8 min-w-8 place-items-center rounded-full border border-dashed border-[var(--line)] px-2 text-xs text-ink-3"
             aria-label="Add a reaction"
           >
             ＋
           </button>
 
           {!message.deleted_at && (
-            <button onClick={onReply} className="px-1 text-xs text-ink-3">Reply</button>
+            <button onClick={onReply} className="tap px-1 text-xs text-ink-3">Reply</button>
           )}
 
           {/* Only the author may change the words. A host can take a message
@@ -387,7 +388,7 @@ export function MessageBubble({
           {!message.deleted_at && mine && message.body && editing === null && (
             <button
               onClick={() => setEditing(message.body ?? '')}
-              className="px-1 text-xs text-ink-3"
+              className="tap px-1 text-xs text-ink-3"
             >
               Edit
             </button>
@@ -401,7 +402,7 @@ export function MessageBubble({
           {!message.deleted_at && !mine && (
             <button
               onClick={() => setReporting(true)}
-              className="px-1 text-xs text-ink-3"
+              className="tap px-1 text-xs text-ink-3"
             >
               Report
             </button>
@@ -415,7 +416,7 @@ export function MessageBubble({
                 }
               }}
               disabled={busy}
-              className="px-1 text-xs"
+              className="px-1 text-xs tap"
               style={{ color: 'var(--no)' }}
             >
               {mine ? 'Delete' : 'Remove'}

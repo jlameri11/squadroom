@@ -375,7 +375,7 @@ export function Composer({
           </label>
         )}
         {canPost && !archived && (
-          <button onClick={() => setLaterOpen((v) => !v)} className="underline underline-offset-2">
+          <button onClick={() => setLaterOpen((v) => !v)} className="tap underline underline-offset-2">
             {laterOpen ? 'Send now instead' : 'Send later…'}
           </button>
         )}
@@ -452,6 +452,7 @@ export function Composer({
             value={pollQuestion}
             onChange={(e) => setPollQuestion(e.target.value)}
             rows={2}
+            aria-label="Poll question"
             placeholder={pollKind === 'availability'
               ? 'Gala Day — Sun 20 Sep, Valentine Park. Who’s available?'
               : 'What should we do for the end of season?'}
@@ -463,6 +464,7 @@ export function Composer({
               value={pollOptions}
               onChange={(e) => setPollOptions(e.target.value)}
               rows={3}
+              aria-label="Poll options, one per line"
               placeholder={'One option per line\nBBQ at the park\nBowling\nPresentation night'}
               className="mt-2 w-full rounded-lg border border-[var(--line)] p-2 text-sm"
             />
@@ -590,6 +592,7 @@ export function Composer({
             }
           }}
           rows={1}
+          aria-label="Message"
           placeholder={
             !isHost && postingMode === 'replies_only' ? 'Reply to the team…' : 'Message'
           }

@@ -123,7 +123,7 @@ export function MatchVideo({ eventId }: { eventId: string }) {
               {v.title && v.kind === 'upload' && <span className="truncate">{v.title} · </span>}
               {v.kind === 'upload' ? 'Uploaded — only this squad can see it' : 'A link — follows that service’s privacy settings'}
               {v.by && ` · ${v.by}`}
-              {d.can_add && <button onClick={() => remove(v.id)} disabled={busy !== null} className="ml-auto underline underline-offset-2" data-video-remove>Remove</button>}
+              {d.can_add && <button onClick={() => remove(v.id)} disabled={busy !== null} className="tap ml-auto underline underline-offset-2" data-video-remove>Remove</button>}
             </p>
           </div>
         ))}

@@ -197,7 +197,7 @@ export function MyData() {
         <button
           onClick={startErase}
           disabled={busy !== null}
-          className="mt-4 w-full text-left text-sm underline underline-offset-4 disabled:opacity-50"
+          className="tap mt-4 w-full text-left text-sm underline underline-offset-4 disabled:opacity-50"
           style={{ color: 'var(--no)' }}
         >
           {busy === 'reading' ? 'Working…' : 'Remove my details'}

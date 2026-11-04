@@ -68,7 +68,7 @@ export function WithdrawButton({
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="ml-2 text-xs underline underline-offset-2 text-ink-3">
+      <button onClick={() => setOpen(true)} className="tap ml-2 text-xs underline underline-offset-2 text-ink-3">
         Withdraw
       </button>
     )

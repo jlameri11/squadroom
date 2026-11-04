@@ -317,7 +317,7 @@ export function VenuesScreen() {
                       {([['←', -2, 0], ['→', 2, 0], ['↑', 0, -2], ['↓', 0, 2]] as [string, number, number][]).map(([k, dx, dy]) => (
                         <button key={k} onClick={() => nudge(dx, dy)} disabled={busy !== null} className="h-7 w-7 rounded-lg border" style={line} aria-label={`Nudge ${k}`}>{k}</button>
                       ))}
-                      <button onClick={removePitch} disabled={busy !== null} className="ml-auto text-ink-3 underline underline-offset-2" data-remove-pitch>Remove</button>
+                      <button onClick={removePitch} disabled={busy !== null} className="tap ml-auto text-ink-3 underline underline-offset-2" data-remove-pitch>Remove</button>
                     </div>
                   </>
                 )}

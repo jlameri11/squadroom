@@ -112,8 +112,8 @@ export function SponsorsScreen() {
                     {label}
                   </label>
                 ))}
-                <button onClick={() => toggle(s)} disabled={busy !== null} className="ml-auto underline underline-offset-2" style={{ color: 'var(--brand-text)' }}>{s.active ? 'Pause' : 'Resume'}</button>
-                <button onClick={() => remove(s)} disabled={busy !== null} className="text-ink-3 underline underline-offset-2">Remove</button>
+                <button onClick={() => toggle(s)} disabled={busy !== null} className="tap ml-auto underline underline-offset-2" style={{ color: 'var(--brand-text)' }}>{s.active ? 'Pause' : 'Resume'}</button>
+                <button onClick={() => remove(s)} disabled={busy !== null} className="tap text-ink-3 underline underline-offset-2">Remove</button>
               </div>
             </article>
           ))}

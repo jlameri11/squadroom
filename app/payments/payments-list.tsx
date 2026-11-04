@@ -183,7 +183,7 @@ export function PaymentsList({
                   <button onClick={() => setCodeFor(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
                 </div>
               ) : (
-                <button onClick={() => { setCodeFor(key); setCode('') }} className="mt-1 text-xs underline underline-offset-2 text-ink-3" data-have-a-code>
+                <button onClick={() => { setCodeFor(key); setCode('') }} className="tap mt-1 text-xs underline underline-offset-2 text-ink-3" data-have-a-code>
                   Have a voucher code?
                 </button>
               )}

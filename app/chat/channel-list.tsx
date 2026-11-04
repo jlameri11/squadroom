@@ -85,6 +85,7 @@ export function ChannelList({ channels }: { channels: Row[] }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search games, squads, people and messages"
+        aria-label="Search games, squads, people and messages"
         type="search"
         className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3.5 py-2.5 text-sm"
       />

@@ -260,7 +260,7 @@ export default function SignIn() {
         <button
           type="button"
           onClick={() => { setMode(mode === 'password' ? 'link' : 'password'); setError(null) }}
-          className="text-center text-sm underline underline-offset-4"
+          className="tap text-center text-sm underline underline-offset-4"
           style={{ color: '#ffffffb3' }}
         >
           {mode === 'password' ? 'Email me a link instead' : 'Use a password instead'}
