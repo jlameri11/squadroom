@@ -6,6 +6,7 @@ import { NewTeam } from './new-team'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
+import { getOrg } from '@/lib/org'
 
 /**
  * The squads, and the one screen where a new one has to appear instantly.
@@ -44,7 +45,8 @@ export function TeamsScreen() {
       const { data: claims } = await supabase.auth.getClaims()
       if (!claims?.claims?.sub) return window.location.replace('/signin')
       const { data: academies } = await supabase.from('academies').select('id, name').order('name')
-      const first = academies?.[0]
+      // The organisation the browser is showing, else the first by name.
+      const first = academies?.find((a) => a.id === getOrg()) ?? academies?.[0]
       if (!first) return window.location.replace('/start')
       setAcademy(first)
       await load(first.id)

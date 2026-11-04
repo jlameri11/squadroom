@@ -317,6 +317,7 @@ Exact steps are in NEEDS JOEY below.
 | **B-05** finance export | **Done.** Two CSVs from Collect payments — every fee per child with Stripe ids, and totals by program / squad / family. Money from the one price function | test-finance-export 14 |
 | **R-13** trials → offer → pay | **Done.** Offer control on the trial's list (squad program + days); guardians notified; `/offer/[id]` to accept (pre-approved, into the squad, then the fee) or decline; lapses by date. Two of its own bugs caught by the suite and fixed (0141, 0142) | test-trial-offers 26, test-rls 48–49 |
 | **R-12** season rollover | **Done.** Admin → New season: preview, then clone / move / keep numbers / open next season's squad program / end the old squad; "not yet re-registered" report with a weekly nudge | test-season-rollover 20, screens both themes |
+| **Every screen follows the organisation the browser is showing** (4 Nov, found by the 375px pass: Admin → Payments showed the stray "NRIFA" for Joey) | **Done**, no migration. `lib/use-current-org.ts` resolves the remembered organisation against the person's active memberships (else their first, and corrects the memory); the Admin hub, Admin → Payments, Members, Invites, the roster importer, Scan and the family's Payments became thin pages with browser-side loaders (RLS does the reading); Teams and Directory prefer the remembered organisation. NEEDS JOEY #8 closed bar the `nrifa-1` question | test-org-follows 21 (a throwaway "AAA" organisation that sorts first; nine pages; switch; fallback; nothing remembered), role-nav 33 and screens 36 re-run against the new code, tsc + eslint clean, Admin → Payments and the family's list at 375px both themes |
 | **The Stripe half** (3 Nov, Joey's key): B-01 card step, R-04 one checkout for the family, B-02 instalments, B-03 siblings, B-07 vouchers, B-04 refunds, L-02/L-16 entry fees; L-07 referee payouts tried and **parked** | **Done** (0207: one payments row per child per session; `entry_fees` remember their session). Routes: connect (Express, v2) · checkout (many children) · entry-fee · refund (named refunds) · webhook (`capability.updated`, `refund.*`). Screens: Admin → Payments reads the status back on return; the family's list gets "Pay … for X and Y in one go". Checkout cards only. Referee payouts: Stripe refuses connected-to-connected transfers; Joey parked them (tracking only) and the referee Stripe button, the league's "Pay through Stripe" and both routes came out. See the evening summary | test-stripe-e2e (by hand, 36 checks, every money path green), payments / fees / program-fees / fee-settings / league-entry / referee-payments / vouchers suites green, tsc + eslint clean |
 
 ### Deploys
@@ -419,9 +420,13 @@ once.
 `app/settings/academy` takes "the first academy by name", and for you that
 is a stray organisation called **"NRIFA"** (slug `nrifa-1`) with no
 squads — probably made with `/start` during a demo — not NRIFA Football
-Academy. **The page is fixed** (it resolves the organisation in the browser,
-`app/settings/academy/academy-loader.tsx`). One question stays: may I
-delete `nrifa-1`?
+Academy. **Fixed everywhere on 4 Nov:** the club settings page first, then
+the seven other pages that still took the first organisation by name (the
+Admin hub, Admin → Payments, Members, Invites, the roster importer, Scan,
+the family's Payments) and the two client screens that fell back to it
+(Teams, Directory) — all follow the organisation the browser is showing,
+proven by `test-org-follows` (21). One question stays: may I delete
+`nrifa-1`? It is harmless now, just clutter in your switcher.
 
 **6. File-upload questions on the public form — a decision, not a build.**
 The brief lists "file upload" among the question types. The register page

@@ -487,6 +487,14 @@ one and is meant to reach hundreds of academies.
   keeps Supabase's defaults). `scripts/_sql.mjs` runs a read-only query
   against the catalog, which is how the sweep asked what is TRUE rather
   than what a migration said.
+- **A server page never picks the organisation.** "The first academy by
+  name" was wrong for everyone in more than one organisation (a league
+  secretary whose child plays; Joey) and was found on seven pages on 4 Nov
+  2026. The organisation the browser is showing lives in `lib/org.ts`; a
+  screen that needs it before fetching uses `lib/use-current-org.ts` from a
+  client loader, and the `page.tsx` stays a sign-in gate (the thin-page
+  rule). `scripts/test-org-follows.mjs` opens nine pages with a throwaway
+  organisation that sorts first and fails if any of them shows it.
 - **The four-role Home** is `home_jobs` (0186) + `app/home-jobs.tsx`;
   `scripts/test-role-nav.mjs` proves the two-tap rule in a real browser.
   A new job for a role is a change to `home_jobs` and a row in that test.

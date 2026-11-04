@@ -1,46 +1,15 @@
 import { redirect } from 'next/navigation'
-import { createClient, getUserId } from '@/lib/supabase/server'
-import { PaymentsAdmin, type RequestRow, type BillingStatus } from './payments-admin'
+import { getUserId } from '@/lib/supabase/server'
+import { PaymentsAdminLoader } from './payments-loader'
 
+/**
+ * Thin: the sign-in gate; the browser resolves which organisation is
+ * showing and fetches its money (payments-loader). This page used to take
+ * "the first academy by name", which for an owner of several was a club
+ * nobody uses.
+ */
 export default async function AdminPaymentsPage() {
-  const supabase = await createClient()
   const userId = await getUserId()
   if (!userId) redirect('/signin')
-
-  const { data: academies } = await supabase.from('academies').select('id, name').order('name')
-  const academy = academies?.[0]
-  if (!academy) redirect('/start')
-
-  // RLS on academy_billing is staff-only, so an empty result here means
-  // either "not set up" or "not your business" — and for a parent who typed
-  // this URL, those should look the same.
-  const { data: billing } = await supabase
-    .from('academy_billing')
-    .select('stripe_account_id, charges_enabled, payouts_enabled, details_submitted')
-    .eq('academy_id', academy.id)
-    .maybeSingle()
-
-  const { data: requests } = await supabase
-    .from('payment_requests')
-    .select('id, title, amount_cents, currency, due_on, per_player, team_id, archived_at, teams(name)')
-    .eq('academy_id', academy.id)
-    .is('archived_at', null)
-    .order('created_at', { ascending: false })
-
-  const { data: teams } = await supabase
-    .from('teams')
-    .select('id, name')
-    .eq('academy_id', academy.id)
-    .eq('status', 'active')
-    .order('name')
-
-  return (
-    <PaymentsAdmin
-      academyId={academy.id}
-      academyName={academy.name}
-      billing={(billing ?? null) as BillingStatus}
-      requests={(requests ?? []) as unknown as RequestRow[]}
-      teams={teams ?? []}
-    />
-  )
+  return <PaymentsAdminLoader />
 }

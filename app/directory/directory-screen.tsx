@@ -6,6 +6,7 @@ import { DirectoryList } from './directory-list'
 import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
+import { getOrg } from '@/lib/org'
 
 type Person = {
   profile_id: string
@@ -51,7 +52,8 @@ export function DirectoryScreen() {
         .from('academies')
         .select('id, name, dm_policy')
         .order('name')
-      const academy = academies?.[0]
+      // The organisation the browser is showing, else the first by name.
+      const academy = academies?.find((a) => a.id === getOrg()) ?? academies?.[0]
       if (!academy) {
         window.location.replace('/start')
         return
