@@ -217,14 +217,14 @@ export function VenuesScreen() {
                 <input value={newVenue.name} onChange={(e) => setNewVenue({ ...newVenue, name: e.target.value })} placeholder="ELS Hall Park" className={input} style={line} aria-label="Venue name" />
                 <input value={newVenue.address} onChange={(e) => setNewVenue({ ...newVenue, address: e.target.value })} placeholder="14 Kent Rd, North Ryde NSW 2113" className={input} style={line} aria-label="Address" />
                 <div className="flex gap-2">
-                  <button onClick={addVenue} disabled={busy !== null || !newVenue.name.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-venue-add>
+                  <button onClick={addVenue} disabled={busy !== null || !newVenue.name.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-venue-add>
                     {busy === 'venue' ? '…' : 'Add the ground'}
                   </button>
                   <button onClick={() => setNewVenue(null)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Cancel</button>
                 </div>
               </div>
             ) : (
-              <button onClick={() => setNewVenue({ name: '', address: '' })} className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white" style={{ background: 'var(--brand)' }} data-venue-new>
+              <button onClick={() => setNewVenue({ name: '', address: '' })} className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink" style={{ background: 'var(--brand)' }} data-venue-new>
                 Add a ground
               </button>
             )}
@@ -265,7 +265,7 @@ export function VenuesScreen() {
                 <h2 className="display text-lg leading-tight">{layout.name}</h2>
               </div>
               {layout.can_edit && (
-                <button onClick={addPitch} disabled={busy !== null} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-add-pitch>
+                <button onClick={addPitch} disabled={busy !== null} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-add-pitch>
                   + Full pitch
                 </button>
               )}
@@ -339,7 +339,7 @@ export function VenuesScreen() {
                   {layout.can_edit && (
                     <div className="mt-2 flex gap-2 text-xs">
                       <button onClick={() => editHours((all) => [...all, { weekday: 6, opens: '08:00', closes: '12:00' }])} className="rounded-lg border px-2 py-1" style={line} data-hours-add>+ Day</button>
-                      <button onClick={saveHours} disabled={busy !== null} className="rounded-lg px-2.5 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-hours-save>{busy === 'hours' ? '…' : 'Save hours'}</button>
+                      <button onClick={saveHours} disabled={busy !== null} className="rounded-lg px-2.5 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-hours-save>{busy === 'hours' ? '…' : 'Save hours'}</button>
                     </div>
                   )}
                 </div>
@@ -364,7 +364,7 @@ export function VenuesScreen() {
               <label className="mt-2 block text-xs text-ink-2">Canteen<input value={details.canteen} onChange={(e) => setDetails({ ...details, canteen: e.target.value })} placeholder="Saturdays from 8" className={input} style={line} /></label>
               <label className="mt-2 block text-xs text-ink-2">Notes<textarea value={details.notes} onChange={(e) => setDetails({ ...details, notes: e.target.value })} rows={2} className={input} style={line} /></label>
               <div className="mt-3 flex gap-2">
-                <button onClick={saveDetails} disabled={busy !== null || !details.name.trim()} className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-venue-save>
+                <button onClick={saveDetails} disabled={busy !== null || !details.name.trim()} className="flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-venue-save>
                   {busy === 'details' ? '…' : 'Save the ground'}
                 </button>
                 <button onClick={removeVenue} disabled={busy !== null} className="rounded-xl border px-3 py-2 text-sm text-ink-3" style={line}>Remove</button>

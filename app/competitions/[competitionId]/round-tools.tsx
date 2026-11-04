@@ -73,7 +73,7 @@ export function RoundTools({ competitionId, division, fixtures, grounds }: { com
               p_rows: Object.entries(scores).filter(([, s]) => s.h !== '' && s.a !== '').map(([fixture_id, s]) => ({ fixture_id, home: Number(s.h), away: Number(s.a) })),
             }, (d) => { const r = d as { updated: number; skipped: unknown[] }; return `${r.updated} scores entered${r.skipped.length ? `, ${r.skipped.length} skipped` : ''}.` })}
             disabled={busy || !Object.values(scores).some((s) => s.h !== '' && s.a !== '')}
-            className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}
+            className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}
           >
             {busy ? '…' : 'Enter these scores'}
           </button>
@@ -85,7 +85,7 @@ export function RoundTools({ competitionId, division, fixtures, grounds }: { com
           <span>Move every unplayed game in {round} by</span>
           <input value={days} onChange={(e) => setDays(e.target.value)} inputMode="numeric" className="w-12 rounded-lg border px-1 py-1 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Days" />
           <span>days (minus to bring forward). Every family is told.</span>
-          <button onClick={() => run('shift_round', { p_competition: competitionId, p_division: division, p_round: round, p_days: Number(days) }, (n) => `${n} games moved.`)} disabled={busy || !Number(days)} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Move</button>
+          <button onClick={() => run('shift_round', { p_competition: competitionId, p_division: division, p_round: round, p_days: Number(days) }, (n) => `${n} games moved.`)} disabled={busy || !Number(days)} className="rounded-lg px-3 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Move</button>
         </div>
       )}
 
@@ -95,7 +95,7 @@ export function RoundTools({ competitionId, division, fixtures, grounds }: { com
           <select value={reason} onChange={(e) => setReason(e.target.value)} className="rounded-lg border px-2 py-1" style={{ borderColor: 'var(--line)' }} aria-label="Reason">
             {REASONS.map(([k, l]) => (<option key={k} value={k}>{l}</option>))}
           </select>
-          <button onClick={() => run('abandon_round', { p_competition: competitionId, p_division: division, p_round: round, p_reason: reason }, (n) => `${n} games postponed. Reschedule them when you know.`)} disabled={busy} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--maybe)' }}>Postpone the round</button>
+          <button onClick={() => run('abandon_round', { p_competition: competitionId, p_division: division, p_round: round, p_reason: reason }, (n) => `${n} games postponed. Reschedule them when you know.`)} disabled={busy} className="rounded-lg px-3 py-1.5 font-semibold text-maybe-ink disabled:opacity-50" style={{ background: 'var(--maybe)' }}>Postpone the round</button>
         </div>
       )}
 

@@ -68,7 +68,7 @@ export function ReportMessage({
           </p>
           <button
             onClick={onClose}
-            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white"
+            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink"
             style={{ background: 'var(--brand)' }}
           >
             Done
@@ -138,7 +138,7 @@ export function ReportMessage({
         <button
           onClick={send}
           disabled={busy || !reason}
-          className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Sending…' : reason ? 'Send to the safeguarding officer' : 'Choose a reason'}

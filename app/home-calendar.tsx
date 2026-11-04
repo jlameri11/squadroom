@@ -100,7 +100,7 @@ export function HomeCalendar() {
                 className="relative grid aspect-square place-items-center rounded-lg text-sm tabular-nums"
                 style={{
                   background: isToday ? 'var(--brand)' : 'transparent',
-                  color: isToday ? '#fff' : dot ? 'var(--ink)' : 'var(--ink-3)',
+                  color: isToday ? 'var(--brand-ink)' : dot ? 'var(--ink)' : 'var(--ink-3)',
                   fontWeight: dot ? 600 : 400,
                 }}
               >
@@ -113,9 +113,9 @@ export function HomeCalendar() {
                     className="absolute bottom-1 h-1.5 w-1.5 rounded-full"
                     style={
                       dot.has_match
-                        ? { background: isToday ? '#fff' : 'var(--brand)' }
+                        ? { background: isToday ? 'var(--brand-ink)' : 'var(--brand)' }
                         : {
-                            border: `1.5px solid ${isToday ? '#fff' : 'var(--ink-3)'}`,
+                            border: `1.5px solid ${isToday ? 'var(--brand-ink)' : 'var(--ink-3)'}`,
                           }
                     }
                   />

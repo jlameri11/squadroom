@@ -40,7 +40,7 @@ export function LinkPreview({ url, mine }: { url: string; mine: boolean }) {
       target="_blank"
       rel="noopener noreferrer"
       className="mt-1.5 block overflow-hidden rounded-lg border text-left"
-      style={{ borderColor: mine ? '#ffffff33' : 'var(--line)', background: mine ? '#ffffff14' : 'var(--surface-2)' }}
+      style={{ borderColor: mine ? 'color-mix(in srgb, var(--ink) 18%, transparent)' : 'var(--line)', background: mine ? 'color-mix(in srgb, var(--ink) 6%, transparent)' : 'var(--surface-2)' }}
       data-link-preview
     >
       {p.image_url && (

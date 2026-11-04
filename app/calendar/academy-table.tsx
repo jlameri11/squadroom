@@ -19,6 +19,7 @@ type Row = {
 }
 
 const TINT = { W: 'var(--yes)', D: 'var(--maybe)', L: 'var(--no)' } as const
+const INK = { W: 'var(--yes-ink)', D: 'var(--maybe-ink)', L: 'var(--no-ink)' } as const
 
 /**
  * X-07: every squad's season on one screen — the club championship, easy to
@@ -73,7 +74,7 @@ export function AcademyTable({ academyId }: { academyId: string }) {
                 <td className="px-2 py-1.5">
                   <span className="flex gap-0.5">
                     {[...r.last].reverse().map((o, k) => (
-                      <span key={k} className="grid h-5 w-5 place-items-center rounded text-[0.625rem] font-bold text-white" style={{ background: TINT[o] }}>{o}</span>
+                      <span key={k} className="grid h-5 w-5 place-items-center rounded text-[0.625rem] font-bold" style={{ background: TINT[o], color: INK[o] }}>{o}</span>
                     ))}
                   </span>
                 </td>

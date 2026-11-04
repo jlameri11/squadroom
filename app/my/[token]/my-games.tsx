@@ -43,7 +43,7 @@ export function MyGames({ events }: { events: FeedEvent[] }) {
     <main className="mx-auto w-full max-w-md pb-10">
       <header
         className="px-5 pb-5 pt-6"
-        style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+        style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}
       >
         <p className="eyebrow" style={{ color: '#ffffffaa' }}>
           Your games
@@ -139,8 +139,8 @@ function Chip({ children, tone }: { children: React.ReactNode; tone?: 'off' }) {
       className="rounded-lg px-2.5 py-1 text-sm font-semibold"
       style={
         tone === 'off'
-          ? { background: '#ffffff26', color: '#fff' }
-          : { background: '#ffffff26', color: '#fff' }
+          ? { background: '#ffffff26', color: 'var(--bar-ink)' }
+          : { background: '#ffffff26', color: 'var(--bar-ink)' }
       }
     >
       {children}

@@ -196,7 +196,7 @@ export function ProgramsParent() {
                     {children.some((c) => eligible(p, c) && !registrationFor(p.id, c.id)) && (
                       <button
                         onClick={() => setChosen(p)}
-                        className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+                        className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
                         style={{ background: 'var(--brand)' }}
                       >
                         {registered.length > 0 ? 'Sign up another child' : 'Sign up'}
@@ -324,7 +324,7 @@ function Register({
                       style={{
                         borderColor: on ? 'var(--brand)' : 'var(--line)',
                         background: on ? 'var(--brand)' : 'transparent',
-                        color: '#fff',
+                        color: 'var(--brand-ink)',
                       }}
                     >
                       {on ? '✓' : ''}
@@ -372,7 +372,7 @@ function Register({
           <button
             onClick={submit}
             disabled={busy || picked.length === 0 || missing.length > 0}
-            className="rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             {busy

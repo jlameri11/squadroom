@@ -8,7 +8,7 @@ import { OrgSwitcher } from '@/components/org-switcher'
 import { getOrg } from '@/lib/org'
 
 /**
- * The navy bar at the top and the tab bar at the bottom.
+ * The app bar at the top and the tab bar at the bottom.
  *
  * These are the two things that make the prototype read as an app rather than
  * a web page, and the real product had neither — every screen was a white
@@ -25,14 +25,12 @@ export function AppBar({
   title,
   meta,
   crest,
-  crestColour = 'var(--brand)',
   back,
   action,
 }: {
   title: string
   meta?: string
   crest?: string
-  crestColour?: string
   back?: string
   action?: React.ReactNode
 }) {
@@ -48,14 +46,16 @@ export function AppBar({
   return (
     <header
       className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3"
-      style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+      // The brand's own surface: near-black in light and dark (--bar), with
+      // an edge in dark where it is the page colour too.
+      style={{ background: 'var(--bar)', color: 'var(--bar-ink)', borderBottom: '1px solid var(--bar-line)' }}
     >
       {back ? (
         <Link
           href={back}
           aria-label="Back"
           className="-ml-1 grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
-          style={{ background: '#ffffff26' }}
+          style={{ background: 'color-mix(in srgb, currentColor 16%, transparent)' }}
         >
           ‹
         </Link>
@@ -66,14 +66,14 @@ export function AppBar({
             onClick={() => setSwitching(true)}
             aria-label="Switch organisation"
             className="relative -ml-0.5 grid h-9 w-9 flex-none place-items-center rounded-[10px]"
-            style={{ background: crestColour === 'var(--brand)' ? '#ffffff26' : crestColour }}
+            style={{ background: 'color-mix(in srgb, currentColor 16%, transparent)' }}
           >
             <span className="display text-[0.9375rem]">{crest}</span>
             {/* A chevron on the crest, because a crest that does nothing on
                 every other account looks identical to one that does. */}
             <span
               className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[0.5625rem] leading-none"
-              style={{ background: 'var(--gold)', color: '#202842' }}
+              style={{ background: 'var(--bar-ink)', color: 'var(--bar)' }}
               aria-hidden
             >
               ▾
@@ -82,7 +82,7 @@ export function AppBar({
         ) : (
           <span
             className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]"
-            style={{ background: crestColour === 'var(--brand)' ? '#ffffff26' : crestColour }}
+            style={{ background: 'color-mix(in srgb, currentColor 16%, transparent)' }}
           >
             {crest}
           </span>

@@ -208,7 +208,7 @@ export function QuestionsEditor({
         <button
           onClick={save}
           disabled={busy}
-          className="flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Saving…' : 'Save questions'}

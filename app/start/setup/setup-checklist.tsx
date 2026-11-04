@@ -97,15 +97,14 @@ export function SetupChecklist() {
     )
   }
 
-  const tint = p.primary_colour || 'var(--brand)'
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col" style={{ '--brand': tint } as React.CSSProperties} data-setup>
-      <header className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col" data-setup>
+      <header className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3" style={{ background: 'var(--bar)', color: 'var(--bar-ink)', borderBottom: '1px solid var(--bar-line)' }}>
         {p.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={p.logo_url} alt="" className="h-9 w-9 flex-none rounded-[10px] bg-white object-contain p-0.5" />
         ) : (
-          <span className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]" style={{ background: '#ffffff26' }}>
+          <span className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]" style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}>
             {p.name.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -119,7 +118,7 @@ export function SetupChecklist() {
                 : `${p.done} of ${p.total} done · ${p.minutes} min so far · aim for under 30`}
           </span>
         </span>
-        <Link href="/" className="flex-none rounded-[10px] px-2.5 py-1.5 text-xs font-semibold" style={{ background: '#ffffff26' }}>
+        <Link href="/" className="flex-none rounded-[10px] px-2.5 py-1.5 text-xs font-semibold" style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}>
           {p.complete ? 'Done' : 'Later'}
         </Link>
       </header>
@@ -143,7 +142,7 @@ export function SetupChecklist() {
           </div>
           <div className="mt-2 flex items-center gap-3">
             <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => { uploadCrest(e.target.files?.[0] ?? null); e.target.value = '' }} />
-            <button onClick={() => file.current?.click()} disabled={busy === 'crest'} className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-crest>
+            <button onClick={() => file.current?.click()} disabled={busy === 'crest'} className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-crest>
               {busy === 'crest' ? 'Uploading…' : p.logo_url ? 'Change the crest' : 'Add the crest'}
             </button>
             <span className="text-xs text-ink-3">One picture, PNG or JPG. Pick the file; we never ask for your whole photo library.</span>
@@ -155,7 +154,7 @@ export function SetupChecklist() {
           {p.steps.slice(1).map((s, i) => (
             <li key={s.id}>
               <Link href={s.href} className="flex items-center gap-3 px-3.5 py-3" data-step={s.id}>
-                <span className="grid h-7 w-7 flex-none place-items-center rounded-full text-xs font-bold" style={s.done ? { background: 'var(--yes)', color: '#fff' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }}>
+                <span className="grid h-7 w-7 flex-none place-items-center rounded-full text-xs font-bold" style={s.done ? { background: 'var(--yes)', color: 'var(--yes-ink)' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }}>
                   {s.done ? '✓' : i + 2}
                 </span>
                 <span className="min-w-0 flex-1">

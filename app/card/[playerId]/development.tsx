@@ -142,7 +142,7 @@ export function Development({ playerId }: { playerId: string }) {
             <button onClick={() => open('report')} className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold" style={{ borderColor: 'var(--line)' }} data-add-report>
               Report
             </button>
-            <button onClick={() => open('clip')} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white" style={{ background: 'var(--brand)' }} data-add-clip>
+            <button onClick={() => open('clip')} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink" style={{ background: 'var(--brand)' }} data-add-clip>
               ▶ Clip
             </button>
           </div>
@@ -204,7 +204,7 @@ export function Development({ playerId }: { playerId: string }) {
           {dev.clips.map((c) => (
             <article key={c.id} className="card p-3" data-clip data-shared={c.shared}>
               <a href={c.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3">
-                <span className="grid h-10 w-10 flex-none place-items-center rounded-lg text-white" style={{ background: 'var(--brand)' }} aria-hidden>
+                <span className="grid h-10 w-10 flex-none place-items-center rounded-lg text-brand-ink" style={{ background: 'var(--brand)' }} aria-hidden>
                   ▶
                 </span>
                 <span className="min-w-0 flex-1">
@@ -285,7 +285,7 @@ export function Development({ playerId }: { playerId: string }) {
                                 aria-label={`${x.label} ${n}`}
                                 onClick={() => setDraft({ ...draft, ratings: { ...draft.ratings, [x.key]: draft.ratings[x.key] === n ? undefined : n } })}
                                 className="h-7 w-7 rounded-full border text-xs font-semibold"
-                                style={on ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' } : { borderColor: 'var(--line)' }}
+                                style={on ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' } : { borderColor: 'var(--line)' }}
                               >
                                 {n}
                               </button>
@@ -345,7 +345,7 @@ export function Development({ playerId }: { playerId: string }) {
               <button
                 onClick={() => (sheet === 'clip' ? saveClip() : saveReport(sheet))}
                 disabled={busy || (sheet === 'clip' ? !draft.url.trim() || !draft.title.trim() : !draft.body.trim())}
-                className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50"
                 style={{ background: 'var(--brand)' }}
                 data-save
               >

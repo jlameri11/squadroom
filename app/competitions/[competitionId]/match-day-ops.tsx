@@ -124,7 +124,7 @@ export function CallOffDay({ competitionId }: { competitionId: string }) {
         </p>
       )}
       <div className="mt-2 flex gap-2">
-        <button onClick={go} disabled={busy || !date} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>
+        <button onClick={go} disabled={busy || !date} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>
           {busy ? '…' : cancel ? 'Cancel the games' : 'Postpone the games'}
         </button>
         <button onClick={() => { setOpen(false); setDone(null) }} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
@@ -189,8 +189,8 @@ export function FixtureOps({
           <select value={reason} onChange={(e) => setReason(e.target.value)} className="rounded border px-1.5 py-1" style={{ borderColor: 'var(--line)' }}>
             {REASONS.map(([v, l]) => (<option key={v} value={v}>{l}</option>))}
           </select>
-          <button onClick={() => run('postpone_fixture', { p_fixture: fixtureId, p_reason: reason })} disabled={busy} className="rounded px-2 py-1 font-semibold text-white" style={{ background: 'var(--maybe)' }}>Postpone</button>
-          <button onClick={() => run('postpone_fixture', { p_fixture: fixtureId, p_reason: reason, p_cancel: true })} disabled={busy} className="rounded px-2 py-1 font-semibold text-white" style={{ background: 'var(--no)' }}>Cancel game</button>
+          <button onClick={() => run('postpone_fixture', { p_fixture: fixtureId, p_reason: reason })} disabled={busy} className="rounded px-2 py-1 font-semibold text-maybe-ink" style={{ background: 'var(--maybe)' }}>Postpone</button>
+          <button onClick={() => run('postpone_fixture', { p_fixture: fixtureId, p_reason: reason, p_cancel: true })} disabled={busy} className="rounded px-2 py-1 font-semibold text-no-ink" style={{ background: 'var(--no)' }}>Cancel game</button>
           <button onClick={() => setMode(null)} className="px-1">✕</button>
         </div>
       )}
@@ -198,7 +198,7 @@ export function FixtureOps({
         <div className="flex flex-wrap items-center gap-1.5">
           <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className="rounded border px-1.5 py-1" style={{ borderColor: 'var(--line)' }} aria-label="New time" />
           <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="ground (optional)" className="w-28 rounded border px-1.5 py-1" style={{ borderColor: 'var(--line)' }} />
-          <button onClick={() => run('reschedule_fixture', { p_fixture: fixtureId, p_starts_at: new Date(when).toISOString(), p_venue_label: venue || undefined })} disabled={busy || !when} className="rounded px-2 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set</button>
+          <button onClick={() => run('reschedule_fixture', { p_fixture: fixtureId, p_starts_at: new Date(when).toISOString(), p_venue_label: venue || undefined })} disabled={busy || !when} className="rounded px-2 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set</button>
           <button onClick={() => setMode(null)} className="px-1">✕</button>
         </div>
       )}
@@ -210,7 +210,7 @@ export function FixtureOps({
             <option value={homeEntryId ?? ''}>{homeName}</option>
             <option value={awayEntryId ?? ''}>{awayName}</option>
           </select>
-          <button onClick={() => run('forfeit_fixture', { p_fixture: fixtureId, p_forfeiting_entry: who })} disabled={busy || !who} className="rounded px-2 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>Award</button>
+          <button onClick={() => run('forfeit_fixture', { p_fixture: fixtureId, p_forfeiting_entry: who })} disabled={busy || !who} className="rounded px-2 py-1 font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>Award</button>
           <button onClick={() => setMode(null)} className="px-1">✕</button>
         </div>
       )}

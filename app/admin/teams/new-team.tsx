@@ -59,7 +59,7 @@ export function NewTeam({
       <button
         onClick={() => setOpen(true)}
         className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
-        style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+        style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)', color: 'var(--bar-ink)' }}
         aria-label="Add a team"
       >
         ＋
@@ -112,7 +112,7 @@ export function NewTeam({
         <button
           type="submit"
           disabled={busy}
-          className="flex-1 rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="flex-1 rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Creating…' : 'Create team'}

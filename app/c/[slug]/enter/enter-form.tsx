@@ -35,7 +35,7 @@ export function EnterForm({ slug, info }: { slug: string; info: EntryInfo }) {
   const field = 'mt-1 w-full rounded-xl border px-3 py-2.5 text-base'
   return (
     <main className="mx-auto w-full max-w-lg pb-12">
-      <header className="px-5 pb-5 pt-7" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
+      <header className="px-5 pb-5 pt-7" style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}>
         <p className="eyebrow" style={{ color: '#ffffffaa' }}>{info.organiser}</p>
         <h1 className="display mt-1 text-[1.875rem] leading-none">{info.name}</h1>
         <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>Enter a team{info.season ? ` · ${info.season}` : ''}</p>
@@ -103,7 +103,7 @@ export function EnterForm({ slug, info }: { slug: string; info: EntryInfo }) {
           {error && (
             <p className="mt-4 rounded-lg p-2.5 text-sm" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>{error}</p>
           )}
-          <button type="submit" disabled={busy} className="mt-5 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+          <button type="submit" disabled={busy} className="mt-5 w-full rounded-xl px-4 py-3 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
             {busy ? 'Sending…' : 'Ask to enter'}
           </button>
           <p className="mt-3 text-center text-xs text-ink-3">Only the organiser sees these details.</p>

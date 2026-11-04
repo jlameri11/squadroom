@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 
 const ALPHABET = 'ABCDEFGHJKMNPQRSTVWXYZ23456789'
@@ -68,18 +69,23 @@ export function JoinWithCode() {
   return (
     <main
       className="flex min-h-dvh flex-col justify-center px-6 py-10"
-      style={{ background: 'var(--brand)' }}
+      style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}
     >
       <div className="mx-auto w-full max-w-sm">
-        <span
-          className="display mb-6 grid h-12 w-12 place-items-center rounded-[14px] text-lg"
-          style={{ background: 'var(--gold)', color: '#202842' }}
-          aria-hidden
-        >
-          SQ
-        </span>
+        {/* 48px and under takes the small variant: its border is heavier, and
+            the standard one fades at this size (brand/README.md). */}
+        <Image
+          src="/brand/squadroom-icon-white-small.svg"
+          alt="Squadroom"
+          width={48}
+          height={48}
+          priority
+          unoptimized
+          className="mb-6 h-12 w-12"
+          data-brand-icon
+        />
 
-        <h1 className="display text-[1.875rem] leading-none" style={{ color: 'var(--brand-ink)' }}>
+        <h1 className="display text-[1.875rem] leading-none" style={{ color: 'var(--bar-ink)' }}>
           Enter your code
         </h1>
         <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>
@@ -139,7 +145,7 @@ export function JoinWithCode() {
             type="submit"
             disabled={!complete}
             className="mt-5 w-full rounded-xl px-4 py-3.5 font-semibold disabled:opacity-40"
-            style={{ background: 'var(--gold)', color: '#202842' }}
+            style={{ background: 'var(--bar-ink)', color: 'var(--bar)' }}
           >
             Continue
           </button>

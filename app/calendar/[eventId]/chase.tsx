@@ -149,7 +149,7 @@ export function Chase({
           <button
             onClick={nudge}
             disabled={busy}
-            className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             {busy ? 'Nudging…' : `Nudge all ${new Set(rows.map((r) => r.guardian_id)).size}`}

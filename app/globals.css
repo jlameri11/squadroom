@@ -14,89 +14,87 @@
  */
 
 :root {
-  --brand: #202842;
-  /* The brand colour as TEXT, which is not the same job as the brand colour
-     as a background.
+  /*
+   * Squadroom's own look (Joey, 4 Nov 2026; brand/README.md): white on
+   * near-black #101012, greys for everything secondary, and colour ONLY
+   * where it means something — orange: needs you; green: going; red: out
+   * or called off. No navy, no gold, no blue-tinted greys.
+   *
+   * Two jobs that used to share `--brand` are now two tokens:
+   *   --bar   the app bar, sign-in and join: the brand's own surface,
+   *           near-black in light AND dark;
+   *   --brand the primary action (buttons, the selected chip, the active
+   *           tab): near-black on a light page, WHITE on a dark one, so it
+   *           stands out on either ground.
+   * Each has an ink. Text on a --brand surface is --brand-ink, never
+   * `text-white` or #fff — in dark mode the button is white.
+   *
+   * Every pair below was measured for WCAG AA (4.5:1) in both themes;
+   * scripts/test-brand.mjs re-measures them from this file.
+   */
+  --bar: #101012;
+  --bar-ink: #ffffff;
+  /* The bar is the page colour in dark mode, so it needs an edge there. */
+  --bar-line: transparent;
 
-     `--brand` is overridden at runtime with whatever the club chose, and is
-     never redefined for dark — so on a #080D16 ground the default navy, and
-     a club's mid-blue, were all but invisible. Found by screenshotting the
-     fixtures list in dark mode: the match TIMES had disappeared while the
-     training times beside them were fine.
-
-     Light keeps the colour as-is. Dark mixes it toward white, which works
-     for any colour a club picks rather than for the ones we happened to
-     test. */
-  --brand-text: var(--brand);
-  --brand-soft: #2028421a;
-  /* The faintest wash of the brand, for a selected row or a card header. The
-     colour sweep produced `var(--brand)0d` in eight places, which is not CSS
-     — a variable and a hex alpha suffix do not concatenate, so those
-     backgrounds silently rendered as nothing at all. */
-  --brand-faint: #2028420d;
-  --paper-blur: #EEF1F5F2;
+  --brand: #101012;
   --brand-ink: #ffffff;
+  /* The primary colour as TEXT (a match time, a link-like label). */
+  --brand-text: #101012;
+  --brand-soft: #1010121a;
+  /* The faintest wash, for a selected row or a card header. */
+  --brand-faint: #1010120d;
+  --paper-blur: #F4F4F5F2;
 
-  --paper: #EEF1F5;
+  --paper: #F4F4F5;
   --surface: #ffffff;
-  --surface-2: #E7EBF1;
-  --surface-3: #F5F7FA;
+  --surface-2: #EBEBEE;
+  --surface-3: #F8F8F9;
 
-  --ink: #0E1726;
-  --ink-2: #4C5A6D;
-  /* Darkened from #8391A3, which measured 2.89:1 against the page — below
-     even the large-text floor, on the colour that carries every eyebrow,
-     hint and secondary label in the product. CLAUDE.md says where this app
-     is used: "a small screen in sunlight". 4.74:1 clears AA for small text
-     and is still clearly tertiary beside --ink and --ink-2.
+  --ink: #101012;
+  --ink-2: #4D4D55;
+  /* Tertiary: every eyebrow, hint and secondary label. 5.1:1 on the
+     darkest light surface — CLAUDE.md: "a small screen in sunlight". */
+  --ink-3: #62626B;
 
-     Found by scripts/test-screens.mjs, which measures this now rather than
-     leaving it to whoever remembers to look. */
-  --ink-3: #5F6D80;
+  --line: #DCDCE0;
+  --line-2: #EAEAED;
 
-  --line: #D9E0E9;
-  --line-2: #EAEEF3;
-
-  --accent: #C2410C; /* deep enough for white text at 5.2:1 (4 Nov 2026; #DD5620 was 3.9:1) */
+  /* Orange: needs you. The only colour that asks for something. */
+  --accent: #C2410C; /* 5.2:1 with white (4 Nov 2026) */
   --accent-ink: #ffffff;
-  --gold: #EFBD5B;
 
-  /* RSVP states, and the tints behind them. Semantic, not decorative — these
-     never double as accents. */
-  --yes: #1C7A4C;    --yes-bg: #1C7A4C18;
-  --maybe: #9C6B06;  --maybe-bg: #9C6B0618;
-  --no: #8E3020;     --no-bg: #8E302018;
+  /* RSVP states, and the tints behind them. Semantic, not decorative —
+     these never double as accents. Maybe is an answer, not a warning, so
+     it is grey: no yellow anywhere (4 Nov 2026). */
+  --yes: #1C7A4C;    --yes-bg: #1C7A4C18;  --yes-ink: #ffffff;
+  --maybe: #4D4D55;  --maybe-bg: #10101212;  --maybe-ink: #ffffff;
+  --no: #8E3020;     --no-bg: #8E302018;   --no-ink: #ffffff;
 
-  /* One colour per child, so a parent with three in two age groups can tell
-     whose Saturday they are looking at. Picked to stay clear of the RSVP
-     hues above — a child's colour must never read as an answer. Assigned by
-     hashing the player id in the client, so there is no column, no default
-     and no settings screen for a preference nobody asked to set. */
-  --kid-1: #2F62C4;  --kid-2: #7A4BB8;  --kid-3: #0C6B72;
-  --kid-4: #AB3577;  --kid-5: #3F5C75;  --kid-6: #566274;
+  /* One shade per child. Greys since the brand went monochrome: a child's
+     name is always printed beside the dot, and a colour per child read as
+     decoration next to the three colours that mean something. */
+  --kid-1: #101012;  --kid-2: #55555D;  --kid-3: #8E8E96;
+  --kid-4: #2E2E33;  --kid-5: #6E6E77;  --kid-6: #A1A1AA;
 
   --bubble-in: #ffffff;
-  --bubble-out: #DCE7F2;
-  /* The timestamp and the "message deleted" line inside your OWN bubble.
-     They were `text-white/60`, which on a light blue bubble measures
-     1.25:1 — the least readable thing in the product, and invisible rather
-     than merely faint. --ink-3 is no use either: it fails the other way on
-     the dark bubble at 2.79:1. So the muted ink for a bubble is its own
-     token, dark on the light bubble and light on the dark one.
+  --bubble-out: #E4E4E8;
+  /* The timestamp and the "message deleted" line inside your OWN bubble:
+     its own muted ink, because --ink-3 fails on the other theme's bubble. */
+  --bubble-out-ink-2: #55555D;
+  /* Read receipts: strong ink when read, --ink-3 when only delivered. */
+  --tick-read: #101012;
+  /* L-29: the ground, drawn — in greys; the family's pitch is --brand. */
+  --pitch-ground: #E7E7EA;
+  --pitch: #CFCFD4;
+  --pitch-sub: #DCDCE0;
+  --pitch-line: #6B6B73;
+  --pitch-ink: #101012;
 
-     Not caught by scripts/test-screens.mjs, and it could not be: that walks
-     computed background colours, and a timestamp sitting over a PHOTO has
-     no computed background to measure. Some things still need an eye. */
-  --bubble-out-ink-2: #56636F;
-  --tick-read: #1E7FD6;
-  /* L-29: the ground, drawn. Grass, a pitch, a sub-pitch, the lines. */
-  --pitch-ground: #DCEBDD;
-  --pitch: #9CCB9F;
-  --pitch-sub: #B9DCBB;
-  --pitch-line: #4F7F55;
-  --pitch-ink: #1E3A22;
+  /* A sheet's backdrop. */
+  --scrim: #10101299;
 
-  --shadow: 0 1px 2px #0e17260f, 0 8px 24px #0e172614;
+  --shadow: 0 1px 2px #1010120f, 0 8px 24px #10101214;
   --radius: 14px;
 
   color-scheme: light;
@@ -104,59 +102,61 @@
 
 
 /*
- * Dark, which is what the prototype actually is.
- *
- * Not an inversion of the light palette — the values below are the
- * prototype's own. A junior football app gets opened at 6am on a wet
- * Saturday and at 9pm when somebody remembers to answer an RSVP, and on a
- * phone at either hour a dark screen is the kinder one.
+ * Dark: the brand's own ground, #101012.
  *
  * Three states, not two. An explicit choice stamps data-theme on the root;
  * the default stamps nothing, and then only prefers-color-scheme separates
  * light from dark. So the media query is guarded against an explicit light
  * choice, and the [data-theme="dark"] block repeats the tokens so a manual
- * pick wins in both directions.
+ * pick wins in both directions. KEEP THE TWO BLOCKS IDENTICAL —
+ * test-brand compares them.
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    --bar: #101012;
+    --bar-ink: #ffffff;
+    --bar-line: #ffffff1f;
+
+    --brand: #ffffff;
+    --brand-ink: #101012;
+    --brand-text: #ffffff;
     --brand-soft: #ffffff14;
     --brand-faint: #ffffff0a;
-    --brand-ink: #ffffff;
-    --brand-text: color-mix(in srgb, var(--brand) 42%, #ffffff);
+    --paper-blur: #101012F2;
 
-    --paper: #080D16;
-    --surface: #121B29;
-    --surface-2: #1B2637;
-    --surface-3: #0E1723;
-    --paper-blur: #080D16F2;
+    --paper: #101012;
+    --surface: #1B1B1E;
+    --surface-2: #27272B;
+    --surface-3: #151517;
 
-    --ink: #E8EDF4;
-    --ink-2: #A6B2C4;
-    --ink-3: #75839A;
+    --ink: #F4F4F5;
+    --ink-2: #B4B4BC;
+    --ink-3: #94949D;
 
-    --line: #243044;
-    --line-2: #1A2434;
+    --line: #313136;
+    --line-2: #232327;
 
     --accent: #FF7A45;
-    --accent-ink: #0E1726;
-    --gold: #EFBD5B;
+    --accent-ink: #101012;
 
-    --yes: #4FB587;    --yes-bg: #4FB58722;
-    --maybe: #D0A03C;  --maybe-bg: #D0A03C22;
-    --no: #D9755F;     --no-bg: #D9755F22;
+    --yes: #4FB587;    --yes-bg: #4FB58722;  --yes-ink: #101012;
+    --maybe: #C4C4CA;  --maybe-bg: #ffffff14;  --maybe-ink: #101012;
+    --no: #E0826D;     --no-bg: #E0826D22;   --no-ink: #101012;
 
-    --kid-1: #7FA6F0;  --kid-2: #B894E8;  --kid-3: #4FBFC6;
-    --kid-4: #E888BC;  --kid-5: #9BB3CC;  --kid-6: #A8B4C2;
+    --kid-1: #ffffff;  --kid-2: #C4C4CA;  --kid-3: #8E8E96;
+    --kid-4: #E4E4E7;  --kid-5: #A1A1AA;  --kid-6: #6E6E77;
 
-    --bubble-in: #1B2637;
-    --bubble-out: #23405C;
-    --bubble-out-ink-2: #A8BAD0;
-    --tick-read: #5CB8FF;
-    --pitch-ground: #14241A;
-    --pitch: #2E5A38;
-    --pitch-sub: #244A2E;
-    --pitch-line: #7FB987;
-    --pitch-ink: #DFF3E2;
+    --bubble-in: #1B1B1E;
+    --bubble-out: #2E2E34;
+    --bubble-out-ink-2: #B8B8C0;
+    --tick-read: #ffffff;
+    --pitch-ground: #18181B;
+    --pitch: #3A3A40;
+    --pitch-sub: #2E2E33;
+    --pitch-line: #A1A1AA;
+    --pitch-ink: #F4F4F5;
+
+    --scrim: #000000b3;
 
     --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
     color-scheme: dark;
@@ -164,38 +164,50 @@
 }
 
 :root[data-theme="dark"] {
+  --bar: #101012;
+  --bar-ink: #ffffff;
+  --bar-line: #ffffff1f;
+
+  --brand: #ffffff;
+  --brand-ink: #101012;
+  --brand-text: #ffffff;
   --brand-soft: #ffffff14;
   --brand-faint: #ffffff0a;
-  --brand-ink: #ffffff;
-  --brand-text: color-mix(in srgb, var(--brand) 42%, #ffffff);
+  --paper-blur: #101012F2;
 
-  --paper: #080D16;
-  --surface: #121B29;
-  --surface-2: #1B2637;
-  --surface-3: #0E1723;
-  --paper-blur: #080D16F2;
+  --paper: #101012;
+  --surface: #1B1B1E;
+  --surface-2: #27272B;
+  --surface-3: #151517;
 
-  --ink: #E8EDF4;
-  --ink-2: #A6B2C4;
-  --ink-3: #75839A;
+  --ink: #F4F4F5;
+  --ink-2: #B4B4BC;
+  --ink-3: #94949D;
 
-  --line: #243044;
-  --line-2: #1A2434;
+  --line: #313136;
+  --line-2: #232327;
 
   --accent: #FF7A45;
-  --accent-ink: #0E1726;
-  --gold: #EFBD5B;
+  --accent-ink: #101012;
 
-  --yes: #4FB587;    --yes-bg: #4FB58722;
-  --maybe: #D0A03C;  --maybe-bg: #D0A03C22;
-  --no: #D9755F;     --no-bg: #D9755F22;
+  --yes: #4FB587;    --yes-bg: #4FB58722;  --yes-ink: #101012;
+  --maybe: #C4C4CA;  --maybe-bg: #ffffff14;  --maybe-ink: #101012;
+  --no: #E0826D;     --no-bg: #E0826D22;   --no-ink: #101012;
 
-  --kid-1: #7FA6F0;  --kid-2: #B894E8;  --kid-3: #4FBFC6;
-  --kid-4: #E888BC;  --kid-5: #9BB3CC;  --kid-6: #A8B4C2;
+  --kid-1: #ffffff;  --kid-2: #C4C4CA;  --kid-3: #8E8E96;
+  --kid-4: #E4E4E7;  --kid-5: #A1A1AA;  --kid-6: #6E6E77;
 
-  --bubble-in: #1B2637;
-  --bubble-out: #23405C;
-  --bubble-out-ink-2: #A8BAD0;
+  --bubble-in: #1B1B1E;
+  --bubble-out: #2E2E34;
+  --bubble-out-ink-2: #B8B8C0;
+  --tick-read: #ffffff;
+  --pitch-ground: #18181B;
+  --pitch: #3A3A40;
+  --pitch-sub: #2E2E33;
+  --pitch-line: #A1A1AA;
+  --pitch-ink: #F4F4F5;
+
+  --scrim: #000000b3;
 
   --shadow: 0 1px 2px #0006, 0 10px 30px #0008;
   color-scheme: dark;
@@ -203,6 +215,9 @@
 
 @theme inline {
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-bar: var(--bar);
+  --color-bar-ink: var(--bar-ink);
   --color-brand-soft: var(--brand-soft);
   --color-brand-faint: var(--brand-faint);
   --color-paper: var(--paper);
@@ -215,10 +230,13 @@
   --color-line: var(--line);
   --color-line-2: var(--line-2);
   --color-accent: var(--accent);
-  --color-gold: var(--gold);
+  --color-accent-ink: var(--accent-ink);
   --color-yes: var(--yes);
+  --color-yes-ink: var(--yes-ink);
   --color-maybe: var(--maybe);
+  --color-maybe-ink: var(--maybe-ink);
   --color-no: var(--no);
+  --color-no-ink: var(--no-ink);
   --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-barlow), "Arial Narrow", sans-serif;
   --radius-card: var(--radius);

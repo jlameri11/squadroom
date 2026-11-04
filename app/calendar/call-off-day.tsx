@@ -120,7 +120,7 @@ export function CallOffDay({
               onDone()
               onClose()
             }}
-            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white"
+            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink"
             style={{ background: 'var(--brand)' }}
           >
             Done
@@ -184,7 +184,7 @@ export function CallOffDay({
                 className="rounded-lg px-3 py-2 text-sm font-semibold"
                 style={
                   reason === r.value
-                    ? { background: 'var(--brand)', color: '#fff' }
+                    ? { background: 'var(--brand)', color: 'var(--brand-ink)' }
                     : { background: 'var(--surface-2)', color: 'var(--ink-2)' }
                 }
               >
@@ -269,7 +269,7 @@ export function CallOffDay({
           <button
             onClick={() => setConfirming(true)}
             disabled={willGo.length === 0}
-            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-no-ink disabled:opacity-50"
             style={{ background: 'var(--no)' }}
           >
             Call off {willGo.length} {willGo.length === 1 ? 'session' : 'sessions'}
@@ -283,7 +283,7 @@ export function CallOffDay({
               <button
                 onClick={callOff}
                 disabled={busy}
-                className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+                className="flex-1 rounded-xl px-4 py-3 font-semibold text-no-ink disabled:opacity-50"
                 style={{ background: 'var(--no)' }}
               >
                 {busy ? 'Telling everyone…' : 'Yes, call it off'}

@@ -88,7 +88,7 @@ export function WithdrawButton({
       />
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
       <div className="mt-2 flex gap-2">
-        <button onClick={withdraw} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>
+        <button onClick={withdraw} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>
           {busy ? '…' : 'Yes, withdraw'}
         </button>
         <button onClick={() => setOpen(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>

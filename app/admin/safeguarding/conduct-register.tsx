@@ -95,7 +95,7 @@ export function ConductRegister() {
                 <input value={draft[r.id]?.outcome ?? ''} onChange={(e) => setDraft({ ...draft, [r.id]: { referred: draft[r.id]?.referred ?? '', outcome: e.target.value } })} placeholder="Outcome / what was done" className="w-full rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--line)' }} />
                 <div className="flex gap-2">
                   <button onClick={() => review(r, 'referred')} disabled={busy === r.id} className="rounded-lg border px-3 py-1.5 font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Mark referred</button>
-                  <button onClick={() => review(r, 'closed')} disabled={busy === r.id} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Close with outcome</button>
+                  <button onClick={() => review(r, 'closed')} disabled={busy === r.id} className="rounded-lg px-3 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Close with outcome</button>
                 </div>
               </div>
             </li>

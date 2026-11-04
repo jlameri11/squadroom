@@ -92,7 +92,7 @@ export function JoinLinkPanel({
         <button
           onClick={create}
           disabled={busy}
-          className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Creating…' : 'Create join link'}
@@ -158,7 +158,7 @@ export function JoinLinkPanel({
       <div className="mt-3 flex gap-2">
         <button
           onClick={copy}
-          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
           style={{ background: 'var(--brand)' }}
         >
           {copied ? 'Copied' : 'Copy link'}

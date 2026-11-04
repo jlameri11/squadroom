@@ -58,7 +58,7 @@ export function PendingQueue({ channelId, isHost }: { channelId: string; isHost:
               <button
                 onClick={() => decide(m.id, 'published')}
                 disabled={busy === m.id}
-                className="rounded px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                className="rounded px-2 py-1 text-xs font-semibold text-brand-ink disabled:opacity-50"
                 style={{ background: 'var(--brand)' }}
               >
                 Approve

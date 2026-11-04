@@ -84,7 +84,7 @@ export function RefereeAuto({ competitionId, onDone }: { competitionId: string; 
       </div>
       <div className="mt-2 flex items-center gap-2 text-xs">
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
-        <button onClick={preview} disabled={busy || !date} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+        <button onClick={preview} disabled={busy || !date} className="rounded-lg px-3 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           Preview
         </button>
       </div>
@@ -118,7 +118,7 @@ export function RefereeAuto({ competitionId, onDone }: { competitionId: string; 
                 ))}
               </ul>
               <div className="mt-2 flex gap-2">
-                <button onClick={apply} disabled={busy || covered === 0} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                <button onClick={apply} disabled={busy || covered === 0} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                   Ask them all ({covered} of {rows.length})
                 </button>
                 <button onClick={() => setRows(null)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Discard</button>

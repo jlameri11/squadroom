@@ -62,7 +62,7 @@ export function DrawCheck({ competitionId, division }: { competitionId: string; 
           <span className="block font-semibold">Check the draw</span>
           <span className="block text-xs text-ink-3">Pairs, home and away, clashes, double headers, empty slots — before it goes out.</span>
         </span>
-        <button onClick={check} disabled={busy} className="flex-none rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+        <button onClick={check} disabled={busy} className="flex-none rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           {busy ? '…' : q ? 'Check again' : 'Check'}
         </button>
       </div>

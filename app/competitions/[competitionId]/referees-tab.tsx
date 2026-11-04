@@ -229,7 +229,7 @@ export function RefereesTab({
                     <input value={draft.grade} onChange={(e) => setDraft({ ...draft, grade: e.target.value })} placeholder="Grade (optional)" className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }} />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={addReferee} disabled={busy === 'add' || !draft.full_name.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                    <button onClick={addReferee} disabled={busy === 'add' || !draft.full_name.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                       Add to the pool
                     </button>
                     <button onClick={() => setAdding(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
@@ -237,7 +237,7 @@ export function RefereesTab({
                   <p className="text-xs text-ink-3">They get a link to open once; after that their games reach them as a push.</p>
                 </div>
               ) : (
-                <button onClick={() => setAdding(true)} className="mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold text-white" style={{ background: 'var(--brand)' }}>
+                <button onClick={() => setAdding(true)} className="mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink" style={{ background: 'var(--brand)' }}>
                   Add a referee
                 </button>
               )}
@@ -336,7 +336,7 @@ export function RefereesTab({
                               <button
                                 onClick={() => appoint(g.fixture_id, c.id)}
                                 disabled={blocked || busy === c.id}
-                                className="flex-none rounded-lg px-2.5 py-1 font-semibold text-white disabled:opacity-40"
+                                className="flex-none rounded-lg px-2.5 py-1 font-semibold text-brand-ink disabled:opacity-40"
                                 style={{ background: 'var(--brand)' }}
                               >
                                 Ask
@@ -467,7 +467,7 @@ function RefereeRules({ competitionId }: { competitionId: string }) {
             </label>
           )}
           <div className="col-span-2 flex gap-2">
-            <button onClick={save} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>{busy ? 'Saving…' : 'Save'}</button>
+            <button onClick={save} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>{busy ? 'Saving…' : 'Save'}</button>
             <button onClick={() => setOpen(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
           </div>
           {error && <p className="col-span-2" style={{ color: 'var(--no)' }}>{error}</p>}

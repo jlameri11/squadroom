@@ -156,7 +156,6 @@ function HomeScreen({
   // for somebody whose organisation has no squads of its own.
   const isLeague = academy.type === 'league'
   const roleWord = isLeague && isStaff ? 'Organiser' : `${role[0].toUpperCase()}${role.slice(1)}`
-  const tint = academy.primary_colour || 'var(--brand)'
 
   // Which child's Saturday this is. Null is everyone, which is the default
   // and what a parent getting the family out the door wants; filtering is for
@@ -281,10 +280,7 @@ function HomeScreen({
   }
 
   return (
-    <div
-      className="mx-auto flex w-full max-w-md flex-1 flex-col"
-      style={{ '--brand': tint } as React.CSSProperties}
-    >
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
       <AppBar
         title={academy.name}
         meta={`${roleWord} · ${todayLabel()}`}
@@ -295,7 +291,7 @@ function HomeScreen({
             <button
               onClick={() => setEditing(true)}
               className="flex h-9 flex-none items-center gap-1 rounded-[10px] px-2.5 text-xs font-semibold"
-              style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+              style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)', color: 'var(--bar-ink)' }}
               aria-label="Edit this screen"
               data-edit-home
             >
@@ -310,10 +306,10 @@ function HomeScreen({
         <Link
           href="/settings"
           className="card mx-4 mb-4 mt-4 block p-3.5 text-sm"
-          style={{ borderColor: 'var(--gold)', background: 'var(--maybe-bg)' }}
+          style={{ borderColor: 'var(--line)' }}
         >
-          <b style={{ color: 'var(--maybe)' }}>Add your mobile number</b>
-          <span className="mt-0.5 block" style={{ color: 'var(--maybe)' }}>
+          <b>Add your mobile number</b>
+          <span className="mt-0.5 block text-ink-2">
             Your team can&apos;t call or text you without it.
           </span>
         </Link>

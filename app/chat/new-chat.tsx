@@ -74,7 +74,7 @@ export function NewChat({ academyId, canCreate }: { academyId: string; canCreate
       <button
         onClick={() => setOpen(true)}
         className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
-        style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+        style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)', color: 'var(--bar-ink)' }}
         aria-label="Start a chat"
       >
         ＋
@@ -143,7 +143,7 @@ export function NewChat({ academyId, canCreate }: { academyId: string; canCreate
                       style={{
                         borderColor: chosen.has(m.profile_id) ? 'var(--brand)' : 'var(--line)',
                         background: chosen.has(m.profile_id) ? 'var(--brand)' : 'transparent',
-                        color: '#fff',
+                        color: 'var(--brand-ink)',
                       }}
                     >
                       {chosen.has(m.profile_id) ? '✓' : ''}

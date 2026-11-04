@@ -232,7 +232,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
               style={
                 program.status === 'open'
                   ? { background: 'var(--surface-2)', color: 'var(--ink-2)' }
-                  : { background: 'var(--brand)', color: '#fff' }
+                  : { background: 'var(--brand)', color: 'var(--brand-ink)' }
               }
             >
               {program.status === 'open' ? 'Close' : 'Open it'}
@@ -325,7 +325,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
                     <button
                       onClick={() => void bulk('approved')}
                       disabled={progress !== null}
-                      className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                      className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-yes-ink disabled:opacity-50"
                       style={{ background: 'var(--yes)' }}
                     >
                       {progress ? `${progress.done + 1} of ${progress.total}…` : `In — ${selected.size}`}
@@ -370,7 +370,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
                   <button
                     onClick={() => decide(r.id, 'approved', program.team_id ?? undefined)}
                     disabled={busy === r.id}
-                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink"
                     style={{ background: 'var(--brand)' }}
                   >
                     Offer a place
@@ -527,7 +527,7 @@ function Decide({
       <button
         onClick={() => onDecide(row.id, 'approved', team || undefined)}
         disabled={busy}
-        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+        className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-yes-ink disabled:opacity-50"
         style={{ background: 'var(--yes)' }}
       >
         {busy ? '…' : 'In'}

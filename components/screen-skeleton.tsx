@@ -9,11 +9,11 @@
 export function ScreenSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col" data-skeleton>
-      <div className="flex items-center gap-3 px-4 pb-3.5 pt-3" style={{ background: 'var(--brand)' }}>
-        <div className="h-9 w-9 flex-none rounded-[10px]" style={{ background: '#ffffff26' }} />
+      <div className="flex items-center gap-3 px-4 pb-3.5 pt-3" style={{ background: 'var(--bar)' }}>
+        <div className="h-9 w-9 flex-none rounded-[10px]" style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }} />
         <div className="min-w-0 flex-1">
-          <div className="h-4 w-40 rounded" style={{ background: '#ffffff2e' }} />
-          <div className="mt-1.5 h-2.5 w-28 rounded" style={{ background: '#ffffff1a' }} />
+          <div className="h-4 w-40 rounded" style={{ background: 'color-mix(in srgb, var(--bar-ink) 18%, transparent)' }} />
+          <div className="mt-1.5 h-2.5 w-28 rounded" style={{ background: 'color-mix(in srgb, var(--bar-ink) 10%, transparent)' }} />
         </div>
       </div>
 

@@ -68,7 +68,7 @@ export function OfferControl({
         {existing?.state !== 'accepted' && squadPrograms.length > 0 && (
           <button
             onClick={() => setOpen(true)}
-            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink"
             style={{ background: 'var(--brand)' }}
           >
             {existing ? 'Offer again' : 'Offer a place'}
@@ -112,7 +112,7 @@ export function OfferControl({
       </label>
       {error && <span className="text-xs" style={{ color: 'var(--no)' }}>{error}</span>}
       <div className="flex gap-1">
-        <button onClick={make} disabled={busy || !program} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+        <button onClick={make} disabled={busy || !program} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           {busy ? '…' : 'Offer'}
         </button>
         <button onClick={() => setOpen(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>

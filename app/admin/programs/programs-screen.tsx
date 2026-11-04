@@ -111,7 +111,7 @@ export function ProgramsScreen() {
             <button
               onClick={() => setCreating(true)}
               className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
-              style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+              style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)', color: 'var(--bar-ink)' }}
               aria-label="New program"
             >
               ＋
@@ -135,7 +135,7 @@ export function ProgramsScreen() {
               </p>
               <button
                 onClick={() => setCreating(true)}
-                className="mt-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+                className="mt-3 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
                 style={{ background: 'var(--brand)' }}
               >
                 Create the first one
@@ -399,7 +399,7 @@ function NewProgram({
             <button
               onClick={() => create('open')}
               disabled={busy || !name.trim()}
-              className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
               style={{ background: 'var(--brand)' }}
             >
               {busy ? 'Creating…' : 'Create and open'}

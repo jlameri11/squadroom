@@ -68,7 +68,7 @@ export function AdminHub() {
   // A parent who lands here should be told, not shown an empty screen.
   if (!isCoach) {
     return (
-      <AppShellPage title="Admin" meta={org.name} isStaff={false} brand={org.primary_colour}>
+      <AppShellPage title="Admin" meta={org.name} isStaff={false}>
         <p className="card m-4 p-6 text-center text-sm text-ink-2" data-org={org.id}>
           This is for coaches and club admins. Nothing for you here.
         </p>
@@ -79,7 +79,7 @@ export function AdminHub() {
   const { pending, pendingRegistrations, pendingSignups } = counts ?? { pending: 0, pendingRegistrations: 0, pendingSignups: 0 }
 
   return (
-    <AppShellPage title="Admin" meta={`Running ${org.name}`} isStaff brand={org.primary_colour}>
+    <AppShellPage title="Admin" meta={`Running ${org.name}`} isStaff>
       <div className="p-3.5" data-org={org.id}>
         {pending ? (
           <Link

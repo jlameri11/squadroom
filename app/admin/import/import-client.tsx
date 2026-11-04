@@ -51,14 +51,14 @@ type Prepared = {
  * Two constants, because a brand colour has two jobs and only one of them
  * adapts.
  *
- * NAVY fills a button and carries white text on it, so it stays the club's
+ * BRAND fills a button and carries white text on it, so it stays the club's
  * actual colour. INK is the brand used AS text — and in dark mode the raw
  * brand is whatever colour a club chose sitting on a near-black ground, so
  * the headings on this screen had all but disappeared. Renaming the one
  * constant would have lightened the buttons too and put white on a pale
  * fill.
  */
-const NAVY = 'var(--brand)'
+const BRAND = 'var(--brand)'
 const INK = 'var(--brand-text)'
 
 type Team = {
@@ -580,7 +580,7 @@ function Importer({
                     style={
                       c === ourClub
                         ? {
-                            borderColor: NAVY,
+                            borderColor: BRAND,
                             background: 'var(--brand-faint)',
                             color: INK,
                           }
@@ -670,8 +670,8 @@ function Importer({
             <button
               onClick={diff ? commit : check}
               disabled={!ready || !!busy}
-              className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: diff ? NAVY : 'var(--mid, #3D4A6D)' }}
+              className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-brand-ink disabled:opacity-50"
+              style={{ background: diff ? BRAND : 'var(--ink-3)' }}
             >
               {busy ??
                 (needsClub

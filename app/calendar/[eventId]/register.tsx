@@ -228,7 +228,7 @@ export function Register({ eventId, started }: { eventId: string; started: boole
           <button
             onClick={save}
             disabled={busy || Object.keys(draft).length === 0}
-            className="mt-2 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="mt-2 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             {busy

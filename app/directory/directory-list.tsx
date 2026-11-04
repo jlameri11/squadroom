@@ -107,7 +107,7 @@ export function DirectoryList({
         {list.map((p) => (
           <div key={p.id} className="flex items-center gap-3 border-b border-[var(--line-2)] px-4 py-3">
             <span
-              className="grid h-10 w-10 flex-none place-items-center rounded-full text-xs font-bold text-white"
+              className="grid h-10 w-10 flex-none place-items-center rounded-full text-xs font-bold text-brand-ink"
               style={{ background: STAFF.includes(p.role) ? 'var(--brand)' : 'var(--ink-3)' }}
             >
               {initials(p.name)}
@@ -160,7 +160,7 @@ export function DirectoryList({
                 <button
                   onClick={() => message(p)}
                   disabled={busy === p.id}
-                  className="grid h-9 w-9 place-items-center rounded-lg text-white disabled:opacity-50"
+                  className="grid h-9 w-9 place-items-center rounded-lg text-brand-ink disabled:opacity-50"
                   style={{ background: 'var(--brand)' }}
                   aria-label={`Message ${p.name}`}
                 >
@@ -181,7 +181,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
       onClick={onClick}
       className="flex-none rounded-full border px-3 py-1 text-xs font-medium"
       style={on
-        ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' }
+        ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' }
         : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
     >
       {children}

@@ -42,7 +42,7 @@ export function Sheet({ children, onClose }: { children: React.ReactNode; onClos
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center"
-      style={{ background: '#0E172699' }}
+      style={{ background: 'var(--scrim)' }}
       onClick={onClose}
     >
       <div

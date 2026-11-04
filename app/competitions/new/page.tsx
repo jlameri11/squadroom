@@ -85,7 +85,7 @@ export default function NewCompetition() {
               <button key={t} type="button" onClick={() => setType(t)}
                       className="rounded-full border px-3 py-1.5 text-sm capitalize"
                       style={type === t
-                        ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' }
+                        ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' }
                         : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
                 {t.replace('_', ' ')}
               </button>
@@ -117,7 +117,7 @@ export default function NewCompetition() {
         {error && <p className="text-sm ">{error}</p>}
 
         <button type="submit" disabled={busy || !organiserId}
-                className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+                className="rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
                 style={{ background: 'var(--brand)' }}>
           {busy ? 'Creating…' : 'Create and invite clubs'}
         </button>

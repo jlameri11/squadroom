@@ -106,7 +106,7 @@ export function InviteClubs({
         {error && <p className="mt-2 text-sm ">{error}</p>}
 
         <button onClick={invite} disabled={busy || names.length === 0}
-                className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+                className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
                 style={{ background: 'var(--brand)' }}>
           {busy ? 'Adding…' : names.length ? `Add ${names.length} clubs to the draw` : 'Nothing to add'}
         </button>

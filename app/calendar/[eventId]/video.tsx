@@ -112,7 +112,7 @@ export function MatchVideo({ eventId }: { eventId: string }) {
               )
             ) : (
               <a href={v.url ?? '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border p-2.5" style={line}>
-                <span className="grid h-10 w-10 flex-none place-items-center rounded-lg text-white" style={{ background: 'var(--brand)' }} aria-hidden>▶</span>
+                <span className="grid h-10 w-10 flex-none place-items-center rounded-lg text-brand-ink" style={{ background: 'var(--brand)' }} aria-hidden>▶</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{v.title ?? 'Watch the game'}</span>
                   <span className="block truncate text-xs text-ink-3">{v.url}</span>
@@ -139,7 +139,7 @@ export function MatchVideo({ eventId }: { eventId: string }) {
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Full game · first half" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={line} />
             </label>
             <div className="mt-2 flex gap-2">
-              <button onClick={addLink} disabled={busy !== null || !/^https?:\/\/\S+$/i.test(link.trim())} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-video-save-link>
+              <button onClick={addLink} disabled={busy !== null || !/^https?:\/\/\S+$/i.test(link.trim())} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-video-save-link>
                 {busy === 'link' ? '…' : 'Add the link'}
               </button>
               <label className="flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-semibold" style={line}>

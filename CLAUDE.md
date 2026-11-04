@@ -511,6 +511,24 @@ one and is meant to reach hundreds of academies.
   the buttons so it breaks onto two lines instead of off the screen.
   `scripts/test-text-size.mjs` fails on a px text size; `test-a11y` fails
   on anything that no longer fits at 125% or 200%.
+- **Squadroom's brand (Joey, 4 Nov 2026; `brand/README.md`): white on
+  near-black `#101012`, monochrome greys, colour only where it means
+  something** — orange `--accent` = needs you, green `--yes` = going, red
+  `--no` = out or called off. No navy, no gold, no yellow ("maybe" is
+  grey). Two tokens, two jobs: `--bar` is the brand's surface (app bar,
+  sign-in, join, the public heroes) and is `#101012` in light AND dark;
+  `--brand` is the primary action and FLIPS (near-black on a light page,
+  white on a dark one). Text on any painted surface takes that surface's
+  ink — `text-brand-ink`, `--yes-ink`, `--no-ink`, `--maybe-ink`,
+  `--accent-ink`, `--bar-ink` — never `text-white` or `#fff`, which is
+  invisible on a white button in dark mode. A colour Squadroom did not pick
+  (a club's) gets its text from `inkOn()` in `lib/brand/colour.ts`. Icons
+  come from `brand/` via `scripts/brand-icons.mjs` (favicon, apple-icon,
+  PWA 192/512 + maskable, the notification badge, `public/brand/*.svg`);
+  the logo is on sign-in and `/for-clubs`, the icon (the `-small` variant
+  at 48px and under) on `/join`. `scripts/test-brand.mjs` measures every
+  token pair for AA in both themes, compares the two dark blocks, and fails
+  on white text on a flipping surface, the old SQ tile, gold or navy.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

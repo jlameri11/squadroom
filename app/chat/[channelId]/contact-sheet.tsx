@@ -65,7 +65,7 @@ export function ContactSheet({
           <>
             <div className="flex items-center gap-3">
               <span
-                className="grid h-12 w-12 flex-none place-items-center rounded-full text-sm font-bold text-white"
+                className="grid h-12 w-12 flex-none place-items-center rounded-full text-sm font-bold text-brand-ink"
                 style={{ background: 'var(--brand)' }}
               >
                 {contact.full_name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
@@ -87,7 +87,7 @@ export function ContactSheet({
                   <button
                     onClick={openDm}
                     disabled={busy}
-                    className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+                    className="rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
                     style={{ background: 'var(--brand)' }}
                   >
                     {busy ? 'Opening…' : 'Message in Squadroom'}

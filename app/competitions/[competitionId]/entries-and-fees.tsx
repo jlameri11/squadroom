@@ -146,7 +146,7 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
                   <option value="">Which division?</option>
                   {[...new Set([...divisions, ...(r.division ? [r.division] : [])])].map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <button onClick={() => decide(r, true)} disabled={busy === r.id || !(pick[r.id] ?? r.division)} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--yes)' }}>Accept</button>
+                <button onClick={() => decide(r, true)} disabled={busy === r.id || !(pick[r.id] ?? r.division)} className="rounded-lg px-3 py-1.5 font-semibold text-yes-ink disabled:opacity-50" style={{ background: 'var(--yes)' }}>Accept</button>
                 <button onClick={() => decide(r, false)} disabled={busy === r.id} className="rounded-lg border px-3 py-1.5 disabled:opacity-50" style={{ borderColor: 'var(--no)', color: 'var(--no)' }}>Decline</button>
               </div>
             </li>
@@ -198,7 +198,7 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
                 <span className="text-ink-2">How to pay (shown to clubs)</span>
                 <input value={feeDraft.instructions} onChange={(e) => setFeeDraft({ ...feeDraft, instructions: e.target.value })} placeholder="Bank transfer to SPL Inc, BSB 062-000, acct 1234 5678, reference your team" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
               </label>
-              <button onClick={saveFee} disabled={busy === 'fee' || feeDraft.dollars === ''} className="col-span-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set the fee</button>
+              <button onClick={saveFee} disabled={busy === 'fee' || feeDraft.dollars === ''} className="col-span-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set the fee</button>
             </div>
             <p className="mt-1.5 text-[0.6875rem] text-ink-3">Online payment to the league&apos;s Stripe account comes with the key; until then clubs pay as you say above and you tick them off here.</p>
             {fees && fees.entries.length > 0 && (
@@ -211,7 +211,7 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
                     </span>
                     {e.status === 'owed' ? (
                       <>
-                        <button onClick={() => mark(e.fee_id, 'paid')} disabled={busy === e.fee_id} className="flex-none rounded-lg px-2 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Paid</button>
+                        <button onClick={() => mark(e.fee_id, 'paid')} disabled={busy === e.fee_id} className="flex-none rounded-lg px-2 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Paid</button>
                         <button onClick={() => mark(e.fee_id, 'waived')} disabled={busy === e.fee_id} className="flex-none rounded-lg border px-2 py-1 disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Waive</button>
                       </>
                     ) : (

@@ -310,7 +310,7 @@ export function SeasonScreen() {
           <button
             onClick={doPreview}
             disabled={busy !== null || !from || !to || from === to}
-            className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
             data-preview
           >
@@ -455,7 +455,7 @@ export function SeasonScreen() {
                         <button
                           onClick={() => { setIntake((all) => [...all, newIntake]); setNewIntake(null) }}
                           disabled={!newIntake.name.trim()}
-                          className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                          className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50"
                           style={{ background: 'var(--brand)' }}
                           data-intake-add
                         >
@@ -482,7 +482,7 @@ export function SeasonScreen() {
                   <button
                     onClick={doRollover}
                     disabled={busy !== null || (toMake.length === 0 && intake.length === 0)}
-                    className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
                     style={{ background: 'var(--brand)' }}
                     data-confirm
                   >
@@ -572,7 +572,7 @@ export function SeasonScreen() {
         )}
         <div className="mt-3 flex gap-2">
           {movePreview ? (
-            <button onClick={doMoves} disabled={busy !== null} className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-move-confirm>
+            <button onClick={doMoves} disabled={busy !== null} className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-move-confirm>
               {busy === 'move' ? 'Moving…' : `Move ${picked.size} ${picked.size === 1 ? 'player' : 'players'}`}
             </button>
           ) : (

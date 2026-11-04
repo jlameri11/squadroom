@@ -104,17 +104,17 @@ export function LiveScore({ eventId }: { eventId: string }) {
           <span className="display text-4xl tabular-nums" style={{ color: live.finished ? 'var(--ink)' : 'var(--brand-text)' }}>
             {live.score.ours} – {live.score.theirs}
           </span>
-          {live.kicked_off && !live.finished && <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-white" style={{ background: 'var(--no)' }}>Live</span>}
+          {live.kicked_off && !live.finished && <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-no-ink" style={{ background: 'var(--no)' }}>Live</span>}
         </div>
         <p className="text-center text-xs text-ink-3">Us v {live.opponent ?? 'the opposition'}</p>
 
         {live.can_tap && on && (
           <div className="mt-3 grid grid-cols-2 gap-2" data-live-controls>
             {!live.kicked_off ? (
-              <button onClick={() => tap('kick_off')} disabled={busy} className={`${big} col-span-2 text-white`} style={{ background: 'var(--yes)' }} data-tap="kick_off">🟢 Kick-off</button>
+              <button onClick={() => tap('kick_off')} disabled={busy} className={`${big} col-span-2 text-yes-ink`} style={{ background: 'var(--yes)' }} data-tap="kick_off">🟢 Kick-off</button>
             ) : (
               <>
-                <button onClick={() => setPicking('goal')} disabled={busy} className={`${big} text-white`} style={{ background: 'var(--brand)' }} data-tap="goal_for">+1 Us</button>
+                <button onClick={() => setPicking('goal')} disabled={busy} className={`${big} text-brand-ink`} style={{ background: 'var(--brand)' }} data-tap="goal_for">+1 Us</button>
                 <button onClick={() => tap('goal_against')} disabled={busy} className={`${big} border`} style={line} data-tap="goal_against">+1 Them</button>
                 <button onClick={() => tap('half_time')} disabled={busy} className={`${big} border`} style={line} data-tap="half_time">⏸ Half time</button>
                 <button onClick={() => setPicking('full_time')} disabled={busy} className={`${big} border`} style={line} data-tap="full_time">🏁 Full time</button>
@@ -159,7 +159,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
                 <h3 className="display text-lg leading-tight">{live.score.ours} – {live.score.theirs}{live.opponent ? ` v ${live.opponent}` : ''}</h3>
                 <p className="mt-1 text-sm text-ink-2">{live.in_competition ? 'Posts full time to the chat. The official score goes on the match sheet.' : 'Posts full time to the chat, writes the result on the game and the goals into the stats.'}</p>
                 <div className="mt-4 flex gap-2">
-                  <button onClick={() => tap('full_time')} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-confirm-full-time>🏁 Full time</button>
+                  <button onClick={() => tap('full_time')} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-confirm-full-time>🏁 Full time</button>
                   <button onClick={() => setPicking(null)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Not yet</button>
                 </div>
               </>
@@ -167,7 +167,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
               <>
                 <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Great spell of pressure. Keeper has been brilliant." className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm" style={line} />
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => tap('note', { p_note: note })} disabled={busy || !note.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Post it</button>
+                  <button onClick={() => tap('note', { p_note: note })} disabled={busy || !note.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Post it</button>
                   <button onClick={() => setPicking(null)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Cancel</button>
                 </div>
               </>
@@ -175,7 +175,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
               <>
                 <div className="mt-2 flex flex-wrap gap-1.5" data-scorer-pick>
                   {live.players.map((p) => (
-                    <button key={p.id} onClick={() => setScorer(p.id)} className="rounded-full border px-2.5 py-1 text-sm" style={scorer === p.id ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' } : line} data-scorer={p.id}>
+                    <button key={p.id} onClick={() => setScorer(p.id)} className="rounded-full border px-2.5 py-1 text-sm" style={scorer === p.id ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' } : line} data-scorer={p.id}>
                       {first(p)}
                     </button>
                   ))}
@@ -197,7 +197,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
                 )}
                 {picking === 'goal' && (
                   <div className="mt-4 flex gap-2">
-                    <button onClick={() => tap('goal_for', { p_player: scorer || undefined, p_assist: assist || undefined })} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-confirm-goal>
+                    <button onClick={() => tap('goal_for', { p_player: scorer || undefined, p_assist: assist || undefined })} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-confirm-goal>
                       ⚽ Goal{scorer ? ` — ${first(live.players.find((p) => p.id === scorer)!)}` : ''}
                     </button>
                     <button onClick={() => setPicking(null)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Cancel</button>

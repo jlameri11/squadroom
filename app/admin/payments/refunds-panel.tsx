@@ -89,7 +89,7 @@ export function RefundsPanel({ academyId }: { academyId: string }) {
               <button
                 onClick={() => issue(r.id)}
                 disabled={busy === r.id}
-                className="flex-none rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                className="flex-none rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50"
                 style={{ background: 'var(--brand)' }}
               >
                 {busy === r.id ? '…' : 'Issue'}

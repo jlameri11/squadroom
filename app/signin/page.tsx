@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -161,7 +162,7 @@ export default function SignIn() {
   if (sent) {
     return (
       <Frame>
-        <h1 className="display text-[1.75rem] leading-tight" style={{ color: 'var(--brand-ink)' }}>
+        <h1 className="display text-[1.75rem] leading-tight" style={{ color: 'var(--bar-ink)' }}>
           Check your email
         </h1>
         <p className="mt-2 text-sm" style={{ color: '#ffffffb3' }}>
@@ -181,8 +182,9 @@ export default function SignIn() {
 
   return (
     <Frame>
-      <h1 className="display text-[2.125rem] leading-none" style={{ color: 'var(--brand-ink)' }}>
-        Squadroom
+      {/* The logo above says the name; the heading says what this page is for. */}
+      <h1 className="display text-[1.875rem] leading-none" style={{ color: 'var(--bar-ink)' }}>
+        Sign in
       </h1>
       {/*
         Said on the sign-in screen itself, because the people most likely to
@@ -250,7 +252,7 @@ export default function SignIn() {
           type="submit"
           disabled={busy}
           className="rounded-xl px-4 py-3.5 font-semibold disabled:opacity-50"
-          style={{ background: 'var(--gold)', color: '#202842' }}
+          style={{ background: 'var(--bar-ink)', color: 'var(--bar)' }}
         >
           {busy
             ? mode === 'password' ? 'Signing in…' : 'Sending…'
@@ -289,28 +291,30 @@ export default function SignIn() {
 }
 
 /**
- * The navy ground every state sits on.
+ * The brand's own ground every state sits on: the Squadroom logo, white on
+ * near-black (brand/README.md), in light and dark alike.
  *
  * A sign-in screen is the first thing a coach sees, and a bare white form
- * with two inputs says nothing about what they are signing in to. The crest
- * mark and the club navy do the work that a logo file would, without needing
- * one — Squadroom is multi-tenant, so this screen cannot wear any single
- * club's badge.
+ * with two inputs says nothing about what they are signing in to. Squadroom
+ * is multi-tenant, so this screen wears Squadroom's mark, never a club's.
  */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
     <main
       className="flex min-h-dvh flex-col justify-center px-6 py-10"
-      style={{ background: 'var(--brand)' }}
+      style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}
     >
       <div className="mx-auto w-full max-w-sm">
-        <span
-          className="display mb-6 grid h-12 w-12 place-items-center rounded-[14px] text-lg"
-          style={{ background: 'var(--gold)', color: '#202842' }}
-          aria-hidden
-        >
-          SQ
-        </span>
+        <Image
+          src="/brand/squadroom-logo-white.svg"
+          alt="Squadroom"
+          width={204}
+          height={40}
+          priority
+          unoptimized
+          className="mb-8 h-10 w-auto"
+          data-brand-logo
+        />
         {children}
       </div>
     </main>

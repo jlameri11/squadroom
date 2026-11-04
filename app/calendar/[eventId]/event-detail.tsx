@@ -108,8 +108,8 @@ export function EventDetail({
     <>
       <header className="mt-3">
         <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-white"
-                style={{ background: cancelled ? 'var(--no)' : 'var(--brand)' }}>
+          <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide"
+                style={{ background: cancelled ? 'var(--no)' : 'var(--brand)', color: cancelled ? 'var(--no-ink)' : 'var(--brand-ink)' }}>
             {cancelled ? 'Cancelled' : event.type}
           </span>
           {event.round && <span className="text-sm text-ink-2">{event.round}</span>}

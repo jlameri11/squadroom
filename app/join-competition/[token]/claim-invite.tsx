@@ -47,7 +47,7 @@ export function ClaimInvite({
           and squad stay yours; the organiser never sees your members or your chat.
         </p>
         <div className="flex flex-col gap-2">
-          <a href={`/signup?next=${next}`} className="rounded-xl px-4 py-3 text-center font-medium text-white" style={{ background: 'var(--brand)' }}>
+          <a href={`/signup?next=${next}`} className="rounded-xl px-4 py-3 text-center font-medium text-brand-ink" style={{ background: 'var(--brand)' }}>
             Set up {clubName}
           </a>
           <a href={`/signin?next=${next}`} className="rounded-xl border border-[var(--line)] px-4 py-3 text-center font-medium">
@@ -118,7 +118,7 @@ export function ClaimInvite({
 
         {error && <p className="text-sm ">{error}</p>}
 
-        <button type="submit" disabled={busy} className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+        <button type="submit" disabled={busy} className="rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           {busy ? 'Accepting…' : 'Accept and see our fixtures'}
         </button>
         <p className="text-center text-xs text-ink-2">

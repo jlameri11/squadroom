@@ -158,7 +158,7 @@ export function MyData() {
         </button>
         <button
           onClick={() => window.location.replace('/signin')}
-          className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+          className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
           style={{ background: 'var(--brand)' }}
         >
           Close
@@ -244,7 +244,7 @@ export function MyData() {
             <button
               onClick={erase}
               disabled={typed.trim().toUpperCase() !== 'REMOVE' || busy !== null}
-              className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-no-ink disabled:opacity-50"
               style={{ background: 'var(--no)' }}
             >
               {busy === 'erasing' ? 'Removing…' : 'Remove everything'}

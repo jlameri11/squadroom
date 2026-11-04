@@ -50,7 +50,7 @@ export function MatchDayChecklist({ eventId }: { eventId: string }) {
               onClick={() => tick(i)}
               disabled={i.auto || busy !== null}
               className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-md border text-xs font-bold"
-              style={i.done ? { background: 'var(--yes)', borderColor: 'var(--yes)', color: '#fff' } : { borderColor: 'var(--line)' }}
+              style={i.done ? { background: 'var(--yes)', borderColor: 'var(--yes)', color: 'var(--yes-ink)' } : { borderColor: 'var(--line)' }}
               aria-label={`${i.label}: ${i.done ? 'done' : 'to do'}${i.auto ? ' (ticks itself)' : ''}`}
             >
               {i.done ? '✓' : ''}

@@ -120,7 +120,7 @@ export function CompetitionView({
               onClick={() => setDivision(d)}
               className="flex-none rounded-full border px-3 py-1 text-xs font-medium"
               style={division === d
-                ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' }
+                ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' }
                 : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
             >
               {d}
@@ -389,7 +389,7 @@ function RunSheet({
                   <button
                     onClick={() => saveScore(f.fixture_id)}
                     disabled={busy || home === '' || away === ''}
-                    className="flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
                     style={{ background: 'var(--brand)' }}
                   >
                     Save
@@ -478,7 +478,7 @@ function Broadcast({ competitionId, isOrganiser }: { competitionId: string; isOr
       <button
         onClick={send}
         disabled={busy || body.trim().length === 0}
-        className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+        className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
         style={{ background: 'var(--brand)' }}
       >
         {busy ? 'Sending…' : 'Send to every club'}
@@ -696,7 +696,7 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
       )}
 
       <button onClick={build} disabled={busy}
-              className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+              className="mt-3 w-full rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
               style={{ background: 'var(--brand)' }}>
         {busy ? 'Building…' : shape === 'weekly' ? 'Build the season' : 'Build the draw'}
       </button>
@@ -770,7 +770,7 @@ function Ladder({
           <span className="font-semibold">{nameOf(adjusting)}</span>
           <input value={points} onChange={(e) => setPoints(e.target.value)} inputMode="numeric" className="w-12 rounded border px-1.5 py-1 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Points" />
           <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="why — the record keeps it" className="min-w-0 flex-1 rounded border px-1.5 py-1" style={{ borderColor: 'var(--line)' }} aria-label="Reason" />
-          <button onClick={() => adjust(adjusting)} disabled={busy || !reason.trim() || !Number(points)} className="rounded px-2 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Apply</button>
+          <button onClick={() => adjust(adjusting)} disabled={busy || !reason.trim() || !Number(points)} className="rounded px-2 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Apply</button>
           <button onClick={() => setAdjusting(null)} className="px-1">✕</button>
           {adjError && <span className="w-full" style={{ color: 'var(--no)' }}>{adjError}</span>}
         </div>
@@ -906,7 +906,7 @@ function PublishPublicly({
               setCopied(true)
               setTimeout(() => setCopied(false), 2000)
             }}
-            className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+            className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
             style={{ background: 'var(--brand)' }}
           >
             {copied ? 'Copied' : 'Copy link'}
@@ -954,7 +954,7 @@ function PublishPublicly({
       <button
         onClick={publish}
         disabled={busy || !suggestSlug(value)}
-        className="mt-2.5 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-2.5 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
         style={{ background: 'var(--brand)' }}
       >
         {busy ? 'Publishing…' : 'Publish'}
@@ -1037,7 +1037,7 @@ function EmbedSnippet({ url, name }: { url: string; name: string }) {
           setCopied(true)
           setTimeout(() => setCopied(false), 2000)
         }}
-        className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-white"
+        className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink"
         style={{ background: 'var(--brand)' }}
       >
         {copied ? 'Copied' : 'Copy the embed code'}

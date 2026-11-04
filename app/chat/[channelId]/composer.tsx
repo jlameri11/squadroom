@@ -383,7 +383,7 @@ export function Composer({
       {laterOpen && (
         <div className="flex items-center gap-2 px-4 pt-1.5 text-xs">
           <input type="datetime-local" value={laterAt} onChange={(e) => setLaterAt(e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
-          <button onClick={scheduleIt} disabled={!text.trim() || !laterAt || uploading} className="rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+          <button onClick={scheduleIt} disabled={!text.trim() || !laterAt || uploading} className="rounded-lg px-3 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
             Schedule
           </button>
           <span className="text-ink-3">Text only; photos go now.</span>
@@ -421,7 +421,7 @@ export function Composer({
               )}
               <button
                 onClick={() => removePending(i)}
-                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--brand)] text-xs text-white"
+                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--brand)] text-xs text-brand-ink"
                 aria-label="Remove"
               >
                 ✕
@@ -477,7 +477,7 @@ export function Composer({
           <div className="mt-2 flex gap-2">
             <button
               onClick={createPoll}
-              className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white"
+              className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink"
               style={{ background: 'var(--brand)' }}
             >
               Post the poll
@@ -552,7 +552,7 @@ export function Composer({
             <span className="h-2.5 w-2.5 flex-none animate-pulse rounded-full" style={{ background: 'var(--no)' }} aria-hidden />
             <span className="flex-1 tabular-nums">Recording {formatDuration(recSeconds)}</span>
             <button onClick={cancelVoice} className="text-sm text-ink-3 underline underline-offset-2">Cancel</button>
-            <button onClick={finishVoice} className="rounded-lg px-3 py-1 text-sm font-semibold text-white" style={{ background: 'var(--brand)' }}>Done</button>
+            <button onClick={finishVoice} className="rounded-lg px-3 py-1 text-sm font-semibold text-brand-ink" style={{ background: 'var(--brand)' }}>Done</button>
           </div>
         ) : (
         <>
@@ -603,7 +603,7 @@ export function Composer({
           // way every messaging app a parent already uses does it.
           <button
             onClick={startVoice}
-            className="grid h-10 w-10 flex-none place-items-center rounded-full text-white"
+            className="grid h-10 w-10 flex-none place-items-center rounded-full text-brand-ink"
             style={{ background: 'var(--brand)' }}
             aria-label="Record a voice note"
           >
@@ -613,7 +613,7 @@ export function Composer({
           <button
             onClick={send}
             disabled={(!text.trim() && pending.length === 0) || uploading}
-            className="grid h-10 w-10 flex-none place-items-center rounded-full text-white disabled:opacity-40"
+            className="grid h-10 w-10 flex-none place-items-center rounded-full text-brand-ink disabled:opacity-40"
             style={{ background: 'var(--brand)' }}
             aria-label="Send"
           >

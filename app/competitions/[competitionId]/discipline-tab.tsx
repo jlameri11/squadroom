@@ -126,7 +126,7 @@ export function DisciplineTab({
               </label>
             ))}
             <div className="col-span-3 flex gap-2">
-              <button onClick={saveRules} disabled={busy === 'rules'} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
+              <button onClick={saveRules} disabled={busy === 'rules'} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
               <button onClick={() => setEditingRules(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
             </div>
           </div>
@@ -191,7 +191,7 @@ export function DisciplineTab({
                 {isOrganiser && active && overturning === active.id && (
                   <div className="mt-1.5 flex gap-1.5">
                     <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why — the record keeps it" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} />
-                    <button onClick={() => overturn(active.id)} disabled={busy === active.id || !note.trim()} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Overturn</button>
+                    <button onClick={() => overturn(active.id)} disabled={busy === active.id || !note.trim()} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Overturn</button>
                     <button onClick={() => setOverturning(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
                   </div>
                 )}

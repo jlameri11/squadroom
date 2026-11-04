@@ -80,7 +80,7 @@ export function WithdrawPolicy({
       </label>
       {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
       <div className="mt-3 flex gap-2">
-        <button onClick={save} disabled={busy} className="flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+        <button onClick={save} disabled={busy} className="flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           {busy ? 'Saving…' : 'Save'}
         </button>
         <button onClick={() => { setUntil(withdrawUntil ?? ''); setPct(String(refundBpsAfter / 100)); setOpen(false) }} className="rounded-xl border px-3 py-2.5 text-sm" style={{ borderColor: 'var(--line)' }}>

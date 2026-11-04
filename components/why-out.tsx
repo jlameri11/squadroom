@@ -57,7 +57,7 @@ export function WhyOut({
         <button
           onClick={() => onSave(note)}
           disabled={!note.trim() || busy}
-          className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-no-ink disabled:opacity-50"
           style={{ background: 'var(--no)' }}
         >
           {busy ? 'Saving…' : 'Mark them out'}

@@ -280,7 +280,7 @@ function Highlight({ text, term }: { text: string; term: string }) {
   return (
     <>
       {before}
-      <mark style={{ background: 'var(--gold)', color: 'var(--ink)', borderRadius: 3, padding: '0 2px' }}>
+      <mark style={{ background: 'var(--brand-soft)', color: 'var(--ink)', fontWeight: 600, borderRadius: 3, padding: '0 2px' }}>
         {hit}
       </mark>
       {after}
@@ -328,7 +328,7 @@ function ChannelRow({ c }: { c: Row }) {
               // orange so it reads on a dark ground, which left white on it
               // at 2.59:1 — the count was the least readable text here. The
               // muted badge keeps white, which --ink-3 carries at 5:1.
-              color: c.muted ? '#fff' : 'var(--accent-ink)',
+              color: c.muted ? 'var(--surface)' : 'var(--accent-ink)',
             }}
           >
             {c.unread_count > 99 ? '99+' : c.unread_count}

@@ -36,7 +36,7 @@ type RegisterRow = {
 }
 
 /** A fill keeps the club's colour; text uses INK. See --brand-text. */
-const NAVY = 'var(--brand)'
+const BRAND = 'var(--brand)'
 const INK = 'var(--brand-text)'
 const money = (cents: number, currency = 'aud') =>
   new Intl.NumberFormat('en-AU', { style: 'currency', currency: currency.toUpperCase() }).format(
@@ -137,8 +137,8 @@ export function PaymentsAdmin({
           <button
             onClick={connect}
             disabled={busy}
-            className="mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-            style={{ background: NAVY }}
+            className="mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-brand-ink disabled:opacity-50"
+            style={{ background: BRAND }}
           >
             {busy ? 'Opening…' : 'Set up payments'}
           </button>
@@ -408,8 +408,8 @@ function NewRequest({
         <button
           onClick={create}
           disabled={busy || !valid}
-          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          style={{ background: NAVY }}
+          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
+          style={{ background: BRAND }}
         >
           {busy ? 'Creating…' : valid ? `Ask for ${money(cents)}` : 'Fill this in'}
         </button>

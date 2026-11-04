@@ -22,7 +22,7 @@ type ScannedEvent = {
 
 const MAX_EDGE = 2200 // Small print on a fixture list has to survive this.
 /** A fill keeps the club's colour; text uses INK. See --brand-text. */
-const NAVY = 'var(--brand)'
+const BRAND = 'var(--brand)'
 const INK = 'var(--brand-text)'
 
 // A season draw is rarely one screenshot — it is the four or five it took to
@@ -429,8 +429,8 @@ function EventRow({
             <button
               onClick={save}
               disabled={saving}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-              style={{ background: NAVY }}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink disabled:opacity-50"
+              style={{ background: BRAND }}
             >
               {saving ? 'Saving…' : 'Save'}
             </button>

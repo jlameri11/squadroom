@@ -132,7 +132,7 @@ export function EventStats({ eventId }: { eventId: string }) {
                   <p className="text-[0.6875rem] text-ink-3">One vote per adult, until {new Date(s.vote_closes_at).toLocaleString('en-AU', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {s.players.map((p) => (
-                      <button key={p.id} onClick={() => vote(p.id)} disabled={busy} className="rounded-full border px-2.5 py-1 text-xs" style={s.my_vote === p.id ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: '#fff' } : line} data-vote-for={p.id}>
+                      <button key={p.id} onClick={() => vote(p.id)} disabled={busy} className="rounded-full border px-2.5 py-1 text-xs" style={s.my_vote === p.id ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' } : line} data-vote-for={p.id}>
                         {first(p)}
                       </button>
                     ))}
@@ -192,7 +192,7 @@ export function EventStats({ eventId }: { eventId: string }) {
           <p className="mt-1 text-[0.6875rem] text-ink-3">Picking a star posts a 🏆 announcement in the squad&apos;s chat, once.</p>
           {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
           <div className="mt-3 flex gap-2">
-            <button onClick={save} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-stats-save>
+            <button onClick={save} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-stats-save>
               {busy ? '…' : 'Save'}
             </button>
             <button onClick={() => setEditing(false)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Cancel</button>

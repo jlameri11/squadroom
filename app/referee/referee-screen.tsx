@@ -245,7 +245,7 @@ export function RefereeScreen() {
               <li key={a.id} className="px-3.5 py-3 text-sm">
                 <GameLine a={a} />
                 <div className="mt-2 flex gap-2">
-                  <button onClick={() => respond(a.id, true)} disabled={busy === a.id} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                  <button onClick={() => respond(a.id, true)} disabled={busy === a.id} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                     Yes, I&apos;ll take it
                   </button>
                   <button onClick={() => setDeclining(declining === a.id ? null : a.id)} disabled={busy === a.id} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
@@ -255,7 +255,7 @@ export function RefereeScreen() {
                 {declining === a.id && (
                   <div className="mt-2 flex gap-2">
                     <input value={declineNote} onChange={(e) => setDeclineNote(e.target.value)} placeholder="Why — the league sees this" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Reason" />
-                    <button onClick={() => respond(a.id, false, declineNote)} disabled={busy === a.id || !declineNote.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>Decline</button>
+                    <button onClick={() => respond(a.id, false, declineNote)} disabled={busy === a.id || !declineNote.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>Decline</button>
                   </div>
                 )}
               </li>
@@ -278,7 +278,7 @@ export function RefereeScreen() {
                     {g.unavailable ? ` · you are ${g.unavailable}` : ''}
                   </span>
                 </span>
-                <button onClick={() => takeGame(g.fixture_id)} disabled={busy === g.fixture_id || Boolean(g.unavailable)} className="flex-none rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                <button onClick={() => takeGame(g.fixture_id)} disabled={busy === g.fixture_id || Boolean(g.unavailable)} className="flex-none rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                   Take it
                 </button>
               </li>
@@ -300,7 +300,7 @@ export function RefereeScreen() {
                   Checked in {new Date(a.checked_in_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', timeZone: SYDNEY })}
                 </p>
               ) : canCheckIn(a, now) ? (
-                <button onClick={() => checkIn(a.id)} disabled={busy === a.id} className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                <button onClick={() => checkIn(a.id)} disabled={busy === a.id} className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                   I&apos;m at the ground
                 </button>
               ) : (
@@ -369,7 +369,7 @@ export function RefereeScreen() {
             )}
             <p className="text-xs text-ink-3">Seen by the league&apos;s treasurer and nobody else.</p>
             <div className="flex gap-2">
-              <button onClick={saveBank} disabled={busy === 'bank'} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
+              <button onClick={saveBank} disabled={busy === 'bank'} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
               <button onClick={() => setBank(null)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
             </div>
           </div>
@@ -406,7 +406,7 @@ export function RefereeScreen() {
             </label>
             <input value={block.reason} onChange={(e) => setBlock({ ...block, reason: e.target.value })} placeholder="Reason (optional)" className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }} />
             <div className="flex gap-2">
-              <button onClick={addBlockout} disabled={busy === 'block' || !block.from || !block.to || block.to <= block.from} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+              <button onClick={addBlockout} disabled={busy === 'block' || !block.from || !block.to || block.to <= block.from} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                 Block it out
               </button>
               <button onClick={() => setAddingBlock(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
@@ -497,7 +497,7 @@ function ReportForm({
       <MarksPicker value={marks.away} onChange={(m) => setMarks({ ...marks, away: m })} compact />
       <p className="text-[0.6875rem] text-ink-3">Players, coaches, spectators — 1 to 5. Only the league sees them.</p>
       <div className="flex gap-2">
-        <button onClick={onSend} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+        <button onClick={onSend} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           Send the report
         </button>
         <button onClick={onClose} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>

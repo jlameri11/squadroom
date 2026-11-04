@@ -145,7 +145,7 @@ export function EditHome({
                     <button
                       onClick={() => setOn([...on, id])}
                       aria-label={`Add ${section?.label}`}
-                      className="grid h-8 w-8 flex-none place-items-center rounded-lg text-white"
+                      className="grid h-8 w-8 flex-none place-items-center rounded-lg text-brand-ink"
                       style={{ background: 'var(--brand)' }}
                     >
                       ＋
@@ -169,7 +169,7 @@ export function EditHome({
         <button
           onClick={() => save(false)}
           disabled={busy}
-          className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Saving…' : 'Save'}

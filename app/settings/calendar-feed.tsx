@@ -52,7 +52,7 @@ export function CalendarFeed() {
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
           }}
-          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
           style={{ background: 'var(--brand)' }}
         >
           {copied ? 'Copied' : 'Copy link'}

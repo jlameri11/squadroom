@@ -96,7 +96,7 @@ function SignUpForm() {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Sending…' : 'Email me a link'}

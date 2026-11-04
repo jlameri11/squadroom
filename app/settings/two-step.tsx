@@ -110,7 +110,7 @@ export function TwoStep() {
         <div className="mt-2 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
           <p>Signing in will take the password alone again.</p>
           <div className="mt-2 flex gap-2">
-            <button onClick={turnOff} disabled={busy} className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }} data-two-step-off-confirm>
+            <button onClick={turnOff} disabled={busy} className="rounded-lg px-3 py-2 text-sm font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }} data-two-step-off-confirm>
               Turn it off
             </button>
             <button onClick={() => setConfirmOff(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>

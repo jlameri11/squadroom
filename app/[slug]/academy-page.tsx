@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { inkOn } from '@/lib/brand/colour'
 import { ProgramSummary, type PublicProgram } from './program-card'
 
 export type Academy = {
@@ -50,12 +51,13 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
 
   const { academy: club, programs, competitions } = academy
   const tint = club.primary_colour || 'var(--brand)'
+  const ink = inkOn(tint)
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-lg pb-12">
       <header
         className="px-5 pb-6 pt-7"
-        style={{ background: tint, color: 'var(--brand-ink)' }}
+        style={{ background: tint, color: ink }}
       >
         <div className="flex items-center gap-4">
           {/* The crest at a size that reads as a crest and not a logo wall.
@@ -75,7 +77,7 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
             <h1 className="display text-[1.75rem] leading-tight" style={{ textWrap: 'balance' }}>
               {club.name}
             </h1>
-            <p className="mt-1 text-sm" style={{ color: '#ffffffb3' }}>
+            <p className="mt-1 text-sm" style={{ color: ink, opacity: 0.8 }}>
               {programs.length === 0
                 ? 'Registration is closed at the moment'
                 : programs.length === 1
@@ -105,8 +107,8 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
 
             <Link
               href={`/${slug}/register`}
-              className="mt-4 block w-full rounded-xl px-4 py-3 text-center font-semibold text-white"
-              style={{ background: tint }}
+              className="mt-4 block w-full rounded-xl px-4 py-3 text-center font-semibold"
+              style={{ background: tint, color: ink }}
             >
               Register
             </Link>

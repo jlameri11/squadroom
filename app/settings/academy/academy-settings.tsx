@@ -288,7 +288,7 @@ export function AcademySettings({
           <button
             onClick={() => update({ sibling_discount_bps: ladder })}
             disabled={busy}
-            className="mt-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="mt-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             {ladder.length === 0 ? 'Turn discounts off' : 'Save discounts'}
@@ -321,7 +321,7 @@ export function AcademySettings({
             <input value={grace} onChange={(e) => setGrace(e.target.value)} inputMode="numeric" className="w-16 rounded-lg border px-2 py-1.5 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} />
             <span className="text-ink-3">days after the due date</span>
             {Number(grace) !== overdueGraceDays && Number.isFinite(Number(grace)) && (
-              <button onClick={() => update({ overdue_grace_days: Math.max(0, Math.min(365, Math.round(Number(grace)))) })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
+              <button onClick={() => update({ overdue_grace_days: Math.max(0, Math.min(365, Math.round(Number(grace)))) })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
             )}
           </label>
         )}
@@ -359,7 +359,7 @@ export function AcademySettings({
                 setFeesSeason(thisSeason)
               }}
               disabled={busy}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50"
               style={{ background: 'var(--brand)' }}
             >
               Our {thisSeason} fees are in PlayFootball

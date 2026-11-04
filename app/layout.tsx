@@ -39,8 +39,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#202842' },
-    { media: '(prefers-color-scheme: dark)', color: '#080D16' },
+    { media: '(prefers-color-scheme: light)', color: '#101012' },
+    { media: '(prefers-color-scheme: dark)', color: '#101012' },
   ],
   // The app is a phone app. Letting it be pinch-zoomed is fine; letting iOS
   // zoom it on every input focus is not, and that is handled by the 16px

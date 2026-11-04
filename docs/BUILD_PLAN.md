@@ -304,7 +304,7 @@ order is Joey's call (NIGHT_LOG, NEEDS JOEY).
 | *Settings (gear)* | Profile · My family · Notifications · Calendar feed · My data |
 | *Public* | `/{slug}` academy page · `/{slug}/register` · public draw · `/c/[slug]` competitions |
 
-Look and feel: keep the current design language (navy bar, academy `--brand`, cards, eyebrows, pills, sheets, dark mode). No new design system.
+Look and feel: keep the components (cards, eyebrows, pills, sheets, dark mode) in Squadroom's brand since 4 Nov 2026 — white on near-black `#101012`, monochrome, colour only for needs-you / going / out (CLAUDE.md, `brand/README.md`). No new design system.
 
 ---
 

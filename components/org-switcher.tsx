@@ -90,8 +90,8 @@ export function OrgSwitcher({ onClose }: { onClose: () => void }) {
                   }}
                 >
                   <span
-                    className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[0.9375rem] text-white"
-                    style={{ background: o.primary_colour || 'var(--brand)' }}
+                    className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[0.9375rem]"
+                    style={{ background: 'var(--surface-2)', color: 'var(--ink)' }}
                   >
                     {initials(o.name)}
                   </span>

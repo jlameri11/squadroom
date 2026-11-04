@@ -93,7 +93,7 @@ export function ReportForm() {
         A child is involved
       </label>
       {error && <p className="mt-3 rounded-lg p-2.5 text-sm" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>{error}</p>}
-      <button type="submit" disabled={busy || description.trim().length < 10} className="mt-5 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+      <button type="submit" disabled={busy || description.trim().length < 10} className="mt-5 w-full rounded-xl px-4 py-3 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
         {busy ? 'Filing…' : 'File the report'}
       </button>
     </form>

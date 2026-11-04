@@ -94,7 +94,7 @@ export function NewSessions({
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white"
+            className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink"
             style={{ background: 'var(--brand)' }}
           >
             Done
@@ -156,7 +156,7 @@ export function NewSessions({
                     className="min-w-0 flex-1 rounded-lg py-2 text-xs font-semibold"
                     style={
                       on
-                        ? { background: 'var(--brand)', color: '#fff' }
+                        ? { background: 'var(--brand)', color: 'var(--brand-ink)' }
                         : { background: 'var(--surface-2)', color: 'var(--ink-3)' }
                     }
                   >
@@ -265,7 +265,7 @@ export function NewSessions({
           <button
             onClick={create}
             disabled={busy || planned === 0 || planned > 200}
-            className="rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             {busy ? 'Adding…' : `Add ${planned || ''} ${planned === 1 ? 'session' : 'sessions'}`}

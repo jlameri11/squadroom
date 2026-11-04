@@ -63,7 +63,7 @@ export function SetPassword() {
         </p>
         <button
           onClick={() => setOpen(true)}
-          className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+          className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink"
           style={{ background: 'var(--brand)' }}
         >
           Set a password
@@ -150,7 +150,7 @@ export function SetPassword() {
           <button
             onClick={save}
             disabled={!ready || busy}
-            className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+            className="flex-1 rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             {busy ? 'Saving…' : 'Save password'}

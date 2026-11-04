@@ -88,7 +88,7 @@ export function JoinForm({
         <button
           onClick={checkApproval}
           disabled={busy}
-          className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
         >
           {busy ? 'Checking…' : 'Check again'}
         </button>
@@ -145,7 +145,7 @@ export function JoinForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-white disabled:opacity-50"
+          className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
         >
           {busy ? 'Sending…' : 'Request to join'}
         </button>

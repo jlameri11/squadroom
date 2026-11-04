@@ -8,6 +8,7 @@ type Scorer = { name: string; goals: number }
 type Game = { id: string; title: string; starts_at: string; opponent: string | null; venue: string | null; team_id: string; team: string | null; ours: number | null; theirs: number | null; scorers: Scorer[]; videos: number }
 
 const TINT = { won: 'var(--yes)', drew: 'var(--maybe)', lost: 'var(--no)' } as const
+const INK = { won: 'var(--yes-ink)', drew: 'var(--maybe-ink)', lost: 'var(--no-ink)' } as const
 
 /**
  * Matchdays: the games already played — the score, who scored, and whether
@@ -43,7 +44,7 @@ export function Matchdays({ academyId }: { academyId: string }) {
               <p className="eyebrow px-4 pb-1 pt-3" style={{ background: 'var(--paper)' }}>{heading}</p>
             )}
             <Link href={`/calendar/${g.id}`} className="flex items-center gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--line-2)', background: 'var(--surface)' }} data-matchday={g.id}>
-              <span className="grid h-12 w-14 flex-none place-items-center rounded-lg text-white" style={{ background: outcome ? TINT[outcome] : 'var(--surface-2)', color: outcome ? '#fff' : 'var(--ink-3)' }} data-score>
+              <span className="grid h-12 w-14 flex-none place-items-center rounded-lg" style={{ background: outcome ? TINT[outcome] : 'var(--surface-2)', color: outcome ? INK[outcome] : 'var(--ink-3)' }} data-score>
                 <span className="display text-lg tabular-nums">{g.ours == null || g.theirs == null ? '–' : `${g.ours}–${g.theirs}`}</span>
               </span>
               <span className="min-w-0 flex-1">

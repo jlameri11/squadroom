@@ -120,7 +120,7 @@ export function VouchersPanel({ academyId }: { academyId: string }) {
             <input type="date" value={draft.expires_on} onChange={(e) => setDraft({ ...draft, expires_on: e.target.value })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
           </label>
           <div className="col-span-2 flex gap-2">
-            <button onClick={add} disabled={busy || !draft.code.trim() || !draft.label.trim() || !Number(draft.value)} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>{busy ? '…' : 'Add the voucher'}</button>
+            <button onClick={add} disabled={busy || !draft.code.trim() || !draft.label.trim() || !Number(draft.value)} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>{busy ? '…' : 'Add the voucher'}</button>
             <button onClick={() => setAdding(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
           </div>
         </div>

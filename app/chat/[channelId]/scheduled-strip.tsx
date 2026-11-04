@@ -57,7 +57,7 @@ export function ScheduledStrip({ channelId, refreshKey }: { channelId: string; r
             {editing === r.id ? (
               <>
                 <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} className="rounded-lg border px-1.5 py-1" style={{ borderColor: 'var(--line)' }} />
-                <button onClick={() => move(r.id)} disabled={busy === r.id || !at} className="rounded-lg px-2 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Move</button>
+                <button onClick={() => move(r.id)} disabled={busy === r.id || !at} className="rounded-lg px-2 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Move</button>
                 <button onClick={() => setEditing(null)} className="text-ink-3">×</button>
               </>
             ) : (

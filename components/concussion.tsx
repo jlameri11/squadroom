@@ -115,7 +115,7 @@ export function ConcussionPanel({ playerId, academyId, role, compact = false }: 
             )}
             {role === 'coach' && open.status === 'clearance_submitted' && (
               <>
-                <button onClick={() => decide(open, true)} disabled={busy} className="rounded-lg px-2.5 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--yes)' }}>Accept — cleared to play</button>
+                <button onClick={() => decide(open, true)} disabled={busy} className="rounded-lg px-2.5 py-1 font-semibold text-yes-ink disabled:opacity-50" style={{ background: 'var(--yes)' }}>Accept — cleared to play</button>
                 <button onClick={() => decide(open, false)} disabled={busy} className="rounded-lg border px-2 py-1 disabled:opacity-50" style={{ borderColor: 'currentColor' }}>Not accepted</button>
               </>
             )}
@@ -130,7 +130,7 @@ export function ConcussionPanel({ playerId, academyId, role, compact = false }: 
           </label>
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened (optional)" className="w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
           <div className="flex gap-2">
-            <button onClick={record} disabled={busy} className="flex-1 rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>Record the concussion</button>
+            <button onClick={record} disabled={busy} className="flex-1 rounded-lg px-3 py-1.5 font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>Record the concussion</button>
             <button onClick={() => setRecording(false)} className="rounded-lg border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>Cancel</button>
           </div>
           <p className="text-ink-3">They will be kept off every team sheet until the club accepts a medical clearance.</p>

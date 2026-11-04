@@ -86,14 +86,13 @@ export function PlayerCard({ playerId }: { playerId: string }) {
   if (card === undefined) return <ScreenSkeleton />
   if (card === null) return <p className="card m-4 p-6 text-center text-sm text-ink-2">{error ?? 'Not found.'}</p>
 
-  const tint = card.club?.colour || 'var(--brand)'
   const born = card.dob ? new Date(card.dob + 'T00:00:00').toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
   const eligible = card.official_status === 'registered' || card.official_status === 'not_required'
 
   return (
     <div className="p-3.5">
       <article className="card overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3" style={{ background: tint, color: 'var(--brand-ink)' }}>
+        <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}>
           {card.club?.logo_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={card.club.logo_url} alt="" className="h-9 w-9 flex-none rounded-lg bg-white/10 object-contain p-0.5" />

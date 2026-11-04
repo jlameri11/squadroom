@@ -99,13 +99,13 @@ export function ChangeRequests({ competitionId }: { competitionId: string }) {
                 <button onClick={() => call('add_fixture_change_note', { p_request: r.id, p_body: note[r.id] ?? '' }, r.id)} disabled={busy === r.id || !(note[r.id] ?? '').trim()} className="rounded-lg border px-2 py-1.5 disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Add</button>
                 {r.theirs && r.status === 'proposed' && (
                   <>
-                    <button onClick={() => call('answer_fixture_change', { p_request: r.id, p_agree: true, p_note: note[r.id] || undefined }, r.id)} disabled={busy === r.id} className="rounded-lg px-2.5 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--yes)' }}>Agree</button>
+                    <button onClick={() => call('answer_fixture_change', { p_request: r.id, p_agree: true, p_note: note[r.id] || undefined }, r.id)} disabled={busy === r.id} className="rounded-lg px-2.5 py-1.5 font-semibold text-yes-ink disabled:opacity-50" style={{ background: 'var(--yes)' }}>Agree</button>
                     <button onClick={() => call('answer_fixture_change', { p_request: r.id, p_agree: false, p_note: note[r.id] || undefined }, r.id)} disabled={busy === r.id} className="rounded-lg border px-2.5 py-1.5 font-semibold disabled:opacity-50" style={{ borderColor: 'var(--no)', color: 'var(--no)' }}>Can&apos;t</button>
                   </>
                 )}
                 {r.league && (
                   <>
-                    <button onClick={() => call('decide_fixture_change', { p_request: r.id, p_approve: true, p_note: note[r.id] || undefined }, r.id)} disabled={busy === r.id || (r.status !== 'agreed' && Boolean(r.other))} title={r.status !== 'agreed' ? 'Waits for the other team' : undefined} className="rounded-lg px-2.5 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Approve — move it</button>
+                    <button onClick={() => call('decide_fixture_change', { p_request: r.id, p_approve: true, p_note: note[r.id] || undefined }, r.id)} disabled={busy === r.id || (r.status !== 'agreed' && Boolean(r.other))} title={r.status !== 'agreed' ? 'Waits for the other team' : undefined} className="rounded-lg px-2.5 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Approve — move it</button>
                     <button onClick={() => call('decide_fixture_change', { p_request: r.id, p_approve: false, p_note: note[r.id] || undefined }, r.id)} disabled={busy === r.id} className="rounded-lg border px-2.5 py-1.5 disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Keep as drawn</button>
                   </>
                 )}
@@ -182,7 +182,7 @@ export function FlowingWindow({ competitionId, inline = false }: { competitionId
               <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} className="rounded-lg border px-2 py-1 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="Open until" />
               <input value={days} onChange={(e) => setDays(e.target.value)} inputMode="numeric" className="w-12 rounded-lg border px-2 py-1 text-center text-xs tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Days either side" />
               <span className="text-ink-3">days either side</span>
-              <button onClick={() => set(true)} disabled={busy || !until} className="rounded-lg px-2.5 py-1 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Open flowing</button>
+              <button onClick={() => set(true)} disabled={busy || !until} className="rounded-lg px-2.5 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Open flowing</button>
             </>
           )}
           {isOpen && (
@@ -238,7 +238,7 @@ export function ProposeChange({ fixtureId, startsAt, onDone }: { fixtureId: stri
       <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why" className="w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
       {error && <p style={{ color: 'var(--no)' }}>{error}</p>}
       <div className="flex gap-2">
-        <button onClick={propose} disabled={busy || !reason.trim()} className="flex-1 rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Ask the other team</button>
+        <button onClick={propose} disabled={busy || !reason.trim()} className="flex-1 rounded-lg px-3 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Ask the other team</button>
         <button onClick={() => setOpen(false)} className="rounded-lg border px-3 py-1.5" style={{ borderColor: 'var(--line)' }}>Cancel</button>
       </div>
     </div>

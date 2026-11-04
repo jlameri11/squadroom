@@ -116,7 +116,7 @@ export function LeagueOfficials({ competitionId }: { competitionId: string }) {
               </select>
               <span className="mt-0.5 block text-ink-3">{ROLES.find(([k]) => k === role)?.[2]}</span>
             </label>
-            <button onClick={grant} disabled={busy || !who} className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+            <button onClick={grant} disabled={busy || !who} className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
               Give them the role
             </button>
             <p className="text-ink-3">Somebody not yet in the league joins with the league&apos;s join link first. A role never shows them a club&apos;s families.</p>

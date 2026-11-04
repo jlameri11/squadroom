@@ -156,7 +156,7 @@ export function RefereePayments({ competitionId }: { competitionId: string }) {
               </label>
             ))}
             <div className="col-span-3 flex gap-2">
-              <button onClick={saveFees} disabled={busy === 'fees'} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save fees</button>
+              <button onClick={saveFees} disabled={busy === 'fees'} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save fees</button>
               <button onClick={() => setEditingFees(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
             </div>
           </div>
@@ -188,7 +188,7 @@ export function RefereePayments({ competitionId }: { competitionId: string }) {
             <span className="text-ink-2">To</span>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
           </label>
-          <button onClick={build} disabled={busy === 'build' || !from || !to} className="col-span-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+          <button onClick={build} disabled={busy === 'build' || !from || !to} className="col-span-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
             Build a payment run for these dates
           </button>
         </div>
@@ -225,7 +225,7 @@ export function RefereePayments({ competitionId }: { competitionId: string }) {
                   </ul>
                   {run.status === 'draft' && (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button onClick={() => markPaid(run, 'bank')} disabled={busy === run.id} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                      <button onClick={() => markPaid(run, 'bank')} disabled={busy === run.id} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                         Paid by bank transfer
                       </button>
                       <button onClick={() => voidRun(run)} disabled={busy === run.id} className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-50" style={{ borderColor: 'var(--line)', color: 'var(--no)' }}>

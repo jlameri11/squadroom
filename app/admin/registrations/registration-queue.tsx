@@ -372,7 +372,7 @@ export function RegistrationQueue() {
                   <button
                     onClick={() => void bulk('approve')}
                     disabled={progress !== null}
-                    className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                    className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-yes-ink disabled:opacity-50"
                     style={{ background: 'var(--yes)' }}
                   >
                     {progress
@@ -582,7 +582,7 @@ export function RegistrationQueue() {
                             onClick={() => void decide(r, 'approve')}
                             disabled={busy === r.request_id || !officialOk(r)}
                             title={officialOk(r) ? undefined : 'Confirm the PlayFootball registration first'}
-                            className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                            className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-yes-ink disabled:opacity-50"
                             style={{ background: 'var(--yes)' }}
                           >
                             {busy === r.request_id ? 'Working…' : officialOk(r) ? 'Accept' : 'Accept (PlayFootball first)'}

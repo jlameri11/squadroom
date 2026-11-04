@@ -19,7 +19,7 @@ function withMentions(body: string, mine: boolean) {
   if (parts.length === 1) return body
   return parts.map((p, i) =>
     i % 2 === 1
-      ? <b key={i} className="rounded px-0.5" style={{ background: mine ? '#ffffff22' : 'var(--brand-soft)', color: mine ? 'inherit' : 'var(--brand-text)' }}>{p}</b>
+      ? <b key={i} className="rounded px-0.5" style={{ background: mine ? 'color-mix(in srgb, var(--ink) 12%, transparent)' : 'var(--brand-soft)', color: mine ? 'inherit' : 'var(--brand-text)' }}>{p}</b>
       : p
   )
 }
@@ -323,7 +323,7 @@ export function MessageBubble({
                   <button
                     onClick={saveEdit}
                     disabled={busy}
-                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-white"
+                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-brand-ink"
                     style={{ background: 'var(--brand)' }}
                   >
                     {busy ? 'Saving…' : 'Save'}

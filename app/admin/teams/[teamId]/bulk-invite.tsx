@@ -151,7 +151,7 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
         <button
           onClick={send}
           disabled={busy || good.length === 0}
-          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Inviting…' : good.length ? `Invite ${good.length}` : 'Nothing to send'}

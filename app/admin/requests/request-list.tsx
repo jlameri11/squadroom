@@ -65,7 +65,7 @@ export function RequestList({ initial }: { initial: PendingRequest[] }) {
             <button
               onClick={() => decide(r.id, 'approve')}
               disabled={busyId === r.id}
-              className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
               style={{ background: 'var(--brand)' }}
             >
               {busyId === r.id ? 'Working…' : 'Approve'}

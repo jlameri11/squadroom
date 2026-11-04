@@ -88,7 +88,7 @@ export function FixturesScreen() {
             <button
               onClick={() => setAdding(true)}
               className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
-              style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}
+              style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)', color: 'var(--bar-ink)' }}
               aria-label="Add weekly training"
             >
               ＋

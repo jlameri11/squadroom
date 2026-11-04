@@ -71,7 +71,7 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
   // string we already have, so there is no reason to ship a QR library to
   // every phone that opens this page.
   const qrSvg = joinUrl
-    ? await QRCode.toString(joinUrl, { type: 'svg', margin: 1, width: 220, color: { dark: '#202842', light: '#ffffff' } })
+    ? await QRCode.toString(joinUrl, { type: 'svg', margin: 1, width: 220, color: { dark: '#101012', light: '#ffffff' } })
     : null
 
   const playerNames = (players ?? []).map((p) => p.full_name)

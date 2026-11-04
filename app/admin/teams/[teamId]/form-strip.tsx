@@ -8,6 +8,7 @@ type Last = { event_id: string; starts_at: string; opponent: string | null; was_
 type Form = { team: { id: string; name: string }; last: Last[]; season: { played: number; won: number; drawn: number; lost: number; gf: number; ga: number } }
 
 const TINT = { won: 'var(--yes)', drew: 'var(--maybe)', lost: 'var(--no)' } as const
+const INK = { won: 'var(--yes-ink)', drew: 'var(--maybe-ink)', lost: 'var(--no-ink)' } as const
 const LETTER = { won: 'W', drew: 'D', lost: 'L' } as const
 
 /**
@@ -41,8 +42,8 @@ export function FormStrip({ teamId }: { teamId: string }) {
             <Link
               key={r.event_id}
               href={`/calendar/${r.event_id}`}
-              className="grid h-8 w-8 place-items-center rounded-lg text-sm font-bold text-white"
-              style={{ background: TINT[r.outcome] }}
+              className="grid h-8 w-8 place-items-center rounded-lg text-sm font-bold"
+              style={{ background: TINT[r.outcome], color: INK[r.outcome] }}
               title={`${r.ours}–${r.theirs} v ${r.opponent ?? '?'}`}
               aria-label={`${LETTER[r.outcome]}: ${r.ours} ${r.theirs} against ${r.opponent ?? 'unknown'}`}
               data-result={r.outcome}

@@ -114,7 +114,7 @@ export function MatchCentre({
       {!embed && (
         <header
           className="px-5 pb-5 pt-7"
-          style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+          style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}
         >
           <p className="eyebrow" style={{ color: '#ffffffaa' }}>
             {competition.organiser}
@@ -129,7 +129,7 @@ export function MatchCentre({
             {shareUrl && <ShareButton title={competition.name} url={shareUrl} />}
           </div>
           {centre.entries_open && shareUrl && (
-            <a href={`/c/${slug}/enter`} className="mt-3 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold" style={{ background: '#fff', color: 'var(--brand)' }}>
+            <a href={`/c/${slug}/enter`} className="mt-3 inline-block rounded-full px-3.5 py-1.5 text-sm font-semibold" style={{ background: 'var(--bar-ink)', color: 'var(--bar)' }}>
               Enter a team ›
             </a>
           )}
@@ -148,7 +148,7 @@ export function MatchCentre({
               className="flex-none rounded-full px-3.5 py-1.5 text-sm font-semibold"
               style={
                 division === d
-                  ? { background: 'var(--brand)', color: '#fff' }
+                  ? { background: 'var(--brand)', color: 'var(--brand-ink)' }
                   : { background: 'var(--surface-2)', color: 'var(--ink-2)' }
               }
             >
@@ -230,7 +230,7 @@ function ShareButton({ title, url }: { title: string; url: string }) {
     <button
       onClick={() => void share()}
       className="ml-auto flex-none rounded-full px-3 py-1 text-xs font-semibold"
-      style={{ background: '#ffffff22', color: '#fff' }}
+      style={{ background: '#ffffff22', color: 'var(--bar-ink)' }}
       aria-label="Share this page"
     >
       {copied ? 'Link copied' : 'Share'}

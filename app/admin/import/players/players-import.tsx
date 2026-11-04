@@ -314,7 +314,7 @@ export function PlayersImport({
               <button
                 onClick={commit}
                 disabled={!ready || busy !== null}
-                className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
+                className="mt-4 w-full rounded-xl px-4 py-3 font-semibold text-brand-ink disabled:opacity-50"
                 style={{ background: 'var(--brand)' }}
               >
                 {!mapping.full_name || !mapping.dob
@@ -365,7 +365,7 @@ export function PlayersImport({
 
               <Link
                 href={teamId ? `/admin/teams/${teamId}` : '/admin/teams'}
-                className="mt-3 block w-full rounded-xl px-4 py-3 text-center font-semibold text-white"
+                className="mt-3 block w-full rounded-xl px-4 py-3 text-center font-semibold text-brand-ink"
                 style={{ background: 'var(--brand)' }}
               >
                 See the squad

@@ -48,7 +48,7 @@ export function GroundSvg({ pitches, highlight, selected, onSelect, height = 180
         />
         <text
           x={p.x + p.w / 2} y={p.y + p.h / 2} textAnchor="middle" dominantBaseline="middle"
-          fontSize={isSub ? 3.4 : 4} fontWeight={600} fill={hot ? '#fff' : 'var(--pitch-ink)'}
+          fontSize={isSub ? 3.4 : 4} fontWeight={600} fill={hot ? 'var(--brand-ink)' : 'var(--pitch-ink)'}
           style={{ pointerEvents: 'none' }}
         >
           {p.name}
@@ -94,7 +94,7 @@ export function PitchMap({ fixtureId }: { fixtureId: string }) {
           href={`https://maps.google.com/?q=${encodeURIComponent(dest)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-ink"
           style={{ background: 'var(--brand)' }}
           data-directions
         >

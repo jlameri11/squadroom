@@ -107,7 +107,7 @@ export function OfficialStatusControl({
         <button
           onClick={save}
           disabled={busy}
-          className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Saving…' : 'Save'}

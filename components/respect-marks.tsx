@@ -21,7 +21,7 @@ export function MarksPicker({ value, onChange, compact = false }: { value: Marks
                 onClick={() => onChange({ ...value, [k]: n })}
                 aria-label={`${label}: ${n} of 5`}
                 className={`${compact ? 'h-7 w-7' : 'h-8 w-8'} rounded-lg text-sm font-semibold`}
-                style={value[k] === n ? { background: n <= 2 ? 'var(--no)' : n === 3 ? 'var(--maybe)' : 'var(--yes)', color: '#fff' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }}
+                style={value[k] === n ? { background: n <= 2 ? 'var(--no)' : n === 3 ? 'var(--maybe)' : 'var(--yes)', color: n <= 2 ? 'var(--no-ink)' : n === 3 ? 'var(--maybe-ink)' : 'var(--yes-ink)' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }}
               >
                 {n}
               </button>
@@ -78,7 +78,7 @@ export function RespectPanel({ fixtureId, aboutEntryId, aboutName }: { fixtureId
           <span className="block text-xs text-ink-3">{given ? `Marked ${marks.players}/${marks.coaches}/${marks.spectators}. Only the league sees it.` : 'Players, coaches, spectators — 1 to 5. Only the league sees it; nothing is public.'}</span>
         </span>
         {!open && (
-          <button onClick={() => setOpen(true)} className="flex-none rounded-xl px-3.5 py-2 text-sm font-semibold" style={{ background: given ? 'var(--surface-2)' : 'var(--brand)', color: given ? 'var(--ink-2)' : '#fff' }}>
+          <button onClick={() => setOpen(true)} className="flex-none rounded-xl px-3.5 py-2 text-sm font-semibold" style={{ background: given ? 'var(--surface-2)' : 'var(--brand)', color: given ? 'var(--ink-2)' : 'var(--brand-ink)' }}>
             {given ? 'Change' : 'Mark'}
           </button>
         )}
@@ -88,7 +88,7 @@ export function RespectPanel({ fixtureId, aboutEntryId, aboutName }: { fixtureId
           <MarksPicker value={marks} onChange={setMarks} />
           {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
           <div className="mt-2 flex gap-2">
-            <button onClick={send} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Send to the league</button>
+            <button onClick={send} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Send to the league</button>
             <button onClick={() => setOpen(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
           </div>
         </div>

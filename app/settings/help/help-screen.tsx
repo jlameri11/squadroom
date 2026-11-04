@@ -70,7 +70,7 @@ export function HelpScreen() {
         <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="What happened, what you expected, and the squad or game if there is one." className="mt-2 w-full rounded-lg border px-3 py-2 text-sm" style={line} data-help-body />
         {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
         {sent && <p className="mt-2 text-xs" style={{ color: 'var(--yes)' }}>Sent. We will come back to you here.</p>}
-        <button onClick={send} disabled={busy !== null || !subject.trim() || !body.trim()} className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-help-send>
+        <button onClick={send} disabled={busy !== null || !subject.trim() || !body.trim()} className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-help-send>
           {busy === 'send' ? 'Sending…' : 'Send to Squadroom'}
         </button>
         <p className="mt-2 text-xs text-ink-3">
@@ -103,7 +103,7 @@ export function HelpScreen() {
                 {t.status !== 'closed' && (
                   <div className="mt-2 flex gap-2">
                     <input value={reply[t.id] ?? ''} onChange={(e) => setReply({ ...reply, [t.id]: e.target.value })} placeholder="Reply…" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={line} />
-                    <button onClick={() => answer(t.id)} disabled={busy !== null || !(reply[t.id] ?? '').trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Send</button>
+                    <button onClick={() => answer(t.id)} disabled={busy !== null || !(reply[t.id] ?? '').trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Send</button>
                     <button onClick={() => close(t.id)} disabled={busy !== null} className="rounded-lg border px-2 py-1.5 text-xs" style={line}>Done</button>
                   </div>
                 )}

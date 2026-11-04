@@ -18,7 +18,7 @@ export default async function MatchQrPage(props: { params: Promise<{ competition
   const { data: key } = await supabase.rpc('fixture_checkin_key', { p_fixture: fixtureId })
   if (!key) notFound()
   const url = `${siteUrl()}/referee/checkin?f=${fixtureId}&k=${key}`
-  const svg = await QRCode.toString(url, { type: 'svg', margin: 1, width: 280, color: { dark: '#202842', light: '#ffffff' } })
+  const svg = await QRCode.toString(url, { type: 'svg', margin: 1, width: 280, color: { dark: '#101012', light: '#ffffff' } })
   return (
     <AppShellPage title="Referee check-in" meta="Show this to the referee" back={`/competitions/${competitionId}/match/${fixtureId}`}>
       <div className="p-5">

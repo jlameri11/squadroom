@@ -105,7 +105,7 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
       <button
         onClick={out}
         disabled={busy}
-        className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-no-ink disabled:opacity-50"
         style={{ background: 'var(--no)' }}
       >
         {busy ? 'Signing out…' : 'Yes, sign out'}

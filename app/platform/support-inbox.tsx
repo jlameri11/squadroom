@@ -80,7 +80,7 @@ export function SupportInbox() {
             {t.status !== 'closed' && (
               <div className="mt-2 flex gap-2">
                 <input value={reply[t.id] ?? ''} onChange={(e) => setReply({ ...reply, [t.id]: e.target.value })} placeholder="Reply as Squadroom…" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={line} data-inbox-reply />
-                <button onClick={() => answer(t.id)} disabled={busy !== null || !(reply[t.id] ?? '').trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-inbox-send>Send</button>
+                <button onClick={() => answer(t.id)} disabled={busy !== null || !(reply[t.id] ?? '').trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-inbox-send>Send</button>
                 <button onClick={() => close(t.id)} disabled={busy !== null} className="rounded-lg border px-2 py-1.5 text-xs" style={line}>Close</button>
               </div>
             )}

@@ -124,12 +124,12 @@ export function SponsorsScreen() {
             <input value={draft.url} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="https://" inputMode="url" className={input} style={line} aria-label="Sponsor link" />
             <input value={draft.tagline} onChange={(e) => setDraft({ ...draft, tagline: e.target.value })} placeholder="A line for the strip (optional)" className={input} style={line} aria-label="Tagline" />
             <div className="flex gap-2">
-              <button onClick={add} disabled={busy !== null || !draft.name.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-sponsor-add>Add the sponsor</button>
+              <button onClick={add} disabled={busy !== null || !draft.name.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-sponsor-add>Add the sponsor</button>
               <button onClick={() => setDraft(null)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Cancel</button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setDraft({ name: '', url: '', tagline: '', slots: ['match_centre', 'cards'] })} className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white" style={{ background: 'var(--brand)' }} data-sponsor-new>
+          <button onClick={() => setDraft({ name: '', url: '', tagline: '', slots: ['match_centre', 'cards'] })} className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink" style={{ background: 'var(--brand)' }} data-sponsor-new>
             Add a sponsor
           </button>
         )}

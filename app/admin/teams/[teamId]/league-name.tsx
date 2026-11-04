@@ -111,7 +111,7 @@ export function LeagueName({
         <button
           onClick={() => void save()}
           disabled={busy || value.trim() === (externalRef ?? '')}
-          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
           style={{ background: 'var(--brand)' }}
         >
           {busy ? 'Saving…' : 'Save'}

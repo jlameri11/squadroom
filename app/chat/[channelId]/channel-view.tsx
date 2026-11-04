@@ -119,13 +119,13 @@ export function ChannelView({
     <div className="mx-auto flex h-dvh max-w-md flex-col">
       <header
         className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3"
-        style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
+        style={{ background: 'var(--bar)', color: 'var(--bar-ink)', borderBottom: '1px solid var(--bar-line)' }}
       >
         <Link
           href="/chat"
           aria-label="Back to chats"
           className="-ml-1 grid h-9 w-9 flex-none place-items-center rounded-[10px] text-xl"
-          style={{ background: '#ffffff26' }}
+          style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}
         >
           ‹
         </Link>
@@ -142,7 +142,7 @@ export function ChannelView({
         <button
           onClick={() => setShowSettings(true)}
           className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-lg"
-          style={{ background: '#ffffff26' }}
+          style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}
           aria-label="Channel settings"
         >
           ⋯

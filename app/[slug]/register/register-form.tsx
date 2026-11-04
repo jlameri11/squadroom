@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ProgramSummary, money, type PublicProgram } from '../program-card'
 import { QuestionField, unanswered } from '@/components/question-field'
+import { inkOn } from '@/lib/brand/colour'
 
 type Program = PublicProgram
 
@@ -190,6 +191,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   }
 
   const tint = data.academy.primary_colour || 'var(--brand)'
+  const ink = inkOn(tint)
 
   if (sent) {
     return (
@@ -400,8 +402,8 @@ export function RegisterForm({ slug }: { slug: string }) {
                   window.scrollTo({ top: 0 })
                 }}
                 disabled={!step1Ok}
-                className="mt-5 w-full rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
-                style={{ background: tint }}
+                className="mt-5 w-full rounded-xl px-4 py-3 font-semibold disabled:opacity-50"
+                style={{ background: tint, color: ink }}
               >
                 {!program ? 'Choose a program' : !childName.trim() || !childDob ? 'Fill in your child’s name and date of birth' : 'Continue'}
               </button>
@@ -505,8 +507,8 @@ export function RegisterForm({ slug }: { slug: string }) {
                     window.scrollTo({ top: 0 })
                   }}
                   disabled={!step2Ok}
-                  className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
-                  style={{ background: tint }}
+                  className="flex-1 rounded-xl px-4 py-3 font-semibold disabled:opacity-50"
+                  style={{ background: tint, color: ink }}
                 >
                   {!guardianName.trim()
                     ? 'Fill in your name'
@@ -597,8 +599,8 @@ export function RegisterForm({ slug }: { slug: string }) {
                 <button
                   onClick={submit}
                   disabled={busy || !step1Ok || !step2Ok}
-                  className="flex-1 rounded-xl px-4 py-3 font-semibold text-white disabled:opacity-50"
-                  style={{ background: tint }}
+                  className="flex-1 rounded-xl px-4 py-3 font-semibold disabled:opacity-50"
+                  style={{ background: tint, color: ink }}
                 >
                   {busy ? 'Sending…' : full ? 'Join the waitlist' : 'Send to the club'}
                 </button>
@@ -651,7 +653,7 @@ function Frame({
     <main className="mx-auto min-h-dvh w-full max-w-md">
       {academy && (
         <div className="px-4 pb-3 pt-4" style={{ background: tint ?? 'var(--brand)' }}>
-          <p className="text-sm font-semibold" style={{ color: 'var(--brand-ink)' }}>
+          <p className="text-sm font-semibold" style={{ color: inkOn(tint ?? null) }}>
             {academy}
           </p>
         </div>

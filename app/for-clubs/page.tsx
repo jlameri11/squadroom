@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export const revalidate = 3600
@@ -21,8 +22,17 @@ export const metadata: Metadata = {
 export default function ForClubs() {
   return (
     <main className="mx-auto w-full max-w-md" style={{ color: 'var(--ink)' }}>
-      <header className="px-5 pb-8 pt-10" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
-        <p className="eyebrow" style={{ color: 'var(--brand-ink)', opacity: 0.8 }}>Squadroom</p>
+      <header className="px-5 pb-8 pt-10" style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}>
+        <Image
+          src="/brand/squadroom-logo-white.svg"
+          alt="Squadroom"
+          width={164}
+          height={32}
+          priority
+          unoptimized
+          className="h-8 w-auto"
+          data-brand-logo
+        />
         <h1 className="display mt-2 text-[2.125rem] leading-[1.05]">
           The chat your families already use, with the football underneath it.
         </h1>
@@ -34,12 +44,12 @@ export default function ForClubs() {
           <Link
             href="/signup?next=/start"
             className="rounded-xl px-4 py-3 text-sm font-semibold"
-            style={{ background: '#fff', color: 'var(--brand)' }}
+            style={{ background: 'var(--bar-ink)', color: 'var(--bar)' }}
             data-start-free
           >
             Start free — set up in 30 minutes
           </Link>
-          <Link href="/signin" className="rounded-xl px-4 py-3 text-sm font-semibold" style={{ background: '#ffffff26', color: 'var(--brand-ink)' }}>
+          <Link href="/signin" className="rounded-xl px-4 py-3 text-sm font-semibold" style={{ background: '#ffffff26', color: 'var(--bar-ink)' }}>
             Sign in
           </Link>
         </div>
@@ -102,7 +112,7 @@ export default function ForClubs() {
         </ol>
         <Link
           href="/signup?next=/start"
-          className="mt-4 block rounded-xl px-4 py-3 text-center text-sm font-semibold text-white"
+          className="mt-4 block rounded-xl px-4 py-3 text-center text-sm font-semibold text-brand-ink"
           style={{ background: 'var(--brand)' }}
         >
           Start free

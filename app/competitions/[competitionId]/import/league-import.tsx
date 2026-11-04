@@ -210,7 +210,7 @@ export function LeagueImport({ competitionId }: { competitionId: string }) {
           <button
             onClick={() => void commit()}
             disabled={!ready || Boolean(busy)}
-            className="mt-5 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+            className="mt-5 w-full rounded-xl px-4 py-3 text-sm font-semibold text-brand-ink disabled:opacity-50"
             style={{ background: 'var(--brand)' }}
           >
             Import {good.length} {good.length === 1 ? 'game' : 'games'}

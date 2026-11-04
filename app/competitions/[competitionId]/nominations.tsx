@@ -73,7 +73,7 @@ export function MyNominations({ competitionId }: { competitionId: string }) {
                 <input value={division} onChange={(ev) => setDivision(ev.target.value)} placeholder="Division you propose" className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Proposed division" />
                 <input value={note} onChange={(ev) => setNote(ev.target.value)} placeholder="Why — last season, the squad's strength" className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Comment" />
                 <div className="flex gap-2">
-                  <button onClick={() => nominate(e.entry_id)} disabled={busy || !division.trim()} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+                  <button onClick={() => nominate(e.entry_id)} disabled={busy || !division.trim()} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
                     {busy ? '…' : 'Nominate and lock the squad'}
                   </button>
                   <button onClick={() => setOpen(null)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
@@ -155,7 +155,7 @@ export function Nominations({ competitionId }: { competitionId: string }) {
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <input value={division} onChange={(ev) => setDivision(ev.target.value)} placeholder="Division" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Division" />
                 <input value={note} onChange={(ev) => setNote(ev.target.value)} placeholder="note to the club" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Note" />
-                <button onClick={() => call('set_entry_division', { p_entry: e.entry_id, p_division: division, p_note: note || undefined }, e.entry_id)} disabled={busy === e.entry_id || !division.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set</button>
+                <button onClick={() => call('set_entry_division', { p_entry: e.entry_id, p_division: division, p_note: note || undefined }, e.entry_id)} disabled={busy === e.entry_id || !division.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set</button>
                 <button onClick={() => setEditing(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
               </div>
             )}

@@ -114,7 +114,7 @@ export function EventCard({
     <div className={`w-full overflow-hidden rounded-xl border bg-[var(--surface)] ${cancelled ? 'opacity-60' : ''}`}
          style={{ borderColor: 'var(--brand)' }}>
       <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand-faint)' }}>
-        <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-white"
+        <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-brand-ink"
               style={{ background: 'var(--brand)' }}>
           {cancelled ? 'Cancelled' : event.type}
         </span>

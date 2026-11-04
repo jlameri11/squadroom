@@ -188,7 +188,7 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
             key={s}
             onClick={() => setSide(s)}
             className="flex-1 rounded-xl px-3 py-2 text-sm font-semibold"
-            style={side === s ? { background: 'var(--brand)', color: '#fff' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }}
+            style={side === s ? { background: 'var(--brand)', color: 'var(--brand-ink)' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }}
           >
             {s === 'home' ? f.home : f.away}
             {view.sheets[s] ? ` · ${view.sheets[s]!.status}` : ''}
@@ -388,7 +388,7 @@ function SheetPanel({
             </div>
           )}
           <div className="mt-3 flex gap-2">
-            <button onClick={submit} disabled={busy || picked.size === 0} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+            <button onClick={submit} disabled={busy || picked.size === 0} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
               {busy ? '…' : `Submit ${picked.size} ${picked.size === 1 ? 'player' : 'players'}`}
             </button>
             {sheet && (
@@ -421,7 +421,7 @@ function SheetPanel({
                 : 'Submitted — waiting for the other team to confirm'}
           </p>
           {sheet.status === 'submitted' && (canConfirm || isOrganiser) && !closed && (
-            <button onClick={confirm} disabled={busy} className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--yes)' }}>
+            <button onClick={confirm} disabled={busy} className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-semibold text-yes-ink disabled:opacity-50" style={{ background: 'var(--yes)' }}>
               {busy ? '…' : 'Confirm this is who played'}
             </button>
           )}
@@ -496,7 +496,7 @@ function EventsPanel({
                 {SANCTION_CODES[kind].map(([c, l]) => (<option key={c} value={c}>{c} · {l}</option>))}
               </select>
             )}
-            <button onClick={add} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+            <button onClick={add} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
               {busy ? '…' : 'Add'}
             </button>
           </div>
@@ -545,7 +545,7 @@ function ScorePanel({
             <span className="text-ink-2">Them</span>
             <input value={theirs} onChange={(e) => setTheirs(e.target.value)} inputMode="numeric" className="mt-0.5 w-full rounded-lg border px-2 py-2 text-center text-lg tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Their score" />
           </label>
-          <button onClick={enter} disabled={busy || ours === '' || theirs === ''} className="mt-4 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+          <button onClick={enter} disabled={busy || ours === '' || theirs === ''} className="mt-4 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
             {busy ? '…' : 'Enter'}
           </button>
         </div>
@@ -586,7 +586,7 @@ function Lifecycle({ fixtureId, mayEnd, mayReopen, onDone }: { fixtureId: string
   return (
     <div className="mt-2">
       {mayEnd && (
-        <button onClick={end} disabled={busy} className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }} data-end-match>
+        <button onClick={end} disabled={busy} className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-end-match>
           {busy ? '…' : 'End the match — lock the sheets and the score'}
         </button>
       )}
@@ -598,7 +598,7 @@ function Lifecycle({ fixtureId, mayEnd, mayReopen, onDone }: { fixtureId: string
       {mayReopen && reopening && (
         <div className="flex gap-2">
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why — this goes on the record" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
-          <button onClick={reopen} disabled={busy || !note.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--maybe)' }}>Reopen</button>
+          <button onClick={reopen} disabled={busy || !note.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-maybe-ink disabled:opacity-50" style={{ background: 'var(--maybe)' }}>Reopen</button>
           <button onClick={() => setReopening(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
         </div>
       )}
@@ -641,7 +641,7 @@ function Handover({ fixtureId, refereeName, onDone }: { fixtureId: string; refer
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Your mobile" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Referee's mobile" />
         <input value={word} onChange={(e) => setWord(e.target.value)} placeholder="Confirm" className="w-24 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Type Confirm" />
-        <button onClick={verify} disabled={busy || !phone.trim() || !word.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Verify</button>
+        <button onClick={verify} disabled={busy || !phone.trim() || !word.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Verify</button>
         <button onClick={() => setOpen(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
       </div>
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
@@ -698,7 +698,7 @@ function ClubAllocate({ fixtureId, onDone }: { fixtureId: string; onDone: () => 
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Referee's name" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Mobile" className="w-32 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Mobile" />
         <input value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Grade" className="w-24 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Grade" />
-        <button onClick={allocate} disabled={busy || !name.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Allocate</button>
+        <button onClick={allocate} disabled={busy || !name.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Allocate</button>
         <button onClick={() => setOpen(false)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
       </div>
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
@@ -751,7 +751,7 @@ function ForfeitPanel({ fixtureId, entryId, entryName, forfeits, canAsk, canClub
           <p className="text-xs text-ink-3">{entryName} ask to forfeit. The club approves, then the league decides; only then does the forfeit score apply.</p>
           <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder="Why" className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
           <div className="mt-2 flex gap-2">
-            <button onClick={() => call('request_forfeit', { p_fixture: fixtureId, p_entry: entryId, p_reason: reason })} disabled={busy || !reason.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>
+            <button onClick={() => call('request_forfeit', { p_fixture: fixtureId, p_entry: entryId, p_reason: reason })} disabled={busy || !reason.trim()} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>
               {busy ? '…' : 'Ask to forfeit'}
             </button>
             <button onClick={() => setAsking(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
@@ -780,13 +780,13 @@ function ForfeitPanel({ fixtureId, entryId, entryName, forfeits, canAsk, canClub
                   )}
                   {r.status === 'proposed' && canClubDecide && (
                     <>
-                      <button onClick={() => call('club_decide_forfeit', { p_request: r.id, p_approve: true, p_note: note || undefined })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Club: approve</button>
+                      <button onClick={() => call('club_decide_forfeit', { p_request: r.id, p_approve: true, p_note: note || undefined })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Club: approve</button>
                       <button onClick={() => call('club_decide_forfeit', { p_request: r.id, p_approve: false, p_note: note || undefined })} disabled={busy} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Play the game</button>
                     </>
                   )}
                   {canLeagueDecide && (
                     <>
-                      <button onClick={() => call('league_decide_forfeit', { p_request: r.id, p_approve: true, p_note: note || undefined })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>League: forfeit</button>
+                      <button onClick={() => call('league_decide_forfeit', { p_request: r.id, p_approve: true, p_note: note || undefined })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>League: forfeit</button>
                       <button onClick={() => call('league_decide_forfeit', { p_request: r.id, p_approve: false, p_note: note || undefined })} disabled={busy} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>League: play it</button>
                     </>
                   )}
@@ -869,7 +869,7 @@ function CorrectionsPanel({ fixtureId, corrections, canAsk, canDecide, onChanged
           </div>
           <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} placeholder="What is wrong, and how you know" className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
           <div className="mt-2 flex gap-2">
-            <button onClick={ask} disabled={busy || !detail.trim() || (kind === 'score' && (home === '' || away === ''))} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+            <button onClick={ask} disabled={busy || !detail.trim() || (kind === 'score' && (home === '' || away === ''))} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
               {busy ? '…' : 'Send to the league'}
             </button>
             <button onClick={() => setAsking(false)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Cancel</button>
@@ -899,10 +899,10 @@ function CorrectionsPanel({ fixtureId, corrections, canAsk, canDecide, onChanged
               {canDecide && c.status === 'open' && (
                 <div className="mt-2 flex gap-2">
                   <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="note" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} />
-                  <button onClick={() => decide(c.id, true)} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--yes)' }}>
+                  <button onClick={() => decide(c.id, true)} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-yes-ink disabled:opacity-50" style={{ background: 'var(--yes)' }}>
                     {c.kind === 'score' ? 'Apply' : 'Reopen to fix'}
                   </button>
-                  <button onClick={() => decide(c.id, false)} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--no)' }}>Decline</button>
+                  <button onClick={() => decide(c.id, false)} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }}>Decline</button>
                 </div>
               )}
             </li>
@@ -935,7 +935,7 @@ function RuleOnScore({ fixtureId, onDone }: { fixtureId: string; onDone: () => P
         <span className="text-ink-3">–</span>
         <input value={away} onChange={(e) => setAway(e.target.value)} inputMode="numeric" placeholder="away" className="w-16 rounded-lg border px-2 py-1.5 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Away score" />
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="why" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
-        <button onClick={rule} disabled={busy || home === '' || away === ''} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Rule</button>
+        <button onClick={rule} disabled={busy || home === '' || away === ''} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Rule</button>
       </div>
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
     </div>

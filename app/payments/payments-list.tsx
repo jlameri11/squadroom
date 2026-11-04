@@ -24,7 +24,7 @@ export type Owing = {
 }
 
 /** A fill keeps the club's colour; text uses INK. See --brand-text. */
-const NAVY = 'var(--brand)'
+const BRAND = 'var(--brand)'
 const INK = 'var(--brand-text)'
 
 const money = (cents: number, currency: string) =>
@@ -139,8 +139,8 @@ export function PaymentsList({
             key={requestId}
             onClick={() => payAll(requestId, rows.map((r) => r.player_id as string))}
             disabled={busy !== null}
-            className="mb-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-            style={{ background: NAVY }}
+            className="mb-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
+            style={{ background: BRAND }}
             data-pay-all={requestId}
           >
             {busy === requestId + ':all' ? 'Starting…' : `Pay ${rows[0].title} for ${rows.map((r) => (r.player_name ?? '').split(' ')[0]).join(' and ')} in one go`}
@@ -179,7 +179,7 @@ export function PaymentsList({
               ) : codeFor === key ? (
                 <div className="mt-2 flex gap-2">
                   <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Voucher code" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm uppercase" style={{ borderColor: 'var(--line)' }} aria-label="Voucher code" />
-                  <button onClick={() => redeem(row)} disabled={busy === key || !code.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" style={{ background: NAVY }}>Apply</button>
+                  <button onClick={() => redeem(row)} disabled={busy === key || !code.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: BRAND }}>Apply</button>
                   <button onClick={() => setCodeFor(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
                 </div>
               ) : (
@@ -203,8 +203,8 @@ export function PaymentsList({
                 <button
                   onClick={() => pay(row)}
                   disabled={busy === key}
-                  className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                  style={{ background: NAVY }}
+                  className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
+                  style={{ background: BRAND }}
                 >
                   {busy === key ? 'Opening…' : `Pay ${money(row.amount_cents, row.currency)}`}
                 </button>
