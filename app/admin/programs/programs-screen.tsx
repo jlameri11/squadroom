@@ -7,6 +7,7 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
+import { RegistrationDashboard } from './registration-dashboard'
 
 export type Program = {
   id: string
@@ -155,6 +156,9 @@ export function ProgramsScreen() {
                   </span>
                 </p>
               )}
+
+              {/* R-21: this season at a glance, before the list. */}
+              <RegistrationDashboard academyId={academy.id} programs={programs} />
 
               {open.length > 0 && (
                 <>
