@@ -19,10 +19,10 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-lg px-5 pb-16 pt-8" style={{ background: 'var(--paper)' }}>
       <p className="eyebrow">Squadroom</p>
-      <h1 className="display mt-1 text-[30px] leading-tight">How we look after your info</h1>
+      <h1 className="display mt-1 text-[1.875rem] leading-tight">How we look after your info</h1>
       <p className="mt-2 text-sm text-ink-2">Written for the kids who open a Squadroom page. The grown-up version is underneath.</p>
 
-      <section className="card mt-6 p-4 text-[15px] leading-relaxed">
+      <section className="card mt-6 p-4 text-[0.9375rem] leading-relaxed">
         <h2 className="font-semibold">If you&apos;re a player</h2>
         <ul className="mt-2 list-disc space-y-2 pl-5">
           <li><b>You don&apos;t need an account.</b> You open the page your coach or parent sent you, and you can see the draw, the scores and the ladder. That&apos;s it.</li>

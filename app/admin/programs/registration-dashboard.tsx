@@ -174,7 +174,7 @@ function Stat({ n, label, tone }: { n: number; label: string; tone?: 'accent' })
   return (
     <span className="rounded-xl py-2" style={{ background: tone === 'accent' && n > 0 ? 'var(--accent)' : 'var(--surface-2)', color: tone === 'accent' && n > 0 ? 'var(--accent-ink)' : undefined }}>
       <b className="display block text-xl leading-none">{n}</b>
-      <span className="mt-1 block text-[11px]">{label}</span>
+      <span className="mt-1 block text-[0.6875rem]">{label}</span>
     </span>
   )
 }

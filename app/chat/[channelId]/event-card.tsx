@@ -114,7 +114,7 @@ export function EventCard({
     <div className={`w-full overflow-hidden rounded-xl border bg-[var(--surface)] ${cancelled ? 'opacity-60' : ''}`}
          style={{ borderColor: 'var(--brand)' }}>
       <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand-faint)' }}>
-        <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+        <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-white"
               style={{ background: 'var(--brand)' }}>
           {cancelled ? 'Cancelled' : event.type}
         </span>
@@ -171,11 +171,12 @@ export function EventCard({
           <div className="mt-3 flex flex-col gap-2">
             {rsvps.map((r) => (
               <div key={r.player_id} className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="w-14 flex-none truncate text-sm font-medium text-ink-2">
                     {r.player_name.split(' ')[0]}
                   </span>
-                  <div className="flex flex-1 gap-1">
+                  {/* Drops under the name when larger text no longer fits all three on one line (X-10). */}
+                  <div className="flex min-w-fit flex-1 gap-1">
                     {CHOICES.map((c) => {
                       const on = r.status === c.value
                       return (

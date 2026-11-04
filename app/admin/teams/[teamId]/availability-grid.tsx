@@ -50,9 +50,9 @@ export function AvailabilityGrid({ teamId }: { teamId: string }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-1.5 text-left text-[11px] font-semibold text-ink-3">Player</th>
+              <th className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-1.5 text-left text-[0.6875rem] font-semibold text-ink-3">Player</th>
               {grid.events.map((e) => (
-                <th key={e.id} className="px-1 py-1.5 text-center text-[11px] font-semibold" style={{ color: e.past ? 'var(--ink-3)' : 'var(--ink-2)' }} data-grid-event={e.id}>
+                <th key={e.id} className="px-1 py-1.5 text-center text-[0.6875rem] font-semibold" style={{ color: e.past ? 'var(--ink-3)' : 'var(--ink-2)' }} data-grid-event={e.id}>
                   <span className="block">{day(e.starts_at)}</span>
                   <span className="block font-normal text-ink-3">{e.type === 'match' ? (e.opponent ? `v ${e.opponent}` : 'match') : e.type}{e.past ? ' · register' : ''}</span>
                 </th>
@@ -90,9 +90,9 @@ export function AvailabilityGrid({ teamId }: { teamId: string }) {
           </tbody>
           <tfoot>
             <tr className="border-t" style={{ borderColor: 'var(--line)' }}>
-              <td className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-1 text-[11px] text-ink-3">Going · no answer</td>
+              <td className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-1 text-[0.6875rem] text-ink-3">Going · no answer</td>
               {grid.events.map((e) => (
-                <td key={e.id} className="px-1 py-1 text-center text-[11px] tabular-nums text-ink-3">
+                <td key={e.id} className="px-1 py-1 text-center text-[0.6875rem] tabular-nums text-ink-3">
                   {e.past ? '' : `${e.going} · ${e.no_reply}`}
                 </td>
               ))}
@@ -100,7 +100,7 @@ export function AvailabilityGrid({ teamId }: { teamId: string }) {
           </tfoot>
         </table>
       </div>
-      <p className="mt-1 text-[11px] text-ink-3">✓ going · ? maybe · ✕ can&apos;t play · no answer. Tap a cell for the reason. Past columns show the register.</p>
+      <p className="mt-1 text-[0.6875rem] text-ink-3">✓ going · ? maybe · ✕ can&apos;t play · no answer. Tap a cell for the reason. Past columns show the register.</p>
 
       {open && (
         <Sheet onClose={() => setOpen(null)}>

@@ -59,7 +59,7 @@ function Group({ rows }: { rows: TeamSummary[] }) {
       {rows.map((t) => (
         <Link key={t.id} href={`/admin/teams/${t.id}`} className="row">
           <span
-            className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[15px] text-white"
+            className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[0.9375rem] text-white"
             style={{ background: t.status === 'active' ? 'var(--brand)' : 'var(--ink-3)' }}
           >
             {t.ageGroup}

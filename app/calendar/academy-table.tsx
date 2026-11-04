@@ -48,7 +48,7 @@ export function AcademyTable({ academyId }: { academyId: string }) {
       <div className="overflow-x-auto border-t" style={{ borderColor: 'var(--line-2)' }}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] text-ink-3">
+            <tr className="text-[0.6875rem] text-ink-3">
               <th className="px-3 py-1.5 text-left font-semibold">Squad</th>
               <th className="px-1 py-1.5 text-center font-semibold">P</th>
               <th className="px-1 py-1.5 text-center font-semibold">W</th>
@@ -63,7 +63,7 @@ export function AcademyTable({ academyId }: { academyId: string }) {
               <tr key={r.team_id} className={i > 0 ? 'border-t' : ''} style={{ borderColor: 'var(--line-2)' }} data-table-team={r.team_id}>
                 <td className="px-3 py-1.5">
                   <Link href={`/admin/teams/${r.team_id}`} className="font-medium">{r.name}</Link>
-                  {r.latest && <span className="block text-[11px] text-ink-3">Last: {r.latest.ours}–{r.latest.theirs}{r.latest.opponent ? ` v ${r.latest.opponent}` : ''}</span>}
+                  {r.latest && <span className="block text-[0.6875rem] text-ink-3">Last: {r.latest.ours}–{r.latest.theirs}{r.latest.opponent ? ` v ${r.latest.opponent}` : ''}</span>}
                 </td>
                 <td className="px-1 py-1.5 text-center tabular-nums">{r.played}</td>
                 <td className="px-1 py-1.5 text-center tabular-nums">{r.won}</td>
@@ -73,7 +73,7 @@ export function AcademyTable({ academyId }: { academyId: string }) {
                 <td className="px-2 py-1.5">
                   <span className="flex gap-0.5">
                     {[...r.last].reverse().map((o, k) => (
-                      <span key={k} className="grid h-5 w-5 place-items-center rounded text-[10px] font-bold text-white" style={{ background: TINT[o] }}>{o}</span>
+                      <span key={k} className="grid h-5 w-5 place-items-center rounded text-[0.625rem] font-bold text-white" style={{ background: TINT[o] }}>{o}</span>
                     ))}
                   </span>
                 </td>

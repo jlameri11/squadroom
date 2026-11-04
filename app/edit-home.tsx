@@ -62,7 +62,7 @@ export function EditHome({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">Your home screen</h2>
+        <h2 className="display text-[1.375rem] leading-tight">Your home screen</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           Choose what you see and the order it comes in. Only you see this.
         </p>

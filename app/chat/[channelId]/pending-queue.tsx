@@ -46,7 +46,7 @@ export function PendingQueue({ channelId, isHost }: { channelId: string; isHost:
 
   return (
     <div className="border-b   px-4 py-2.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide ">
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-wide ">
         Waiting for you · {items.length}
       </p>
       <div className="mt-1.5 flex flex-col gap-2">

@@ -63,7 +63,7 @@ export function OrgSwitcher({ onClose }: { onClose: () => void }) {
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">Switch organisation</h2>
+        <h2 className="display text-[1.375rem] leading-tight">Switch organisation</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           You&apos;re in {orgs?.length ?? '…'}. Chats, fixtures and teams all follow this choice.
         </p>
@@ -90,7 +90,7 @@ export function OrgSwitcher({ onClose }: { onClose: () => void }) {
                   }}
                 >
                   <span
-                    className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[15px] text-white"
+                    className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[0.9375rem] text-white"
                     style={{ background: o.primary_colour || 'var(--brand)' }}
                   >
                     {initials(o.name)}
@@ -126,7 +126,7 @@ export function OrgSwitcher({ onClose }: { onClose: () => void }) {
 function Placeholder() {
   return (
     <div
-      className="h-[66px] animate-pulse rounded-xl"
+      className="h-[4.125rem] animate-pulse rounded-xl"
       style={{ background: 'var(--surface-2)' }}
       aria-hidden
     />

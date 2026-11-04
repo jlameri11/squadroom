@@ -105,12 +105,12 @@ export function SetupChecklist() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={p.logo_url} alt="" className="h-9 w-9 flex-none rounded-[10px] bg-white object-contain p-0.5" />
         ) : (
-          <span className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[15px]" style={{ background: '#ffffff26' }}>
+          <span className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]" style={{ background: '#ffffff26' }}>
             {p.name.slice(0, 2).toUpperCase()}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="display block truncate text-[21px] leading-tight">Set up {p.name}</span>
+          <span className="display block truncate text-[1.3125rem] leading-tight">Set up {p.name}</span>
           <span className="block truncate text-xs opacity-75" data-setup-clock>
             {p.grandfathered
               ? `${p.done} of ${p.total} in place`

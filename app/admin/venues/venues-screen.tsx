@@ -358,7 +358,7 @@ export function VenuesScreen() {
                 <label className="block text-xs text-ink-2">Map pin · latitude<input value={details.lat} onChange={(e) => setDetails({ ...details, lat: e.target.value })} inputMode="decimal" placeholder="-33.79" className={input} style={line} /></label>
                 <label className="block text-xs text-ink-2">longitude<input value={details.lng} onChange={(e) => setDetails({ ...details, lng: e.target.value })} inputMode="decimal" placeholder="151.12" className={input} style={line} /></label>
               </div>
-              <p className="mt-1 text-[11px] text-ink-3">Directions use the pin when it is set, else the address.</p>
+              <p className="mt-1 text-[0.6875rem] text-ink-3">Directions use the pin when it is set, else the address.</p>
               <label className="mt-2 block text-xs text-ink-2">Parking<input value={details.parking} onChange={(e) => setDetails({ ...details, parking: e.target.value })} placeholder="Street, and the school car park on Saturdays" className={input} style={line} /></label>
               <label className="mt-2 block text-xs text-ink-2">Toilets<input value={details.toilets} onChange={(e) => setDetails({ ...details, toilets: e.target.value })} placeholder="By the canteen" className={input} style={line} /></label>
               <label className="mt-2 block text-xs text-ink-2">Canteen<input value={details.canteen} onChange={(e) => setDetails({ ...details, canteen: e.target.value })} placeholder="Saturdays from 8" className={input} style={line} /></label>

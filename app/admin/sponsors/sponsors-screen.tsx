@@ -92,7 +92,7 @@ export function SponsorsScreen() {
           {(rows ?? []).map((s) => (
             <article key={s.id} className="rounded-xl border p-3" style={{ ...line, opacity: s.active ? 1 : 0.6 }} data-sponsor={s.id}>
               <div className="flex items-center gap-3">
-                <label className="grid h-12 w-12 flex-none cursor-pointer place-items-center overflow-hidden rounded-lg text-[10px] text-ink-3" style={{ background: 'var(--surface-2)' }} title="Logo">
+                <label className="grid h-12 w-12 flex-none cursor-pointer place-items-center overflow-hidden rounded-lg text-[0.625rem] text-ink-3" style={{ background: 'var(--surface-2)' }} title="Logo">
                   {s.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.logo_url} alt="" className="h-full w-full object-contain" />
@@ -134,7 +134,7 @@ export function SponsorsScreen() {
           </button>
         )}
         {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
-        <p className="mt-2 text-[11px] text-ink-3">Tap a logo box to upload the logo (1 MB, PNG/JPG/SVG). It is public, like the match centre.</p>
+        <p className="mt-2 text-[0.6875rem] text-ink-3">Tap a logo box to upload the logo (1 MB, PNG/JPG/SVG). It is public, like the match centre.</p>
       </section>
     </div>
   )

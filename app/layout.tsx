@@ -5,6 +5,7 @@ import { HashSession } from '@/components/hash-session'
 import { TabBar } from '@/components/app-shell'
 import { OfflineBanner } from '@/components/offline-banner'
 import { TwoStepGate } from '@/components/two-step-gate'
+import { TEXT_SIZE_SCRIPT } from '@/lib/text-size'
 
 const plex = IBM_Plex_Sans({
   variable: '--font-plex',
@@ -30,6 +31,10 @@ export const metadata: Metadata = {
   applicationName: 'Squadroom',
   appleWebApp: { capable: true, title: 'Squadroom', statusBarStyle: 'default' },
   formatDetection: { telephone: false },
+  // Chrome on Android (146+): the root font size follows the phone's text
+  // size setting, and every size here is in rem (X-10; lib/text-size.ts
+  // does the same job on an iPhone). Ignored where it is not supported.
+  other: { 'text-scale': 'scale' },
 }
 
 export const viewport: Viewport = {
@@ -46,9 +51,10 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
-  // suppressHydrationWarning: the script in <head> sets data-theme before
-  // React hydrates, so the attribute differs from the server's on purpose.
-  // It covers this one element only, not its children.
+  // suppressHydrationWarning: the scripts in <head> set data-theme and, on an
+  // iPhone set to larger text, the root font size before React hydrates, so
+  // the attributes differ from the server's on purpose. It covers this one
+  // element only, not its children.
   return (
     <html lang="en-AU" className={`${plex.variable} ${barlow.variable} h-full`} suppressHydrationWarning>
       {/*
@@ -62,6 +68,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
             __html:"try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
           }}
         />
+        {/* The iPhone's text size (Dynamic Type), before the first paint for
+            the same reason. Does nothing anywhere else. */}
+        <script dangerouslySetInnerHTML={{ __html: TEXT_SIZE_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />

@@ -275,7 +275,7 @@ export function Lineup({ eventId, canSee }: { eventId: string; canSee: boolean }
       </div>
       {data.can_pick && !l.published_at && (
         <>
-          <p className="mt-1 text-[11px] text-ink-3">Publishing tells each selected family: meet time, ground, kit, and their spot.</p>
+          <p className="mt-1 text-[0.6875rem] text-ink-3">Publishing tells each selected family: meet time, ground, kit, and their spot.</p>
           <label className="mt-1 flex items-center gap-2 text-xs text-ink-2">
             <input type="checkbox" checked={tellOut} onChange={(e) => setTellOut(e.target.checked)} data-tell-out />
             Also tell the families not in the side this week (gently)

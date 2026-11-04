@@ -200,7 +200,7 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
               </label>
               <button onClick={saveFee} disabled={busy === 'fee' || feeDraft.dollars === ''} className="col-span-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>Set the fee</button>
             </div>
-            <p className="mt-1.5 text-[11px] text-ink-3">Online payment to the league&apos;s Stripe account comes with the key; until then clubs pay as you say above and you tick them off here.</p>
+            <p className="mt-1.5 text-[0.6875rem] text-ink-3">Online payment to the league&apos;s Stripe account comes with the key; until then clubs pay as you say above and you tick them off here.</p>
             {fees && fees.entries.length > 0 && (
               <ul className="mt-3 divide-y text-xs" style={{ borderColor: 'var(--line-2)' }}>
                 {fees.entries.map((e) => (

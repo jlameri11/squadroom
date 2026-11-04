@@ -297,7 +297,7 @@ function NewProgram({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">New program</h2>
+        <h2 className="display text-[1.375rem] leading-tight">New program</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           Anything a family signs up to. You can open it now or keep it as a draft.
         </p>

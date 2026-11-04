@@ -77,7 +77,7 @@ export function HomeCalendar() {
       <div className="card p-2.5">
         <div className="grid grid-cols-7 gap-1">
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-            <span key={i} className="pb-1 text-center text-[10px] font-semibold text-ink-3">
+            <span key={i} className="pb-1 text-center text-[0.625rem] font-semibold text-ink-3">
               {d}
             </span>
           ))}

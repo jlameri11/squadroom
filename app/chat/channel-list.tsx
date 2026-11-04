@@ -160,7 +160,7 @@ function Results({
                 href={`/calendar/${f.id}`}
                 className={`row items-start ${f.cancelled_at ? 'opacity-50' : ''}`}
               >
-                <span className="display mt-0.5 w-14 flex-none text-[15px] tabular-nums text-ink-3">
+                <span className="display mt-0.5 w-14 flex-none text-[0.9375rem] tabular-nums text-ink-3">
                   {new Date(f.starts_at).toLocaleDateString('en-AU', {
                     day: 'numeric',
                     month: 'short',

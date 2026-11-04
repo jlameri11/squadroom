@@ -109,7 +109,7 @@ export function CallOffDay({
     return (
       <Sheet onClose={onClose}>
         <div className="p-5 text-center">
-          <p className="display text-[24px] leading-tight">
+          <p className="display text-[1.5rem] leading-tight">
             {done} {done === 1 ? 'session' : 'sessions'} called off
           </p>
           <p className="mt-1.5 text-sm text-ink-2">
@@ -133,7 +133,7 @@ export function CallOffDay({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">Call off a day</h2>
+        <h2 className="display text-[1.375rem] leading-tight">Call off a day</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           Everything on one day, or one ground, in a single message.
         </p>

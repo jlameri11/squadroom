@@ -63,7 +63,7 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
   return (
     <div className="w-full overflow-hidden rounded-xl border bg-[var(--surface)]" style={{ borderColor: 'var(--brand)' }}>
       <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'var(--brand-faint)' }}>
-        <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+        <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-white"
               style={{ background: 'var(--brand)' }}>
           {poll.type === 'availability' ? 'Availability' : 'Poll'}
         </span>

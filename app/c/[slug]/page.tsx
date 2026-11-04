@@ -68,7 +68,7 @@ export default async function PublicCompetitionPage(ctx: {
         style={{ background: 'var(--paper)' }}
       >
         <div className="max-w-sm text-center">
-          <p className="display text-[26px] leading-tight">Nothing here</p>
+          <p className="display text-[1.625rem] leading-tight">Nothing here</p>
           <p className="mt-2 text-sm text-ink-2">
             This competition page isn&apos;t published, or the link has changed. Ask whoever sent
             it to you for a new one.

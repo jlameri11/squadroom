@@ -37,7 +37,7 @@ export function EnterForm({ slug, info }: { slug: string; info: EntryInfo }) {
     <main className="mx-auto w-full max-w-lg pb-12">
       <header className="px-5 pb-5 pt-7" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
         <p className="eyebrow" style={{ color: '#ffffffaa' }}>{info.organiser}</p>
-        <h1 className="display mt-1 text-[30px] leading-none">{info.name}</h1>
+        <h1 className="display mt-1 text-[1.875rem] leading-none">{info.name}</h1>
         <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>Enter a team{info.season ? ` · ${info.season}` : ''}</p>
       </header>
 

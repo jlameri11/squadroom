@@ -23,10 +23,10 @@ export default function ForClubs() {
     <main className="mx-auto w-full max-w-md" style={{ color: 'var(--ink)' }}>
       <header className="px-5 pb-8 pt-10" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
         <p className="eyebrow" style={{ color: 'var(--brand-ink)', opacity: 0.8 }}>Squadroom</p>
-        <h1 className="display mt-2 text-[34px] leading-[1.05]">
+        <h1 className="display mt-2 text-[2.125rem] leading-[1.05]">
           The chat your families already use, with the football underneath it.
         </h1>
-        <p className="mt-3 text-[15px] opacity-90">
+        <p className="mt-3 text-[0.9375rem] opacity-90">
           For academies, clubs and leagues. Fixtures, squads, registration, match day and the
           group chat — one app, built around children&apos;s safety.
         </p>

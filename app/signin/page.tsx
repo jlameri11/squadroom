@@ -161,7 +161,7 @@ export default function SignIn() {
   if (sent) {
     return (
       <Frame>
-        <h1 className="display text-[28px] leading-tight" style={{ color: 'var(--brand-ink)' }}>
+        <h1 className="display text-[1.75rem] leading-tight" style={{ color: 'var(--brand-ink)' }}>
           Check your email
         </h1>
         <p className="mt-2 text-sm" style={{ color: '#ffffffb3' }}>
@@ -181,7 +181,7 @@ export default function SignIn() {
 
   return (
     <Frame>
-      <h1 className="display text-[34px] leading-none" style={{ color: 'var(--brand-ink)' }}>
+      <h1 className="display text-[2.125rem] leading-none" style={{ color: 'var(--brand-ink)' }}>
         Squadroom
       </h1>
       {/*

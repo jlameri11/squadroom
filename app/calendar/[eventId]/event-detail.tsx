@@ -108,7 +108,7 @@ export function EventDetail({
     <>
       <header className="mt-3">
         <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+          <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-white"
                 style={{ background: cancelled ? 'var(--no)' : 'var(--brand)' }}>
             {cancelled ? 'Cancelled' : event.type}
           </span>
@@ -213,9 +213,10 @@ export function EventDetail({
           </h2>
           <div className="mt-2 flex flex-col gap-2">
             {answers.map((a) => (
-              <div key={a.playerId} className="flex items-center gap-2">
+              <div key={a.playerId} className="flex flex-wrap items-center gap-2">
                 <span className="w-20 flex-none truncate text-sm font-medium">{a.playerName}</span>
-                <div className="flex flex-1 gap-1.5">
+                {/* Drops under the name when larger text no longer fits all three on one line (X-10). */}
+                <div className="flex min-w-fit flex-1 gap-1.5">
                   {CHOICES.map((c) => {
                     const on = a.status === c.value
                     return (
@@ -325,6 +326,7 @@ function CallItOff({
 }: {
   event: {
     id: string
+    type: string
     title: string
     starts_at: string
     cancelled_at: string | null
@@ -332,6 +334,9 @@ function CallItOff({
     cancellation_note: string | null
   }
 }) {
+  // A coach calling off Thursday's training was asked to "call this game
+  // off". The word follows the thing.
+  const noun = event.type === 'match' || event.type === 'tournament' ? 'game' : event.type === 'training' ? 'session' : 'event'
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState<string>('wet_weather')
   const [note, setNote] = useState('')
@@ -369,7 +374,7 @@ function CallItOff({
   if (cancelled) {
     return (
       <section className="mt-5 rounded-xl border   p-4">
-        <p className="text-sm font-semibold ">This game is off</p>
+        <p className="text-sm font-semibold ">This {noun} is off</p>
         {(event.cancellation_reason || event.cancellation_note) && (
           <p className="mt-0.5 text-sm ">
             {REASONS.find((r) => r.value === event.cancellation_reason)?.label}
@@ -402,14 +407,14 @@ function CallItOff({
         className="mt-5 w-full rounded-xl border px-4 py-3 text-sm font-semibold"
         style={{ borderColor: 'var(--no)', color: 'var(--no)' }}
       >
-        Call this game off
+        Call this {noun} off
       </button>
     )
   }
 
   return (
     <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
-      <h2 className="font-semibold">Call this game off</h2>
+      <h2 className="font-semibold">Call this {noun} off</h2>
       <p className="mt-1 text-sm text-ink-2">
         Everyone in the team gets a notification straight away, whether or not they
         RSVP&apos;d and whatever their quiet hours are set to.

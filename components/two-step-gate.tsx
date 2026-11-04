@@ -72,7 +72,7 @@ export function TwoStepGate() {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-paper p-6" data-two-step-gate role="dialog" aria-modal="true" aria-labelledby="two-step-title">
       <form onSubmit={verify} className="card w-full max-w-sm p-5">
-        <h1 id="two-step-title" className="display text-[22px] leading-tight">Two-step sign-in</h1>
+        <h1 id="two-step-title" className="display text-[1.375rem] leading-tight">Two-step sign-in</h1>
         <p className="mt-1 text-sm text-ink-2">Open your authenticator app and type the six digits it shows for Squadroom.</p>
         <label className="mt-4 block">
           <span className="eyebrow">Code</span>

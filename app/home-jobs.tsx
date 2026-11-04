@@ -173,7 +173,7 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
                 key={j.id}
                 href={j.href}
                 data-job={j.id}
-                className="card flex min-h-[88px] flex-col justify-between p-2.5"
+                className="card flex min-h-[5.5rem] flex-col justify-between p-2.5"
               >
                 <span className="flex items-start justify-between gap-1">
                   <span className="text-sm font-semibold leading-tight" style={{ color: 'var(--brand-text)' }}>
@@ -181,7 +181,7 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
                   </span>
                   {j.count > 0 && <span className="pill flex-none">{j.count}</span>}
                 </span>
-                <span className="mt-1 line-clamp-2 text-[11px] leading-snug text-ink-3">{j.detail}</span>
+                <span className="mt-1 line-clamp-2 text-[0.6875rem] leading-snug text-ink-3">{j.detail}</span>
               </Link>
             ))}
           </div>

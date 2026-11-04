@@ -119,7 +119,7 @@ export function MatchVideo({ eventId }: { eventId: string }) {
                 </span>
               </a>
             )}
-            <p className="mt-1 flex items-center gap-2 text-[11px] text-ink-3">
+            <p className="mt-1 flex items-center gap-2 text-[0.6875rem] text-ink-3">
               {v.title && v.kind === 'upload' && <span className="truncate">{v.title} · </span>}
               {v.kind === 'upload' ? 'Uploaded — only this squad can see it' : 'A link — follows that service’s privacy settings'}
               {v.by && ` · ${v.by}`}
@@ -148,7 +148,7 @@ export function MatchVideo({ eventId }: { eventId: string }) {
               </label>
               <button onClick={() => setAdding(false)} className="rounded-lg border px-3 py-2 text-sm" style={line}>Cancel</button>
             </div>
-            <p className="mt-2 text-[11px] text-ink-3" data-video-privacy>
+            <p className="mt-2 text-[0.6875rem] text-ink-3" data-video-privacy>
               <b>Privacy:</b> a Veo, YouTube or Drive link follows that service&apos;s own settings and can be forwarded by anyone who has it. An upload stays private to this squad (up to 50 MB). Either way, the squad&apos;s families get one push: &quot;video is up&quot;.
             </p>
           </div>

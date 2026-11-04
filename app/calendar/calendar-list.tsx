@@ -119,7 +119,7 @@ function Row({ e }: { e: UpcomingEvent }) {
                 className={`row items-start ${cancelled ? 'opacity-50' : ''}`}
                 style={{ borderColor: 'var(--line-2)' }}
               >
-                <span className="display mt-0.5 w-14 flex-none text-[15px] tabular-nums" style={{ color: TYPE_TINT[e.type] ?? 'var(--ink-2)' }}>
+                <span className="display mt-0.5 w-14 flex-none text-[0.9375rem] tabular-nums" style={{ color: TYPE_TINT[e.type] ?? 'var(--ink-2)' }}>
                   {new Date(e.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
                 </span>
 
@@ -191,7 +191,7 @@ function TrainingRow({ group }: { group: UpcomingEvent[] }) {
   return (
     <div className="row items-start" style={{ borderColor: 'var(--line-2)' }}>
       <span
-        className="display mt-0.5 w-14 flex-none text-[15px] tabular-nums"
+        className="display mt-0.5 w-14 flex-none text-[0.9375rem] tabular-nums"
         style={{ color: TYPE_TINT.training }}
       >
         {new Date(first.starts_at).toLocaleTimeString('en-AU', {

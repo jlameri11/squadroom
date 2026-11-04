@@ -294,7 +294,7 @@ function Register({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">{program.name}</h2>
+        <h2 className="display text-[1.375rem] leading-tight">{program.name}</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           {program.capacity
             ? 'Places are limited. If it fills up you go on the waitlist in the order you applied.'

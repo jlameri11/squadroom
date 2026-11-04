@@ -1028,7 +1028,7 @@ function EmbedSnippet({ url, name }: { url: string; name: string }) {
         </select>
         <button onClick={() => setOpen(false)} className="ml-auto text-ink-3">Close</button>
       </div>
-      <p className="mt-2 break-all rounded-lg p-2 font-mono text-[11px]" style={{ background: 'var(--surface-3)' }}>
+      <p className="mt-2 break-all rounded-lg p-2 font-mono text-[0.6875rem]" style={{ background: 'var(--surface-3)' }}>
         {snippet}
       </p>
       <button
@@ -1042,7 +1042,7 @@ function EmbedSnippet({ url, name }: { url: string; name: string }) {
       >
         {copied ? 'Copied' : 'Copy the embed code'}
       </button>
-      <p className="mt-1.5 text-[11px] text-ink-3">Paste it where you want the table. It updates itself; readers can pick a division.</p>
+      <p className="mt-1.5 text-[0.6875rem] text-ink-3">Paste it where you want the table. It updates itself; readers can pick a division.</p>
     </div>
   )
 }

@@ -120,7 +120,7 @@ export function JoinLinkPanel({
       >
         <p className="eyebrow">Join code</p>
         <p
-          className="display mt-0.5 text-[30px] leading-none tabular-nums"
+          className="display mt-0.5 text-[1.875rem] leading-none tabular-nums"
           style={{ color: 'var(--brand-text)', letterSpacing: '0.12em' }}
         >
           {link.code}

@@ -130,7 +130,7 @@ export function ChannelView({
           ‹
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="display truncate text-[21px] leading-tight">{name}</h1>
+          <h1 className="display truncate text-[1.3125rem] leading-tight">{name}</h1>
           <p className="truncate text-xs opacity-75">
             {archived ? 'Past season · read-only'
               : postingMode === 'hosts_only' ? 'Announcements only'

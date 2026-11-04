@@ -72,7 +72,7 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
             />
           )}
           <div className="min-w-0">
-            <h1 className="display text-[28px] leading-tight" style={{ textWrap: 'balance' }}>
+            <h1 className="display text-[1.75rem] leading-tight" style={{ textWrap: 'balance' }}>
               {club.name}
             </h1>
             <p className="mt-1 text-sm" style={{ color: '#ffffffb3' }}>

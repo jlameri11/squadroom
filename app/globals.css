@@ -247,7 +247,7 @@ body {
      compete with the thing it introduces. */
   .eyebrow {
     font-family: var(--font-barlow), sans-serif;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -276,7 +276,7 @@ body {
   .tag {
     display: inline-block;
     font-family: var(--font-barlow), sans-serif;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -311,29 +311,29 @@ body {
 
   .ev { padding: 11px 12px; display: grid; gap: 9px; }
   .ev-top { display: flex; gap: 11px; align-items: flex-start; }
-  .ev-ttl { font-weight: 600; font-size: 14.5px; line-height: 1.25; }
-  .ev-sub { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+  .ev-ttl { font-weight: 600; font-size: 0.90625rem; line-height: 1.25; }
+  .ev-sub { font-size: 0.78125rem; color: var(--ink-2); margin-top: 2px; }
 
   /* Day number large, weekday small. A column of these scans as a calendar
      rather than as a list of times. */
   .datechip {
-    flex: none; width: 46px; text-align: center;
+    flex: none; width: 2.875rem; text-align: center;
     border-radius: 9px; background: var(--surface-2); padding: 5px 0;
   }
   .datechip .d {
     font-family: var(--font-barlow), sans-serif;
-    font-size: 21px; font-weight: 700; line-height: 1;
+    font-size: 1.3125rem; font-weight: 700; line-height: 1;
     font-variant-numeric: tabular-nums;
   }
   .datechip .m {
-    font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    font-size: 0.625rem; text-transform: uppercase; letter-spacing: .08em;
     color: var(--ink-3); font-weight: 600;
   }
 
   .typechip {
     font-family: var(--font-barlow), sans-serif;
     text-transform: uppercase; letter-spacing: .07em;
-    font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px;
+    font-size: 0.6875rem; font-weight: 600; padding: 2px 6px; border-radius: 5px;
     background: var(--surface-2); color: var(--ink-2);
   }
   /* A match is the thing people are actually organising around, so it is the
@@ -342,7 +342,7 @@ body {
 
   .badge {
     font-family: var(--font-barlow), sans-serif;
-    font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    font-size: 0.71875rem; font-weight: 600; text-transform: uppercase;
     letter-spacing: .06em; padding: 2px 6px; border-radius: 5px;
     background: var(--surface-2); color: var(--ink-3);
   }
@@ -351,12 +351,12 @@ body {
      screen without opening anything. */
   .kidrow { display: flex; align-items: center; gap: 8px; }
   .kidrow .who {
-    font-size: 12.5px; font-weight: 600; width: 52px; flex: none; color: var(--ink-2);
+    font-size: 0.78125rem; font-weight: 600; width: 3.25rem; flex: none; color: var(--ink-2);
   }
   .rsvp { display: flex; gap: 6px; flex: 1; }
   .rsvp button {
     flex: 1; padding: 7px 4px; border-radius: 9px;
-    border: 1px solid var(--line); font-size: 12.5px; font-weight: 600;
+    border: 1px solid var(--line); font-size: 0.78125rem; font-weight: 600;
     color: var(--ink-2); background: var(--surface);
   }
   .rsvp button[aria-pressed="true"][data-v="yes"]   { background: var(--yes-bg);   border-color: var(--yes);   color: var(--yes); }
@@ -368,7 +368,7 @@ body {
   .av {
     width: 40px; height: 40px; border-radius: 11px; flex: none;
     display: grid; place-items: center;
-    font-family: var(--font-barlow), sans-serif; font-weight: 700; font-size: 15px;
+    font-family: var(--font-barlow), sans-serif; font-weight: 700; font-size: 0.9375rem;
     background: var(--brand); color: var(--brand-ink);
   }
   .av.alt { background: var(--surface-2); color: var(--ink-2); }
@@ -391,7 +391,7 @@ body {
        white in light and near-black in dark, so the pill is legible in
        both rather than in the one somebody was looking at. */
     color: var(--accent-ink);
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 700;
     text-align: center;
     font-variant-numeric: tabular-nums;
@@ -399,9 +399,12 @@ body {
 }
 
 /* An input under 16px makes iOS zoom the whole page on focus, which then does
-   not zoom back. Every text field in the product is 16px for that one
-   reason. */
-input, select, textarea { font-size: 16px; }
+   not zoom back. Every text field in the product is at least 16px for that
+   one reason — and grows with the rest of the text when a phone's text size
+   is turned up (X-10: every text size in the product is in rem, so the
+   phone's "larger text" setting reaches all of it, not just the parts
+   Tailwind sized). */
+input, select, textarea { font-size: max(16px, 1rem); }
 
 /* A text-styled button is still a button a thumb has to hit: at least 32px of
    hit area without moving anything around it (X-10, 4 Nov 2026). */

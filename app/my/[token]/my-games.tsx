@@ -51,8 +51,8 @@ export function MyGames({ events }: { events: FeedEvent[] }) {
 
         {next ? (
           <>
-            <p className="display mt-1 text-[34px] leading-none">{whenBig(next.starts_at, tz)}</p>
-            <p className="display mt-1 text-[22px] leading-tight opacity-95">{next.title}</p>
+            <p className="display mt-1 text-[2.125rem] leading-none">{whenBig(next.starts_at, tz)}</p>
+            <p className="display mt-1 text-[1.375rem] leading-tight opacity-95">{next.title}</p>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {next.cancelled_at ? (
@@ -83,7 +83,7 @@ export function MyGames({ events }: { events: FeedEvent[] }) {
             )}
           </>
         ) : (
-          <p className="display mt-1 text-[26px] leading-tight">No games coming up</p>
+          <p className="display mt-1 text-[1.625rem] leading-tight">No games coming up</p>
         )}
       </header>
 

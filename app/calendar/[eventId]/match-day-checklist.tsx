@@ -71,7 +71,7 @@ export function MatchDayChecklist({ eventId }: { eventId: string }) {
           </li>
         ))}
       </ul>
-      <p className="mt-1 text-[11px] text-ink-3">An hour before kick-off, every coach of the squad gets a push with what is still to do.</p>
+      <p className="mt-1 text-[0.6875rem] text-ink-3">An hour before kick-off, every coach of the squad gets a push with what is still to do.</p>
     </section>
   )
 }

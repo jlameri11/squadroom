@@ -17,7 +17,7 @@ export default async function EnterPage(ctx: { params: Promise<{ slug: string }>
     return (
       <main className="grid min-h-dvh place-items-center px-6" style={{ background: 'var(--paper)' }}>
         <div className="max-w-sm text-center">
-          <p className="display text-[26px] leading-tight">Not taking entries</p>
+          <p className="display text-[1.625rem] leading-tight">Not taking entries</p>
           <p className="mt-2 text-sm text-ink-2">This competition isn&apos;t open to entries right now. Ask the organiser.</p>
         </div>
       </main>

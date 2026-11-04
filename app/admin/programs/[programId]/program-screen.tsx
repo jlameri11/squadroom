@@ -512,7 +512,7 @@ function Decide({
         <select
           value={team}
           onChange={(e) => setTeam(e.target.value)}
-          className="max-w-[100px] rounded-lg border px-1.5 py-1.5 text-xs"
+          className="max-w-[6.25rem] rounded-lg border px-1.5 py-1.5 text-xs"
           style={{ borderColor: 'var(--line)' }}
           aria-label="Team"
         >

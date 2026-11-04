@@ -117,7 +117,7 @@ export function AddContact({
     return (
       <Sheet onClose={onClose}>
         <div className="p-4">
-          <h2 className="display text-[22px] leading-tight">
+          <h2 className="display text-[1.375rem] leading-tight">
             {added.length} {added.length === 1 ? 'person' : 'people'} added
           </h2>
           <ul className="mt-3 flex flex-col gap-1">
@@ -153,7 +153,7 @@ export function AddContact({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">Add someone</h2>
+        <h2 className="display text-[1.375rem] leading-tight">Add someone</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           For the parent with no smartphone, or the grandparent who does the Saturday driving.
         </p>

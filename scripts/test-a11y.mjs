@@ -7,8 +7,17 @@
 // browser as a parent, a coach, the owner and a stranger, at 375px.
 //
 // A control with no name is a button VoiceOver reads as "button". That is
-// the whole of what this fails on; colour contrast and reading order are
+// the first of what this fails on; colour contrast and reading order are
 // judged by eye on the screenshots, not here.
+//
+// The second (4 Nov): LARGER TEXT. A phone's text-size setting scales the
+// root font size (lib/text-size.ts), and every text size in the product is
+// in rem so all of it follows. Each screen is looked at again with the root
+// at 125% (the first "larger" step on a phone) and at 200% (what WCAG 1.4.4
+// asks a page to survive, and the most the iPhone script will set): nothing
+// may push the page sideways, hang off the right edge, or be cut off inside
+// a box that cannot grow. Wrapping onto more lines is fine — that is what
+// larger text does.
 import { createClient } from '@supabase/supabase-js'
 import puppeteer from 'puppeteer-core'
 import { signInBoth } from './_auth.mjs'
@@ -96,6 +105,47 @@ const audit = () => {
   return out
 }
 
+// With the root font size turned up: what no longer fits. An element inside
+// a sideways-scrolling container (a table, a strip of chips) is allowed past
+// the edge; a truncated line (ellipsis, line clamp) is a choice, not a cut.
+const largeAudit = (px) => {
+  document.documentElement.style.fontSize = `${px}px`
+  // Force layout at the new size before measuring.
+  void document.body.offsetHeight
+  const vw = window.innerWidth
+  const out = { sideways: Math.max(0, document.documentElement.scrollWidth - vw), offEdge: [], clipped: [] }
+  const scrollsX = (el) => {
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowX
+      if (o === 'auto' || o === 'scroll') return true
+    }
+    return false
+  }
+  const describe = (el) => `${el.tagName.toLowerCase()}${el.className && typeof el.className === 'string' ? '.' + el.className.split(' ').filter(Boolean).slice(0, 2).join('.') : ''} “${(el.innerText ?? '').trim().replace(/\s+/g, ' ').slice(0, 28)}”`
+  for (const el of document.body.querySelectorAll('*')) {
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) continue
+    const s = getComputedStyle(el)
+    if (s.visibility === 'hidden' || s.display === 'none') continue
+    if (s.position === 'fixed' && r.width >= vw) continue
+    if (r.right > vw + 1 && r.left < vw && !scrollsX(el) && out.offEdge.length < 12) out.offEdge.push(`${describe(el)} right=${Math.round(r.right)}`)
+    const hidesX = s.overflowX === 'hidden' || s.overflowX === 'clip'
+    const hidesY = s.overflowY === 'hidden' || s.overflowY === 'clip'
+    if (!hidesX && !hidesY) continue
+    const hasText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())
+    if (!hasText) continue
+    const ellipsis = s.textOverflow === 'ellipsis' || (s.webkitLineClamp && s.webkitLineClamp !== 'none')
+    if (hidesX && !ellipsis && el.scrollWidth > el.clientWidth + 2 && out.clipped.length < 12) out.clipped.push(`${describe(el)} needs ${el.scrollWidth - el.clientWidth}px more across`)
+    else if (hidesY && !ellipsis && el.scrollHeight > el.clientHeight + 2 && out.clipped.length < 12) out.clipped.push(`${describe(el)} needs ${el.scrollHeight - el.clientHeight}px more down`)
+  }
+  return out
+}
+const largeProblems = (b) => [
+  ...(b.sideways > 0 ? [`the page scrolls sideways by ${b.sideways}px`] : []),
+  ...b.offEdge.map((x) => `off the right edge: ${x}`),
+  ...b.clipped.map((x) => `cut off: ${x}`),
+]
+
 let failures = 0
 try {
   for (const s of SCREENS) {
@@ -117,6 +167,12 @@ try {
     const label = `${s.who ?? 'stranger'} ${s.path}${where !== s.path ? ` (→ ${where})` : ''}`
     if (problems.length === 0) ok(`${label}: every control named, every field labelled, every image described`)
     else { failures += problems.length; bad(`${label}: ${problems.length} problem${problems.length === 1 ? '' : 's'}`); for (const p of problems.slice(0, 8)) console.log(`      · ${p}`) }
+    // The same screen with the text turned up.
+    for (const [px, pct] of [[20, '125%'], [32, '200%']]) {
+      const big = largeProblems(await page.evaluate(largeAudit, px))
+      if (big.length === 0) ok(`${label} at ${pct} text: everything still fits`)
+      else { failures += big.length; bad(`${label} at ${pct} text: ${big.length} thing${big.length === 1 ? '' : 's'} no longer fit`); for (const p of big.slice(0, 8)) console.log(`      · ${p}`) }
+    }
     await context.close()
   }
   head('The tab bar')
@@ -130,5 +186,5 @@ try {
 } finally {
   await browser.close()
 }
-console.log(failures === 0 ? '\n  \x1b[32mevery screen can be read aloud\x1b[0m\n' : `\n  \x1b[31m${failures} things a screen reader cannot say\x1b[0m\n`)
+console.log(failures === 0 ? '\n  \x1b[32mevery screen can be read aloud and survives text at 200%\x1b[0m\n' : `\n  \x1b[31m${failures} things a screen reader cannot say or that larger text breaks\x1b[0m\n`)
 process.exit(process.exitCode ?? 0)

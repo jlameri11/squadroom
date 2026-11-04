@@ -86,7 +86,7 @@ export function OfferControl({
       <select
         value={program}
         onChange={(e) => setProgram(e.target.value)}
-        className="max-w-[160px] rounded-lg border px-1.5 py-1.5 text-xs"
+        className="max-w-[10rem] rounded-lg border px-1.5 py-1.5 text-xs"
         style={{ borderColor: 'var(--line)' }}
         aria-label="Squad program"
       >

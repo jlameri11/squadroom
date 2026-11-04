@@ -495,7 +495,7 @@ function ReportForm({
       <MarksPicker value={marks.home} onChange={(m) => setMarks({ ...marks, home: m })} compact />
       <p className="mt-1 text-xs font-semibold">Respect marks — {a.away ?? 'Away'}</p>
       <MarksPicker value={marks.away} onChange={(m) => setMarks({ ...marks, away: m })} compact />
-      <p className="text-[11px] text-ink-3">Players, coaches, spectators — 1 to 5. Only the league sees them.</p>
+      <p className="text-[0.6875rem] text-ink-3">Players, coaches, spectators — 1 to 5. Only the league sees them.</p>
       <div className="flex gap-2">
         <button onClick={onSend} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           Send the report

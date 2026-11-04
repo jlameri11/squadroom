@@ -197,7 +197,7 @@ export function MessageBubble({
   return (
     <>
       {showDay && (
-        <div className="my-3 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+        <div className="my-3 text-center text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-3">
           {dayLabel(day)}
         </div>
       )}
@@ -235,13 +235,13 @@ export function MessageBubble({
               roster yet.
             */}
             {message.sender_label ? (
-              <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[10px]">
+              <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[0.625rem]">
                 {message.sender_label}
               </span>
             ) : (
               message.sender_role &&
               message.sender_role !== 'parent' && (
-                <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[10px] capitalize">
+                <span className="rounded bg-[var(--surface-2)] px-1 py-px text-[0.625rem] capitalize">
                   {message.sender_role}
                 </span>
               )
@@ -277,7 +277,7 @@ export function MessageBubble({
           }
         >
           {message.is_announcement && (
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--brand-text)' }}>
+            <span className="mb-1 block text-[0.625rem] font-bold uppercase tracking-wide" style={{ color: 'var(--brand-text)' }}>
               Announcement
             </span>
           )}
@@ -317,7 +317,7 @@ export function MessageBubble({
                   onChange={(e) => setEditing(e.target.value)}
                   rows={2}
                   autoFocus
-                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2 text-[15px] text-ink"
+                  className="w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2 text-[0.9375rem] text-ink"
                 />
                 <span className="mt-1 flex gap-2">
                   <button
@@ -334,10 +334,10 @@ export function MessageBubble({
                 </span>
               </span>
             ) : (
-              <span className="whitespace-pre-wrap break-words text-[15px] leading-snug">
+              <span className="whitespace-pre-wrap break-words text-[0.9375rem] leading-snug">
                 {withLinks((translation && !showOriginal ? translation : message.body) ?? '', mine && !message.is_announcement)}
                 {translation && translation !== message.body && (
-                  <button onClick={() => setShowOriginal((v) => !v)} className="ml-1.5 text-[11px] underline underline-offset-2 opacity-70">
+                  <button onClick={() => setShowOriginal((v) => !v)} className="ml-1.5 text-[0.6875rem] underline underline-offset-2 opacity-70">
                     {showOriginal ? 'translation' : 'original'}
                   </button>
                 )}
@@ -349,7 +349,7 @@ export function MessageBubble({
             <LinkPreview url={previewUrl} mine={mine && !message.is_announcement} />
           )}
 
-          <span className={`mt-0.5 block text-right text-[10px] tabular-nums ${mine && !message.is_announcement ? 'text-[var(--bubble-out-ink-2)]' : 'text-ink-3'}`}>
+          <span className={`mt-0.5 block text-right text-[0.625rem] tabular-nums ${mine && !message.is_announcement ? 'text-[var(--bubble-out-ink-2)]' : 'text-ink-3'}`}>
             {time}{message.edited_at && ' · edited'}
             {mine && !message.is_announcement && !message.deleted_at && <Ticks receipt={receipt} />}
           </span>

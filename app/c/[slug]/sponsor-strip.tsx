@@ -18,7 +18,7 @@ export function SponsorStrip({ sponsors, slug }: { sponsors: PublicSponsor[]; sl
   if (sponsors.length === 0) return null
   return (
     <div className="flex items-center gap-3 overflow-x-auto border-b px-5 py-2" style={{ borderColor: 'var(--line-2)', background: 'var(--surface)' }} data-sponsor-strip>
-      <span className="flex-none text-[10px] uppercase tracking-wide text-ink-3">With thanks to</span>
+      <span className="flex-none text-[0.625rem] uppercase tracking-wide text-ink-3">With thanks to</span>
       {sponsors.map((s) => {
         const inner = (
           <>

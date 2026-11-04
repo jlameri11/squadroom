@@ -85,7 +85,7 @@ export function NewSessions({
     return (
       <Sheet onClose={onClose}>
         <div className="p-5 text-center">
-          <p className="display text-[24px] leading-tight">
+          <p className="display text-[1.5rem] leading-tight">
             {done} {done === 1 ? 'session' : 'sessions'} added
           </p>
           <p className="mt-1.5 text-sm text-ink-2">
@@ -107,7 +107,7 @@ export function NewSessions({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">Add training</h2>
+        <h2 className="display text-[1.375rem] leading-tight">Add training</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           Set the pattern once. Each session can be called off on its own later.
         </p>

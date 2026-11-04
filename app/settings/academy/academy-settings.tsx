@@ -180,13 +180,13 @@ export function AcademySettings({
           style={{ background: colour, color: '#fff' }}
         >
           <span
-            className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[15px]"
+            className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]"
             style={{ background: '#ffffff26' }}
           >
             {academyName.slice(0, 2).toUpperCase()}
           </span>
           <span className="min-w-0">
-            <span className="display block truncate text-[21px] leading-tight">{academyName}</span>
+            <span className="display block truncate text-[1.3125rem] leading-tight">{academyName}</span>
             <span className="block text-xs opacity-75">This is how it will look</span>
           </span>
         </div>

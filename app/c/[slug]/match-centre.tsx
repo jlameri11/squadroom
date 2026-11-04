@@ -119,7 +119,7 @@ export function MatchCentre({
           <p className="eyebrow" style={{ color: '#ffffffaa' }}>
             {competition.organiser}
           </p>
-          <h1 className="display mt-1 text-[30px] leading-none">{competition.name}</h1>
+          <h1 className="display mt-1 text-[1.875rem] leading-none">{competition.name}</h1>
           <div className="mt-1.5 flex items-center gap-3">
             {competition.season && (
               <p className="text-sm" style={{ color: '#ffffffb3' }}>
@@ -158,12 +158,13 @@ export function MatchCentre({
         </div>
       )}
 
-      <div className="flex gap-1.5 px-3.5 py-2.5">
+      {/* Equal widths on one line; two lines when larger text no longer fits them (X-10). */}
+      <div className="flex flex-wrap gap-1.5 px-3.5 py-2.5">
         {TABS.filter((t) => (t !== 'squads' || hasSquads) && (t !== 'scorers' || hasScorers)).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className="flex-1 rounded-xl px-3 py-2 text-sm font-semibold"
+            className="min-w-fit flex-1 rounded-xl px-3 py-2 text-sm font-semibold"
             style={
               tab === t
                 ? { background: 'var(--surface-2)', color: 'var(--ink)' }

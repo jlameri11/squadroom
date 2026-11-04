@@ -48,7 +48,7 @@ export function LinkPreview({ url, mine }: { url: string; mine: boolean }) {
         <img src={p.image_url} alt="" loading="lazy" className="max-h-40 w-full object-cover" />
       )}
       <span className="block p-2">
-        <span className="block truncate text-[10px] uppercase tracking-wide opacity-70">{p.site_name ?? host}</span>
+        <span className="block truncate text-[0.625rem] uppercase tracking-wide opacity-70">{p.site_name ?? host}</span>
         <span className="line-clamp-2 block text-sm font-semibold leading-snug">{p.title}</span>
         {p.description && <span className="line-clamp-2 block text-xs leading-snug opacity-80">{p.description}</span>}
       </span>

@@ -500,6 +500,17 @@ one and is meant to reach hundreds of academies.
   text-styled button gets the `.tap` class (32px of hit area in place), and
   the tab bar marks the current tab. `scripts/test-a11y.mjs` walks the
   main screens as four people and fails on any of these.
+- **Text follows the phone's text size** (X-10 Dynamic Type, 4 Nov 2026).
+  Every text size is rem — Tailwind's sizes, or `text-[0.6875rem]`, never
+  `text-[11px]` — and a box that holds text is sized in rem too. Nothing
+  sets a font size on `html` or `:root`: Chrome on Android (the
+  `text-scale` meta tag in the root layout) scales the root itself, and
+  Chrome's rule is that any root size, even a clamp, undoes it. On an
+  iPhone `lib/text-size.ts` sets the root from Dynamic Type (16–32px).
+  A row of equal buttons gets `flex-wrap` on the row and `min-w-fit` on
+  the buttons so it breaks onto two lines instead of off the screen.
+  `scripts/test-text-size.mjs` fails on a px text size; `test-a11y` fails
+  on anything that no longer fits at 125% or 200%.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

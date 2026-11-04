@@ -68,11 +68,11 @@ export function AppBar({
             className="relative -ml-0.5 grid h-9 w-9 flex-none place-items-center rounded-[10px]"
             style={{ background: crestColour === 'var(--brand)' ? '#ffffff26' : crestColour }}
           >
-            <span className="display text-[15px]">{crest}</span>
+            <span className="display text-[0.9375rem]">{crest}</span>
             {/* A chevron on the crest, because a crest that does nothing on
                 every other account looks identical to one that does. */}
             <span
-              className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] leading-none"
+              className="absolute -bottom-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[0.5625rem] leading-none"
               style={{ background: 'var(--gold)', color: '#202842' }}
               aria-hidden
             >
@@ -81,7 +81,7 @@ export function AppBar({
           </button>
         ) : (
           <span
-            className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[15px]"
+            className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]"
             style={{ background: crestColour === 'var(--brand)' ? '#ffffff26' : crestColour }}
           >
             {crest}
@@ -92,7 +92,7 @@ export function AppBar({
       {switching && <OrgSwitcher onClose={() => setSwitching(false)} />}
 
       <span className="min-w-0 flex-1">
-        <span className="display block truncate text-[21px] leading-tight">{title}</span>
+        <span className="display block truncate text-[1.3125rem] leading-tight">{title}</span>
         {meta && <span className="block truncate text-xs opacity-75">{meta}</span>}
       </span>
 
@@ -353,7 +353,7 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
             href={t.href}
             prefetch
             aria-current={on ? 'page' : undefined}
-            className="relative flex flex-1 flex-col items-center gap-[3px] rounded-[10px] px-0.5 pb-1 pt-1.5 text-[10.5px] font-semibold"
+            className="relative flex flex-1 flex-col items-center gap-[3px] rounded-[10px] px-0.5 pb-1 pt-1.5 text-[0.65625rem] font-semibold"
             style={{ color: on ? 'var(--brand-text)' : 'var(--ink-3)' }}
           >
             <span className="relative">
@@ -376,7 +376,7 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
 
               {count > 0 && (
                 <span
-                  className="absolute -right-2.5 -top-1.5 grid h-[17px] min-w-[17px] place-items-center rounded-full px-1 text-[10px] font-bold"
+                  className="absolute -right-2.5 -top-1.5 grid h-[1.0625rem] min-w-[1.0625rem] place-items-center rounded-full px-1 text-[0.625rem] font-bold"
                   style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
                 >
                   {count > 99 ? '99+' : count}

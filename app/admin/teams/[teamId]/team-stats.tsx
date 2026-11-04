@@ -27,7 +27,7 @@ export function TeamStats({ teamId }: { teamId: string }) {
       <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--line)' }}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] text-ink-3">
+            <tr className="text-[0.6875rem] text-ink-3">
               <th className="px-3 py-1.5 text-left font-semibold">Player</th>
               <th className="px-2 py-1.5 text-center font-semibold">Games</th>
               <th className="px-2 py-1.5 text-center font-semibold">Goals</th>

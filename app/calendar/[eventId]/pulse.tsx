@@ -90,7 +90,7 @@ export function ParentPulse({ eventId }: { eventId: string }) {
               data-mood={mood}
             >
               <span>{face}</span>
-              <span className="text-[11px] text-ink-2">{word}</span>
+              <span className="text-[0.6875rem] text-ink-2">{word}</span>
             </button>
           ))}
         </div>

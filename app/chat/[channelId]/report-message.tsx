@@ -61,7 +61,7 @@ export function ReportMessage({
     return (
       <Sheet onClose={onClose}>
         <div className="p-5 text-center">
-          <p className="display text-[22px] leading-tight">Thank you — that&apos;s been sent</p>
+          <p className="display text-[1.375rem] leading-tight">Thank you — that&apos;s been sent</p>
           <p className="mt-1.5 text-sm text-ink-2">
             Your club&apos;s safeguarding officer will look at it. They can see what you wrote;{' '}
             {senderName ?? 'the sender'} cannot, and will not be told who reported it.
@@ -81,7 +81,7 @@ export function ReportMessage({
   return (
     <Sheet onClose={onClose}>
       <div className="p-4">
-        <h2 className="display text-[22px] leading-tight">Report this message</h2>
+        <h2 className="display text-[1.375rem] leading-tight">Report this message</h2>
         <p className="mt-0.5 text-sm text-ink-2">
           It goes to your club&apos;s safeguarding officer. Nothing is deleted and{' '}
           {senderName ?? 'the sender'} is not told.

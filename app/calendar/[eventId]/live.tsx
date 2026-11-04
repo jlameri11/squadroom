@@ -104,7 +104,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
           <span className="display text-4xl tabular-nums" style={{ color: live.finished ? 'var(--ink)' : 'var(--brand-text)' }}>
             {live.score.ours} – {live.score.theirs}
           </span>
-          {live.kicked_off && !live.finished && <span className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white" style={{ background: 'var(--no)' }}>Live</span>}
+          {live.kicked_off && !live.finished && <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-white" style={{ background: 'var(--no)' }}>Live</span>}
         </div>
         <p className="text-center text-xs text-ink-3">Us v {live.opponent ?? 'the opposition'}</p>
 
@@ -124,8 +124,8 @@ export function LiveScore({ eventId }: { eventId: string }) {
             )}
           </div>
         )}
-        {live.can_tap && on && <p className="mt-1.5 text-center text-[11px] text-ink-3">Every tap goes to the squad&apos;s chat as it happens. A slip can be undone for a minute.</p>}
-        {live.in_competition && live.finished && <p className="mt-1.5 text-center text-[11px] text-ink-3">The official score goes on the match sheet.</p>}
+        {live.can_tap && on && <p className="mt-1.5 text-center text-[0.6875rem] text-ink-3">Every tap goes to the squad&apos;s chat as it happens. A slip can be undone for a minute.</p>}
+        {live.in_competition && live.finished && <p className="mt-1.5 text-center text-[0.6875rem] text-ink-3">The official score goes on the match sheet.</p>}
         {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
 
         {live.ticks.length > 0 && (

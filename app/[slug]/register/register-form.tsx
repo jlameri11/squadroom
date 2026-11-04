@@ -626,7 +626,7 @@ function Progress({ step, tint }: { step: 1 | 2 | 3; tint: string }) {
               style={{ background: done || current ? tint : 'var(--line)', opacity: done ? 0.5 : 1 }}
             />
             <span
-              className="mt-1 block truncate text-[11px] font-semibold uppercase tracking-wide"
+              className="mt-1 block truncate text-[0.6875rem] font-semibold uppercase tracking-wide"
               style={{ color: current ? tint : 'var(--ink-3)' }}
             >
               {n}. {label}

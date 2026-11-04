@@ -79,7 +79,7 @@ export function JoinWithCode() {
           SQ
         </span>
 
-        <h1 className="display text-[30px] leading-none" style={{ color: 'var(--brand-ink)' }}>
+        <h1 className="display text-[1.875rem] leading-none" style={{ color: 'var(--brand-ink)' }}>
           Enter your code
         </h1>
         <p className="mt-1.5 text-sm" style={{ color: '#ffffffb3' }}>
@@ -108,7 +108,7 @@ export function JoinWithCode() {
                 autoCorrect="off"
                 spellCheck={false}
                 aria-label={`Character ${i + 1} of 6`}
-                className="display min-w-0 flex-1 rounded-xl border py-4 text-center text-[22px]"
+                className="display min-w-0 flex-1 rounded-xl border py-4 text-center text-[1.375rem]"
                 style={{
                   background: '#ffffff14',
                   borderColor: c && !ALPHABET.includes(c) ? '#FFD9CE' : '#ffffff2e',

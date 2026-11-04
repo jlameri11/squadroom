@@ -205,7 +205,7 @@ export function DivisionSettings({
                       <input type="number" min={0} max={50} value={draft.borrow_cap ?? ''} onChange={(e) => setDraft({ ...draft, borrow_cap: e.target.value ? Number(e.target.value) : null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
                     </label>
                   </div>
-                  <p className="mt-1 text-[11px] text-ink-3">After the lock only the referee or the league changes a sheet. Leave finals and play-up blank for no rule.</p>
+                  <p className="mt-1 text-[0.6875rem] text-ink-3">After the lock only the referee or the league changes a sheet. Leave finals and play-up blank for no rule.</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <label className="text-xs">
                       <span className="text-ink-2">Born on or after</span>
@@ -216,7 +216,7 @@ export function DivisionSettings({
                       <input type="date" value={draft.born_before ?? ''} onChange={(e) => setDraft({ ...draft, born_before: e.target.value || null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
                     </label>
                   </div>
-                  <p className="mt-1 text-[11px] text-ink-3">A player outside the band is refused on the sheet by name; the league can exempt one from Nominations.</p>
+                  <p className="mt-1 text-[0.6875rem] text-ink-3">A player outside the band is refused on the sheet by name; the league can exempt one from Nominations.</p>
                   <label className="mt-2 block text-xs">
                     <span className="text-ink-2">Pitch size</span>
                     <select value={draft.pitch_size ?? ''} onChange={(e) => setDraft({ ...draft, pitch_size: e.target.value || null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} data-pitch-size>

@@ -405,7 +405,7 @@ export function Composer({
                 <img src={p.preview} alt="" className="h-16 w-16 rounded-lg object-cover" />
               ) : (
                 <div
-                  className="flex h-16 max-w-[180px] items-center gap-2 rounded-lg border px-3 text-sm"
+                  className="flex h-16 max-w-[11.25rem] items-center gap-2 rounded-lg border px-3 text-sm"
                   style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}
                 >
                   <span className="text-lg" aria-hidden>{p.kind === 'audio' ? '🎙' : p.kind === 'video' ? '🎬' : '📄'}</span>
@@ -548,7 +548,7 @@ export function Composer({
         {recSeconds !== null ? (
           // Recording. The row becomes the recorder: a pulsing dot, the
           // clock, and the two choices there are.
-          <div className="flex flex-1 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[15px]" style={{ background: 'var(--surface-2)' }} role="status" aria-live="polite">
+          <div className="flex flex-1 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[0.9375rem]" style={{ background: 'var(--surface-2)' }} role="status" aria-live="polite">
             <span className="h-2.5 w-2.5 flex-none animate-pulse rounded-full" style={{ background: 'var(--no)' }} aria-hidden />
             <span className="flex-1 tabular-nums">Recording {formatDuration(recSeconds)}</span>
             <button onClick={cancelVoice} className="text-sm text-ink-3 underline underline-offset-2">Cancel</button>
@@ -596,7 +596,7 @@ export function Composer({
           placeholder={
             !isHost && postingMode === 'replies_only' ? 'Reply to the team…' : 'Message'
           }
-          className="max-h-32 flex-1 resize-none rounded-2xl bg-[var(--surface-2)] px-3.5 py-2.5 text-[15px] outline-none"
+          className="max-h-32 flex-1 resize-none rounded-2xl bg-[var(--surface-2)] px-3.5 py-2.5 text-[0.9375rem] outline-none"
         />
         {canMic && !text.trim() && pending.length === 0 ? (
           // Nothing typed, nothing attached: the button is a microphone, the

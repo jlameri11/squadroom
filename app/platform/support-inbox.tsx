@@ -73,7 +73,7 @@ export function SupportInbox() {
             <p className="mt-2 whitespace-pre-wrap text-sm text-ink-2">{t.body}</p>
             {t.replies.map((r) => (
               <p key={r.id} className="mt-2 rounded-lg p-2.5 text-sm" style={{ background: r.from_staff ? 'var(--brand-soft)' : 'var(--surface-2)' }}>
-                <span className="block text-[11px] text-ink-3">{r.name ?? '?'} · {when(r.at)}</span>
+                <span className="block text-[0.6875rem] text-ink-3">{r.name ?? '?'} · {when(r.at)}</span>
                 {r.body}
               </p>
             ))}

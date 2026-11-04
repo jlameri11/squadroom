@@ -25,7 +25,7 @@ export default async function StatusPage() {
         <ul className="mt-4 flex flex-col gap-2">
           {status.items.map((i) => (
             <li key={i.id} className="rounded-xl border p-3" style={{ borderColor: 'var(--line)' }}>
-              <p className="text-[11px] uppercase tracking-wide text-ink-3">{i.kind === 'incident' && !i.resolved_at ? 'Ongoing' : i.kind === 'resolved' || i.resolved_at ? 'Resolved' : 'Notice'} · {when(i.at)}</p>
+              <p className="text-[0.6875rem] uppercase tracking-wide text-ink-3">{i.kind === 'incident' && !i.resolved_at ? 'Ongoing' : i.kind === 'resolved' || i.resolved_at ? 'Resolved' : 'Notice'} · {when(i.at)}</p>
               <p className="font-semibold">{i.title}</p>
               {i.body && <p className="mt-1 text-sm text-ink-2">{i.body}</p>}
             </li>
