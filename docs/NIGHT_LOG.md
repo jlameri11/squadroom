@@ -6,6 +6,53 @@ every item on it is something no amount of building can get past.
 
 ---
 
+## Day summary — 4 Nov 2026 (after the deploy; migrations blocked all day)
+
+The Supabase access token died on the afternoon of 3 Nov and Joey will
+replace it "tonight or tomorrow", so everything below is **code only**.
+Nothing was deployed after the 3/4 Nov milestone deploy (Joey: "don't
+deploy for this alone"); it all waits for the next milestone or his word.
+
+- **Every screen follows the organisation the browser is showing.** Seven
+  pages still took "the first academy by name"; the Admin hub, Admin →
+  Payments, Members, Invites, the roster importer, Scan and the family's
+  Payments became thin pages with browser-side loaders. `test-org-follows`
+  21.
+- **Home simplicity pass** (Joey's nine points): parent Home 2.4 → 1.4
+  screens, coach 1.7 → 1.3; one Needs-you list (the parent's jobs are rows
+  in it), one orange card, one number for "to answer", no Channels on Home,
+  the next two fixtures (three for a coach), fortnight-old announcements
+  hidden, signed-out → /signin, training rows padded, "not answered", an
+  Edit button. "COACHES SPL" was a custom chat with two parents (now out);
+  a coach's Admin hub no longer offers what the database refuses.
+  `test-coaches-channel` 5, `test-coach-scope` 15, 0208 written (unapplied).
+- **Referee payouts parked** (Joey): tracking only; the Stripe routes and
+  button removed.
+- **Tidy:** the stray `nrifa-1` organisation deleted; no test leftovers in
+  the database; F-06 (Squadi) will not be built — Dribl only; spec rows
+  R-17, X-02, B-08, B-09 corrected, R-21 renumbered.
+- **X-10, the labels half:** a 21-screen accessibility audit
+  (`test-a11y`), 93 things fixed (placeholder-only fields, 16–22px text
+  buttons via `.tap`), the light accent deepened to 5.2:1 and orange
+  surfaces on `--accent-ink`.
+- **R-21 Registration dashboard** on Admin → Programs, staff only,
+  computed in the browser. `test-registration-dashboard` 8.
+- **S-07 Two-step sign-in, the app's half:** enrol in Settings, a gate
+  above every page, a nag for staff. `test-two-step` 16. The database's
+  half is a migration.
+- **B-08, the safe half:** new club accounts ask Stripe for BECS.
+
+**Full runs:** #14 (122 suites, 2402), #15 (124, 2423), #16 (125, 2444;
+caught the orange contrast), #17 (126, 2446; two timing failures that pass
+alone — my browser tests were competing with it), #18 (127, 2469, after
+S-07, run on a quiet machine: clean). All green bar `test-rls`, which
+cannot run without the token.
+
+**Needs Joey:** #12 the Supabase token (then: 0208, test-rls, photos, the
+division table, BECS "processing", pay-later, the fee split, the 2FA
+policies); #14 Stripe on the live site + NRIFA's Express click-through;
+#4 the privacy notice; #5 Xcode.
+
 ## Evening summary — 3 Nov 2026: the money moves (Stripe test mode), and the first deploy
 
 Joey pasted the Stripe **test** key and, an hour later, a Netlify token.
