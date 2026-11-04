@@ -18,7 +18,8 @@ export const SECTIONS: { id: SectionId; label: string; hint: string }[] = [
   { id: 'needs', label: 'Needs you', hint: 'Fees, approvals and games to answer' },
   { id: 'upcoming', label: 'Coming up', hint: 'The next few fixtures and sessions' },
   { id: 'calendar', label: 'Calendar', hint: 'The month at a glance' },
-  { id: 'chats', label: 'Chats', hint: 'Your conversations and unread counts' },
+  // 'chats' is still a valid stored id (0106) but is no longer offered or
+  // drawn: the Chat tab carries the list (Joey, 4 Nov 2026).
   { id: 'competitions', label: 'Competitions', hint: 'Leagues and tournaments you are in' },
   { id: 'owing', label: 'Owed to the club', hint: 'What is outstanding — club admins only' },
 ]

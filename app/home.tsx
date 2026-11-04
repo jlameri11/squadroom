@@ -40,16 +40,6 @@ export type HomeEvent = {
   rsvps: { player_id: string; player_name: string; status: string | null }[]
 }
 
-export type HomeChannel = {
-  channel_id: string
-  name: string
-  type: string
-  unread_count: number
-  muted: boolean
-  last_message_body: string | null
-  last_sender_name: string | null
-}
-
 type Academy = {
   id: string
   name: string
@@ -68,7 +58,6 @@ type HomeData = {
   pending_requests: number
   children: Child[]
   events: HomeEvent[]
-  channels: HomeChannel[]
 }
 
 export function Home() {

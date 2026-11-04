@@ -468,9 +468,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    NIGHT_LOG's evening summary) and **referee payouts are parked** (L-07).
    **M8 as it stands:** G-03 support and X-08 sponsors are done; a
    production project is Joey's (NEEDS JOEY); B-06 billing waits on
-   Joey's pricing (CLAUDE.md); F-06 the Squadi adapter needs one real
-   Squadi export to map from (NEEDS JOEY #15 — never guessed); S-05 is
-   the lawyer's (NEEDS JOEY #4). **Until a new Supabase access token
+   Joey's pricing (CLAUDE.md); F-06 the Squadi adapter **will not be
+   built** (Joey, 4 Nov: no Squadi export is possible, Dribl only); S-05
+   is the lawyer's (NEEDS JOEY #4). **Until a new Supabase access token
    exists (NEEDS JOEY #12) nothing that needs a migration can be built**,
    which rules out M4's division table from an export and M5's match-centre
    photos. Buildable meanwhile, in this order: the 375px light/dark pass on
