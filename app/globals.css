@@ -57,7 +57,7 @@
   --line: #D9E0E9;
   --line-2: #EAEEF3;
 
-  --accent: #DD5620;
+  --accent: #C2410C; /* deep enough for white text at 5.2:1 (4 Nov 2026; #DD5620 was 3.9:1) */
   --accent-ink: #ffffff;
   --gold: #EFBD5B;
 

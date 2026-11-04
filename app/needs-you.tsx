@@ -79,8 +79,8 @@ export function NeedsYou({ jobs }: { jobs?: JobsHandoff | null }) {
           <Link
             href={lead.href}
             data-job={lead.job}
-            className="flex items-center gap-3 rounded-[14px] p-3.5 text-sm text-white"
-            style={{ background: 'var(--accent)', boxShadow: 'var(--shadow)' }}
+            className="flex items-center gap-3 rounded-[14px] p-3.5 text-sm"
+            style={{ background: 'var(--accent)', color: 'var(--accent-ink)', boxShadow: 'var(--shadow)' }}
           >
             <span className="display grid h-8 w-8 flex-none place-items-center rounded-full bg-white/25 text-base">
               {lead.count}

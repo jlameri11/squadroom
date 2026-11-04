@@ -144,8 +144,8 @@ export function ProgramsScreen() {
             <>
               {waiting > 0 && (
                 <p
-                  className="mb-3.5 rounded-[14px] p-3 text-sm text-white"
-                  style={{ background: 'var(--accent)' }}
+                  className="mb-3.5 rounded-[14px] p-3 text-sm"
+                  style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
                 >
                   <b>
                     {waiting} {waiting === 1 ? 'registration' : 'registrations'} waiting
@@ -225,8 +225,8 @@ function ProgramRow({ program: p }: { program: Program }) {
         <span className="flex flex-none items-center gap-2">
           {p.counts.pending > 0 && (
             <span
-              className="grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs font-bold text-white"
-              style={{ background: 'var(--accent)' }}
+              className="grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs font-bold"
+              style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
             >
               {p.counts.pending}
             </span>
