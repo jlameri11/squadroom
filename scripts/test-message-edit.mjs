@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestMessages } from './_purge-test-messages.mjs'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
@@ -26,7 +27,7 @@ const other  = await sess('p61400000012@squadroom.invalid')
 
 const { data: ch } = await admin.from('channels').select('id')
   .eq('team_id','00000000-0000-0000-0000-0000000d0008').eq('type','team').single()
-await admin.from('messages').delete().like('body','EDITTEST%')
+await purgeTestMessages(admin, ['EDITTEST'])
 
 // Deleting a message blanks its body (0012's archive trigger), so a cleanup
 // that matches on body leaves every deleted message behind — which is exactly
@@ -91,4 +92,5 @@ removed ? ok('the thread still renders it as removed rather than losing the cont
         : ok('deleted messages are filtered from the thread')
 
 await admin.from('messages').delete().in('id', made)
+await purgeTestMessages(admin, ['EDITTEST'])
 console.log('\ncleaned up\n')

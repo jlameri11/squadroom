@@ -94,6 +94,11 @@ const { data: parentSum } = await parent.client.rpc('event_rsvp_summary', { p_ev
 !parentSum?.[0] || parentSum[0].going === null ? ok('parent gets no tally') : bad(`parent saw ${JSON.stringify(parentSum[0])}`)
 
 head('6. Moving the game updates the card already in the thread')
+// The real next game, moved for this check and put back exactly as it was
+// afterwards. Only the venue used to be restored, so every run parked the
+// demo's next game nine days out — on a Thursday, the very Saturday that
+// test-call-off-day calls off at ELS Hall, which cancelled it for real.
+const { data: original } = await admin.from('events').select('starts_at, ends_at, arrive_at, venue').eq('id', MATCH).single()
 const moved = new Date(Date.now() + 9*864e5)
 // ends_at and arrive_at have to move with it, or events_ends_after_starts
 // rejects the whole update. Worth knowing: the app must shift the window,
@@ -111,8 +116,8 @@ updated?.event?.venue === 'Christie Park'
   ? ok('the card shows the new venue — it references the event, not a copy')
   : bad(`card still says ${updated?.event?.venue}`)
 
-// restore
-await admin.from('events').update({ venue: 'ELS Hall Park, Field 3' }).eq('id', MATCH)
+// restore — time, window and venue, as they were
+await admin.from('events').update({ starts_at: original.starts_at, ends_at: original.ends_at, arrive_at: original.arrive_at, venue: original.venue }).eq('id', MATCH)
 await admin.from('messages').delete().eq('event_id', MATCH)
 await admin.from('event_rsvps').delete().eq('event_id', MATCH).eq('player_id', leo.player_id).eq('profile_id', parent.id)
 await admin.from('event_rsvps').insert({ academy_id: NRIFA, event_id: MATCH, profile_id: parent.id, player_id: leo.player_id, status: 'yes' })

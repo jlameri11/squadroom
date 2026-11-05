@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestMessages } from './_purge-test-messages.mjs'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
@@ -114,4 +115,5 @@ const per = Math.round((Date.now()-t)/4)
 per < 400 ? ok(`${per}ms per search`) : bad(`${per}ms per search — too slow to type into`)
 
 await admin.from('messages').delete().eq('id', secret.id)
+await purgeTestMessages(admin, ['SEARCHTEST'])
 console.log('\ncleaned up\n')

@@ -24,6 +24,7 @@
 //     goes, the club is TOLD, because a child nobody can ring about is a
 //     child nobody can collect from training
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestMessages } from './_purge-test-messages.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -95,7 +96,7 @@ async function clean() {
   await admin.from('players').delete().eq('academy_id', NRIFA).like('full_name', `${TAG}%`)
   await admin.from('notification_queue').delete().eq('kind', 'guardian_erased')
   await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title', `${TAG}%`)
-  await admin.from('messages').delete().like('body', `${TAG}%`)
+  await purgeTestMessages(admin, [TAG])
 }
 await clean()
 

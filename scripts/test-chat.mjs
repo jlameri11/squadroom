@@ -5,6 +5,7 @@
  * does rather than trusting the UI to disable a button.
  */
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestMessages } from './_purge-test-messages.mjs'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
@@ -46,7 +47,7 @@ const parent = await sess('p61400000011@squadroom.invalid')   // Sam Whitfield
 const { data: u8 } = await admin.from('channels').select('id')
   .eq('team_id','00000000-0000-0000-0000-0000000d0008').eq('type','team').single()
 await admin.from('channels').update({ posting_mode:'open' }).eq('id', u8.id)
-await admin.from('messages').delete().like('body', 'TEST::%')
+await purgeTestMessages(admin, ['TEST::'])
 
 head('1. The channel list')
 const { data: chans, error: ce } = await parent.client.rpc('my_channels', { p_academy: NRIFA })
@@ -200,6 +201,9 @@ await Promise.all([
 ])
 coach.client.realtime.disconnect()
 parent.client.realtime.disconnect()
+// Its own messages gone, the deleted ones included — not left as "Message
+// deleted" in the demo's U8 chat until the next run starts.
+await purgeTestMessages(admin, ['TEST::'])
 console.log(process.exitCode ? '\n\x1b[31mCHAT RULES BROKEN\x1b[0m\n' : '\n\x1b[32mCHAT RULES HOLD\x1b[0m\n')
 // The realtime socket keeps the event loop alive, so exit deliberately
 // rather than leaving the runner hanging on a healthy connection.

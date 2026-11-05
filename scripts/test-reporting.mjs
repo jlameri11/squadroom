@@ -15,6 +15,7 @@
 // was done, because "dismissed" on its own is the state a club cannot defend
 // a year later.
 import { createClient } from '@supabase/supabase-js'
+import { purgeTestMessages } from './_purge-test-messages.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -79,7 +80,7 @@ async function clean() {
     .select('id')
     .like('body', `${TAG}%`)
   for (const m of msgs ?? []) await admin.from('message_reports').delete().eq('message_id', m.id)
-  await admin.from('messages').delete().like('body', `${TAG}%`)
+  await purgeTestMessages(admin, [TAG])
   await admin.from('safeguarding_officers').delete().eq('academy_id', NRIFA)
 }
 await clean()

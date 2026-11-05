@@ -37,7 +37,12 @@ const { data: chan } = await admin.from('channels').select('id').eq('team_id', U
 
 const tidy = async () => {
   const { data: evs } = await admin.from('events').select('id').like('title', 'TEST:: live%')
-  for (const e of evs ?? []) await admin.from('messages').delete().eq('event_id', e.id)
+  for (const e of evs ?? []) {
+    // An undone tap is a deleted message, and its words sit in the archive.
+    const { data: ms } = await admin.from('messages').select('id').eq('event_id', e.id)
+    if (ms?.length) await admin.from('deleted_message_archive').delete().in('message_id', ms.map((m) => m.id))
+    await admin.from('messages').delete().eq('event_id', e.id)
+  }
   await admin.from('events').delete().like('title', 'TEST:: live%')
   if (addedClearance) await admin.from('staff_clearances').delete().eq('academy_id', NRIFA).eq('profile_id', MARCUS).eq('number', 'WWC0000001E')
 }

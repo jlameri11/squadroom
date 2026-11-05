@@ -97,7 +97,25 @@ const sydneyToday = new Date(
 )
 const saturday = new Date(sydneyToday)
 saturday.setDate(saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7) + 7)
-const DAY = saturday.toISOString().slice(0, 10)
+// A Saturday with no real event at all. This suite calls off a whole day as
+// well as one ground, and either must only ever touch its own events: the
+// demo's next games were caught twice — parked on this very Saturday by
+// another suite — and called off for real (30 Oct and 5 Nov 2026).
+let DAY = saturday.toISOString().slice(0, 10)
+for (let tries = 0; tries < 26; tries++) {
+  const from = new Date(`${DAY}T00:00:00+11:00`)
+  const to = new Date(`${DAY}T23:59:59+11:00`)
+  const { count } = await admin
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('academy_id', NRIFA)
+    .not('title', 'like', `${TAG}%`)
+    .gte('starts_at', from.toISOString())
+    .lte('starts_at', to.toISOString())
+  if (!count) break
+  saturday.setDate(saturday.getDate() + 7)
+  DAY = saturday.toISOString().slice(0, 10)
+}
 
 /** An event at a local Sydney time on the chosen day. */
 async function makeEvent(title, hour, venue, extra = {}) {
@@ -216,7 +234,9 @@ head('4. Pressing it twice notifies nobody twice')
 head('5. It never touches a session already under way')
 {
   // Cancelling a game at half time tells families who are watching it.
-  const started = await makeEvent('Started an hour ago', 9, 'ELS Hall Park', {
+  // At a ground only this test uses: the day is TODAY, and calling off "ELS
+  // Hall" today took the demo's real evening sessions with it (5 Nov 2026).
+  const started = await makeEvent('Started an hour ago', 9, 'TESTOFF Oval', {
     starts_at: new Date(Date.now() - 3600e3).toISOString(),
     ends_at: new Date(Date.now() + 1800e3).toISOString(),
   })
@@ -230,7 +250,7 @@ head('5. It never touches a session already under way')
     p_academy: NRIFA,
     p_date: startedDay,
     p_reason: 'wet_weather',
-    p_venue: 'ELS Hall',
+    p_venue: 'TESTOFF Oval',
   })
   const { data: row } = await admin
     .from('events')
