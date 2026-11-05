@@ -1261,6 +1261,188 @@ begin
       case when b and b2 then 'PASS' else 'FAIL (tally going '||v_going||' maybe '||v_maybe||' total '||v_total||' of '||v_roster||'; grid ok '||b2||coalesce(' — grid refused: '||(v_grid->>'refused'), '')||')' end);
   end if;
 
+  -- 0213. A competition's Notices (Joey, 5 Nov 2026). In SPL Season 3 the
+  -- league is COACH (who owns the SPL's organisation); NRIFA's U8 and Ravens'
+  -- U8 are entered, so PARENT (Sam) and OUTSIDER (a Ravens U8 parent) are
+  -- families in it, MARCUS and Ravens' U8 coach are club staff. NRIFA's own
+  -- Spring Gala Day has NRIFA's teams and no Ravens team.
+  declare
+    RAVENS_COACH constant uuid := '00000000-0000-0000-0000-0000000000c1';
+    v_spl uuid; v_gala uuid; v_nch uuid; v_gch uuid; v_norg uuid; v_gorg uuid;
+    v_all uuid; v_staff uuid; v_gmsg uuid;
+    s_all int; s_staff int; m_all int; m_staff int; o_all int; o_staff int; rc_staff int; o_gala int; p_gala int;
+  begin
+    select id into v_spl from public.competitions where name = 'SPL Season 3' limit 1;
+    select id into v_gala from public.competitions where name = 'Spring Gala Day' limit 1;
+    select id, academy_id into v_nch, v_norg from public.channels where type = 'notices' and competition_id = v_spl;
+    select id, academy_id into v_gch, v_gorg from public.channels where type = 'notices' and competition_id = v_gala;
+
+    if v_nch is null or v_gch is null then
+      insert into rls_results values (115, 'every competition has its Notices', 'FAIL (SPL '||coalesce(v_nch::text,'none')||', Gala '||coalesce(v_gch::text,'none')||')');
+    else
+      insert into rls_results values (115, 'every competition has its Notices',
+        case when (select count(*) from public.competitions c
+                    where not exists (select 1 from public.channels ch where ch.type = 'notices' and ch.competition_id = c.id)) = 0
+             then 'PASS' else 'FAIL (a competition without Notices)' end);
+
+      -- The league posts one of each, and one in the Gala.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      insert into public.messages (academy_id, channel_id, sender_id, body, audience)
+      values (v_norg, v_nch, COACH, 'RLS notice: everyone', 'everyone') returning id into v_all;
+      insert into public.messages (academy_id, channel_id, sender_id, body, audience)
+      values (v_norg, v_nch, COACH, 'RLS notice: club staff', 'club_staff') returning id into v_staff;
+      insert into public.messages (academy_id, channel_id, sender_id, body, audience)
+      values (v_gorg, v_gch, COACH, 'RLS notice: the gala', 'everyone') returning id into v_gmsg;
+      execute 'reset role';
+
+      -- 116. Everyone in the competition reads it; club staff only is club staff only.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into s_all from public.messages where id = v_all;
+      select count(*) into s_staff from public.messages where id = v_staff;
+      select count(*) into p_gala from public.messages where id = v_gmsg;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into m_all from public.messages where id = v_all;
+      select count(*) into m_staff from public.messages where id = v_staff;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into o_all from public.messages where id = v_all;
+      select count(*) into o_staff from public.messages where id = v_staff;
+      select count(*) into o_gala from public.messages where id = v_gmsg;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',RAVENS_COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into rc_staff from public.messages where id = v_staff;
+      execute 'reset role';
+      insert into rls_results values (116, 'a notice reaches everyone in its competition — families of both clubs, club staff — and club staff only reaches staff only',
+        case when s_all = 1 and s_staff = 0 and m_all = 1 and m_staff = 1 and o_all = 1 and o_staff = 0 and rc_staff = 1 and p_gala = 1
+             then 'PASS'
+             else 'FAIL (Sam '||s_all||'/'||s_staff||', Marcus '||m_all||'/'||m_staff||', Ravens parent '||o_all||'/'||o_staff||', Ravens coach staff '||rc_staff||', Sam gala '||p_gala||')' end);
+      -- 117. And nobody outside it: the Ravens parent is in the SPL, not in NRIFA's gala.
+      insert into rls_results values (117, 'a notice reaches only that competition''s people',
+        case when o_gala = 0 then 'PASS' else 'FAIL (a Ravens parent reads the NRIFA gala''s notice)' end);
+
+      -- 118. A club cannot post: not its coach, not the other club's coach, not a parent.
+      b := true;
+      foreach v_kid in array array[MARCUS, RAVENS_COACH, PARENT] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        begin
+          insert into public.messages (academy_id, channel_id, sender_id, body)
+          values (v_norg, v_nch, v_kid, 'RLS notice: a club tries');
+          b := false;
+        exception when others then null;
+        end;
+        execute 'reset role';
+      end loop;
+      -- Nor in the organiser's own gala, as one of its coaches.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        insert into public.messages (academy_id, channel_id, sender_id, body)
+        values (v_gorg, v_gch, MARCUS, 'RLS notice: a club tries');
+        b := false;
+      exception when others then null;
+      end;
+      execute 'reset role';
+      insert into rls_results values (118, 'only the league posts in a competition''s Notices (no club coach, no parent)',
+        case when b then 'PASS' else 'FAIL' end);
+
+      -- 119. Nobody sees who else is in it: no member rows to read, none can
+      -- be added (even by the league), no reactions, no replies.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into n from public.channel_members where channel_id = v_nch;
+      b := n = 0;
+      begin
+        insert into public.channel_members (academy_id, channel_id, profile_id, role)
+        values (v_norg, v_nch, OUTSIDER, 'member');
+        b := false;
+      exception when others then null;
+      end;
+      begin
+        insert into public.messages (academy_id, channel_id, sender_id, body, reply_to_id)
+        values (v_norg, v_nch, COACH, 'RLS notice: a reply', v_all);
+        b := false;
+      exception when others then null;
+      end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        insert into public.message_reactions (message_id, profile_id, emoji) values (v_all, PARENT, '🎉');
+        b := false;
+      exception when others then null;
+      end;
+      select count(*) into n from jsonb_array_elements(public.channel_mentionables(v_nch));
+      b := b and n = 0;
+      execute 'reset role';
+      insert into rls_results values (119, 'nobody in a competition''s Notices can see anybody else in them (no members, mentions, reactions or replies)',
+        case when b then 'PASS' else 'FAIL' end);
+
+      -- 120. Seen by: the league gets counts, never names; nobody else gets anything.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select coalesce(sum(r.total), 0) into n from public.notices_reach(v_nch, array[v_all, v_staff]) r;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into foreign_rows from public.notices_reach(v_nch, array[v_all, v_staff]);
+      execute 'reset role';
+      insert into rls_results values (120, 'seen-by on a notice is a count, for the league only',
+        case when n > 0 and foreign_rows = 0 then 'PASS' else 'FAIL (league total '||n||', a club coach got '||foreign_rows||' rows)' end);
+
+      -- 121. The per-person rule and the everyone-at-once rule agree, for
+      -- every member of the clubs involved.
+      select count(*) into n
+        from (select distinct am.profile_id from public.academy_members am
+               where am.academy_id in (ACAD_A, ACAD_B, v_norg)) people
+       where app_private.notices_standing(v_spl, people.profile_id) is distinct from
+             (select np.standing from app_private.notices_people(v_spl) np where np.profile_id = people.profile_id);
+      insert into rls_results values (121, 'who is in a competition''s Notices is the same answer one at a time and all at once',
+        case when n = 0 then 'PASS' else 'FAIL ('||n||' disagree)' end);
+
+      -- 122. The push follows the audience: club staff only buzzes no parent.
+      select count(*) into s_staff from public.notification_queue where dedupe_key = v_staff::text || ':' || PARENT::text;
+      select count(*) into m_staff from public.notification_queue where dedupe_key = v_staff::text || ':' || MARCUS::text;
+      select count(*) into s_all from public.notification_queue where dedupe_key = v_all::text || ':' || PARENT::text;
+      insert into rls_results values (122, 'a notice''s push goes to whom it is for (everyone: Sam; club staff: Marcus, not Sam)',
+        case when s_all = 1 and m_staff = 1 and s_staff = 0 then 'PASS'
+             else 'FAIL (Sam everyone '||s_all||', Marcus staff '||m_staff||', Sam staff '||s_staff||')' end);
+
+      -- 123. The league cannot open its Notices up, delete them, or make another.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b := true;
+      begin
+        update public.channels set posting_mode = 'open' where id = v_nch;
+        b := false;
+      exception when others then null;
+      end;
+      delete from public.channels where id = v_nch;
+      get diagnostics n = row_count;
+      b := b and n = 0;
+      begin
+        insert into public.channels (academy_id, type, competition_id, name, posting_mode)
+        values (v_norg, 'notices', v_spl, 'Another notices', 'hosts_only');
+        b := false;
+      exception when others then null;
+      end;
+      execute 'reset role';
+      insert into rls_results values (123, 'a competition''s Notices stay one-way: not opened up, deleted or duplicated by hand',
+        case when b then 'PASS' else 'FAIL' end);
+
+      delete from public.notification_queue
+       where payload->>'message_id' in (v_all::text, v_staff::text, v_gmsg::text);
+      delete from public.messages where id in (v_all, v_staff, v_gmsg);
+      delete from public.messages where body = 'RLS notice: a club tries';
+    end if;
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

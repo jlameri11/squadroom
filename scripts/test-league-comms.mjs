@@ -1,7 +1,11 @@
 // Run: node --env-file=.env.local scripts/test-league-comms.mjs
 //
-// L-11: a league's announcement reaches each club's STAFF channel and
-// never a family. "See the draw, not each other's people."
+// L-11: a league's announcement reaches each club's STAFF and never a family.
+//
+// Until 0213 it landed in each club's coaches channel. From 0213 (Joey, 5 Nov
+// 2026: a competition's Notices) it lands in the competition's Notices, sent
+// to club staff only — families are in that channel and must still read
+// nothing. The suite asks which world it is in and holds either to account.
 import { createClient } from '@supabase/supabase-js'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -49,21 +53,34 @@ const { data: comp } = await admin.from('competitions').insert({
   organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert({ competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() })
+// NRIFA's U8 entered, so Sam is a family IN the competition — the hard case.
+await admin.from('competition_entries').insert({ competition_id: comp.id, academy_id: NRIFA, team_id: '00000000-0000-0000-0000-0000000d0008', display_name: `${TAG} NRIFA U8` })
+const { error: noNotices } = await admin.from('channels').select('competition_id').limit(1)
+const NOTICES = !noNotices
+console.log(NOTICES ? '  (0213 applied: the broadcast goes to the Notices, club staff only)' : '  (before 0213: the broadcast goes to each club\'s coaches channel)')
 
-head('1. The organiser sends; it lands in the club\'s coaches channel, not academy-wide')
+head(NOTICES ? '1. The organiser sends; it lands in the competition\'s Notices, for club staff only' : '1. The organiser sends; it lands in the club\'s coaches channel, not academy-wide')
 {
   const { error: pErr } = await parent.rpc('broadcast_to_competition', { p_competition: comp.id, p_body: `${TAG} from a parent` })
   pErr?.code === '42501' ? ok('a parent cannot send to the competition') : bad('a parent broadcast')
   const { data: n, error } = await owner.rpc('broadcast_to_competition', { p_competition: comp.id, p_body: `${TAG} sheets are due Monday 9am` })
   error ? bad(`broadcast: ${error.message}`) : ok(`delivered to ${n} club${n === 1 ? '' : 's'}`)
-  const { data: msgs } = await admin.from('messages').select('channel_id, channels(type)').like('body', `%${TAG} sheets%`).eq('academy_id', NRIFA)
-  const types = (msgs ?? []).map((m) => m.channels?.type)
-  types.length === 1 && types[0] === 'coaches' ? ok("one message, in NRIFA's coaches channel") : bad(`landed in: ${JSON.stringify(types)}`)
+  if (NOTICES) {
+    const { data: msgs } = await admin.from('messages').select('channel_id, audience, channels(type, competition_id)').like('body', `%${TAG} sheets%`)
+    const m = msgs ?? []
+    m.length === 1 && m[0].channels?.type === 'notices' && m[0].channels?.competition_id === comp.id && m[0].audience === 'club_staff'
+      ? ok("one message, in the competition's Notices, for club staff only")
+      : bad(`landed as: ${JSON.stringify(m)}`)
+  } else {
+    const { data: msgs } = await admin.from('messages').select('channel_id, channels(type)').like('body', `%${TAG} sheets%`).eq('academy_id', NRIFA)
+    const types = (msgs ?? []).map((m) => m.channels?.type)
+    types.length === 1 && types[0] === 'coaches' ? ok("one message, in NRIFA's coaches channel") : bad(`landed in: ${JSON.stringify(types)}`)
+  }
 }
 
 head('2. Staff read it; a family does not')
 {
-  const { data: m } = await admin.from('messages').select('channel_id').like('body', `%${TAG} sheets%`).eq('academy_id', NRIFA).single()
+  const { data: m } = await admin.from('messages').select('channel_id').like('body', `%${TAG} sheets%`).single()
   const { data: coachRows } = await marcus.from('messages').select('id, body').eq('channel_id', m.channel_id).like('body', `%${TAG}%`)
   const coachSees = (coachRows ?? []).length
   coachSees === 1 ? ok('Marcus, a coach, reads it') : bad(`the coach reads ${coachSees} copies of the announcement`)
@@ -72,7 +89,7 @@ head('2. Staff read it; a family does not')
   leaked === 0 ? ok('Sam, a parent, sees nothing') : bad(`a parent read ${leaked} league announcement(s)`)
   const { data: anywhere } = await parent.from('messages').select('id').like('body', `%${TAG}%`)
   const anywhereN = (anywhere ?? []).length
-  anywhereN === 0 ? ok('and it is in no channel a parent is in') : bad(`a parent can see it in ${anywhereN} channel(s)`)
+  anywhereN === 0 ? ok(NOTICES ? 'and nowhere else either — a family in the competition reads no staff notice' : 'and it is in no channel a parent is in') : bad(`a parent can see it in ${anywhereN} channel(s)`)
 }
 
 await cleanup()
