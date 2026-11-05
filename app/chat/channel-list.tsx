@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Row = {
   channel_id: string
@@ -161,7 +162,7 @@ function Results({
                 className={`row items-start ${f.cancelled_at ? 'opacity-50' : ''}`}
               >
                 <span className="display mt-0.5 w-14 flex-none text-[0.9375rem] tabular-nums text-ink-3">
-                  {new Date(f.starts_at).toLocaleDateString('en-AU', {
+                  {new Date(f.starts_at).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ,
                     day: 'numeric',
                     month: 'short',
                   })}
@@ -170,7 +171,7 @@ function Results({
                   <span className="block truncate text-sm font-semibold">{f.title}</span>
                   <span className="block truncate text-xs text-ink-3">
                     {[
-                      new Date(f.starts_at).toLocaleTimeString('en-AU', {
+                      new Date(f.starts_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ,
                         hour: 'numeric',
                         minute: '2-digit',
                       }),

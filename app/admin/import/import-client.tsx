@@ -16,6 +16,7 @@ import {
   type FieldKey,
 } from '@/lib/import/columns'
 import { ImportDiff, type Diff } from './import-diff'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Row = Record<string, unknown>
 // Keyed by string rather than FieldKey, so the same screen can serve the
@@ -707,7 +708,7 @@ function Importer({
 
 function formatWhen(date: string, time: string) {
   const d = new Date(`${date}T${time}`)
-  return d.toLocaleString('en-AU', {
+  return d.toLocaleString('en-AU', { timeZone: DEFAULT_TZ,
     weekday: 'short',
     day: 'numeric',
     month: 'short',

@@ -7578,6 +7578,7 @@ export type Database = {
       }
       fixture_checkin_key: { Args: { p_fixture: string }; Returns: string }
       fixture_pitch: { Args: { p_fixture: string }; Returns: Json }
+      fixture_sides: { Args: { p_fixture: string }; Returns: Json }
       fixtures_screen: {
         Args: { p_academy?: string; p_days?: number }
         Returns: Json

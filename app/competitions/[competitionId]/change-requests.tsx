@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 const SYDNEY = 'Australia/Sydney'
 type Req = {
@@ -172,7 +173,7 @@ export function FlowingWindow({ competitionId, inline = false }: { competitionId
     <div className={inline ? 'mt-2 rounded-lg border p-2.5 text-xs' : 'm-3.5 rounded-xl border p-3.5 text-xs'} style={{ borderColor: isOpen ? 'var(--yes)' : 'var(--line)' }} data-flowing>
       <span className="block font-semibold" style={{ color: isOpen ? 'var(--yes)' : undefined }}>
         {isOpen
-          ? `Fixture flowing is open until ${new Date(state.until!).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })} — home clubs move their own games within ${state.days} ${state.days === 1 ? 'day' : 'days'} of the draw, and an agreed move is done.`
+          ? `Fixture flowing is open until ${new Date(state.until!).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', day: 'numeric', month: 'short' })} — home clubs move their own games within ${state.days} ${state.days === 1 ? 'day' : 'days'} of the draw, and an agreed move is done.`
           : 'Fixture flowing is closed — the league decides every move.'}
       </span>
       {state.league && (

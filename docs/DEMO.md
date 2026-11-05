@@ -121,6 +121,16 @@ which child is waitlisted and at what position.
 next game, kit colour and arrive-by time, no account, nothing to log into.
 Children do not get accounts in Squadroom at all.
 
+### 10b. A game, as a match preview — as Sam, **Fixtures → the next SPL game**
+
+The top of the page is the game: both crests (the other side's initials
+until 0210 is applied), "In 9 days" and the kick-off, on NRIFA's colour.
+**Preview** starts with Leo and Zoe's Going / Maybe / Out, then the ground
+and its map, both sides' last five and their two rows of the ladder — tap
+**Full ladder**. A played game (Spring Gala, Round 3) opens on the **Match
+sheet** with "Full time 1–3". Every time is Sydney's, whatever the phone
+says.
+
 ### 11. What a stranger sees — open **https://squadroom-dev.netlify.app/nrifa** in a private window
 The club's front door: crest, colour, the three open programs with the price
 and the places left, **Register**, and the public draw. Nothing about a

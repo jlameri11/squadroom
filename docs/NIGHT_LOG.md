@@ -53,6 +53,28 @@ division table, BECS "processing", pay-later, the fee split, the 2FA
 policies); #14 Stripe on the live site + NRIFA's Express click-through;
 #4 the privacy notice; #5 Xcode.
 
+**Late evening, 4 → 5 Nov (four briefs from Joey, in the order sent):**
+- **X-10 Dynamic Type:** every text size in rem; Android follows the phone
+  (the `text-scale` tag), the iPhone through a pre-paint script; three rows
+  that broke at 200% now wrap. `test-text-size` 17, `test-a11y` at 200%.
+- **G-09 the Squadroom brand:** white on near-black `#101012`, colour only
+  for needs-you / going / out; the SR icon, the logo, every app icon and a
+  manifest from `brand/`. Before/after at 375px. `test-brand` 29.
+- **G-10 club & league branding + Appearance:** logo upload with colours
+  suggested from it and a phone preview before Save; the logo replaces the
+  initials everywhere; club colours on the bar, buttons and tabs with
+  black-or-white text by contrast; Appearance per person (Club colours /
+  Black & white × Match my phone / Light / Dark). **0209 written,
+  unapplied.** `test-branding` 42 (+2 waiting for 0209).
+- **X-05 the game page as a match preview:** the hero, Preview | Match
+  sheet | Ladder, availability first, both sides' form and ladder rows —
+  and every game time in the venue's timezone (a 2:20 pm kick-off had been
+  able to read 3:20 am). **0210 written, unapplied.** `test-game-page` 26.
+- **The scale test** is queued for after the weekend (NEEDS JOEY #18: two
+  questions — branching costs money, and a branch is its own project).
+- Nothing deployed (Joey: no deploy). New NEEDS JOEY: #16 SPL's real logo,
+  #17 one reading of "4 designs" to confirm, #18 the scale test.
+
 ## Evening summary — 3 Nov 2026: the money moves (Stripe test mode), and the first deploy
 
 Joey pasted the Stripe **test** key and, an hour later, a Netlify token.
@@ -370,6 +392,7 @@ Exact steps are in NEEDS JOEY below.
 | **X-10, Dynamic Type** (4 Nov; migration-free) | **Done.** Every text size in rem (12 px sizes in 58 files and the stylesheet; the badge, two selects, an attachment chip and a Home tile sized in rem too), no font size on `html`; Android opts in with the `text-scale` meta tag (Chrome 146+ scales the root itself), the iPhone through `lib/text-size.ts` (Dynamic Type via `-apple-system-body`, 16–32px, before the first paint). Two screens broke at 200% — the game page's Going/Maybe/Out and the public match centre's tabs — and now wrap; the chat card's row got the same rule. Unchanged at the default size (screenshots of the rows at 100% and 200%, light and dark). Also: a training session's call-off button said "Call this game off" — the word now follows the event; the five Create Next App SVGs in `public/` deleted | test-text-size 17 (new), test-a11y 64 (21 screens × labels, 125%, 200% + the tab bar), tsc clean, lint clean on the changed files |
 | **The Squadroom brand** (Joey, 4 Nov evening, `brand/`; migration-free) | **Done.** White on near-black `#101012`, monochrome greys (no blue tint), colour only where it means something: orange needs you, green going, red out/called off — no navy, no gold, "maybe" grey. `--bar` (the app bar, sign-in, join, the public heroes, the player card) is `#101012` in both themes; `--brand` (primary actions) flips, near-black on light and white on dark, so every surface's text takes that surface's ink — a codemod moved 194 tags from `text-white`/`#fff` to `text-brand-ink`/`yes-ink`/`no-ink`/`maybe-ink`, and 30-odd more by hand (W/D/L tiles, the event chip, respect marks, bar buttons, headers). The "SQ" tile is the SR icon on `/join` (the small variant at 48px) and the logo on sign-in and `/for-clubs`; favicon (16/32/48), apple-icon, PWA 192/512 + maskable, the notification badge and a web manifest rendered from the kit by `scripts/brand-icons.mjs`. The academy colour no longer paints the in-app bar or buttons (the club pages keep it, with black-or-white text by contrast — `lib/brand/colour.ts`; the next brief brings club colours back as a choice). Before/after at 375px, parent, coach and signed out, light and dark (`.shots/brand/compare/`; the coach's before re-taken from the previous commit after the first pass caught a transient redirect) | test-brand 29 (new: every token pair AA in both themes, lowest 4.95:1; the dark blocks identical; no white on a flipping surface; no SQ/gold/navy; icon sizes, colours and the badge's transparency; manifest and head links; the logo and icon placed; the bar and sign-in measured in a browser), test-screens 36 (every screen reads in light and dark), test-a11y 64, test-text-size 17, role-nav 33, org-follows 20, for-clubs 10, join-codes 16, two-step 15, public-academy 17, tsc and lint clean |
 | **G-10 Club & league branding + Appearance** (Joey, 4 Nov, late; 0209 written, unapplied) | **Done in the app.** Settings → Club settings (owner/admin): logo upload (PNG/SVG/JPG) with its colours read in the browser and suggested, main and second colour, a phone previewed in light and dark before Save, and in words wherever a colour had to be deepened or lightened to read. The logo replaces the initials in the app bar, the organisation switcher, the front door, the registration form and the share cards (the second colour is the card's rule). Club colours drive the bar, primary buttons, the active tab and highlights for everyone on Club colours (the default); black-or-white text on any colour; orange, green and red never change. A league the same: its colours and logo on its public match centre once 0209's `public_brand` exists. Settings → Appearance (per person): Club colours / Black & white × Match my phone / Light / Dark, applied at once, on this phone now and in the profile after 0209; a cached stylesheet paints the club's colours before the first frame, only on the app's own screens — sign-in, Squadroom's pages and every club's public pages are never the reader's club. Sign-out clears both. The sign-in email moved to Squadroom's black and white. Demo: NRIFA's crest and an SPL stand-in logo (NEEDS JOEY #16) set by `refresh-demo` when a club has none. Screenshots at 375px: `.shots/club-brand/` (NRIFA with its crest, SPL with its logo, a parent in each of the four designs, Appearance, the owner's editor) | test-branding 42 (new) + 2 waiting for 0209; test-rls 112–113 written; test-brand 29, test-screens 36, test-a11y 64 (the front door's header now wraps under the crest at 200%), test-text-size 17, share-cards 14, league-public 18, public-registration 47, public-academy 17, player-card 15, role-nav 33, org-follows 20, for-clubs 10; tsc and lint clean |
+| **The game page, as a match preview** (Joey, 4 Nov; X-05; 0210 written, unapplied) | **Done.** A hero at the top of every game: both crests (the other side's when Squadroom knows it — 0210 `fixture_sides`; initials until applied), both names with home on the left, and in the middle the countdown ("In 9 days"), on the day the kick-off time, then the live score, then "Full time 1–3" — on the club's colour. Tabs **Preview \| Match sheet \| Ladder** (Ladder only in a competition; Preview before kick-off, the sheet once it has started; `#sheet`/`#ladder`). Preview: availability first (family and coach), the details, the ground and map, both sides' last five (a league game's results live on the fixture, so in a competition both come from its results), the two sides' ladder rows with the full table a tap away. **Times:** the page formatted every time with the machine's clock — the server's UTC for the first frame on Netlify, the phone's after — so a 2:20 pm kick-off could read 3:20 am. `lib/time.ts` names the venue's timezone (the club's) on every game time, swept across 20 screens (Home, Fixtures, the chat card, match sheets, the public match centre, the importer…); the dates that are not game times (birthdays, due dates, message times) stay the reader's. Training keeps the plain layout. Screenshots: `.shots/game/` (parent and coach, light and dark: Preview, Match sheet, Ladder, a played game, a friendly) | test-game-page 26 (new), availability 21, a11y 64, navigation, matchdays 27, match-day-list 21, nudge 24, live 22, results 21, event-cards 11, role-nav 33, screens 36; tsc and lint clean |
 | **Simplicity pass on Home** (Joey, 4 Nov; parent and coach, 375px) | **Done**, no migration. (1) Parent Home **2.4 → 1.4 screens**: the "Your jobs" strip is folded into Needs you (the three jobs are rows there, still `data-job` for the two-tap rule), the Channels list is gone from Home for everyone (the Chat tab carries it), a parent sees the next two fixtures and a coach three with "All N in the next 3 weeks". Coach Home 1.7 → 1.3. (2) One number: "to answer" everywhere is games and sessions in the next three weeks a child has not been answered for (`home_jobs`'s count) — Needs you says it, the training block's total counts sessions, the Fixtures list's per-game pills say "To answer" without a number so one game never reads as two. (3) One orange card, the most urgent; the rest plain rows. (4) An announcement older than 14 days is not shown (the "event date passed" half needs a column — migration day). (5) A signed-out visit to / goes to /signin: the screen hook now checks the session when a fetch fails. (6) Training rows sat on the card's edge — the block lacked the event card's padding class. (7) "17 quiet" → "17 not answered" (Home and Fixtures). (8) ☰ → "✎ Edit". (9) **Sam in COACHES SPL:** a *custom* chat Joey made by hand with two parents in it, not the coaches channel; the parents are out of it, and `test-coaches-channel` proves no parent sits in any channel named or typed for coaches and that RLS hides the real one from Sam. **Marcus's Admin:** the hub offered a coach New season, Venues and Start a competition, which the database refuses (`only an admin…`) — hidden now; `test-coach-scope` proves the refusals and the hub. One gap: the database still lets a coach *insert* a competition (0022's policy says coach) — **0208 written, unapplied until NEEDS JOEY #12**. Before/after: `.shots/home/{parent,coach}-{before,after}-*.png` (gitignored; on the laptop) | test-coaches-channel 5, test-coach-scope 15 (+1 note), role-nav 33, screens 36, tsc clean; Home as parent and coach at 375px light and dark |
 | **Every screen follows the organisation the browser is showing** (4 Nov, found by the 375px pass: Admin → Payments showed the stray "NRIFA" for Joey) | **Done**, no migration. `lib/use-current-org.ts` resolves the remembered organisation against the person's active memberships (else their first, and corrects the memory); the Admin hub, Admin → Payments, Members, Invites, the roster importer, Scan and the family's Payments became thin pages with browser-side loaders (RLS does the reading); Teams and Directory prefer the remembered organisation. NEEDS JOEY #8 closed bar the `nrifa-1` question | test-org-follows 21 (a throwaway "AAA" organisation that sorts first; nine pages; switch; fallback; nothing remembered), role-nav 33 and screens 36 re-run against the new code, tsc + eslint clean, Admin → Payments and the family's list at 375px both themes |
 | **The Stripe half** (3 Nov, Joey's key): B-01 card step, R-04 one checkout for the family, B-02 instalments, B-03 siblings, B-07 vouchers, B-04 refunds, L-02/L-16 entry fees; L-07 referee payouts tried and **parked** | **Done** (0207: one payments row per child per session; `entry_fees` remember their session). Routes: connect (Express, v2) · checkout (many children) · entry-fee · refund (named refunds) · webhook (`capability.updated`, `refund.*`). Screens: Admin → Payments reads the status back on return; the family's list gets "Pay … for X and Y in one go". Checkout cards only. Referee payouts: Stripe refuses connected-to-connected transfers; Joey parked them (tracking only) and the referee Stripe button, the league's "Pay through Stripe" and both routes came out. See the evening summary | test-stripe-e2e (by hand, 36 checks, every money path green), payments / fees / program-fees / fee-settings / league-entry / referee-payments / vouchers suites green, tsc + eslint clean |
@@ -421,7 +444,8 @@ avatar → **Account → Access tokens → Generate new token**, name it
 Waiting on it (4 Nov): **0208** (a coach cannot start a competition) and
 **0209** (a club's second colour, a person's Appearance in their profile,
 `public_brand` for league colours on the public match centre) — test-rls
-checks 111–113 are written for them.
+checks 111–113 are written for them. And **0210** (`fixture_sides`: the other
+side's crest on a game's hero).
 
 **13. — decided.** Referee payouts through Stripe are **parked** (Joey, 3
 Nov, evening): no Stripe payouts and no bank files for referees; tracking
@@ -463,6 +487,26 @@ or *Dark* — so the four designs are the two colour choices in light and in
 dark, and Match my phone is the default for the second choice. If you meant
 four separate looks in one list (with Light and Dark being something other
 than those), say how they should differ and I will change the screen.
+
+**18. The scale test (your 5 Nov brief) — queued for after the weekend,
+with two questions first.** It needs the token (#12) anyway. Before I
+start: (a) **Supabase branching is a paid feature** — it needs the Pro plan
+(about $25 a month) and each branch is billed for as long as it exists:
+$0.01344 an hour on the smallest compute (about $10 a month if left
+running), not covered by the plan's compute credit, plus its disk and
+egress. A timing test worth trusting wants a bigger compute size than the
+smallest, which costs more an hour — a day's test is a few dollars, a
+forgotten branch is a monthly bill (Supabase's "Manage Branching usage"
+page, checked 5 Nov). Your standing rule is no spending without your
+say-so. (b) A
+branch is its own database with its own project ref, and CLAUDE.md says
+*only ever touch squadroom-dev* — I read the brief as you allowing a branch
+OF squadroom-dev for this, and nothing else; say if that is wrong. The free
+alternative is the same dataset in a local Supabase (`supabase start`,
+Docker) on this laptop: the query plans, indexes and RLS fixes carry over
+exactly, but the timings are a laptop's, not Sydney's, so the plan
+recommendation would lean on Supabase's published numbers instead. Which
+do you want?
 
 **1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
 than the file; it is in `.env.local` now and nowhere else, but a key that

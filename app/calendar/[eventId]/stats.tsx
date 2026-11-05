@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ShareCard } from '@/components/share-card'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Row = { id: string; name: string; preferred_name: string | null; number: number | null; goals: number; assists: number; minutes: number | null; potm: boolean; note: string | null; votes: number | null }
 type Stats = {
@@ -129,7 +130,7 @@ export function EventStats({ eventId }: { eventId: string }) {
               {s.vote_open ? (
                 <>
                   <p className="text-xs font-semibold">Family vote — who was today&apos;s star? {s.my_vote ? '(you can change yours)' : ''}</p>
-                  <p className="text-[0.6875rem] text-ink-3">One vote per adult, until {new Date(s.vote_closes_at).toLocaleString('en-AU', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</p>
+                  <p className="text-[0.6875rem] text-ink-3">One vote per adult, until {new Date(s.vote_closes_at).toLocaleString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', hour: 'numeric', minute: '2-digit' })}.</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {s.players.map((p) => (
                       <button key={p.id} onClick={() => vote(p.id)} disabled={busy} className="rounded-full border px-2.5 py-1 text-xs" style={s.my_vote === p.id ? { background: 'var(--brand)', borderColor: 'var(--brand)', color: 'var(--brand-ink)' } : line} data-vote-for={p.id}>

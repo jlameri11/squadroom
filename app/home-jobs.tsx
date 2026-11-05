@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg, setOrg } from '@/lib/org'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Job = { id: string; label: string; detail: string | null; href: string; count: number }
 type Today = { label: string; detail: string; count: number; href: string }
@@ -209,5 +210,5 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
 
 function when(iso: string) {
   const d = new Date(iso)
-  return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+  return d.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', day: 'numeric', month: 'short' })
 }

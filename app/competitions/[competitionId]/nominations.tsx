@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type MyEntry = { entry_id: string; name: string; division: string; proposed_division: string | null; note: string | null; nominated_at: string | null; locked: boolean; players: number }
 type Nomination = MyEntry & { club: string | null; outside_band: number }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+const day = (iso: string) => new Date(iso).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, day: 'numeric', month: 'short' })
 
 /**
  * L-27, the club's side: propose a division for each team with a comment.

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Game = { event_id: string; starts_at: string; opponent: string | null; title: string; goals: number; assists: number; minutes: number | null; potm: boolean; ours: number | null; theirs: number | null }
 type Season = { appearances: number; goals: number; assists: number; minutes: number; potm: number; games: Game[] }
@@ -40,7 +41,7 @@ export function SeasonStats({ playerId }: { playerId: string }) {
           {s.games.map((g) => (
             <li key={g.event_id} className="flex items-center gap-2 px-3 py-2">
               <Link href={`/calendar/${g.event_id}`} className="min-w-0 flex-1 truncate">
-                {new Date(g.starts_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} · {g.opponent ? `v ${g.opponent}` : g.title}
+                {new Date(g.starts_at).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, day: 'numeric', month: 'short' })} · {g.opponent ? `v ${g.opponent}` : g.title}
                 {g.ours != null && g.theirs != null && <span className="text-ink-3"> {g.ours}–{g.theirs}</span>}
               </Link>
               <span className="flex-none text-xs tabular-nums text-ink-2">

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export type UpcomingEvent = {
   id: string
@@ -96,7 +97,7 @@ function dayLabel(day: string) {
   const tomorrow = new Date(Date.now() + 86400000).toDateString()
   if (day === today) return 'Today'
   if (day === tomorrow) return 'Tomorrow'
-  return d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
+  return d.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 /**
@@ -120,7 +121,7 @@ function Row({ e }: { e: UpcomingEvent }) {
                 style={{ borderColor: 'var(--line-2)' }}
               >
                 <span className="display mt-0.5 w-14 flex-none text-[0.9375rem] tabular-nums" style={{ color: TYPE_TINT[e.type] ?? 'var(--ink-2)' }}>
-                  {new Date(e.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                  {new Date(e.starts_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}
                 </span>
 
                 <span className="min-w-0 flex-1">
@@ -194,7 +195,7 @@ function TrainingRow({ group }: { group: UpcomingEvent[] }) {
         className="display mt-0.5 w-14 flex-none text-[0.9375rem] tabular-nums"
         style={{ color: TYPE_TINT.training }}
       >
-        {new Date(first.starts_at).toLocaleTimeString('en-AU', {
+        {new Date(first.starts_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ,
           hour: 'numeric',
           minute: '2-digit',
         })}
@@ -214,7 +215,7 @@ function TrainingRow({ group }: { group: UpcomingEvent[] }) {
               className="flex items-baseline gap-2 text-sm"
             >
               <span className="w-14 flex-none tabular-nums text-ink-3">
-                {new Date(g.starts_at).toLocaleTimeString('en-AU', {
+                {new Date(g.starts_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ,
                   hour: 'numeric',
                   minute: '2-digit',
                 })}

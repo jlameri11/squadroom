@@ -529,6 +529,23 @@ one and is meant to reach hundreds of academies.
   at 48px and under) on `/join`. `scripts/test-brand.mjs` measures every
   token pair for AA in both themes, compares the two dark blocks, and fails
   on white text on a flipping surface, the old SQ tile, gold or navy.
+- **A game's time is the venue's, everywhere** (Joey, 4 Nov 2026). Format
+  a kick-off, an arrival or a fixture's date through `lib/time.ts`
+  (`kickOff`, `gameDay`, `gameDayShort`, `countdown`, or `timeZone:
+  DEFAULT_TZ` in an Intl call) — never a bare `toLocaleTimeString()`, which
+  uses the clock of whatever runs it: Netlify's server is UTC, so the first
+  frame said 3:20 am for a 2:20 pm kick-off, and a phone in another
+  timezone moved every game. The venue's timezone is the club's
+  (`academies.timezone`); a venue in another state would need its own
+  column. Dates that are not game times (a birthday, a due date, when a
+  message was sent) stay the reader's. `scripts/test-game-page.mjs` fails
+  on a game-time format without a timezone in the 20 screens that show one.
+- **The game page is a match preview** (X-05, Joey 4 Nov 2026): a hero
+  (`app/calendar/[eventId]/game-hero.tsx` — both crests, the countdown, the
+  kick-off, the live score, the result, on `--bar`) and tabs Preview |
+  Match sheet | Ladder, the Ladder only in a competition. Preview starts
+  with availability. New things for a game go in the tab where a parent
+  would look for them, not at the bottom of one long page.
 - **A club's colours are a layer over the brand, never paint by hand**
   (G-10, Joey 4 Nov 2026). `lib/brand/colour.ts` turns a club's main and
   second colour into the same tokens (`--bar`, `--brand`, `--brand-text`,

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrQueue } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export type CardEvent = {
   id: string
@@ -127,16 +128,16 @@ export function EventCard({
         <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
           <dt className="text-ink-2">When</dt>
           <dd className="tabular-nums">
-            {when.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+            {when.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
             {', '}
-            {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+            {when.toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}
           </dd>
 
           {event.arrive_at && (
             <>
               <dt className="text-ink-2">Arrive</dt>
               <dd className="tabular-nums">
-                {new Date(event.arrive_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                {new Date(event.arrive_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}
               </dd>
             </>
           )}

@@ -19,6 +19,7 @@ import { sendOrQueue } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
 import { ChildChips, childColour, type Child } from './child-chips'
 import { TrainingBlock, groupTraining } from './training-block'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export type HomeEvent = {
   id: string
@@ -436,7 +437,7 @@ function HomeScreen({
 }
 
 function todayLabel() {
-  return new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
+  return new Date().toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 /**
@@ -521,7 +522,7 @@ function EventCard({
       <div className="ev-top">
         <Link href={`/calendar/${event.id}`} className="datechip">
           <div className="d">{when.getDate()}</div>
-          <div className="m">{when.toLocaleDateString('en-AU', { weekday: 'short' })}</div>
+          <div className="m">{when.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short' })}</div>
         </Link>
 
         <div className="min-w-0 flex-1">
@@ -541,7 +542,7 @@ function EventCard({
           <Link href={`/calendar/${event.id}`} className="block">
             <div className="ev-ttl">{event.title}</div>
             <div className="ev-sub tabular-nums">
-              {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+              {when.toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}
               {event.venue ? ` · ${event.venue}` : ''}
             </div>
           </Link>

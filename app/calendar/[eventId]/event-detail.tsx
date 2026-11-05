@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Chase } from './chase'
 import { PitchMap } from './pitch-map'
 import { MatchDayChecklist } from './match-day-checklist'
@@ -12,11 +12,16 @@ import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
 import { Lineup } from './lineup'
+import { GameHero } from './game-hero'
+import { FullLadder, MiniLadder, TeamForm } from './game-panels'
+import { useGame } from './use-game'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrQueue } from '@/lib/offline/use-outbox'
+import { gameDay, kickOff } from '@/lib/time'
 
 type Mine = { playerId: string | null; playerName: string | null; status: string | null; note: string | null }
 type RosterRow = { playerId: string | null; name: string; status: string | null; note: string | null }
+type Tab = 'preview' | 'sheet' | 'ladder'
 
 const CHOICES = [
   { value: 'yes',   label: 'Going', tint: 'var(--yes)' },
@@ -24,11 +29,27 @@ const CHOICES = [
   { value: 'no',    label: 'Out',   tint: 'var(--no)' },
 ] as const
 
+/**
+ * One event. A GAME (a match or a tournament) is laid out like a match
+ * preview (Joey, 4 Nov 2026): the hero — both crests, the countdown, then
+ * the kick-off, the live score, the result — and three tabs:
+ *
+ *   Preview      availability first (the Going/Maybe/Out buttons for a
+ *                family, who's coming for a coach), then the match details,
+ *                the ground and its map, both sides' last five, and their
+ *                two rows of the ladder;
+ *   Match sheet  the team sheet, the live score, the result, scorers and
+ *                Player of the Match, the video, the register;
+ *   Ladder       the whole division — only for a game in a competition.
+ *
+ * Training and everything else keep the plain layout. Every time on the
+ * page is the venue's (lib/time.ts), never the phone's or the server's.
+ */
 export function EventDetail({
-  event, mine, isCoach, summary, roster,
+  event, mine, isCoach, summary, roster, tz, us,
 }: {
   event: {
-    id: string; academy_id: string; type: string; title: string
+    id: string; academy_id: string; team_id: string | null; type: string; title: string
     description: string | null; starts_at: string; ends_at: string | null
     arrive_at: string | null; venue: string | null; address: string | null
     opponent: string | null; kit_colour: string | null; round: string | null
@@ -40,6 +61,10 @@ export function EventDetail({
   isCoach: boolean
   summary: { going: number; maybe: number; out_count: number; no_reply: number } | null
   roster: RosterRow[]
+  /** The venue's timezone: the club's (academies.timezone). */
+  tz: string
+  /** Our side, for the hero: the club, the squad, the crest. */
+  us: { club: string; team: string | null; logo: string | null }
 }) {
   const [answers, setAnswers] = useState(mine)
   const [busy, setBusy] = useState<string | null>(null)
@@ -47,7 +72,33 @@ export function EventDetail({
   const [asking, setAsking] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const cancelled = Boolean(event.cancelled_at)
-  const when = new Date(event.starts_at)
+  const isGame = event.type === 'match' || event.type === 'tournament'
+  const game = useGame(event, us)
+
+  // The tab: Preview until the game kicks off, then the match sheet — once
+  // it has started, what happened is why anybody opens it. A link can name
+  // one (#sheet, #ladder), and the choice is kept in the address.
+  const [tab, setTab] = useState<Tab>('preview')
+  const decided = useRef(false)
+  useEffect(() => {
+    const fromLink = window.location.hash.replace('#', '')
+    if (!decided.current && (fromLink === 'sheet' || fromLink === 'ladder' || fromLink === 'preview')) {
+      decided.current = true
+      setTab(fromLink as Tab)
+    }
+  }, [])
+  useEffect(() => {
+    if (decided.current || !game) return
+    decided.current = true
+    if (game.live?.kicked_off || game.final) setTab('sheet')
+  }, [game])
+  const choose = (t: Tab) => {
+    decided.current = true
+    setTab(t)
+    try {
+      history.replaceState(null, '', `#${t}`)
+    } catch {}
+  }
 
   /**
    * "Out" asks why; the other two save straight away.
@@ -104,34 +155,23 @@ export function EventDetail({
     setAsking(null)
   }
 
-  return (
-    <>
-      <header className="mt-3">
-        <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide"
-                style={{ background: cancelled ? 'var(--no)' : 'var(--brand)', color: cancelled ? 'var(--no-ink)' : 'var(--brand-ink)' }}>
-            {cancelled ? 'Cancelled' : event.type}
-          </span>
-          {event.round && <span className="text-sm text-ink-2">{event.round}</span>}
-        </div>
-        <h1 className="mt-1.5 text-2xl font-semibold">{event.title}</h1>
-      </header>
+  // ---- the pieces, laid out below for a game or for everything else ----
 
-      <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+  const details = (
+    <>
+      <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm" data-match-info>
         <dt className="text-ink-2">When</dt>
         <dd className="tabular-nums">
-          {when.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}
+          {gameDay(event.starts_at, tz)}
           {', '}
-          {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-          {event.ends_at && `–${new Date(event.ends_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}`}
+          {kickOff(event.starts_at, tz)}
+          {event.ends_at && `–${kickOff(event.ends_at, tz)}`}
         </dd>
 
         {event.arrive_at && (
           <>
             <dt className="text-ink-2">Arrive</dt>
-            <dd className="tabular-nums">
-              {new Date(event.arrive_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-            </dd>
+            <dd className="tabular-nums">{kickOff(event.arrive_at, tz)}</dd>
           </>
         )}
 
@@ -166,139 +206,212 @@ export function EventDetail({
       >
         Add to your phone&apos;s calendar
       </a>
+    </>
+  )
 
-      {/* Above the RSVP block on purpose. Before kick-off this renders
-          nothing; after it, the result is the only reason anybody opens this
-          screen, and an answer about whether a child was available is
-          history. */}
-      {/* Before the result and after the details, which is the order of a
-          match day: who is playing, then what happened. Renders nothing for a
-          parent until the coach publishes, and nothing at all for a training
-          session. */}
-      {/* F-07: the coach's match-day list — what ticks itself and what to tick. */}
-      {!cancelled && isCoach && event.type === 'match' && <MatchDayChecklist eventId={event.id} />}
-
-      {!cancelled && (event.type === 'match' || event.type === 'tournament') && (
-        <Lineup eventId={event.id} canSee={isCoach} />
-      )}
-
-      {/* X-01: the game as it happens — the coach taps, the chat and the timeline follow. */}
-      {!cancelled && (event.type === 'match' || event.type === 'tournament') && <LiveScore eventId={event.id} />}
-
-      {!cancelled && (
-        <Result
-          eventId={event.id}
-          opponent={event.opponent}
-          isCoach={isCoach}
-          played={new Date(event.starts_at) <= new Date()}
-          inCompetition={Boolean(event.fixture_id)}
-        />
-      )}
-
-      {/* X-02 / X-03: who scored, who starred — after the whistle. */}
-      {!cancelled && (event.type === 'match' || event.type === 'tournament') && <EventStats eventId={event.id} />}
-
-      {/* Matchdays: the game video — a link or an upload, the squad's own. */}
-      {!cancelled && (event.type === 'match' || event.type === 'tournament') && <MatchVideo eventId={event.id} />}
-
-      {/* X-11: how was today? One tap from the family; the coaches see it. */}
-      {!cancelled && (event.type === 'match' || event.type === 'tournament') && <ParentPulse eventId={event.id} />}
-
-      {isCoach && <CallItOff event={event} />}
-
-      {!cancelled && answers.length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
-            Your answer
-          </h2>
-          <div className="mt-2 flex flex-col gap-2">
-            {answers.map((a) => (
-              <div key={a.playerId} className="flex flex-wrap items-center gap-2">
-                <span className="w-20 flex-none truncate text-sm font-medium">{a.playerName}</span>
-                {/* Drops under the name when larger text no longer fits all three on one line (X-10). */}
-                <div className="flex min-w-fit flex-1 gap-1.5">
-                  {CHOICES.map((c) => {
-                    const on = a.status === c.value
-                    return (
-                      <button
-                        key={c.value}
-                        onClick={() => a.playerId && answer(a.playerId, c.value)}
-                        disabled={busy === a.playerId}
-                        className="flex-1 rounded-lg border py-2 text-sm font-semibold disabled:opacity-60"
-                        style={on
-                          ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
-                          : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
-                      >
-                        {c.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-
-            {asking && (
-              <WhyOut
-                childName={answers.find((a) => a.playerId === asking)?.playerName ?? null}
-                busy={busy === asking}
-                onSave={(note) => void answer(asking, 'no', note)}
-                onCancel={() => setAsking(null)}
-              />
-            )}
-
-            {error && (
-              <p className="text-sm" style={{ color: 'var(--no)' }}>
-                {error}
-              </p>
-            )}
+  const yourAnswer = !cancelled && answers.length > 0 && (
+    <section className="mt-6" data-your-answer>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+        Your answer
+      </h2>
+      <div className="mt-2 flex flex-col gap-2">
+        {answers.map((a) => (
+          <div key={a.playerId} className="flex flex-wrap items-center gap-2">
+            <span className="w-20 flex-none truncate text-sm font-medium">{a.playerName}</span>
+            {/* Drops under the name when larger text no longer fits all three on one line (X-10). */}
+            <div className="flex min-w-fit flex-1 gap-1.5">
+              {CHOICES.map((c) => {
+                const on = a.status === c.value
+                return (
+                  <button
+                    key={c.value}
+                    onClick={() => a.playerId && answer(a.playerId, c.value)}
+                    disabled={busy === a.playerId}
+                    className="flex-1 rounded-lg border py-2 text-sm font-semibold disabled:opacity-60"
+                    style={on
+                      ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
+                      : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}
+                  >
+                    {c.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </section>
-      )}
+        ))}
 
-      {/* Before the tally, because once a session has started the register is
-          what a coach came here to do — the RSVP summary is what they looked
-          at beforehand. */}
-      {isCoach && (
-        <Register eventId={event.id} started={new Date(event.starts_at) <= new Date()} />
-      )}
-
-      {isCoach && summary && (
-        <section className="mt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
-            Who&apos;s coming
-          </h2>
-          <p className="mt-1 text-sm">
-            <b style={{ color: 'var(--yes)' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
-            {summary.out_count} out · {summary.no_reply} no reply
-          </p>
-
-          {/* Right under the tally, because "12 no reply" is the number a
-              coach reads and chasing them is what they want to do about it. */}
-          <Chase
-            eventId={event.id}
-            outstanding={summary.no_reply}
-            canChase={!event.cancelled_at && new Date(event.starts_at) > new Date()}
+        {asking && (
+          <WhyOut
+            childName={answers.find((a) => a.playerId === asking)?.playerName ?? null}
+            busy={busy === asking}
+            onSave={(note) => void answer(asking, 'no', note)}
+            onCancel={() => setAsking(null)}
           />
+        )}
 
-          <div className="mt-2 rounded-xl border border-[var(--line)]">
-            {roster.map((r, i) => (
-              <div key={r.playerId ?? i} className={`flex items-center gap-2 p-3 ${i > 0 ? 'border-t border-[var(--line-2)]' : ''}`}>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{r.name}</span>
-                  {r.note && <span className="block truncate text-xs text-ink-2">“{r.note}”</span>}
-                </span>
-                <span className="flex-none text-xs font-semibold"
-                      style={{ color: CHOICES.find((c) => c.value === r.status)?.tint ?? 'var(--ink-3)' }}>
-                  {CHOICES.find((c) => c.value === r.status)?.label ?? '—'}
-                </span>
-              </div>
-            ))}
-            {/* Nothing here when nobody has answered. The summary line
-                directly above already says "0 in · 0 maybe · 0 out · 4 no
-                reply", and a box repeating it in words is the same fact
-                twice in half a screen. */}
+        {error && (
+          <p className="text-sm" style={{ color: 'var(--no)' }}>
+            {error}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+
+  const whosComing = isCoach && summary && (
+    <section className="mt-6" data-whos-coming>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+        Who&apos;s coming
+      </h2>
+      <p className="mt-1 text-sm">
+        <b style={{ color: 'var(--yes)' }}>{summary.going} in</b> · {summary.maybe} maybe ·{' '}
+        {summary.out_count} out · {summary.no_reply} no reply
+      </p>
+
+      {/* Right under the tally, because "12 no reply" is the number a
+          coach reads and chasing them is what they want to do about it. */}
+      <Chase
+        eventId={event.id}
+        outstanding={summary.no_reply}
+        canChase={!event.cancelled_at && new Date(event.starts_at) > new Date()}
+      />
+
+      <div className="mt-2 rounded-xl border border-[var(--line)]">
+        {roster.map((r, i) => (
+          <div key={r.playerId ?? i} className={`flex items-center gap-2 p-3 ${i > 0 ? 'border-t border-[var(--line-2)]' : ''}`}>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">{r.name}</span>
+              {r.note && <span className="block truncate text-xs text-ink-2">“{r.note}”</span>}
+            </span>
+            <span className="flex-none text-xs font-semibold"
+                  style={{ color: CHOICES.find((c) => c.value === r.status)?.tint ?? 'var(--ink-3)' }}>
+              {CHOICES.find((c) => c.value === r.status)?.label ?? '—'}
+            </span>
           </div>
-        </section>
+        ))}
+        {/* Nothing here when nobody has answered. The summary line
+            directly above already says "0 in · 0 maybe · 0 out · 4 no
+            reply", and a box repeating it in words is the same fact
+            twice in half a screen. */}
+      </div>
+    </section>
+  )
+
+  const register = isCoach && <Register eventId={event.id} started={new Date(event.starts_at) <= new Date()} />
+
+  const result = !cancelled && (
+    <Result
+      eventId={event.id}
+      opponent={event.opponent}
+      isCoach={isCoach}
+      played={new Date(event.starts_at) <= new Date()}
+      inCompetition={Boolean(event.fixture_id)}
+    />
+  )
+
+  if (!isGame) {
+    return (
+      <>
+        <header className="mt-3">
+          <div className="flex items-center gap-2">
+            <span className="rounded px-1.5 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide"
+                  style={{ background: cancelled ? 'var(--no)' : 'var(--brand)', color: cancelled ? 'var(--no-ink)' : 'var(--brand-ink)' }}>
+              {cancelled ? 'Cancelled' : event.type}
+            </span>
+            {event.round && <span className="text-sm text-ink-2">{event.round}</span>}
+          </div>
+          <h1 className="mt-1.5 text-2xl font-semibold">{event.title}</h1>
+        </header>
+        {details}
+        {result}
+        {isCoach && <CallItOff event={event} />}
+        {yourAnswer}
+        {/* Before the tally, because once a session has started the register is
+            what a coach came here to do — the RSVP summary is what they looked
+            at beforehand. */}
+        {register}
+        {whosComing}
+      </>
+    )
+  }
+
+  const label = [event.round, game?.competition ?? (event.type === 'tournament' ? 'Tournament' : 'Match')].filter(Boolean).join(' · ')
+  const ourName = us.team ? `${us.team}` : us.club
+  const theirName = game ? (game.usOnLeft ? game.right.name : game.left.name) : event.opponent ?? 'Opposition'
+  const inCompetition = Boolean(event.fixture_id && game?.ladder)
+  const TABS: { id: Tab; label: string }[] = [
+    { id: 'preview', label: 'Preview' },
+    { id: 'sheet', label: 'Match sheet' },
+    ...(inCompetition ? [{ id: 'ladder' as const, label: 'Ladder' }] : []),
+  ]
+
+  return (
+    <>
+      <h1 className="sr-only">{event.title}</h1>
+      <GameHero
+        startsAt={event.starts_at}
+        cancelled={cancelled}
+        label={label}
+        venue={event.venue}
+        tz={tz}
+        game={game}
+        fallbackLeft={{ name: us.club, sub: us.team, logo: us.logo }}
+        fallbackRight={{ name: event.opponent ?? 'Opposition', sub: null, logo: null }}
+      />
+
+      {/* Equal widths on one line; two lines when larger text no longer fits them (X-10). */}
+      <div className="mt-3 flex flex-wrap gap-1.5 rounded-xl p-1" style={{ background: 'var(--surface-2)' }} role="tablist" aria-label="This game">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => choose(t.id)}
+            className="min-w-fit flex-1 rounded-lg px-3 py-2 text-sm font-semibold"
+            style={tab === t.id ? { background: 'var(--surface)', color: 'var(--ink)', boxShadow: '0 1px 2px #0000001a' } : { color: 'var(--ink-2)' }}
+            data-tab={t.id}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'preview' && (
+        <div data-panel="preview">
+          {/* Availability first, for a family and for a coach (Joey, 4 Nov). */}
+          {yourAnswer}
+          {whosComing}
+          {/* F-07: the coach's match-day list — what ticks itself and what to tick. */}
+          {!cancelled && isCoach && event.type === 'match' && <MatchDayChecklist eventId={event.id} />}
+          {details}
+          {game && <TeamForm game={game} ourName={ourName} theirName={theirName} />}
+          {game && <MiniLadder game={game} onOpen={() => choose('ladder')} />}
+          {isCoach && <CallItOff event={event} />}
+        </div>
+      )}
+
+      {tab === 'sheet' && (
+        <div data-panel="sheet">
+          {/* Who is playing, then what happened: the order of a match day.
+              Renders nothing for a family until the coach publishes. */}
+          {!cancelled && <Lineup eventId={event.id} canSee={isCoach} />}
+          {/* X-01: the game as it happens — the coach taps, the chat and the timeline follow. */}
+          {!cancelled && <LiveScore eventId={event.id} />}
+          {result}
+          {/* X-02 / X-03: who scored, who starred — after the whistle. */}
+          {!cancelled && <EventStats eventId={event.id} />}
+          {/* Matchdays: the game video — a link or an upload, the squad's own. */}
+          {!cancelled && <MatchVideo eventId={event.id} />}
+          {/* X-11: how was today? One tap from the family; the coaches see it. */}
+          {!cancelled && <ParentPulse eventId={event.id} />}
+          {register}
+        </div>
+      )}
+
+      {tab === 'ladder' && game && (
+        <div data-panel="ladder">
+          <FullLadder game={game} />
+        </div>
       )}
     </>
   )

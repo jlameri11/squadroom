@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { RespectPanel } from '@/components/respect-marks'
 import Link from 'next/link'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type SquadPlayer = { player_id: string; number: number | null; name: string; ineligible: string | null }
 type SheetPlayer = { player_id: string; number: number | null; starting: boolean; name: string }
@@ -72,7 +73,7 @@ const SANCTION_CODES: Record<'yellow' | 'red', [string, string][]> = {
   ],
 }
 
-const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
+const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })
 
 const KIND_LABEL: Record<string, string> = {
   goal: '⚽ Goal', assist: 'Assist', yellow: '🟨 Yellow', red: '🟥 Red', blue: '🟦 Blue',
@@ -132,7 +133,7 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
           {f.home} <span className="text-ink-3">v</span> {f.away}
         </h2>
         <p className="mt-0.5 text-sm text-ink-3">
-          {f.starts_at ? new Date(f.starts_at).toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'Not scheduled'}
+          {f.starts_at ? new Date(f.starts_at).toLocaleString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'Not scheduled'}
           {view.rules?.match_length_mins ? ` · ${view.rules.match_length_mins} min` : ''}
         </p>
         {f.status === 'final' && (
@@ -271,7 +272,7 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
           <ul className="card p-3 text-xs text-ink-3">
             {view.log.map((l, i) => (
               <li key={i}>
-                {new Date(l.at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · {l.action.replace(/_/g, ' ')}
+                {new Date(l.at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })} · {l.action.replace(/_/g, ' ')}
                 {l.by ? ` · ${l.by}` : ''}
               </li>
             ))}
@@ -415,7 +416,7 @@ function SheetPanel({
           </ul>
           <p className="mt-2 text-xs" style={{ color: sheet.status === 'confirmed' ? 'var(--yes)' : sheet.status === 'disputed' ? 'var(--no)' : 'var(--maybe)' }}>
             {sheet.status === 'confirmed'
-              ? `Confirmed by the other team${sheet.confirmed_at ? ` at ${new Date(sheet.confirmed_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}` : ''}`
+              ? `Confirmed by the other team${sheet.confirmed_at ? ` at ${new Date(sheet.confirmed_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}` : ''}`
               : sheet.status === 'disputed'
                 ? 'Score disputed'
                 : 'Submitted — waiting for the other team to confirm'}
@@ -770,7 +771,7 @@ function ForfeitPanel({ fixtureId, entryId, entryName, forfeits, canAsk, canClub
               </div>
               <p className="mt-0.5 text-ink-2">{r.reason}</p>
               <p className="mt-0.5 text-xs text-ink-3">
-                {r.requested_by ?? 'Somebody'} · {new Date(r.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                {r.requested_by ?? 'Somebody'} · {new Date(r.created_at).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, day: 'numeric', month: 'short' })}
                 {r.club_note ? ` · club: ${r.club_note}` : ''}{r.league_note ? ` · league: ${r.league_note}` : ''}
               </p>
               {(r.status === 'proposed' || r.status === 'club_approved') && (
@@ -893,7 +894,7 @@ function CorrectionsPanel({ fixtureId, corrections, canAsk, canDecide, onChanged
               </div>
               <p className="mt-0.5 text-ink-2">{c.detail}</p>
               <p className="mt-0.5 text-xs text-ink-3">
-                {c.requested_by ?? 'Somebody'} · {new Date(c.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                {c.requested_by ?? 'Somebody'} · {new Date(c.created_at).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, day: 'numeric', month: 'short' })}
                 {c.decision_note ? ` · ${c.decision_note}` : ''}
               </p>
               {canDecide && c.status === 'open' && (

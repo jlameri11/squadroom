@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export function CheckinScreen({ fixtureId, keyValue }: { fixtureId: string; keyValue: string }) {
   const [state, setState] = useState<{ game: string; at: string } | { error: string } | null>(null)
@@ -29,7 +30,7 @@ export function CheckinScreen({ fixtureId, keyValue }: { fixtureId: string; keyV
         <p className="card p-5 text-center text-sm" style={{ color: 'var(--no)' }}>{state.error}</p>
       ) : (
         <p className="card p-5 text-center text-sm">
-          <b>Checked in</b> to {state.game} at {new Date(state.at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}.
+          <b>Checked in</b> to {state.game} at {new Date(state.at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}.
         </p>
       )}
       <p className="mt-3 text-center text-sm">

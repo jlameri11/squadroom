@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { type HomeEvent } from './home'
+import { DEFAULT_TZ } from '@/lib/time'
 
 /**
  * An evening of training, as one row.
@@ -51,7 +52,7 @@ export function TrainingBlock({
       <div className="ev-top">
         <Link href={`/calendar/${first.id}`} className="datechip">
           <div className="d">{when.getDate()}</div>
-          <div className="m">{when.toLocaleDateString('en-AU', { weekday: 'short' })}</div>
+          <div className="m">{when.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short' })}</div>
         </Link>
 
         <div className="min-w-0 flex-1">
@@ -62,7 +63,7 @@ export function TrainingBlock({
           <div className="ev-ttl">
             {/* The earliest time, because that is when the first family has
                 to leave the house. */}
-            From {when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+            From {when.toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}
             {venue ? ` · ${venue}` : ''}
           </div>
         </div>
@@ -78,7 +79,7 @@ export function TrainingBlock({
             className="flex items-baseline gap-2 text-sm"
           >
             <span className="w-16 flex-none tabular-nums text-ink-3">
-              {new Date(e.starts_at).toLocaleTimeString('en-AU', {
+              {new Date(e.starts_at).toLocaleTimeString('en-AU', { timeZone: DEFAULT_TZ,
                 hour: 'numeric',
                 minute: '2-digit',
               })}

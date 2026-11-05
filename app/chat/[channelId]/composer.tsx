@@ -6,6 +6,7 @@ import { prepareImage, kindOf, extensionFor, MAX_MEDIA_BYTES, type Attachment, t
 import { canRecord, startRecording, formatDuration, MAX_VOICE_SECONDS, type Recording } from '@/lib/adapters/recorder'
 import { PhotoConsent } from './photo-consent'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
+import { DEFAULT_TZ } from '@/lib/time'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
@@ -504,7 +505,7 @@ export function Composer({
                 <span className="block truncate text-sm font-medium">{f.title}</span>
                 <span className="block text-xs capitalize text-ink-2">
                   {f.type} ·{' '}
-                  {new Date(f.starts_at).toLocaleString('en-AU', {
+                  {new Date(f.starts_at).toLocaleString('en-AU', { timeZone: DEFAULT_TZ,
                     weekday: 'short', day: 'numeric', month: 'short',
                     hour: 'numeric', minute: '2-digit',
                   })}

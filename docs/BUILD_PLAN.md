@@ -477,5 +477,17 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    the three payment screens that changed today; the M7 preparation that
    needs no Xcode; test and doc hygiene.
 
+9. **Scale test before the December review** (Joey, 5 Nov — *after the
+   weekend*, needs the Supabase token): a fake dataset on a separate
+   branch, never the dev data (60 clubs, 400 teams, 6,000 players, 10,000
+   parents, 500k messages, a full SPL season); time parent Home, Chat,
+   Fixtures, Admin, a ladder and a match centre against a 1-second target;
+   EXPLAIN the slowest queries and RLS policies and fix them with indexes or
+   rewritten policies; a Saturday 8 am spike (2,000 people opening the app,
+   300 live chats and score updates at once); write-up in `docs/SCALE.md`
+   with the Supabase plan, backups and compute size for launch. Two
+   questions first (NIGHT_LOG NEEDS JOEY #18): branching is billed, and a
+   branch is a project of its own.
+
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

@@ -1,4 +1,5 @@
 'use client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export type DiffRow = {
   verdict: 'new' | 'moved' | 'changed' | 'unchanged' | 'skipped'
@@ -236,7 +237,7 @@ function Group({
 
 function when(iso: string | null) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-AU', {
+  return new Date(iso).toLocaleString('en-AU', { timeZone: DEFAULT_TZ,
     weekday: 'short',
     day: 'numeric',
     month: 'short',

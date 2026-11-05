@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Scorer = { name: string; goals: number }
 type Game = { id: string; title: string; starts_at: string; opponent: string | null; venue: string | null; team_id: string; team: string | null; ours: number | null; theirs: number | null; scorers: Scorer[]; videos: number }
@@ -31,7 +32,7 @@ export function Matchdays({ academyId }: { academyId: string }) {
   if (!games) return <p className="p-6 text-center text-sm text-ink-3">Loading…</p>
   if (games.length === 0) return <p className="p-6 text-center text-sm text-ink-3">No games played yet. They land here after the whistle, with the score, the scorers and the video.</p>
 
-  const day = (iso: string) => new Date(iso).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+  const day = (iso: string) => new Date(iso).toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', day: 'numeric', month: 'short' })
   return (
     <ul data-matchdays>
       {games.map((g, i) => {

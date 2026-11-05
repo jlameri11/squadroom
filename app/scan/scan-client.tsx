@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export type CoachedTeam = { id: string; name: string }
 
@@ -386,13 +387,13 @@ function EventRow({
         <div className="min-w-0 flex-1">
           <div className="font-medium">{event.title}</div>
           <div className="mt-0.5 text-sm text-ink-2">
-            {when.toLocaleDateString(undefined, {
+            {when.toLocaleDateString(undefined, { timeZone: DEFAULT_TZ,
               weekday: 'short',
               day: 'numeric',
               month: 'short',
             })}{' '}
             ·{' '}
-            {when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+            {when.toLocaleTimeString(undefined, { timeZone: DEFAULT_TZ, hour: 'numeric', minute: '2-digit' })}
             {event.venue ? ` · ${event.venue}` : ''}
           </div>
           {event.private_to && (

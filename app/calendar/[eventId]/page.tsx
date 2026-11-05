@@ -18,7 +18,7 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
 
   if (!event) notFound()
 
-  const [{ data: mine }, { data: summary }, { data: roster }] = await Promise.all([
+  const [{ data: mine }, { data: summary }, { data: roster }, { data: club }, { data: team }] = await Promise.all([
     supabase.rpc('my_rsvps_for_event', { p_event: eventId }),
     supabase.rpc('event_rsvp_summary', { p_event: eventId }),
     // Returns nothing to a parent — the RSVP policy limits it to their own.
@@ -26,6 +26,12 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
       .from('event_rsvps')
       .select('status, note, player_id, players(full_name)')
       .eq('event_id', eventId),
+    // The venue's timezone (the club's — every time on the page is in it,
+    // never the server's UTC or the phone's), and our side for the hero.
+    supabase.from('academies').select('name, logo_url, timezone').eq('id', event.academy_id).maybeSingle(),
+    event.team_id
+      ? supabase.from('teams').select('name').eq('id', event.team_id).maybeSingle()
+      : Promise.resolve({ data: null as { name: string } | null }),
   ])
 
   const isCoach = Boolean(summary?.[0])
@@ -42,6 +48,8 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
           note: r.note,
         }))}
         isCoach={isCoach}
+        tz={club?.timezone || 'Australia/Sydney'}
+        us={{ club: club?.name ?? 'Us', team: team?.name ?? null, logo: club?.logo_url ?? null }}
         summary={summary?.[0] ?? null}
         roster={(roster ?? []).map((r) => ({
           playerId: r.player_id,

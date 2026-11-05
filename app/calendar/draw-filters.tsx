@@ -1,6 +1,7 @@
 'use client'
 
 import { type UpcomingEvent } from './calendar-list'
+import { DEFAULT_TZ } from '@/lib/time'
 
 export type DrawFilter = {
   day: string | null
@@ -224,5 +225,5 @@ function shortDay(day: string) {
   const tomorrow = new Date(Date.now() + 86400000).toDateString()
   if (day === today) return 'Today'
   if (day === tomorrow) return 'Tomorrow'
-  return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+  return d.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, weekday: 'short', day: 'numeric', month: 'short' })
 }

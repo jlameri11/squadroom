@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
+import { DEFAULT_TZ } from '@/lib/time'
 
 type Dot = { on_date: string; events: number; has_match: boolean }
 
@@ -52,7 +53,7 @@ export function HomeCalendar() {
     <section className="px-3.5 pb-5 pt-4">
       <div className="sect">
         <span className="eyebrow">
-          {month.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}
+          {month.toLocaleDateString('en-AU', { timeZone: DEFAULT_TZ, month: 'long', year: 'numeric' })}
         </span>
         <span className="flex items-center gap-1">
           <button
