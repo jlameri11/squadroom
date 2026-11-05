@@ -96,7 +96,9 @@ const audit = () => {
     // floor above (24px, WCAG 2.2 AA) is what fails. A link inside a line of
     // text is exempt, as WCAG exempts it.
     const inline = el.tagName === 'A' && getComputedStyle(el).display === 'inline'
-    if (!inline && (r.width < 44 || r.height < 44)) out.under44.push(`${n.replace(/\s+/g, ' ').slice(0, 28)} ${Math.round(r.width)}×${Math.round(r.height)}`)
+    // An app bar's controls carry a 44px layer (globals.css) the box does not show.
+    const bar = el.closest('[data-app-bar]') ? 44 : 0
+    if (!inline && (Math.max(r.width, bar) < 44 || Math.max(r.height, bar) < 44)) out.under44.push(`${n.replace(/\s+/g, ' ').slice(0, 28)} ${Math.round(r.width)}×${Math.round(r.height)}`)
   }
   for (const el of document.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]), select, textarea')) {
     if (!visible(el)) continue

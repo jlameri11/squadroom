@@ -439,6 +439,20 @@ input, select, textarea { font-size: max(16px, 1rem); }
    hit area without moving anything around it (X-10, 4 Nov 2026). */
 .tap { padding-block: 8px; margin-block: -8px; }
 
+/* Every control in an app bar has a 44px target — Back, the crest, the
+   header's one action — without looking any bigger: a transparent layer
+   centred on it. The bar is where a thumb goes most (X-10, 5 Nov 2026). */
+[data-app-bar] :is(a, button) { position: relative; }
+[data-app-bar] :is(a, button)::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 /* Native radios, checkboxes and sliders in the brand's colour (the club's,
    where it wears club colours) rather than the browser's own blue — which
    the brand does not use anywhere else (5 Nov 2026). */

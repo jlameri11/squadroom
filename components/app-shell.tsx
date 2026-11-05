@@ -49,6 +49,7 @@ export function AppBar({
 
   return (
     <header
+      data-app-bar
       className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3"
       // The brand's own surface: near-black in light and dark (--bar), with
       // an edge in dark where it is the page colour too.

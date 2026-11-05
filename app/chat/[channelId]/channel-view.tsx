@@ -118,6 +118,7 @@ export function ChannelView({
   return (
     <div className="mx-auto flex h-dvh max-w-md flex-col">
       <header
+        data-app-bar
         className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3.5 pt-3"
         style={{ background: 'var(--bar)', color: 'var(--bar-ink)', borderBottom: '1px solid var(--bar-line)' }}
       >
