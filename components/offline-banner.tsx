@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useOutbox } from '@/lib/offline/use-outbox'
+import { useNotDone, useOutbox } from '@/lib/offline/use-outbox'
 
 /**
  * What is waiting to be sent.
@@ -14,9 +14,21 @@ import { useOutbox } from '@/lib/offline/use-outbox'
  *
  * Says nothing when there is nothing to say. A permanent "offline" chip
  * trains people to ignore the bar it lives in.
+ *
+ * And what the database turned down when a kept change was finally sent
+ * (5 Nov 2026): kept changes are sent later, so a refusal arrives later, and
+ * until now nobody was told. Said once, until put away.
  */
+/**
+ * A tint laid over the page's own ground. The tints are see-through, and the
+ * bar is stuck over the screen with the tab bar, so on its own the text under
+ * it showed through the words.
+ */
+const over = (tint: string) => `linear-gradient(${tint}, ${tint}), var(--paper)`
+
 export function OfflineBanner() {
   const waiting = useOutbox()
+  const [notDone, putAway] = useNotDone()
   const [offline, setOffline] = useState(false)
 
   useEffect(() => {
@@ -30,13 +42,24 @@ export function OfflineBanner() {
     }
   }, [])
 
+  if (notDone.length > 0) {
+    return (
+      <div className="flex items-start gap-3 px-4 py-2 text-xs font-semibold" style={{ background: over('var(--no-bg)'), color: 'var(--no)' }} role="alert" data-not-done>
+        <p className="min-w-0 flex-1">
+          {notDone.length === 1 ? 'A change kept on this phone was not saved' : `${notDone.length} changes kept on this phone were not saved`}: {notDone[notDone.length - 1]}
+        </p>
+        <button onClick={putAway} className="tap flex-none underline underline-offset-2">OK</button>
+      </div>
+    )
+  }
+
   if (waiting === 0 && !offline) return null
 
   return (
     <div
       className="px-4 py-2 text-center text-xs font-semibold"
       style={{
-        background: waiting > 0 ? 'var(--maybe-bg)' : 'var(--surface-2)',
+        background: over(waiting > 0 ? 'var(--maybe-bg)' : 'var(--surface-2)'),
         color: waiting > 0 ? 'var(--maybe)' : 'var(--ink-2)',
       }}
       role="status"

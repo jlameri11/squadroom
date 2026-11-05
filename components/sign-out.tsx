@@ -6,6 +6,8 @@ import { setOrg } from '@/lib/org'
 import { APPEARANCE_KEY, CLUB_KEY, LEGACY_THEME_KEY } from '@/lib/brand/keys'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
 import { clearOffline } from '@/lib/offline/idb'
+import { OWNER_KEY } from '@/lib/offline/owner'
+import { KICK_OFF_KEY } from '@/lib/offline/kick-off'
 
 /**
  * Signing out, which was not possible at all.
@@ -37,7 +39,9 @@ import { clearOffline } from '@/lib/offline/idb'
  *     reload, a sign-out and the device being handed on. The outbox goes
  *     with it: a queued write belongs to the session that made it, and
  *     replaying it as the next person is how "who marked this child
- *     present" gets the wrong answer.
+ *     present" gets the wrong answer. So does the outbox's memory of who was
+ *     last signed in here (lib/offline/owner.ts) and of when this phone saw
+ *     a game kick off.
  *
  *   · And since Appearance (4 Nov 2026), the person's LOOK: their club's
  *     colours (the next person may be in another club) and their own
@@ -57,7 +61,7 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
     setOrg(null)
     invalidateScreen()
     try {
-      for (const k of [CLUB_KEY, APPEARANCE_KEY, LEGACY_THEME_KEY]) localStorage.removeItem(k)
+      for (const k of [CLUB_KEY, APPEARANCE_KEY, LEGACY_THEME_KEY, OWNER_KEY, KICK_OFF_KEY]) localStorage.removeItem(k)
     } catch {}
     // Awaited, unlike the rest. The redirect below reloads the page, and a
     // clear that is still running when that happens leaves the previous

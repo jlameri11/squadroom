@@ -15,6 +15,10 @@
 //     replaying them backwards leaves the first answer standing
 //   · a refusal is not a failure, or the queue never drains
 //   · a queued write belongs to the person who made it
+//   · a try that got no answer costs nothing, so an hour with no signal
+//     does not throw a goal away (5 Nov 2026)
+//   · who a write belongs to is found without the network (owner.ts)
+import { ownerOnThisPhone, type Remembered, type SessionRead } from '../lib/offline/owner.ts'
 import {
   classify,
   drain,
@@ -67,7 +71,14 @@ const online = async (): Promise<SendResult> => ({ ok: true })
 const offline = async (): Promise<SendResult> => ({
   ok: false,
   retry: true,
+  network: true,
   error: 'Failed to fetch',
+})
+// An answer, but "not now": the server busy. These count towards the cap.
+const busy = async (): Promise<SendResult> => ({
+  ok: false,
+  retry: true,
+  error: 'service unavailable',
 })
 const refused = async (): Promise<SendResult> => ({
   ok: false,
@@ -109,7 +120,7 @@ head('3. The queue stops at the first network failure')
   let tries = 0
   await drain(store, ME, async () => {
     tries += 1
-    return { ok: false, retry: true, error: 'Failed to fetch' }
+    return await busy()
   })
   eq(tries, 1, 'one attempt for four queued writes')
   eq(await pending(store, ME), 4, 'all four kept')
@@ -161,16 +172,31 @@ head('5. A refusal is not a failure')
 head(`6. Five failures and it is given up on`)
 {
   const store = memory()
-  await enqueue(store, ME, rsvp('leo', 'yes'))
+  const item = await enqueue(store, ME, rsvp('leo', 'yes'))
   for (let i = 0; i < MAX_ATTEMPTS - 1; i++) {
-    const r = await drain(store, ME, offline)
+    const r = await drain(store, ME, busy)
     if (r.kept !== 1) bad(`attempt ${i + 1} did not keep it`)
   }
   eq(await pending(store, ME), 1, `still queued after ${MAX_ATTEMPTS - 1} failures`)
 
-  const last = await drain(store, ME, offline)
+  const last = await drain(store, ME, busy)
   eq(last.dropped.length, 1, 'dropped on the fifth')
+  eq(last.dropped[0]?.id, item.id, 'and the report says which one, so its screen can be told')
   eq(await pending(store, ME), 0, 'and the queue does not fill up forever')
+}
+
+head('6b. An hour with no signal costs a write nothing')
+{
+  // Found 5 Nov 2026: a try with no answer counted towards the five, and a
+  // drain runs every time the phone comes out of a pocket — so a goal tapped
+  // in a dead spot was thrown away after five glances at the phone.
+  const store = memory()
+  await enqueue(store, ME, rsvp('leo', 'no'))
+  for (let i = 0; i < 60; i++) await drain(store, ME, offline)
+  eq(await pending(store, ME), 1, 'still queued after sixty tries with no signal')
+  eq((await store.all())[0].attempts, 0, 'and none of them counted')
+  const back = await drain(store, ME, online)
+  eq(back.sent, 1, 'sent the moment there is signal')
 }
 
 head('7. A queued write belongs to the person who made it')
@@ -198,20 +224,24 @@ head('8. Telling a network failure from a refusal')
 {
   // The distinction is the whole behaviour of the queue, and supabase-js
   // reports both through the same shape.
-  const cases: [unknown, boolean, string][] = [
-    [{ name: 'TypeError', message: 'Failed to fetch' }, true, 'a fetch that never left the phone'],
-    [{ message: 'network timeout' }, true, 'a timeout'],
-    [{ code: '42501', message: 'permission denied' }, false, 'permission denied'],
-    [{ code: '23505', message: 'duplicate key' }, false, 'a constraint'],
-    [{ code: '22023', message: 'Say why they cannot play' }, false, 'a trigger saying no'],
-    [{ code: '57014', message: 'statement timeout' }, true, 'the database being busy'],
-    [{ code: '08006', message: 'connection failure' }, true, 'a dropped connection'],
-    [{ status: 503, message: 'service unavailable' }, true, 'a 503'],
+  // [error, keep it?, no answer at all?, label]
+  const cases: [unknown, boolean, boolean, string][] = [
+    [{ name: 'TypeError', message: 'Failed to fetch' }, true, true, 'a fetch that never left the phone'],
+    // What supabase-js actually hands back when fetch throws: a plain object, code ''.
+    [{ message: 'TypeError: Failed to fetch', details: '', hint: '', code: '' }, true, true, "supabase-js's own shape for it"],
+    [{ message: 'network timeout' }, true, true, 'a timeout'],
+    [{ name: 'AbortError', message: 'No answer in time (timeout)' }, true, true, 'our own wait running out'],
+    [{ code: '42501', message: 'permission denied' }, false, false, 'permission denied'],
+    [{ code: '23505', message: 'duplicate key' }, false, false, 'a constraint'],
+    [{ code: '22023', message: 'Say why they cannot play' }, false, false, 'a trigger saying no'],
+    [{ code: '57014', message: 'statement timeout' }, true, false, 'the database being busy'],
+    [{ code: '08006', message: 'connection failure' }, true, false, 'a dropped connection'],
+    [{ status: 503, message: 'service unavailable' }, true, false, 'a 503'],
   ]
-  for (const [error, retry, label] of cases) {
-    const r = classify(error) as { ok: boolean; retry?: boolean }
-    r.ok === false && r.retry === retry
-      ? ok(`${label} → ${retry ? 'keep it' : 'drop it'}`)
+  for (const [error, retry, network, label] of cases) {
+    const r = classify(error) as { ok: boolean; retry?: boolean; network?: boolean }
+    r.ok === false && r.retry === retry && Boolean(r.network) === network
+      ? ok(`${label} → ${retry ? (network ? 'keep it, free' : 'keep it, counted') : 'drop it'}`)
       : bad(`${label} → ${JSON.stringify(r)}`)
   }
   // Anything unrecognised is kept, because keeping a write too long is
@@ -230,6 +260,52 @@ head('9. Draining an empty queue does nothing at all')
   })
   eq(called, 0, 'no requests made')
   eq(report.sent + report.kept + report.dropped.length, 0, 'nothing reported')
+}
+
+head('10. Who a kept write belongs to, found with no signal (owner.ts)')
+{
+  // Found 5 Nov 2026 in a browser with its signal cut: asking the SERVER who
+  // was signed in refused every write as "Not signed in". The phone knows.
+  const memo = (start: string | null = null): Remembered & { value: string | null } => {
+    const m = {
+      value: start,
+      get: () => m.value,
+      set: (id: string | null) => {
+        m.value = id
+      },
+    }
+    return m
+  }
+  const fresh = async (): Promise<SessionRead> => ({ data: { session: { user: { id: ME } } }, error: null })
+  const signedOut = async (): Promise<SessionRead> => ({ data: { session: null }, error: null })
+  const stale = async (): Promise<SessionRead> => ({
+    data: { session: null },
+    error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch' },
+  })
+  const stuck = () => new Promise<SessionRead>(() => {})
+  const throws = async (): Promise<SessionRead> => {
+    throw new Error('storage blocked')
+  }
+
+  let m = memo()
+  eq(await ownerOnThisPhone(fresh, m, 50), ME, 'a fresh session on the phone names its person')
+  eq(m.value, ME, 'and they are remembered')
+
+  m = memo(ME)
+  eq(await ownerOnThisPhone(stale, m, 50), ME, 'an hour-old session that cannot refresh with no signal → the person last seen here')
+  m = memo(ME)
+  const t0 = Date.now()
+  const got = await ownerOnThisPhone(stuck, m, 50)
+  eq(got, ME, 'a session stuck behind a refresh → the person last seen here')
+  Date.now() - t0 < 1000 ? ok(`and without waiting for the refresh (${Date.now() - t0} ms)`) : bad(`waited ${Date.now() - t0} ms`)
+  m = memo(ME)
+  eq(await ownerOnThisPhone(throws, m, 50), ME, 'storage that throws → the person last seen here')
+
+  m = memo(ME)
+  eq(await ownerOnThisPhone(signedOut, m, 50), null, 'signed out is signed out, whoever was here before')
+  eq(m.value, null, 'and the memory goes with it')
+  m = memo()
+  eq(await ownerOnThisPhone(stale, m, 50), null, 'nobody remembered and no signal → nobody, so nothing is kept without an owner')
 }
 
 console.log(

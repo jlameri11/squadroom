@@ -581,6 +581,24 @@ one and is meant to reach hundreds of academies.
   (`scripts/_demo-snapshot.mjs`) and fails a suite that leaves a game,
   club, squad, program, membership, chat or clearance changed, naming the
   row; `DEMO_GUARD=0` turns it off.
+- **A tap made at a ground goes through `sendOrQueue`, and never asks the
+  server who you are** (X-09, 5 Nov 2026). The register, the three RSVP
+  paths and the live score taps write through `lib/offline/use-outbox.ts`.
+  The first browser run with the signal cut found NOTHING was being kept:
+  the outbox, and each RSVP screen, called `auth.getUser()`, which asks
+  the auth server, so every write with no signal was refused or dropped.
+  In any write path that must work offline, the signed-in person comes
+  from `signedInHere()` (the phone's session, `lib/offline/owner.ts`) —
+  never `getUser()`. A write never overtakes one already waiting; a try
+  with no answer costs a write nothing; a send waits 6 s, then keeps it;
+  a refused kept write is said by the bar above the tab bar. A screen that
+  shows queued writes reads them from the outbox (`useQueued`), not from
+  its own state, so two parts of a screen cannot disagree and a reload
+  keeps them. A refresh that fails keeps what is on screen. Prove offline
+  behaviour in a browser (`scripts/test-no-signal.mjs`:
+  `page.setOfflineMode`, and request interception for bars that carry
+  nothing) — the pure test of the queue passed the whole time it was
+  broken.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

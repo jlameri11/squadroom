@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { sendOrQueue } from '@/lib/offline/use-outbox'
+import { sendOrQueue, signedInHere } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
 import { DEFAULT_TZ } from '@/lib/time'
 
@@ -79,7 +79,14 @@ export function EventCard({
       prev.map((r) => (r.player_id === playerId ? { ...r, status, note: note ?? null } : r))
     )
 
-    const { data: auth } = await supabase.auth.getUser()
+    // Who is answering, asked of the phone: with no signal the server cannot
+    // say, and asking it threw here (X-09).
+    const me = await signedInHere()
+    if (!me) {
+      setSaving(null)
+      setError('Not signed in')
+      return
+    }
     const outcome = await sendOrQueue({
       kind: 'upsert',
       table: 'event_rsvps',
@@ -87,7 +94,7 @@ export function EventCard({
         {
           academy_id: academyId,
           event_id: event.id,
-          profile_id: auth.user!.id,
+          profile_id: me,
           player_id: playerId,
           status,
           note: note?.trim() || null,

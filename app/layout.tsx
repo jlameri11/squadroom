@@ -88,11 +88,15 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         */}
         <div className="flex min-h-dvh flex-col">
           <div className="flex-1">{children}</div>
-          {/* Above the tab bar, so it is the last thing in view on a
-              phone and does not push a screen's content around. Renders
+          {/* Above the tab bar and stuck to the bottom with it, so it is in
+              view however far down a long screen somebody is — the match
+              sheet is where it matters most, and in the flow it was only
+              seen by scrolling to the very end (5 Nov 2026). Renders
               nothing unless there is something waiting. */}
-          <OfflineBanner />
-          <TabBar />
+          <div className="sticky bottom-0 z-20">
+            <OfflineBanner />
+            <TabBar />
+          </div>
         </div>
       </body>
     </html>

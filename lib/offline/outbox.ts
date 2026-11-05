@@ -57,13 +57,23 @@ export interface Store {
  * network: it is a request the database refuses, and replaying it forever
  * means a queue that never drains and a badge that never clears. The same
  * number the push queue uses, for the same reason.
+ *
+ * ONLY ANSWERS COUNT (5 Nov 2026). A try that got no answer at all — no
+ * signal, a phone showing bars that carry nothing — says nothing about the
+ * write, and counting those meant a goal tapped in a dead spot was thrown
+ * away after five glances at the phone. A game is an hour with no signal; the
+ * write waits for as long as that takes.
  */
 export const MAX_ATTEMPTS = 5
 
 export type SendResult =
   | { ok: true }
-  /** The network. Keep it and try again later. */
-  | { ok: false; retry: true; error: string }
+  /**
+   * Keep it and try again later. `network` when no answer came back at all —
+   * no signal, a request that never left the phone, or one that timed out —
+   * which costs the write nothing (see MAX_ATTEMPTS).
+   */
+  | { ok: false; retry: true; error: string; network?: boolean }
   /** The database said no. Trying again will not help. */
   | { ok: false; retry: false; error: string }
 
@@ -72,7 +82,7 @@ export type DrainReport = {
   /** Still queued — the network is still down, or they are waiting their turn. */
   kept: number
   /** Given up on, with why, so a person can be told rather than left guessing. */
-  dropped: { write: Write; error: string }[]
+  dropped: { id: string; write: Write; error: string }[]
 }
 
 export function newId(): string {
@@ -118,9 +128,7 @@ export async function drain(
 ): Promise<DrainReport> {
   const report: DrainReport = { sent: 0, kept: 0, dropped: [] }
 
-  const mine = (await store.all())
-    .filter((i) => i.profileId === profileId)
-    .sort((a, b) => a.queuedAt - b.queuedAt || a.id.localeCompare(b.id))
+  const mine = queuedFor(await store.all(), profileId)
 
   // Somebody else's queued writes are left where they are, not replayed and
   // not thrown away: that person may sign back in on this device.
@@ -141,10 +149,11 @@ export async function drain(
     }
 
     if (result.retry) {
-      const attempts = item.attempts + 1
+      // No answer at all costs nothing; an answer that says "not now" does.
+      const attempts = result.network ? item.attempts : item.attempts + 1
       if (attempts >= MAX_ATTEMPTS) {
         await store.remove(item.id)
-        report.dropped.push({ write: item.write, error: result.error })
+        report.dropped.push({ id: item.id, write: item.write, error: result.error })
       } else {
         await store.put({ ...item, attempts, lastError: result.error })
         report.kept += 1
@@ -157,15 +166,25 @@ export async function drain(
 
     // Refused, not failed. Keeping it would mean a queue that never drains.
     await store.remove(item.id)
-    report.dropped.push({ write: item.write, error: result.error })
+    report.dropped.push({ id: item.id, write: item.write, error: result.error })
   }
 
   return report
 }
 
+/**
+ * This person's writes, in the order they were tapped — the order they are
+ * sent in, and the order a screen shows them waiting in.
+ */
+export function queuedFor(items: Queued[], profileId: string): Queued[] {
+  return items
+    .filter((i) => i.profileId === profileId)
+    .sort((a, b) => a.queuedAt - b.queuedAt || a.id.localeCompare(b.id))
+}
+
 /** How many of this person's writes are still waiting. */
 export async function pending(store: Store, profileId: string): Promise<number> {
-  return (await store.all()).filter((i) => i.profileId === profileId).length
+  return queuedFor(await store.all(), profileId).length
 }
 
 /**
@@ -195,13 +214,14 @@ export function classify(error: unknown): SendResult {
       : { ok: false, retry: false, error: message }
   }
 
-  // No code at all: a TypeError from fetch, an abort, a timeout.
+  // No code at all: a TypeError from fetch, an abort, a timeout — no answer
+  // came back, which says nothing about the write itself.
   if (
     e.name === 'TypeError' ||
     e.name === 'AbortError' ||
-    /fetch|network|timeout|offline/i.test(message)
+    /fetch|network|timeout|offline|abort/i.test(message)
   ) {
-    return { ok: false, retry: true, error: message }
+    return { ok: false, retry: true, error: message, network: true }
   }
 
   if (typeof e.status === 'number' && e.status >= 500) {

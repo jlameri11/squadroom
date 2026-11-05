@@ -15,7 +15,7 @@ import { HomeOwing } from './home-owing'
 import { EditHome } from './edit-home'
 import { type SectionId } from '@/lib/home-sections'
 import { createClient } from '@/lib/supabase/client'
-import { sendOrQueue } from '@/lib/offline/use-outbox'
+import { sendOrQueue, signedInHere } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
 import { ChildChips, childColour, type Child } from './child-chips'
 import { TrainingBlock, groupTraining } from './training-block'
@@ -487,8 +487,15 @@ function EventCard({
     setAnswers((prev) =>
       prev.map((a) => (a.player_id === playerId ? { ...a, status } : a))
     )
-    const { data: auth } = await createClient().auth.getUser()
-    if (!auth.user) return
+    // Who is answering, asked of the phone. Asking the server, with no signal,
+    // answered "nobody" and the answer was dropped while the chip still
+    // showed it chosen (X-09, found 5 Nov 2026).
+    const me = await signedInHere()
+    if (!me) {
+      setAnswers(before)
+      setError('Not signed in')
+      return
+    }
 
     // X-09. A car park under a grandstand is where this button gets pressed.
     const outcome = await sendOrQueue({
@@ -498,7 +505,7 @@ function EventCard({
         {
           academy_id: academyId,
           event_id: event.id,
-          profile_id: auth.user.id,
+          profile_id: me,
           player_id: playerId,
           status,
           note: note?.trim() || null,

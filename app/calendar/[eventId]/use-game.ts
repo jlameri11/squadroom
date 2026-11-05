@@ -1,14 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useWaitingTaps, withWaiting } from './waiting-taps'
 
 /**
  * Everything the top of a game page needs, read once (Joey, 4 Nov 2026:
  * the game page, benchmarked on a match preview).
  *
  *   live      the score as it happens (event_live, X-01), refreshed every
- *             fifteen seconds while the game is on;
+ *             fifteen seconds while the game is on — plus any score taps
+ *             still on this phone with no signal (X-09), so the hero and
+ *             the timeline never disagree; a refresh that fails keeps the
+ *             score it had;
  *   result    the final score (event_result);
  *   sides     who is on the left and the right — home on the left, as a
  *             programme prints it — with each side's crest where it is known
@@ -183,11 +187,16 @@ export function useGame(event: GameEvent, us: { club: string; team: string | nul
   // The score alone, while the game is on — the table, the form and the
   // crests do not change in the middle of it.
   const refreshScore = useCallback(async () => {
+    // Nothing to ask with no signal — and an answer that does not come leaves
+    // the score as it was. Until 5 Nov one failed refresh blanked the live
+    // score, which also stopped this refreshing for the rest of the game.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return
     const supabase = createClient()
-    const [{ data: live }, { data: result }] = await Promise.all([
+    const [{ data: live, error: liveError }, { data: result, error: resultError }] = await Promise.all([
       supabase.rpc('event_live', { p_event: event.id }),
       supabase.rpc('event_result', { p_event: event.id }),
     ])
+    if (liveError || resultError) return
     const l = live as Live | null
     const r0 = (result as { ours: number; theirs: number }[] | null)?.[0]
     setGame((g) => (g ? { ...g, live: l, final: r0 ? { ours: r0.ours, theirs: r0.theirs } : l?.finished ? l.score : null } : g))
@@ -209,5 +218,11 @@ export function useGame(event: GameEvent, us: { club: string; team: string | nul
     }
   }, [load, refreshScore])
 
-  return game
+  // Score taps still on this phone (X-09): the hero counts them too.
+  const { taps } = useWaitingTaps(event.id, refreshScore)
+  return useMemo(() => {
+    if (!game?.live || taps.length === 0) return game
+    const live = withWaiting(game.live, taps)
+    return { ...game, live, final: game.final ?? (live.finished ? live.score : null) }
+  }, [game, taps])
 }

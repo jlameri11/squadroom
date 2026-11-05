@@ -17,7 +17,7 @@ import { EditOccurrence } from './edit-occurrence'
 import { FullLadder, MiniLadder, TeamForm } from './game-panels'
 import { useGame } from './use-game'
 import { createClient } from '@/lib/supabase/client'
-import { sendOrQueue } from '@/lib/offline/use-outbox'
+import { sendOrQueue, signedInHere } from '@/lib/offline/use-outbox'
 import { gameDay, kickOff } from '@/lib/time'
 
 type Mine = { playerId: string | null; playerName: string | null; status: string | null; note: string | null }
@@ -69,7 +69,6 @@ export function EventDetail({
 }) {
   const [answers, setAnswers] = useState(mine)
   const [busy, setBusy] = useState<string | null>(null)
-  const supabase = createClient()
   const [asking, setAsking] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const cancelled = Boolean(event.cancelled_at)
@@ -125,7 +124,15 @@ export function EventDetail({
     setAnswers((prev) =>
       prev.map((a) => (a.playerId === playerId ? { ...a, status, note: note?.trim() || null } : a))
     )
-    const { data: auth } = await supabase.auth.getUser()
+    // Who is answering, asked of the phone: with no signal the server cannot
+    // say, and asking it threw here, leaving the buttons stuck (X-09).
+    const me = await signedInHere()
+    if (!me) {
+      setBusy(null)
+      setError('Not signed in')
+      setAnswers(before)
+      return
+    }
     const outcome = await sendOrQueue({
       kind: 'upsert',
       table: 'event_rsvps',
@@ -133,7 +140,7 @@ export function EventDetail({
         {
           academy_id: event.academy_id,
           event_id: event.id,
-          profile_id: auth.user!.id,
+          profile_id: me,
           player_id: playerId,
           status,
           note: note?.trim() || null,
@@ -228,6 +235,9 @@ export function EventDetail({
                     key={c.value}
                     onClick={() => a.playerId && answer(a.playerId, c.value)}
                     disabled={busy === a.playerId}
+                    aria-pressed={on}
+                    data-choice={c.value}
+                    data-player={a.playerId ?? undefined}
                     className="flex-1 rounded-lg border py-2 text-sm font-semibold disabled:opacity-60"
                     style={on
                       ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
