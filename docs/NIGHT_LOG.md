@@ -78,6 +78,20 @@ policies); #14 Stripe on the live site + NRIFA's Express click-through;
   green bar `rls` (the token) and two suites that turned out to be
   colliding with the demo data; both fixed (build-log row "The suites were
   damaging the demo"), the demo's games, trainings and U8 chat restored.
+- **5 Nov evening → 6 Nov (Joey: "keep going", then the league notices
+  brief):**
+  - **X-09, score taps with no signal** — and the first browser test of the
+    outbox found it had never kept anything offline (it asked the auth
+    server who was signed in). Fixed with seven related faults; RSVPs, the
+    register and score taps now all work with no signal. `test-no-signal` 33.
+  - **League notices** (0212–0213), **every account has an email** (0214)
+    and **a teenager's login with a parent's yes** (0215): the app halves
+    done and tolerant; the migrations wait for the token (#12). Two recorded
+    decisions reversed at Joey's word and written into CLAUDE.md and the
+    spec (D-5, D-6).
+  - New NEEDS JOEY: **#19** Resend + a sending domain for December, **#20**
+    three questions the 13+ logins reopen (the under-16 rules first).
+  - Nothing deployed (the brief: no deploy).
 
 ## Evening summary — 3 Nov 2026: the money moves (Stripe test mode), and the first deploy
 
@@ -403,6 +417,9 @@ Exact steps are in NEEDS JOEY below.
 | **X-10, the 24px floor again, and the brand's radios** (5 Nov) | **Done.** With the demo's real messages visible again the audit met controls it had never seen: the reaction chips (22px tall → 24px), the coach's match-day ticks (20px → a 32px target around the same 20px box), "1 reply ›" (16px → `.tap`). The audit no longer counts a visually hidden heading as "cut off", and it now counts controls under 44px (353 on its 21 screens, for the record — the 24px floor is what fails). Native radios and checkboxes take the brand's colour (`accent-color`), not the browser's blue | test-a11y green, test-brand 29 |
 | **X-10, 44px where the thumb goes most** (5 Nov) | **Done** for the app bar. Every link and button in an app bar (Back, the crest, the header's action, the chat's Back and settings) carries a transparent 44px layer centred on it — nothing looks bigger; a tap 3px outside the visible 36px Back still goes back. The audit counts it (342 controls under 44px left, from 353, almost all repeated per-message chat controls and filter chips that already clear the 24px floor). Making those 44px would change how the chat looks; not done without Joey | test-a11y, screens 36, role-nav 33, navigation, org-follows 20 |
 | **X-09 Score taps with no signal — and the outbox, which had never worked offline** (5 Nov; migration-free) | **Done.** The live score's taps now go through the outbox like the register and the RSVPs: with no signal the score, the hero and the timeline move at once, marked "waiting for signal", each tap keeps the minute it was tapped, and they arrive once, in order, when the signal is back; Undo on a tap still waiting takes it off the phone, so a slip never reaches the families' chat. **The first time the outbox was driven in a real browser with the signal cut, nothing was kept at all:** it asked the auth server who was signed in, so every write was refused as "Not signed in" — and the home RSVP dropped the answer silently while still showing it chosen, and the game page's and chat card's RSVP threw. It now reads the person from the phone's own session (`lib/offline/owner.ts`). Also found and fixed: a failed fifteen-second refresh blanked the coach's live panel, buttons and all, and stopped the hero refreshing for the rest of the game; a write made as the signal returned overtook the queue ("out" then "in" could arrive as "in" then "out"); every try with no answer counted towards the five-attempt cap, so a goal tapped in a dead spot was thrown away after five glances at the phone; a phone showing bars that carry nothing left a tap spinning for as long as the browser cared to wait (now kept after 6 s); the drain asked the auth server while holding Supabase's lock, so one stalled request could freeze every write after it; a kept write refused later was never mentioned (the bar now says so); the bar sat at the very end of long screens (now stuck above the tab bar, on an opaque ground). **Two known limits, each a migration for token day:** a tap whose answer was lost after reaching the database is sent twice (needs a client id on `live_tick`), and other phones count minutes from when a queued kick-off arrived (needs `live_tick` to take the kick-off's own time; this phone keeps its own). 375px light and dark: `.shots/no-signal-*` | test-outbox 46 (was 31), test-no-signal 33 (new: a browser offline, and with bars that carry nothing), tsc clean |
+| **League notices** (Joey, 5 Nov, late; extends L-11; 0212–0213 written, unapplied) | **Done in the app.** Each competition has a read-only Notices channel everyone in it is in (league, entered clubs' owners/admins/coaches, families of entered teams, referees), worked out from the competition and never stored as member rows. The league posts to Everyone or Club staff only; push follows; "Seen by N of M" for the league, a count; no replies, reactions, mentions or typing; club-staff notices, pushes and files invisible to families by policy. **Reverses CLAUDE.md's "see the draw, not each other's people" at Joey's word** — recorded there and as spec D-5, with what it protected kept. Found on the way: `channel_messages` reads as its definer and would have handed a family a staff notice; 0213 re-makes it. Email through Resend when there is a key (silent without; NEEDS JOEY #19). The competition's "Send" tab is "Notices"; the old broadcast runs until 0213. Tidy: an empty "SHOT:: Sydney Premier League" competition, left in the SPL by a screenshot script on 3 Nov, deleted. 375px light and dark: `.shots/notices-*` | test-notices 4 (+8 waiting for 0213), test-league-comms 6 (holds before and after), test-rls 115–123 written; chat, message-edit, reporting, search, dms, screens, a11y, nudge re-run green |
+| **Every account has an email** (Joey, 5 Nov, late; S-08; 0214 written, unapplied) | **Done in the app.** Joining asks for it beside the mobile (refused without), registration requires it, and an account without one is asked once on its next open with no skip; approval copies it to the account. Kept beside the sign-in address, not in it (a phone-joined parent's placeholder is what the claim routes find them by). Settings → Your email; one-tap confirmation links (Resend; silent without). The news-and-offers box is unticked everywhere, stored with its time, every change kept. Only the person and their own organisation's owners and admins see it. A phone-joined parent is no longer shown their placeholder address in Settings. 375px: `.shots/email-*` | test-required-email 11 (+ the screen once applied), test-rls 124–129 written; join-flow, join-codes, program-questions, public-registration, circular-26-02 now send an email, all green |
+| **A teenager's login, with a parent's yes** (Joey, 5 Nov, late; S-06 reversed in part, D-6; 0215 written, unapplied) | **Done in the app.** Under 13 never; from 13, My family → Their own login (the child's own email) → the teenager signs in and waits → the parent approves or says "not them". The database refuses any other route (player membership, player link, squad place). An account already in a club is never claimed as a child's. Regulatory questions in NEEDS JOEY #20 | test-rls 130–133 written (the probes roll themselves back) |
 | **Simplicity pass on Home** (Joey, 4 Nov; parent and coach, 375px) | **Done**, no migration. (1) Parent Home **2.4 → 1.4 screens**: the "Your jobs" strip is folded into Needs you (the three jobs are rows there, still `data-job` for the two-tap rule), the Channels list is gone from Home for everyone (the Chat tab carries it), a parent sees the next two fixtures and a coach three with "All N in the next 3 weeks". Coach Home 1.7 → 1.3. (2) One number: "to answer" everywhere is games and sessions in the next three weeks a child has not been answered for (`home_jobs`'s count) — Needs you says it, the training block's total counts sessions, the Fixtures list's per-game pills say "To answer" without a number so one game never reads as two. (3) One orange card, the most urgent; the rest plain rows. (4) An announcement older than 14 days is not shown (the "event date passed" half needs a column — migration day). (5) A signed-out visit to / goes to /signin: the screen hook now checks the session when a fetch fails. (6) Training rows sat on the card's edge — the block lacked the event card's padding class. (7) "17 quiet" → "17 not answered" (Home and Fixtures). (8) ☰ → "✎ Edit". (9) **Sam in COACHES SPL:** a *custom* chat Joey made by hand with two parents in it, not the coaches channel; the parents are out of it, and `test-coaches-channel` proves no parent sits in any channel named or typed for coaches and that RLS hides the real one from Sam. **Marcus's Admin:** the hub offered a coach New season, Venues and Start a competition, which the database refuses (`only an admin…`) — hidden now; `test-coach-scope` proves the refusals and the hub. One gap: the database still lets a coach *insert* a competition (0022's policy says coach) — **0208 written, unapplied until NEEDS JOEY #12**. Before/after: `.shots/home/{parent,coach}-{before,after}-*.png` (gitignored; on the laptop) | test-coaches-channel 5, test-coach-scope 15 (+1 note), role-nav 33, screens 36, tsc clean; Home as parent and coach at 375px light and dark |
 | **Every screen follows the organisation the browser is showing** (4 Nov, found by the 375px pass: Admin → Payments showed the stray "NRIFA" for Joey) | **Done**, no migration. `lib/use-current-org.ts` resolves the remembered organisation against the person's active memberships (else their first, and corrects the memory); the Admin hub, Admin → Payments, Members, Invites, the roster importer, Scan and the family's Payments became thin pages with browser-side loaders (RLS does the reading); Teams and Directory prefer the remembered organisation. NEEDS JOEY #8 closed bar the `nrifa-1` question | test-org-follows 21 (a throwaway "AAA" organisation that sorts first; nine pages; switch; fallback; nothing remembered), role-nav 33 and screens 36 re-run against the new code, tsc + eslint clean, Admin → Payments and the family's list at 375px both themes |
 | **The Stripe half** (3 Nov, Joey's key): B-01 card step, R-04 one checkout for the family, B-02 instalments, B-03 siblings, B-07 vouchers, B-04 refunds, L-02/L-16 entry fees; L-07 referee payouts tried and **parked** | **Done** (0207: one payments row per child per session; `entry_fees` remember their session). Routes: connect (Express, v2) · checkout (many children) · entry-fee · refund (named refunds) · webhook (`capability.updated`, `refund.*`). Screens: Admin → Payments reads the status back on return; the family's list gets "Pay … for X and Y in one go". Checkout cards only. Referee payouts: Stripe refuses connected-to-connected transfers; Joey parked them (tracking only) and the referee Stripe button, the league's "Pay through Stripe" and both routes came out. See the evening summary | test-stripe-e2e (by hand, 36 checks, every money path green), payments / fees / program-fees / fee-settings / league-entry / referee-payments / vouchers suites green, tsc + eslint clean |
@@ -456,7 +473,10 @@ Waiting on it (4 Nov): **0208** (a coach cannot start a competition) and
 `public_brand` for league colours on the public match centre) — test-rls
 checks 111–113 are written for them. And **0210** (`fixture_sides`: the other
 side's crest on a game's hero). And **0211** (a child with two guardians
-counted once in the coach's tally and the availability grid).
+counted once in the coach's tally and the availability grid). And (5 Nov,
+late) **0212–0213** (a competition's Notices; test-rls 115–123), **0214**
+(every account has an email; 124–129) and **0215** (a teenager's login with
+a parent's yes; 130–133).
 
 **13. — decided.** Referee payouts through Stripe are **parked** (Joey, 3
 Nov, evening): no Stripe payouts and no bank files for referees; tracking
@@ -518,6 +538,40 @@ Docker) on this laptop: the query plans, indexes and RLS fixes carry over
 exactly, but the timings are a laptop's, not Sydney's, so the plan
 recommendation would lean on Supabase's published numbers instead. Which
 do you want?
+
+**19. A Resend account and a sending domain — for December (league
+notices and required email, 5 Nov).** League notices are also emailed, and
+every account's email is confirmed with a one-tap link — both through
+Resend, and both do nothing, quietly, until there is a key: notices still
+arrive in the app and by push, and an email is saved, just not confirmed.
+To turn it on (Resend's free tier, no money): make a Resend account, add
+the domain you will send from and put the DNS records it gives you on it
+(SPF/DKIM), make an API key, and put `RESEND_API_KEY=` and
+`MAIL_FROM="Squadroom <notices@your-domain>"` in `.env.local` and on
+Netlify. Each league should also fill in its contact email (Club settings
+→ Contact email): it becomes the reply-to. Then, once: everyone with an
+unconfirmed address needs a link sent — I will do that the day the key
+lands. Separately, Supabase's own mailer (used by /signup) only reaches a
+few addresses an hour; pointing Supabase Auth's SMTP at Resend fixes that
+too.
+
+**20. Accounts for players aged 13 and over — your 5 Nov brief reverses
+"nobody under 18 gets an account"; three things to confirm.** Built as you
+wrote it (0215, unapplied): under 13 never; from 13 only with their own
+email and a guardian's approval, and the database refuses every other
+route. But the old rule was also a regulatory decision, and these are now
+open: (a) **Australia's under-16 social media minimum age** (in force since
+10 Dec 2025) — whether a team app with group chat is an "age-restricted
+social media platform" or falls under the messaging/education exemptions
+is a legal question; until it is answered I would keep player logins 16+
+or chat-off for 13–15 (one line in `app_private.is_thirteen` and a
+channel rule; say the word). (b) **The privacy notice** (#4) must now speak
+to a 13-year-old, and the Children's Online Privacy Code applies to child
+users, which there were none of. (c) **Junior referees** can already claim
+a login (0161) and declare themselves under 18, with no parent involved —
+should that route need a guardian's approval too? Also: anyone can make an
+account at /signup and nothing asks their age; that was true before and is
+unchanged.
 
 **1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
 than the file; it is in `.env.local` now and nowhere else, but a key that

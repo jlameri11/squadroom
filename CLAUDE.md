@@ -217,9 +217,22 @@ one and is meant to reach hundreds of academies.
   are teams in a division, and `team_id` is NULLABLE so a club that has not
   signed up is just a name on the draw.
   - **The rule that must never be blurred: being in a competition together
-    lets you see the DRAW, not each other's PEOPLE.** No policy on messages,
-    members, players, channels or the directory mentions competitions, and
-    none ever should. Proven by the cross-club isolation test.
+    lets you see the DRAW, not each other's PEOPLE.** No policy on members,
+    players or the directory mentions competitions, and none ever should.
+    Proven by the cross-club isolation test.
+  - **One exception, at Joey's word (5 Nov 2026): a competition's Notices**
+    (0212–0213). The league speaks to everyone in its competition — the
+    entered clubs' owners, admins and coaches, the families of the entered
+    teams, its referees — in one read-only channel, to Everyone or to Club
+    staff only. What the rule protected is kept, and must stay kept:
+    membership is worked out from the competition (`notices_standing`),
+    never stored as channel_members rows, so nobody in it can list, mention,
+    react to or see "typing" from anybody else; no replies; the league gets
+    "Seen by N of M", a count, never names; club-staff notices, their
+    pushes and their files are invisible to families by policy. Anything
+    new that reads messages as its definer must apply `audience` itself
+    (channel_messages had to, test-rls 116). A league never sees another
+    club's families' email addresses (0214).
   - `fixtures` belong to the competition, so a moved game moves once for
     everyone. A trigger mirrors each fixture into an ordinary `events` row
     per involved club, so RSVPs, reminders and channel cards work unchanged.
@@ -243,6 +256,25 @@ one and is meant to reach hundreds of academies.
     not to us. Free text on purpose - do not build a divisions table.
 - **Safeguarding defaults are the restrictive ones.** Parent-to-parent DMs
   off, parent phone numbers staff-only. Both are per-academy settings.
+- **Every account has an email, and a child's login needs a parent's yes**
+  (Joey, 5 Nov 2026; 0214–0215).
+  - The email lives in `account_emails`, beside the sign-in address, never in
+    it: a phone-joined parent signs in through a placeholder made from their
+    number, the claim routes find them by it, and replacing it mints an empty
+    account. Asked when joining (beside the mobile), at registration, and once
+    on the next open of an account without one (`EmailGate`: no skipping).
+    Any address; never matched to PlayFootball. Confirmed by a one-tap link.
+    Readable by its person and their own organisation's owners and admins
+    (`member_emails`), nobody else; a league never sees another club's.
+  - "Send me news and offers from Squadroom" is separate, unticked, never
+    required, stored with its time, every change kept (`news_consents`).
+    Club and league notices never need it.
+  - Children: under 13, never an account — the parent manages them. 13 and
+    over: their own email AND a guardian's approval (`player_logins`:
+    invited → waiting → approved), and no other route; the database refuses a
+    player membership, link or squad place without it. This replaces S-06's
+    "nobody under 18 has an account" (0078). 0076 still brings guardians into
+    any private chat with a child.
 - **Parents never see a signup screen, and onboarding sends no SMS.**
   The coach pastes the team link or QR into the group parents already use.
   A parent taps it, enters name and phone, and lands in a PENDING state.
