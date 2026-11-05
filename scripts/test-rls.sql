@@ -1302,6 +1302,9 @@ begin
       select count(*) into s_all from public.messages where id = v_all;
       select count(*) into s_staff from public.messages where id = v_staff;
       select count(*) into p_gala from public.messages where id = v_gmsg;
+      -- And through the chat screen's own reader, which runs as its definer.
+      select s_staff + count(*) into s_staff from public.channel_messages(v_nch, null, 100) cm where cm.id = v_staff;
+      select s_all * (select count(*) from public.channel_messages(v_nch, null, 100) cm where cm.id = v_all) into s_all;
       execute 'reset role';
       perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
       execute 'set local role authenticated';

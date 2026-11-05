@@ -32,6 +32,8 @@ export type ChatMessage = {
   /** C-06: replies under this message; whether this message is a reply to an announcement. */
   reply_count?: number
   reply_to_announcement?: boolean
+  /** 0213: who a competition's notice was for — 'everyone' or 'club_staff'. */
+  audience?: string
 }
 
 /**

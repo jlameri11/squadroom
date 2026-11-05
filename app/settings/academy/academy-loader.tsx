@@ -14,6 +14,8 @@ type Academy = {
   logo_url: string | null
   /** Arrives with 0209; undefined until then. */
   secondary_colour?: string | null
+  /** Arrives with 0213 (replies to emailed notices); undefined until then. */
+  contact_email?: string | null
   dm_policy: string
   directory_visibility: string
   primary_colour: string
@@ -95,6 +97,7 @@ export function AcademyLoader() {
           feesDisclosedSeason={academy.playfootball_fees_disclosed_season}
           blockRsvpWhenOverdue={academy.block_rsvp_when_overdue}
           overdueGraceDays={academy.overdue_grace_days}
+          contactEmail={academy.contact_email === undefined ? undefined : academy.contact_email}
         />
         </>
       ) : (

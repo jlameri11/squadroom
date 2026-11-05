@@ -76,7 +76,11 @@ export function ChannelList({ channels }: { channels: Row[] }) {
   // because they are a different kind of thing — one person rather than a
   // room — and an ended season is separated because it is read-only and
   // should not sit among the channels people still post in.
-  const active = channels.filter((c) => c.status === 'active' && c.type !== 'direct')
+  //
+  // A competition's Notices (0213) sit apart and first: they are the league
+  // speaking, read-only, and nobody should mistake one for a team chat.
+  const notices = channels.filter((c) => c.status === 'active' && (c.type as string) === 'notices')
+  const active = channels.filter((c) => c.status === 'active' && c.type !== 'direct' && (c.type as string) !== 'notices')
   const direct = channels.filter((c) => c.status === 'active' && c.type === 'direct')
   const archived = channels.filter((c) => c.status === 'archived')
 
@@ -99,6 +103,7 @@ export function ChannelList({ channels }: { channels: Row[] }) {
         </p>
       ) : (
         <>
+          <Group title="Competition notices" rows={notices} />
           <Group title="Your channels" rows={active} />
           <Group title="Direct" rows={direct} />
           <Group title={`Archived · past seasons`} rows={archived} />
@@ -295,8 +300,9 @@ function ChannelRow({ c }: { c: Row }) {
     <Link href={`/chat/${c.channel_id}`} className="chan active:bg-[var(--surface-3)]">
       <span
         className={`av ${c.status === 'archived' || c.unread_count === 0 ? 'alt' : ''}`}
+        data-notices={(c.type as string) === 'notices' ? '' : undefined}
       >
-        {initials(c.name ?? '··')}
+        {(c.type as string) === 'notices' ? <span aria-hidden>📣</span> : initials(c.name ?? '··')}
       </span>
 
       <span className="min-w-0 flex-1">

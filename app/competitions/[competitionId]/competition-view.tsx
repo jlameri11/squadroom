@@ -87,7 +87,7 @@ export function CompetitionView({
   const [division, setDivision] = useState(divisions[0] ?? '')
 
   const LABEL: Record<string, string> = {
-    run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', referees: 'Refs', clubs: 'Clubs', send: 'Send',
+    run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', referees: 'Refs', clubs: 'Clubs', send: 'Notices',
   }
 
   return (
@@ -112,7 +112,7 @@ export function CompetitionView({
         ))}
       </div>
 
-      {divisions.length > 1 && tab !== 'clubs' && tab !== 'discipline' && (
+      {divisions.length > 1 && tab !== 'clubs' && tab !== 'discipline' && tab !== 'send' && (
         <div className="flex gap-2 overflow-x-auto border-b border-[var(--line-2)] px-4 py-2">
           {divisions.map((d) => (
             <button
@@ -199,7 +199,7 @@ export function CompetitionView({
           <Clubs entries={entries} />
         </>
       )}
-      {tab === 'send' && <Broadcast competitionId={competitionId} isOrganiser={isOrganiser} />}
+      {tab === 'send' && <Notices competitionId={competitionId} competitionName={name} isOrganiser={isOrganiser} />}
     </div>
   )
 }
@@ -424,6 +424,48 @@ function dayOf(games: Fixture[]) {
     month: 'short',
     timeZone: SYDNEY,
   })
+}
+
+/**
+ * A competition's Notices (Joey, 5 Nov 2026; 0213): one channel that
+ * everyone in the competition is in, where the league posts to Everyone or
+ * to Club staff only. Until 0213 is applied there is no such channel, and
+ * the tab is the old broadcast to each club's coaches.
+ */
+function Notices({ competitionId, competitionName, isOrganiser }: { competitionId: string; competitionName: string; isOrganiser: boolean }) {
+  const [channel, setChannel] = useState<string | null | undefined>(undefined)
+  useEffect(() => {
+    ;(async () => {
+      const { data, error } = await createClient()
+        .from('channels')
+        .select('id')
+        .eq('type', 'notices')
+        .eq('competition_id', competitionId)
+        .maybeSingle()
+      setChannel(error ? null : (data?.id ?? null))
+    })()
+  }, [competitionId])
+
+  if (channel === undefined) return null
+  if (!channel) return <Broadcast competitionId={competitionId} isOrganiser={isOrganiser} />
+
+  return (
+    <div className="p-5" data-notices-tab>
+      <h2 className="font-semibold">{competitionName} Notices</h2>
+      <p className="mt-1 text-sm text-ink-2">
+        One place for everyone in the competition: every entered club&apos;s owners, admins and coaches, the
+        families in every entered team, and the referees. {isOrganiser ? 'Each notice goes to Everyone or to Club staff only — you choose when you post.' : 'Only the league posts.'}{' '}
+        Nobody in it sees anybody else, and nobody replies.
+      </p>
+      <Link
+        href={`/chat/${channel}`}
+        className="mt-3 block w-full rounded-xl px-4 py-3 text-center font-medium text-brand-ink"
+        style={{ background: 'var(--brand)' }}
+      >
+        {isOrganiser ? 'Post a notice' : 'Open the notices'}
+      </Link>
+    </div>
+  )
 }
 
 function Broadcast({ competitionId, isOrganiser }: { competitionId: string; isOrganiser: boolean }) {

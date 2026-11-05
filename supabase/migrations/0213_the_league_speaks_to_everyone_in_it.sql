@@ -480,6 +480,97 @@ create policy "attachments readable by channel members"
     )
   );
 
+-- ================================================= reading a channel
+
+-- channel_messages (0183) reads as its definer, past the policy above, so it
+-- applies the audience itself — or a family would read a club-staff notice
+-- through the chat screen. It also says who each message was for, so the
+-- screen can mark "Club staff only". (Its shape changes: dropped and made
+-- again, as 0183 did.)
+drop function if exists public.channel_messages(uuid, timestamptz, integer);
+create function public.channel_messages(
+  p_channel uuid,
+  p_before  timestamptz default null,
+  p_limit   integer default 50
+)
+returns table (
+  id           uuid,
+  body         text,
+  attachments  jsonb,
+  sender_id    uuid,
+  sender_name  text,
+  sender_role  public.academy_role,
+  sender_label text,
+  reply_to_id  uuid,
+  reply_to_body text,
+  reply_to_name text,
+  is_announcement boolean,
+  pinned_at    timestamptz,
+  created_at   timestamptz,
+  edited_at    timestamptz,
+  deleted_at   timestamptz,
+  event_id     uuid,
+  event        jsonb,
+  poll_id      uuid,
+  poll         jsonb,
+  reply_count  integer,
+  reply_to_announcement boolean,
+  audience     text
+)
+language sql stable security definer set search_path = public as $$
+  select
+    m.id,
+    case when m.deleted_at is null then m.body else null end,
+    case when m.deleted_at is null then m.attachments else '[]'::jsonb end,
+    m.sender_id,
+    p.full_name,
+    am.role,
+    app_private.channel_member_label(p_channel, m.sender_id),
+    m.reply_to_id,
+    case when r.deleted_at is null then r.body else null end,
+    rp.full_name,
+    m.is_announcement,
+    m.pinned_at,
+    m.created_at,
+    m.edited_at,
+    m.deleted_at,
+    m.event_id,
+    case when m.event_id is null then null else (
+      select to_jsonb(e) from (
+        select ev.id, ev.title, ev.type, ev.starts_at, ev.ends_at, ev.arrive_at,
+               ev.venue, ev.address, ev.opponent, ev.kit_colour, ev.cancelled_at
+          from public.events ev where ev.id = m.event_id
+      ) e
+    ) end,
+    m.poll_id,
+    case when m.poll_id is null then null else (
+      select to_jsonb(q) from (
+        select po.id, po.question, po.options, po.type, po.multi, po.anonymous,
+               po.closes_at, po.closed_at
+          from public.polls po where po.id = m.poll_id
+      ) q
+    ) end,
+    (select count(*)::integer from public.messages x where x.reply_to_id = m.id and x.status = 'published' and x.deleted_at is null),
+    coalesce(r.is_announcement, false),
+    m.audience
+  from public.messages m
+  left join public.profiles p on p.id = m.sender_id
+  left join public.academy_members am
+    on am.academy_id = m.academy_id and am.profile_id = m.sender_id
+  left join public.messages r on r.id = m.reply_to_id
+  left join public.profiles rp on rp.id = r.sender_id
+  where m.channel_id = p_channel
+    and m.status = 'published'
+    and (p_before is null or m.created_at < p_before)
+    and (select app_private.is_channel_member(p_channel))
+    and (m.audience = 'everyone' or (select app_private.sees_staff_notices(p_channel)))
+  order by m.created_at desc
+  limit least(coalesce(p_limit, 50), 100);
+$$;
+
+revoke execute on function public.channel_messages(uuid, timestamptz, integer) from public, anon;
+grant execute on function public.channel_messages(uuid, timestamptz, integer) to authenticated;
+
 -- ====================================================== the channel list
 
 -- Notices appear in every organisation's list a person switches to: they are

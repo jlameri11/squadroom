@@ -10,9 +10,13 @@ import { Composer } from './composer'
 import { PendingQueue } from './pending-queue'
 import { ScheduledStrip } from './scheduled-strip'
 import { ChannelSettings } from './channel-settings'
+import { NoticeComposer } from './notice-composer'
+
+/** A competition's Notices (0213): whose they are, for the header and the footer. */
+export type NoticesInfo = { competitionId: string; competition: string; league: string }
 
 export function ChannelView({
-  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, restrictions, myId, initialMessages,
+  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, restrictions, myId, initialMessages, notices = null,
 }: {
   channelId: string
   academyId: string
@@ -25,6 +29,7 @@ export function ChannelView({
   restrictions: Record<string, boolean>
   myId: string
   initialMessages: ChatMessage[]
+  notices?: NoticesInfo | null
 }) {
   const { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic, typing, sayTyping } =
     useChannelMessages(channelId, initialMessages)
@@ -50,7 +55,7 @@ export function ChannelView({
     [messages, myId]
   )
   useEffect(() => {
-    if (!myIdsKey) return
+    if (!myIdsKey || notices) return
     let live = true
     const load = async () => {
       const { data } = await supabase.current.rpc('read_receipts', { p_channel: channelId, p_message_ids: myIdsKey.split(',') })
@@ -69,7 +74,37 @@ export function ChannelView({
       live = false
       clearInterval(timer)
     }
-  }, [channelId, myIdsKey])
+  }, [channelId, myIdsKey, notices])
+
+  // Notices: how many of the people each was for have opened the channel
+  // since — a count, for the league only (0213 notices_reach). The last
+  // twenty notices are plenty.
+  const [reach, setReach] = useState<Record<string, { seen: number; total: number }>>({})
+  const noticeIdsKey = useMemo(
+    () => (notices && isHost ? messages.filter((m) => !m.deleted_at && /^[0-9a-f-]{36}$/.test(m.id)).slice(-20).map((m) => m.id).join(',') : ''),
+    [messages, notices, isHost]
+  )
+  useEffect(() => {
+    if (!noticeIdsKey) return
+    let live = true
+    const load = async () => {
+      const { data } = await supabase.current.rpc('notices_reach', { p_channel: channelId, p_message_ids: noticeIdsKey.split(',') })
+      if (!live || !data) return
+      setReach((prev) => {
+        const next = { ...prev }
+        for (const r of data as { message_id: string; seen: number; total: number }[]) next[r.message_id] = { seen: r.seen, total: r.total }
+        return next
+      })
+    }
+    void load()
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') void load()
+    }, 30_000)
+    return () => {
+      live = false
+      clearInterval(timer)
+    }
+  }, [channelId, noticeIdsKey])
 
   // "Sarah is typing…" — everyone but me, newest first is not needed.
   const typingNames = Object.entries(typing).filter(([id]) => id !== myId).map(([, v]) => v.name.split(' ')[0])
@@ -132,22 +167,28 @@ export function ChannelView({
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="display truncate text-[1.3125rem] leading-tight">{name}</h1>
-          <p className="truncate text-xs opacity-75">
-            {archived ? 'Past season · read-only'
+          <p className="truncate text-xs opacity-75" data-channel-kind={notices ? 'notices' : undefined}>
+            {notices
+              ? `From ${notices.league}${archived ? ' · ended' : ' · only the league posts'}`
+              : archived ? 'Past season · read-only'
               : postingMode === 'hosts_only' ? 'Announcements only'
               : postingMode === 'replies_only' ? 'Replies only'
               : 'Everyone can post'}
             {muted && ' · muted'}
           </p>
         </div>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-lg"
-          style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}
-          aria-label="Channel settings"
-        >
-          ⋯
-        </button>
+        {/* Notices have nothing to set: their reach is the competition's and
+            nobody may open them up (0213). */}
+        {!notices && (
+          <button
+            onClick={() => setShowSettings(true)}
+            className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-lg"
+            style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}
+            aria-label="Channel settings"
+          >
+            ⋯
+          </button>
+        )}
       </header>
 
       {showSettings && (
@@ -162,7 +203,7 @@ export function ChannelView({
         />
       )}
 
-      <PendingQueue channelId={channelId} isHost={isHost} />
+      {!notices && <PendingQueue channelId={channelId} isHost={isHost} />}
 
       {pinned && (
         <div
@@ -190,7 +231,9 @@ export function ChannelView({
 
         {messages.length === 0 && (
           <p className="py-10 text-center text-sm text-ink-2">
-            Nothing here yet. Say hello.
+            {notices
+              ? `No notices yet. ${notices.league} posts them here for everyone in ${notices.competition}.`
+              : 'Nothing here yet. Say hello.'}
           </p>
         )}
 
@@ -206,6 +249,7 @@ export function ChannelView({
               showDay={showDaySeparator(topLevel, i)}
               onReply={() => setReplyTo(m)}
               receipt={m.sender_id === myId ? receipts[m.id] ?? null : null}
+              notice={notices ? { reach: reach[m.id] ?? null } : null}
             />
             {threads.has(m.id) && (
               <div className="mb-2 ml-4">
@@ -242,6 +286,19 @@ export function ChannelView({
           {typingLine}
         </p>
       )}
+      {notices ? (
+        <NoticeComposer
+          channelId={channelId}
+          academyId={academyId}
+          myId={myId}
+          canPost={isHost && !archived}
+          archived={archived}
+          league={notices.league}
+          addOptimistic={addOptimistic}
+          replaceOptimistic={replaceOptimistic}
+        />
+      ) : (
+      <>
       <ScheduledStrip channelId={channelId} refreshKey={scheduledKey} />
       <Composer
         onScheduled={() => setScheduledKey((k) => k + 1)}
@@ -260,6 +317,8 @@ export function ChannelView({
         addOptimistic={addOptimistic}
         replaceOptimistic={replaceOptimistic}
       />
+      </>
+      )}
     </div>
   )
 }

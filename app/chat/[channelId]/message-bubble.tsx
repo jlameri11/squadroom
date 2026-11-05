@@ -61,9 +61,15 @@ function Ticks({ receipt }: { receipt: Receipt | null }) {
 type Count = { emoji: string; reaction_count: number; reacted_by_me: boolean }
 
 export function MessageBubble({
-  message, mine, isHost, academyId, myId, showDay, onReply, translation = null, receipt = null,
+  message, mine, isHost, academyId, myId, showDay, onReply, translation = null, receipt = null, notice = null,
 }: {
   message: ChatMessage
+  /**
+   * In a competition's Notices (0213): no reactions and no replies — who
+   * reacted is names from every club — and, for the league, how many of the
+   * people it was for have seen it. A count, never a name.
+   */
+  notice?: { reach: { seen: number; total: number } | null } | null
   /** W-08: the body in the reader's language, when they chose one and it exists. */
   translation?: string | null
   /** 0194: for my own messages, how many of the others have seen it. */
@@ -115,17 +121,20 @@ export function MessageBubble({
     const s = touch.current
     touch.current = null
     setSwipeX(0)
-    if (s && s.dx > 56 && !message.deleted_at) onReply()
+    if (s && s.dx > 56 && !message.deleted_at && !inNotices) onReply()
   }
 
+  const inNotices = notice !== null
   useEffect(() => {
+    // Nobody reacts to a notice (0213), so there is nothing to count.
+    if (inNotices) return
     let cancelled = false
     supabase.rpc('reaction_counts', { p_message_ids: [message.id] }).then(({ data }) => {
       if (!cancelled) setCounts((data ?? []) as Count[])
     })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [message.id])
+  }, [message.id, inNotices])
 
   async function react(emoji: string) {
     setPicking(false)
@@ -258,7 +267,7 @@ export function MessageBubble({
         )}
 
         <div
-          onDoubleClick={onReply}
+          onDoubleClick={inNotices ? undefined : onReply}
           className={`${message.event || message.poll ? 'w-[85%] max-w-[85%] p-0' : 'max-w-[85%] px-3 py-2'} rounded-2xl ${
             message.is_announcement
               ? 'border-2'
@@ -277,8 +286,8 @@ export function MessageBubble({
           }
         >
           {message.is_announcement && (
-            <span className="mb-1 block text-[0.625rem] font-bold uppercase tracking-wide" style={{ color: 'var(--brand-text)' }}>
-              Announcement
+            <span className="mb-1 block text-[0.625rem] font-bold uppercase tracking-wide" style={{ color: 'var(--brand-text)' }} data-notice-label={inNotices ? message.audience ?? 'everyone' : undefined}>
+              {inNotices ? (message.audience === 'club_staff' ? 'Notice · Club staff only' : 'Notice') : 'Announcement'}
             </span>
           )}
 
@@ -353,10 +362,15 @@ export function MessageBubble({
             {time}{message.edited_at && ' · edited'}
             {mine && !message.is_announcement && !message.deleted_at && <Ticks receipt={receipt} />}
           </span>
+          {notice?.reach && !message.deleted_at && (
+            <span className="mt-0.5 block text-right text-[0.6875rem] text-ink-3" data-notice-reach>
+              Seen by {notice.reach.seen} of {notice.reach.total}
+            </span>
+          )}
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-1">
-          {counts.map((c) => (
+          {!inNotices && counts.map((c) => (
             <button
               key={c.emoji}
               onClick={() => react(c.emoji)}
@@ -370,15 +384,17 @@ export function MessageBubble({
             </button>
           ))}
 
-          <button
-            onClick={() => setPicking((v) => !v)}
-            className="grid min-h-8 min-w-8 place-items-center rounded-full border border-dashed border-[var(--line)] px-2 text-xs text-ink-3"
-            aria-label="Add a reaction"
-          >
-            ＋
-          </button>
+          {!inNotices && (
+            <button
+              onClick={() => setPicking((v) => !v)}
+              className="grid min-h-8 min-w-8 place-items-center rounded-full border border-dashed border-[var(--line)] px-2 text-xs text-ink-3"
+              aria-label="Add a reaction"
+            >
+              ＋
+            </button>
+          )}
 
-          {!message.deleted_at && (
+          {!message.deleted_at && !inNotices && (
             <button onClick={onReply} className="tap px-1 text-xs text-ink-3">Reply</button>
           )}
 

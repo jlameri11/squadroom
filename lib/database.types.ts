@@ -14,9 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_emails: {
+        Row: {
+          created_at: string
+          email: string
+          news_opt_in_at: string | null
+          profile_id: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          news_opt_in_at?: string | null
+          profile_id: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          news_opt_in_at?: string | null
+          profile_id?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      notice_emails: {
+        Row: { message_id: string; profile_id: string; provider_id: string | null; sent_at: string }
+        Insert: { message_id: string; profile_id: string; provider_id?: string | null; sent_at?: string }
+        Update: { message_id?: string; profile_id?: string; provider_id?: string | null; sent_at?: string }
+        Relationships: []
+      }
+      player_logins: {
+        Row: {
+          academy_id: string
+          claimed_at: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string
+          invited_by: string
+          player_id: string
+          profile_id: string | null
+          status: string
+        }
+        Insert: {
+          academy_id: string
+          claimed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email: string
+          invited_by: string
+          player_id: string
+          profile_id?: string | null
+          status?: string
+        }
+        Update: {
+          academy_id?: string
+          claimed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string
+          invited_by?: string
+          player_id?: string
+          profile_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       academies: {
         Row: {
           block_rsvp_when_overdue: boolean
+          contact_email: string | null
           created_at: string
           created_by: string | null
           directory_visibility: Database["public"]["Enums"]["directory_visibility"]
@@ -42,6 +115,7 @@ export type Database = {
         }
         Insert: {
           block_rsvp_when_overdue?: boolean
+          contact_email?: string | null
           created_at?: string
           created_by?: string | null
           directory_visibility?: Database["public"]["Enums"]["directory_visibility"]
@@ -67,6 +141,7 @@ export type Database = {
         }
         Update: {
           block_rsvp_when_overdue?: boolean
+          contact_email?: string | null
           created_at?: string
           created_by?: string | null
           directory_visibility?: Database["public"]["Enums"]["directory_visibility"]
@@ -405,6 +480,7 @@ export type Database = {
           academy_id: string
           age_group: string | null
           archived_at: string | null
+          competition_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -423,6 +499,7 @@ export type Database = {
           academy_id: string
           age_group?: string | null
           archived_at?: string | null
+          competition_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -441,6 +518,7 @@ export type Database = {
           academy_id?: string
           age_group?: string | null
           archived_at?: string | null
+          competition_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -3086,6 +3164,7 @@ export type Database = {
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          email: string | null
           expires_at: string
           full_name: string
           id: string
@@ -3104,6 +3183,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          email?: string | null
           expires_at?: string
           full_name: string
           id?: string
@@ -3122,6 +3202,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          email?: string | null
           expires_at?: string
           full_name?: string
           id?: string
@@ -3802,6 +3883,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           attachments: Json
+          audience: string
           body: string | null
           channel_id: string
           created_at: string
@@ -3826,6 +3908,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           attachments?: Json
+          audience?: string
           body?: string | null
           channel_id: string
           created_at?: string
@@ -3850,6 +3933,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           attachments?: Json
+          audience?: string
           body?: string | null
           channel_id?: string
           created_at?: string
@@ -6959,6 +7043,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_player_login: { Args: never; Returns: Json }
+      decide_player_login: {
+        Args: { p_approve: boolean; p_player: string }
+        Returns: Json
+      }
+      end_player_login: { Args: { p_player: string }; Returns: Json }
+      invite_player_login: {
+        Args: { p_email: string; p_player: string }
+        Returns: Json
+      }
+      member_emails: {
+        Args: { p_academy: string }
+        Returns: { email: string; profile_id: string; verified: boolean }[]
+      }
+      my_email: { Args: never; Returns: Json }
+      notice_email_recipients: {
+        Args: { p_message: string }
+        Returns: {
+          competition: string
+          email: string
+          league: string
+          profile_id: string
+          reply_to: string | null
+          standing: string
+        }[]
+      }
+      notices_reach: {
+        Args: { p_channel: string; p_message_ids: string[] }
+        Returns: { message_id: string; seen: number; total: number }[]
+      }
+      set_my_email: {
+        Args: { p_email: string; p_news?: boolean }
+        Returns: Json
+      }
+      set_my_news: { Args: { p_news: boolean }; Returns: Json }
       abandon_round: {
         Args: {
           p_cancel?: boolean
@@ -7166,6 +7285,7 @@ export type Database = {
         Args: { p_before?: string; p_channel: string; p_limit?: number }
         Returns: {
           attachments: Json
+          audience: string
           body: string
           created_at: string
           deleted_at: string
@@ -8712,6 +8832,7 @@ export type Database = {
         | "academy_wide"
         | "direct"
         | "custom"
+        | "notices"
       clearance_kind: "wwcc" | "exemption"
       clearance_outcome: "cleared" | "applied" | "barred" | "not_found"
       competition_mode: "managed" | "comms_only"
@@ -8977,6 +9098,7 @@ export const Constants = {
         "academy_wide",
         "direct",
         "custom",
+        "notices",
       ],
       clearance_kind: ["wwcc", "exemption"],
       clearance_outcome: ["cleared", "applied", "barred", "not_found"],

@@ -19,6 +19,7 @@ export function AcademySettings({
   feesDisclosedSeason = null,
   blockRsvpWhenOverdue = false,
   overdueGraceDays = 14,
+  contactEmail,
 }: {
   academyId: string
   dmPolicy: string
@@ -31,6 +32,11 @@ export function AcademySettings({
   /** W-07: a family with a fee past due cannot say yes to a game until it is paid. */
   blockRsvpWhenOverdue?: boolean
   overdueGraceDays?: number
+  /**
+   * 0213: the address replies to the organisation's emailed notices go to.
+   * Undefined until the column exists, and then the section is not shown.
+   */
+  contactEmail?: string | null
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -47,6 +53,7 @@ export function AcademySettings({
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
+  const [contact, setContact] = useState(contactEmail ?? '')
 
   // Typed to the columns this screen may touch, rather than a loose
   // record. The generated types then check the values as well as the keys.
@@ -58,6 +65,7 @@ export function AcademySettings({
     | { playfootball_fees_disclosed_season: string | null; playfootball_fees_disclosed_at: string | null }
     | { block_rsvp_when_overdue: boolean }
     | { overdue_grace_days: number }
+    | { contact_email: string | null }
 
   const ladder = (() => {
     const a = Math.round(Number(second) * 100)
@@ -84,6 +92,35 @@ export function AcademySettings({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {error && <p className="text-sm ">{error}</p>}
+
+      {contactEmail !== undefined && (
+        <section data-contact-email>
+          <h2 className="font-semibold">Contact email</h2>
+          <p className="mt-1 text-sm text-ink-2">
+            Where replies go. A competition&apos;s notices are also emailed, and a family or a club that
+            replies reaches this address. Use one somebody reads.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              type="email"
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
+              placeholder="secretary@yourclub.org.au"
+              aria-label="Contact email"
+              className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--line)' }}
+            />
+            <button
+              onClick={() => update({ contact_email: contact.trim() || null })}
+              disabled={busy || contact.trim() === (contactEmail ?? '')}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50"
+              style={{ background: 'var(--brand)' }}
+            >
+              Save
+            </button>
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="font-semibold">Player names on public pages</h2>
