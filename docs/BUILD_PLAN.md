@@ -137,7 +137,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | E-05 | Availability grid | Players × next 4 events, colour-coded, tap a cell to see the reason. **Done 3 Nov (0199)** — on the team page, with the last two registers alongside |
 | E-06 | Squad selection | Pick from the available players → positions (optional), meet time, kit → "Selected" push to those families; "Not selected this week" handled gently. **Done 3 Nov (0199)** — publishing the sheet (0125) now tells the selected families once per role; the left-out families only when the coach ticks it, gently |
 | E-08 | Venues table | Maps link, parking, field map photo, toilets/canteen notes; reused by events and competitions. **Done 3 Nov (L-29, 0198)** |
-| E-01b | Edit one occurrence | Change a single training session's time/venue without breaking the series |
+| E-01b | Edit one occurrence | Change a single training session's time/venue without breaking the series. **Done 5 Nov** — "Change time or place" on the session's page; only that row moves; the squad is told by the existing change alert |
 | F-07 | Match-day checklist | Push to the manager 60 min before kick-off: "Submit the team sheet in Dribl (fines apply)" with a deep link; tick-off list. **Done 3 Nov (0200)** — the list on the game (auto-ticks from the sheet, the side, the register, the score), the hour-before push naming what is left |
 
 ### M5: Match centre & stats (2–3 sessions)

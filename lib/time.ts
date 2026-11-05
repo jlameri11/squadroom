@@ -55,3 +55,34 @@ export function countdown(iso: string | Date, now: Date = new Date(), tz?: strin
   const weeks = Math.round(days / 7)
   return `in ${weeks} weeks`
 }
+
+/**
+ * The date and the 24-hour time in that place — what a form's date and time
+ * fields hold: { date: '2026-11-12', time: '17:00' }.
+ */
+export function placeParts(iso: string | Date, tz?: string | null): { date: string; time: string } {
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: tz || DEFAULT_TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
+  return { date: placeDate(d, tz), time }
+}
+
+/**
+ * The instant that is `time` on `date` in that place, whatever the phone's
+ * own clock and however daylight saving stands that day: guess, read the
+ * place's clock at the guess, correct by the difference.
+ */
+export function zonedToUtc(date: string, time: string, tz?: string | null): Date {
+  const [y, m, d] = date.split('-').map(Number)
+  const [hh, mm] = time.split(':').map(Number)
+  const want = Date.UTC(y, m - 1, d, hh, mm)
+  let t = want
+  for (let i = 0; i < 3; i++) {
+    const p = placeParts(new Date(t), tz)
+    const [py, pm, pd] = p.date.split('-').map(Number)
+    const [ph, pmin] = p.time.split(':').map(Number)
+    const diff = want - Date.UTC(py, pm - 1, pd, ph, pmin)
+    if (diff === 0) break
+    t += diff
+  }
+  return new Date(t)
+}

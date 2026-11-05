@@ -13,6 +13,7 @@ import { Register } from './register'
 import { Result } from './result'
 import { Lineup } from './lineup'
 import { GameHero } from './game-hero'
+import { EditOccurrence } from './edit-occurrence'
 import { FullLadder, MiniLadder, TeamForm } from './game-panels'
 import { useGame } from './use-game'
 import { createClient } from '@/lib/supabase/client'
@@ -49,7 +50,7 @@ export function EventDetail({
   event, mine, isCoach, summary, roster, tz, us,
 }: {
   event: {
-    id: string; academy_id: string; team_id: string | null; type: string; title: string
+    id: string; academy_id: string; team_id: string | null; series_id: string | null; type: string; title: string
     description: string | null; starts_at: string; ends_at: string | null
     arrive_at: string | null; venue: string | null; address: string | null
     opponent: string | null; kit_colour: string | null; round: string | null
@@ -324,6 +325,7 @@ export function EventDetail({
         </header>
         {details}
         {result}
+        {isCoach && <EditOccurrence event={event} tz={tz} />}
         {isCoach && <CallItOff event={event} />}
         {yourAnswer}
         {/* Before the tally, because once a session has started the register is
@@ -386,6 +388,7 @@ export function EventDetail({
           {details}
           {game && <TeamForm game={game} ourName={ourName} theirName={theirName} />}
           {game && <MiniLadder game={game} onOpen={() => choose('ladder')} />}
+          {isCoach && <EditOccurrence event={event} tz={tz} />}
           {isCoach && <CallItOff event={event} />}
         </div>
       )}
