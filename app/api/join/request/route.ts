@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSecret, hashSecret, toE164, joinLinkFilter } from '@/lib/join'
+import { checkEmail } from '@/lib/email'
 
 /**
  * Hashed, never stored raw. This is a spam control, not a record of who
@@ -25,16 +26,22 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
 
-  const { token, fullName, phone, children } = body as {
+  const { token, fullName, phone, children, email, news } = body as {
     token?: string
     fullName?: string
     phone?: string
     children?: string[]
+    email?: string
+    news?: boolean
   }
 
   if (!token || !fullName?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
+
+  // Every account has an email (Joey, 5 Nov 2026): no joining without one.
+  const mail = checkEmail(email)
+  if (!mail.ok) return NextResponse.json({ error: mail.error }, { status: 400 })
 
   const e164 = phone ? toE164(phone) : null
   if (phone && !e164) {
@@ -87,21 +94,29 @@ export async function POST(request: Request) {
 
   const secret = generateSecret()
 
-  const { data: created, error } = await admin
+  const row = {
+    academy_id: link.academy_id,
+    team_id: link.team_id,
+    join_link_id: link.id,
+    full_name: fullName.trim(),
+    phone: e164,
+    children_names: (children ?? []).map((c) => c.trim()).filter(Boolean),
+    secret_hash: hashSecret(secret),
+  }
+  // The email and the news opt-in (unticked unless ticked, with its time)
+  // ride on the request until approval copies them to the account (0214).
+  let { data: created, error } = await admin
     .from('join_requests')
-    .insert({
-      academy_id: link.academy_id,
-      team_id: link.team_id,
-      join_link_id: link.id,
-      full_name: fullName.trim(),
-      phone: e164,
-      children_names: (children ?? []).map((c) => c.trim()).filter(Boolean),
-      secret_hash: hashSecret(secret),
-    })
+    .insert({ ...row, email: mail.email, news_opt_in_at: news === true ? new Date().toISOString() : null })
     .select('id')
     .single()
+  // Before 0214 the columns are not there; the request still goes, and the
+  // email is asked for again on the first open after it lands.
+  if (error && /column|schema cache/i.test(error.message)) {
+    ;({ data: created, error } = await admin.from('join_requests').insert(row).select('id').single())
+  }
 
-  if (error) {
+  if (error || !created) {
     return NextResponse.json({ error: 'Could not send your request.' }, { status: 500 })
   }
 

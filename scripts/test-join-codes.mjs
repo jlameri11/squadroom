@@ -116,6 +116,7 @@ const afterRevoke = await post('/api/join/request', {
   token: revoked.code,
   fullName: 'Test Revoked',
   phone: '0400000111',
+  email: 'test.code.11@example.com',
 })
 afterRevoke.status >= 400
   ? ok(`a revoked link refuses its code too (${afterRevoke.status})`)
@@ -127,6 +128,7 @@ const afterExpiry = await post('/api/join/request', {
   token: expired.code,
   fullName: 'Test Expired',
   phone: '0400000112',
+  email: 'test.code.12@example.com',
 })
 afterExpiry.status >= 400
   ? ok(`an expired link refuses its code too (${afterExpiry.status})`)
@@ -138,6 +140,7 @@ const afterCap = await post('/api/join/request', {
   token: capped.code,
   fullName: 'Test Capped',
   phone: '0400000113',
+  email: 'test.code.13@example.com',
 })
 afterCap.status >= 400
   ? ok(`a spent link refuses its code too (${afterCap.status})`)
@@ -151,6 +154,7 @@ const request = await post('/api/join/request', {
   token: live.code,
   fullName: 'Test Code Parent',
   phone: '0400000114',
+  email: 'test.code.14@example.com',
   children: ['Test Code Child'],
 })
 if (request.status !== 200) {

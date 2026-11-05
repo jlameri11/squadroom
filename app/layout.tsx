@@ -4,6 +4,7 @@ import './globals.css'
 import { HashSession } from '@/components/hash-session'
 import { TabBar } from '@/components/app-shell'
 import { OfflineBanner } from '@/components/offline-banner'
+import { EmailGate } from '@/components/email-gate'
 import { TwoStepGate } from '@/components/two-step-gate'
 import { TEXT_SIZE_SCRIPT } from '@/lib/text-size'
 import { THEME_SCRIPT } from '@/lib/brand/theme-script'
@@ -79,6 +80,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         {/* Above every page: somebody with two-step sign-in on sees nothing
             until the second step is done (S-07). Renders nothing otherwise. */}
         <TwoStepGate />
+        {/* Every account has an email: one screen, once, for an account
+            without one (Joey, 5 Nov 2026; 0214). Renders nothing otherwise. */}
+        <EmailGate />
         {/*
           Rendered once, above every page, so it survives navigation.
           It used to be rendered BY each screen, which meant it unmounted and

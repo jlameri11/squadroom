@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { adoptEmail } from '@/lib/account-email'
 import { syntheticEmail } from '@/lib/join'
 
 /**
@@ -105,6 +106,10 @@ export async function POST(request: Request) {
     }
     profileId = created.user.id
   }
+
+  // The email they registered with becomes the account's (0214), unless the
+  // account has one already. Before 0214 this quietly does nothing.
+  await adoptEmail(admin, profileId, req.guardian_email)
 
   // academy_members fires the trigger that puts them in the academy-wide
   // channel; team_members fires the ones for the team and age-group channels.

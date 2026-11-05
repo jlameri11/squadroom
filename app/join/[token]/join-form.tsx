@@ -24,6 +24,9 @@ export function JoinForm({
   const [stage, setStage] = useState<Stage>('form')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  // Never pre-ticked, never required (Joey, 5 Nov 2026).
+  const [news, setNews] = useState(false)
   const [children, setChildren] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -40,6 +43,8 @@ export function JoinForm({
         token,
         fullName,
         phone,
+        email,
+        news,
         children: children.split(',').map((c) => c.trim()).filter(Boolean),
       }),
     })
@@ -129,6 +134,22 @@ export function JoinForm({
         </label>
 
         <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Email</span>
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="rounded-xl border border-[var(--line)] px-3 py-3"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            data-join-email
+          />
+          <span className="text-xs text-ink-3">Any email you read — it doesn&apos;t have to match PlayFootball.</span>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
             Your children in this team
           </span>
@@ -138,6 +159,17 @@ export function JoinForm({
             className="rounded-xl border border-[var(--line)] px-3 py-3"
             placeholder="Leo Whitfield, Zoe Whitfield"
           />
+        </label>
+
+        <label className="flex items-start gap-2.5 text-sm text-ink-2">
+          <input
+            type="checkbox"
+            checked={news}
+            onChange={(e) => setNews(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-none"
+            data-news-opt-in
+          />
+          <span>Send me news and offers from Squadroom <span className="text-ink-3">(optional)</span></span>
         </label>
 
         {error && <p className="text-sm ">{error}</p>}

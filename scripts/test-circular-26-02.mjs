@@ -100,13 +100,13 @@ let reqId
   const res = await fetch(`${BASE}/api/register/request`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, guardianName: 'Casey Guardian', guardianPhone: '0400 002 602', childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', childFifa: 'abc', consents }),
+    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, guardianName: 'Casey Guardian', guardianPhone: '0400 002 602', guardianEmail: 'casey.guardian@example.com', childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', childFifa: 'abc', consents }),
   })
   res.status === 400 ? ok('a FIFA ID that is not digits is refused by the form route') : bad(`bad FIFA ID: ${res.status}`)
   const res2 = await fetch(`${BASE}/api/register/request`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, guardianName: 'Casey Guardian', guardianPhone: '0400 002 602', childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', consents }),
+    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, guardianName: 'Casey Guardian', guardianPhone: '0400 002 602', guardianEmail: 'casey.guardian@example.com', childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', consents }),
   })
   res2.ok ? ok('the family registers with FFA 12345678') : bad(`request: ${res2.status} ${await res2.text()}`)
   const { data: req } = await admin.from('registration_requests').select('id, ffa_number, fifa_id, official_confirmed_at').like('child_name', `Riley Form ${TAG}`).single()

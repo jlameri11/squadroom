@@ -179,6 +179,7 @@ const submit = (over = {}) =>
     programId: program.id,
     guardianName: `${TAG} Parent`,
     guardianPhone: PHONE,
+    guardianEmail: 'public.reg.parent@example.com',
     childName: `${TAG} Child`,
     childDob: eligible,
     consents: allConsents,

@@ -141,6 +141,7 @@ const submit = (answers) =>
       programId: PID,
       guardianName: 'Q Test Parent',
       guardianPhone: '0400 777 888',
+      guardianEmail: 'questions.parent@example.com',
       childName: 'Q Test Child',
       childDob: '2016-04-04',
       answers,

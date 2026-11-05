@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { checkEmail } from '@/lib/email'
 import { cleanAnswers } from '@/lib/registration/answers'
 import type { Question } from '@/components/question-field'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -93,12 +94,11 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
-  if (!e164 && !guardianEmail?.trim()) {
-    return NextResponse.json(
-      { error: 'A mobile number or an email address, so the club can reply.' },
-      { status: 400 }
-    )
-  }
+  // Every account has an email (Joey, 5 Nov 2026), and registering a child
+  // is how a family's account begins: an email is required, any one they
+  // read. The mobile is still how approval makes the account.
+  const mail = checkEmail(guardianEmail)
+  if (!mail.ok) return NextResponse.json({ error: mail.error }, { status: 400 })
 
   const admin = createAdminClient()
 
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       program_id: program,
       guardian_name: guardianName.trim(),
       guardian_phone: e164,
-      guardian_email: guardianEmail?.trim() || null,
+      guardian_email: mail.email,
       child_name: childName.trim(),
       child_dob: childDob,
       child_gender: (gender as Gender) || null,

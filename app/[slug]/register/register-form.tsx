@@ -1,5 +1,6 @@
 'use client'
 
+import { EMAIL_SHAPE } from '@/lib/email'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ProgramSummary, money, type PublicProgram } from '../program-card'
@@ -249,7 +250,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const step1Ok = Boolean(program && childName.trim() && childDob)
   const step2Ok =
     Boolean(guardianName.trim()) &&
-    Boolean(guardianPhone.trim() || guardianEmail.trim()) &&
+    EMAIL_SHAPE.test(guardianEmail.trim()) &&
     missing.length === 0 &&
     unansweredQs.length === 0
 
@@ -428,10 +429,11 @@ export function RegisterForm({ slug }: { slug: string }) {
                   hint="This is how the club replies, and how you sign in later."
                 />
                 <Field
-                  label="Email (optional)"
+                  label="Email"
                   type="email"
                   value={guardianEmail}
                   onChange={setGuardianEmail}
+                  hint="Any email you read — it doesn’t have to match PlayFootball."
                 />
               </section>
 
@@ -517,8 +519,8 @@ export function RegisterForm({ slug }: { slug: string }) {
                 >
                   {!guardianName.trim()
                     ? 'Fill in your name'
-                    : !guardianPhone.trim() && !guardianEmail.trim()
-                      ? 'A mobile or an email'
+                    : !EMAIL_SHAPE.test(guardianEmail.trim())
+                      ? 'Your email'
                       : missing.length > 0
                         ? `Agree to the ${missing.length} required ${missing.length === 1 ? 'document' : 'documents'}`
                         : unansweredQs.length > 0

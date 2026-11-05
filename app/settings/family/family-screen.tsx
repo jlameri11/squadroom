@@ -194,9 +194,130 @@ function ChildCard({
           <Section title="Privacy — who sees what">
             <ChildPrivacy playerId={c.id} firstName={c.preferred_name ?? c.full_name.split(' ')[0]} />
           </Section>
+          {isThirteen(c.dob) && <LoginSection child={c} />}
         </div>
       )}
     </article>
+  )
+}
+
+/** 13 or over today, by date of birth — the same line the database draws (0215). */
+function isThirteen(dob: string | null): boolean {
+  if (!dob) return false
+  const d = new Date(dob + 'T00:00:00')
+  const now = new Date()
+  const thirteen = new Date(d.getFullYear() + 13, d.getMonth(), d.getDate())
+  return thirteen <= now
+}
+
+type Login = { email: string; status: 'invited' | 'waiting' | 'approved' | 'refused' | 'ended' }
+
+/**
+ * A teenager's own login (Joey, 5 Nov 2026; 0215). From 13 only, with their
+ * own email, and only once a guardian has approved the account that signed
+ * in with it. Hidden until 0215 exists, and for anyone under 13 — they never
+ * have one; the parent manages them.
+ */
+function LoginSection({ child: c }: { child: Child }) {
+  const first = c.preferred_name ?? c.full_name.split(' ')[0]
+  const [login, setLogin] = useState<Login | null | undefined>(undefined)
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const { data, error } = await createClient().from('player_logins').select('email, status').eq('player_id', c.id).maybeSingle()
+    setLogin(error ? undefined : ((data as Login | null) ?? null))
+  }, [c.id])
+  useEffect(() => {
+    ;(async () => {
+      await load()
+    })()
+  }, [load])
+
+  if (login === undefined) return null
+
+  async function run(fn: () => PromiseLike<{ error: { message: string } | null }>) {
+    setBusy(true)
+    setError(null)
+    const { error } = await fn()
+    setBusy(false)
+    if (error) return setError(error.message)
+    await load()
+  }
+  const supabase = createClient()
+  const signupLink = typeof window === 'undefined' ? '/signup' : `${window.location.origin}/signup?next=%2F`
+  const button = 'rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50'
+
+  return (
+    <Section title="Their own login">
+      <div data-player-login={login?.status ?? 'none'}>
+        {(!login || login.status === 'ended' || login.status === 'refused') && (
+          <>
+            <p className="text-sm text-ink-2">
+              From 13, {first} can have their own login: their own email, and your approval. They see their
+              squad&apos;s chats and fixtures; a private chat with an adult always brings you in.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={`${first.toLowerCase()}@example.com`}
+                aria-label={`${first}'s own email`}
+                className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--line)' }}
+              />
+              <button
+                onClick={() => run(() => supabase.rpc('invite_player_login', { p_player: c.id, p_email: email.trim() }))}
+                disabled={busy || !email.trim()}
+                className={button}
+                style={{ background: 'var(--brand)' }}
+              >
+                Set it up
+              </button>
+            </div>
+          </>
+        )}
+        {login?.status === 'invited' && (
+          <>
+            <p className="text-sm text-ink-2">
+              Ask {first} to sign up at <span className="break-all font-medium">{signupLink}</span> with{' '}
+              <b className="break-all">{login.email}</b>. You&apos;ll approve it here before they see anything.
+            </p>
+            <button onClick={() => run(() => supabase.rpc('end_player_login', { p_player: c.id }))} disabled={busy} className="tap mt-1 text-sm underline underline-offset-2 text-ink-2">
+              Cancel it
+            </button>
+          </>
+        )}
+        {login?.status === 'waiting' && (
+          <>
+            <p className="text-sm">
+              Someone signed in as <b className="break-all">{login.email}</b>. Is that {first}?
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button onClick={() => run(() => supabase.rpc('decide_player_login', { p_player: c.id, p_approve: true }))} disabled={busy} className={button} style={{ background: 'var(--brand)' }} data-approve-login>
+                Yes, approve
+              </button>
+              <button onClick={() => run(() => supabase.rpc('decide_player_login', { p_player: c.id, p_approve: false }))} disabled={busy} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
+                Not them
+              </button>
+            </div>
+          </>
+        )}
+        {login?.status === 'approved' && (
+          <>
+            <p className="text-sm text-ink-2">
+              {first} signs in with <b className="break-all">{login.email}</b>.
+            </p>
+            <button onClick={() => run(() => supabase.rpc('end_player_login', { p_player: c.id }))} disabled={busy} className="tap mt-1 text-sm underline underline-offset-2" style={{ color: 'var(--no)' }}>
+              End their login
+            </button>
+          </>
+        )}
+        {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }} role="alert">{error}</p>}
+      </div>
+    </Section>
   )
 }
 

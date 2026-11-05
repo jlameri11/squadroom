@@ -14,6 +14,18 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_confirmations: {
+        Row: { created_at: string; email: string; expires_at: string; profile_id: string; token_hash: string; used_at: string | null }
+        Insert: { created_at?: string; email: string; expires_at?: string; profile_id: string; token_hash: string; used_at?: string | null }
+        Update: { created_at?: string; email?: string; expires_at?: string; profile_id?: string; token_hash?: string; used_at?: string | null }
+        Relationships: []
+      }
+      news_consents: {
+        Row: { at: string; email: string | null; id: number; opted_in: boolean; profile_id: string }
+        Insert: { at?: string; email?: string | null; id?: never; opted_in: boolean; profile_id: string }
+        Update: { at?: string; email?: string | null; id?: never; opted_in?: boolean; profile_id?: string }
+        Relationships: []
+      }
       account_emails: {
         Row: {
           created_at: string
@@ -3170,6 +3182,7 @@ export type Database = {
           id: string
           join_link_id: string | null
           message: string | null
+          news_opt_in_at: string | null
           phone: string | null
           profile_id: string | null
           secret_hash: string
@@ -3189,6 +3202,7 @@ export type Database = {
           id?: string
           join_link_id?: string | null
           message?: string | null
+          news_opt_in_at?: string | null
           phone?: string | null
           profile_id?: string | null
           secret_hash: string
@@ -3208,6 +3222,7 @@ export type Database = {
           id?: string
           join_link_id?: string | null
           message?: string | null
+          news_opt_in_at?: string | null
           phone?: string | null
           profile_id?: string | null
           secret_hash?: string

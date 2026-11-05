@@ -90,8 +90,10 @@ create table if not exists public.notice_emails (
 alter table public.notice_emails enable row level security;
 -- No policies: the server's.
 
--- Joining asks for it beside the mobile; approval copies it to the account.
+-- Joining asks for it beside the mobile, with the news opt-in (unticked
+-- unless ticked, and when); approval copies both to the account.
 alter table public.join_requests add column if not exists email citext;
+alter table public.join_requests add column if not exists news_opt_in_at timestamptz;
 alter table public.join_requests drop constraint if exists join_requests_email_shape;
 alter table public.join_requests add constraint join_requests_email_shape
   check (email is null or email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$');

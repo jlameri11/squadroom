@@ -11,6 +11,8 @@ import { MyData } from './my-data'
 import { ChatLanguage } from './chat-language'
 import { NotificationPrefs } from './notification-prefs'
 import { AppearanceSettings } from './appearance'
+import { YourEmail } from './your-email'
+import { Suspense } from 'react'
 import { AppShellPage } from '@/components/shell-page'
 
 export default async function SettingsPage() {
@@ -43,6 +45,10 @@ export default async function SettingsPage() {
         initialPhone={me?.phone ?? ''}
         email={email}
       />
+      {/* 0214: every account has an email. Hidden until the migration lands. */}
+      <Suspense fallback={null}>
+        <YourEmail />
+      </Suspense>
       <ChatLanguage initial={langRow?.chat_language ?? null} />
       <NotificationPrefs initialDigest={(digest as number | null) ?? 0} />
       <AppearanceSettings />

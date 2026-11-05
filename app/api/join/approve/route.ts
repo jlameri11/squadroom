@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { adoptEmail } from '@/lib/account-email'
 import { syntheticEmail } from '@/lib/join'
 
 /**
@@ -140,6 +141,13 @@ export async function POST(request: Request) {
       )
     }
   }
+
+  // The email they gave when joining, and their news opt-in if they ticked
+  // it, become the account's (0214). Read with `*`: the columns arrive with
+  // the migration, and naming them before then fails the read.
+  const { data: given } = await admin.from('join_requests').select('*').eq('id', requestId).maybeSingle()
+  const extra = (given ?? {}) as { email?: string | null; news_opt_in_at?: string | null }
+  await adoptEmail(admin, profileId, extra.email, extra.news_opt_in_at ?? null)
 
   await admin
     .from('join_requests')

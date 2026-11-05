@@ -65,7 +65,9 @@ export function ProfileForm({
         </span>
       </label>
 
-      {email && (
+      {/* A phone-joined parent's sign-in address is a placeholder made from
+          their number (lib/join.ts) — never shown, it means nothing to them. */}
+      {email && !email.toLowerCase().endsWith('@squadroom.invalid') && (
         <p className="text-xs text-ink-2">
           You sign in with {email}.
         </p>

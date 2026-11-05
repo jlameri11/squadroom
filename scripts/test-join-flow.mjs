@@ -64,13 +64,14 @@ const reqRes = await post('/api/join/request', {
   token: link.token,
   fullName: 'Testy Parent',
   phone: '0400 008 888',
+  email: 'testy.parent@example.com',
   children: ['Testy Testerson'],
 })
 const reqBody = await reqRes.json()
 reqRes.ok && reqBody.requestId ? ok('request created, secret issued') : bad(`request: ${reqRes.status} ${JSON.stringify(reqBody)}`)
 
 head('A dead link is refused, and says nothing useful about why')
-const deadRes = await post('/api/join/request', { token: 'not-a-real-token', fullName: 'Chancer' })
+const deadRes = await post('/api/join/request', { token: 'not-a-real-token', fullName: 'Chancer', email: 'chancer@example.com' })
 deadRes.status === 404 ? ok('unknown token → 404, generic message') : bad(`expected 404, got ${deadRes.status}`)
 
 head('Claiming before approval is refused')

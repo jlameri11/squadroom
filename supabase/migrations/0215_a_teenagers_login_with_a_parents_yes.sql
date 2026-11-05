@@ -121,6 +121,14 @@ begin
     return null;
   end if;
 
+  -- An account already in a club as anything but a player is somebody's
+  -- parent or coach, not a child's new login — even if the address matches
+  -- (a parent who typed their partner's email for the child's).
+  if exists (select 1 from public.academy_members am
+              where am.profile_id = v_me and am.status = 'active' and am.role <> 'player') then
+    return null;
+  end if;
+
   -- One invitation, the newest, if a family used one address twice.
   update public.player_logins pl
      set profile_id = v_me, status = 'waiting', claimed_at = now()
