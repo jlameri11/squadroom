@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ProgramSummary, money, type PublicProgram } from '../program-card'
 import { QuestionField, unanswered } from '@/components/question-field'
-import { inkOn } from '@/lib/brand/colour'
+import { clubThemeCss } from '@/lib/brand/colour'
 
 type Program = PublicProgram
 
@@ -190,12 +190,17 @@ export function RegisterForm({ slug }: { slug: string }) {
     )
   }
 
-  const tint = data.academy.primary_colour || 'var(--brand)'
-  const ink = inkOn(tint)
+  // The club's colours for this form only, light and dark (lib/brand/colour):
+  // fills and borders are --brand, words in the club's colour --brand-text,
+  // each already the shade that reads on this page.
+  const tint = 'var(--brand)'
+  const ink = 'var(--brand-ink)'
+  const clubCss = clubThemeCss(data.academy.primary_colour, null, '[data-club-scope]')
+  const logo = data.academy.logo_url
 
   if (sent) {
     return (
-      <Frame tint={tint} academy={data.academy.name}>
+      <Frame css={clubCss} logo={logo} academy={data.academy.name}>
         <h1 className="display text-xl">
           {status === 'declined' ? 'Not this time' : 'Sent to the club'}
         </h1>
@@ -227,7 +232,7 @@ export function RegisterForm({ slug }: { slug: string }) {
             setAgreed({})
           }}
           className="mt-5 text-sm underline underline-offset-4"
-          style={{ color: tint }}
+          style={{ color: 'var(--brand-text)' }}
         >
           Register another child
         </button>
@@ -288,7 +293,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   }
 
   return (
-    <Frame tint={tint} academy={data.academy.name}>
+    <Frame css={clubCss} logo={logo} academy={data.academy.name}>
       <h1 className="display text-2xl">Register</h1>
 
       {data.programs.length === 0 ? (
@@ -383,7 +388,7 @@ export function RegisterForm({ slug }: { slug: string }) {
                             className="flex-1 rounded-lg border py-2 text-sm font-semibold"
                             style={
                               childGender === value
-                                ? { borderColor: tint, background: 'var(--brand-faint)', color: tint }
+                                ? { borderColor: tint, background: 'var(--brand-faint)', color: 'var(--brand-text)' }
                                 : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
                             }
                           >
@@ -466,7 +471,7 @@ export function RegisterForm({ slug }: { slug: string }) {
                               setReading(reading === c.id ? null : c.id)
                             }}
                             className="ml-1.5 underline underline-offset-2"
-                            style={{ color: tint }}
+                            style={{ color: 'var(--brand-text)' }}
                           >
                             {reading === c.id ? 'hide' : 'read it'}
                           </button>
@@ -629,7 +634,7 @@ function Progress({ step, tint }: { step: 1 | 2 | 3; tint: string }) {
             />
             <span
               className="mt-1 block truncate text-[0.6875rem] font-semibold uppercase tracking-wide"
-              style={{ color: current ? tint : 'var(--ink-3)' }}
+              style={{ color: current ? 'var(--brand-text)' : 'var(--ink-3)' }}
             >
               {n}. {label}
             </span>
@@ -642,20 +647,25 @@ function Progress({ step, tint }: { step: 1 | 2 | 3; tint: string }) {
 
 function Frame({
   children,
-  tint,
+  css,
+  logo,
   academy,
 }: {
   children: React.ReactNode
-  tint?: string
+  css?: string
+  logo?: string | null
   academy?: string
 }) {
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-md">
+    <main className="mx-auto min-h-dvh w-full max-w-md" data-club-scope>
+      {css && <style>{css}</style>}
       {academy && (
-        <div className="px-4 pb-3 pt-4" style={{ background: tint ?? 'var(--brand)' }}>
-          <p className="text-sm font-semibold" style={{ color: inkOn(tint ?? null) }}>
-            {academy}
-          </p>
+        <div className="flex items-center gap-2.5 px-4 pb-3 pt-4" style={{ background: 'var(--bar)', color: 'var(--bar-ink)', borderBottom: '1px solid var(--bar-line)' }}>
+          {logo && (
+            // eslint-disable-next-line @next/next/no-img-element -- the club's own file, any format
+            <img src={logo} alt="" className="h-8 w-8 flex-none rounded-lg bg-white object-contain p-0.5" data-club-logo />
+          )}
+          <p className="text-sm font-semibold">{academy}</p>
         </div>
       )}
       <div className="p-5">{children}</div>

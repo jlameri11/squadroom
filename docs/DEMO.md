@@ -171,6 +171,25 @@ could add one.
 
 ---
 
+### 14. A club in its own colours — sign in as Joey, **Settings → Club settings**
+
+1. **Club logo and colours** is at the top. NRIFA's crest is its logo; tap
+   **Change logo** and pick any PNG, JPG or SVG — the colours in it are
+   suggested at once ("From your logo"), **Use these** puts them on the two
+   phones underneath (light and dark), and nothing changes for anyone until
+   **Save colours**. Pick yellow to see the note: the header stays yellow
+   with black text, buttons and links use a deeper shade on white screens.
+2. Switch to **Sydney Premier League** (tap the crest): the bar turns the
+   league's green with its logo. (That logo is a stand-in until the league
+   sends theirs — NEEDS JOEY #16.)
+3. As Sam: **Settings → Appearance** — Club colours or Black & white, and
+   Match my phone, Light or Dark. It changes at once, for Sam only.
+4. Sign-in and **/for-clubs** stay Squadroom's black and white, whatever the
+   club; **/nrifa** is always in NRIFA's colours, whoever opens it.
+
+Until migration 0209 is applied (NEEDS JOEY #12) the second colour is not
+saved and Appearance lives on the phone rather than in the profile.
+
 ## Known gaps — say them before you are asked
 
 | | |

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { setOrg } from '@/lib/org'
+import { APPEARANCE_KEY, CLUB_KEY, LEGACY_THEME_KEY } from '@/lib/brand/keys'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
 import { clearOffline } from '@/lib/offline/idb'
 
@@ -38,6 +39,11 @@ import { clearOffline } from '@/lib/offline/idb'
  *     replaying it as the next person is how "who marked this child
  *     present" gets the wrong answer.
  *
+ *   · And since Appearance (4 Nov 2026), the person's LOOK: their club's
+ *     colours (the next person may be in another club) and their own
+ *     appearance choice, which is theirs and nobody else's — it comes back
+ *     from their profile when they sign in again.
+ *
  * The remembered sign-in EMAIL is deliberately kept. It is not a secret, the
  * password still is, and a coach signing back in on their own phone should
  * not have to retype their address.
@@ -50,6 +56,9 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
     setBusy(true)
     setOrg(null)
     invalidateScreen()
+    try {
+      for (const k of [CLUB_KEY, APPEARANCE_KEY, LEGACY_THEME_KEY]) localStorage.removeItem(k)
+    } catch {}
     // Awaited, unlike the rest. The redirect below reloads the page, and a
     // clear that is still running when that happens leaves the previous
     // person's children on the disk.

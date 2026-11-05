@@ -17,6 +17,20 @@ export async function load(slug: string): Promise<Centre | null> {
   return (data as unknown as Centre) ?? null
 }
 
+/** Who runs this competition, in their colours: public_brand (0209). Null
+ *  until that is applied, and the page is then Squadroom's black and white. */
+export type Brand = { name: string; primary: string | null; secondary: string | null; logo: string | null }
+export async function loadBrand(slug: string): Promise<Brand | null> {
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const { data, error } = await anon.rpc('public_brand', { p_slug: slug, p_kind: 'competition' })
+  if (error || !data) return null
+  return data as unknown as Brand
+}
+
 /** X-08: the organiser's sponsors for the strip — a name, a logo, a link. */
 export async function loadSponsors(slug: string): Promise<PublicSponsor[]> {
   const anon = createClient(

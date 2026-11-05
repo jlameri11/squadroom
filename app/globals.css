@@ -44,6 +44,11 @@
   --brand-soft: #1010121a;
   /* The faintest wash, for a selected row or a card header. */
   --brand-faint: #1010120d;
+  /* The second colour's job: the active tab's underline and other small
+     highlights. Squadroom's is the primary again; a club's is its second
+     colour (lib/brand/colour.ts). */
+  --highlight: #101012;
+  --highlight-ink: #ffffff;
   --paper-blur: #F4F4F5F2;
 
   --paper: #F4F4F5;
@@ -122,6 +127,8 @@
     --brand-text: #ffffff;
     --brand-soft: #ffffff14;
     --brand-faint: #ffffff0a;
+    --highlight: #ffffff;
+    --highlight-ink: #101012;
     --paper-blur: #101012F2;
 
     --paper: #101012;
@@ -173,6 +180,8 @@
   --brand-text: #ffffff;
   --brand-soft: #ffffff14;
   --brand-faint: #ffffff0a;
+  --highlight: #ffffff;
+  --highlight-ink: #101012;
   --paper-blur: #101012F2;
 
   --paper: #101012;
@@ -218,6 +227,8 @@
   --color-brand-ink: var(--brand-ink);
   --color-bar: var(--bar);
   --color-bar-ink: var(--bar-ink);
+  --color-highlight: var(--highlight);
+  --color-highlight-ink: var(--highlight-ink);
   --color-brand-soft: var(--brand-soft);
   --color-brand-faint: var(--brand-faint);
   --color-paper: var(--paper);

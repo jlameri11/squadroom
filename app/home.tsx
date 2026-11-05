@@ -285,6 +285,7 @@ function HomeScreen({
         title={academy.name}
         meta={`${roleWord} · ${todayLabel()}`}
         crest={academy.name.slice(0, 2).toUpperCase()}
+        logo={academy.logo_url}
         action={
           available.length > 0 && (
             // The word, not a glyph. ☰ reads as a menu, and this is not one.

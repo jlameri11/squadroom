@@ -106,13 +106,13 @@ export async function POST(request: Request) {
         'It works once and expires shortly. If you did not ask for it, ignore this email — nothing will happen.',
       ].join('\n'),
       html: `
-        <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0E1726">
+        <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#101012">
           <p style="font-size:16px;margin:0 0 20px">Tap the button to sign in to Squadroom.</p>
           <p style="margin:0 0 24px">
-            <a href="${link}" style="display:inline-block;background:#202842;color:#fff;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:600">Sign in to Squadroom</a>
+            <a href="${link}" style="display:inline-block;background:#101012;color:#ffffff;text-decoration:none;padding:13px 22px;border-radius:12px;font-weight:600">Sign in to Squadroom</a>
           </p>
-          <p style="font-size:13px;color:#4C5A6D;margin:0 0 8px">It works once and expires shortly.</p>
-          <p style="font-size:13px;color:#8391A3;margin:0">If you didn't ask for this, ignore it — nothing will happen.</p>
+          <p style="font-size:13px;color:#4D4D55;margin:0 0 8px">It works once and expires shortly.</p>
+          <p style="font-size:13px;color:#62626B;margin:0">If you didn't ask for this, ignore it — nothing will happen.</p>
         </div>`,
     }),
   })

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { inkOn } from '@/lib/brand/colour'
+import { clubThemeCss } from '@/lib/brand/colour'
 import { ProgramSummary, type PublicProgram } from './program-card'
 
 export type Academy = {
@@ -37,7 +37,7 @@ export type Academy = {
  * is better asked there, next to the child's date of birth, than guessed
  * from a tap here.
  */
-export function AcademyPage({ slug, academy }: { slug: string; academy: Academy | null }) {
+export function AcademyPage({ slug, academy, secondary = null }: { slug: string; academy: Academy | null; secondary?: string | null }) {
   if (!academy) {
     return (
       <main className="mx-auto min-h-dvh w-full max-w-lg p-5">
@@ -50,16 +50,21 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
   }
 
   const { academy: club, programs, competitions } = academy
-  const tint = club.primary_colour || 'var(--brand)'
-  const ink = inkOn(tint)
+  // The club's colours for this page only, in light and dark, through the
+  // same arithmetic as the app: black or white text on the colour, and a
+  // deeper or lighter shade wherever the colour itself would not read.
+  const css = clubThemeCss(club.primary_colour, secondary, '[data-club-scope]')
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-lg pb-12">
+    <main className="mx-auto min-h-dvh w-full max-w-lg pb-12" data-club-scope>
+      {css && <style>{css}</style>}
       <header
         className="px-5 pb-6 pt-7"
-        style={{ background: tint, color: ink }}
+        style={{ background: 'var(--bar)', color: 'var(--bar-ink)', borderBottom: '1px solid var(--bar-line)' }}
       >
-        <div className="flex items-center gap-4">
+        {/* The name drops under the crest when larger text no longer fits
+            both on one line (X-10). */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           {/* The crest at a size that reads as a crest and not a logo wall.
               Plain <img>: it is one small file from the club's own bucket,
               and next/image would need a remote-pattern entry per host. */}
@@ -70,14 +75,15 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
               alt=""
               width={64}
               height={64}
-              className="h-16 w-16 flex-none rounded-xl bg-white/10 object-contain p-1"
+              className="h-16 w-16 flex-none rounded-xl bg-white object-contain p-1"
+              data-club-logo
             />
           )}
-          <div className="min-w-0">
+          <div className="min-w-[min(100%,12rem)] flex-1">
             <h1 className="display text-[1.75rem] leading-tight" style={{ textWrap: 'balance' }}>
               {club.name}
             </h1>
-            <p className="mt-1 text-sm" style={{ color: ink, opacity: 0.8 }}>
+            <p className="mt-1 text-sm" style={{ opacity: 0.8 }}>
               {programs.length === 0
                 ? 'Registration is closed at the moment'
                 : programs.length === 1
@@ -108,7 +114,7 @@ export function AcademyPage({ slug, academy }: { slug: string; academy: Academy 
             <Link
               href={`/${slug}/register`}
               className="mt-4 block w-full rounded-xl px-4 py-3 text-center font-semibold"
-              style={{ background: tint, color: ink }}
+              style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}
             >
               Register
             </Link>

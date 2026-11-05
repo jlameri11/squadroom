@@ -1,5 +1,6 @@
 'use client'
 
+import { clubThemeCss } from '@/lib/brand/colour'
 import { useState } from 'react'
 import Link from 'next/link'
 import { SponsorStrip, type PublicSponsor } from './sponsor-strip'
@@ -87,8 +88,11 @@ export function MatchCentre({
   initialDivision,
   shareUrl,
   sponsors = [],
+  brand = null,
 }: {
   centre: Centre
+  /** The organiser's colours and logo (a league, usually). Null: black and white. */
+  brand?: { primary: string | null; secondary: string | null; logo: string | null } | null
   /** L-12: inside a league's own website. No header, a footer link out. */
   embed?: boolean
   initialTab?: string
@@ -109,20 +113,30 @@ export function MatchCentre({
   const hasSquads = Object.keys(centre.squads ?? {}).length > 0
   const hasScorers = Object.values(centre.top_scorers ?? {}).some((l) => l.length > 0)
 
+  // The organiser's colours on this page only, light and dark (lib/brand/colour).
+  const brandCss = brand?.primary ? clubThemeCss(brand.primary, brand.secondary, '[data-club-scope]') : ''
+
   return (
-    <main className={`mx-auto w-full max-w-lg ${embed ? 'pb-4' : 'pb-12'}`}>
+    <main className={`mx-auto w-full max-w-lg ${embed ? 'pb-4' : 'pb-12'}`} data-club-scope>
+      {brandCss && <style>{brandCss}</style>}
       {!embed && (
         <header
           className="px-5 pb-5 pt-7"
           style={{ background: 'var(--bar)', color: 'var(--bar-ink)' }}
         >
-          <p className="eyebrow" style={{ color: '#ffffffaa' }}>
-            {competition.organiser}
-          </p>
+          <div className="flex items-center gap-2">
+            {brand?.logo && (
+              // eslint-disable-next-line @next/next/no-img-element -- the organiser's own file
+              <img src={brand.logo} alt="" className="h-8 w-8 flex-none rounded-lg bg-white object-contain p-0.5" data-club-logo />
+            )}
+            <p className="eyebrow" style={{ color: 'inherit', opacity: 0.75 }}>
+              {competition.organiser}
+            </p>
+          </div>
           <h1 className="display mt-1 text-[1.875rem] leading-none">{competition.name}</h1>
           <div className="mt-1.5 flex items-center gap-3">
             {competition.season && (
-              <p className="text-sm" style={{ color: '#ffffffb3' }}>
+              <p className="text-sm" style={{ opacity: 0.75 }}>
                 {competition.season}
               </p>
             )}
@@ -230,7 +244,7 @@ function ShareButton({ title, url }: { title: string; url: string }) {
     <button
       onClick={() => void share()}
       className="ml-auto flex-none rounded-full px-3 py-1 text-xs font-semibold"
-      style={{ background: '#ffffff22', color: 'var(--bar-ink)' }}
+      style={{ background: 'color-mix(in srgb, var(--bar-ink) 14%, transparent)', color: 'var(--bar-ink)' }}
       aria-label="Share this page"
     >
       {copied ? 'Link copied' : 'Share'}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import { prepareImage } from '@/lib/adapters/images'
+import { suggestFromImage, type Suggestion } from '@/lib/brand/extract'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 
 type Step = { id: string; label: string; done: boolean; href: string; detail: string | null }
@@ -40,6 +41,8 @@ export function SetupChecklist() {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [colour, setColour] = useState('')
+  // The colours read out of the crest the moment it is picked (Joey, 4 Nov).
+  const [suggest, setSuggest] = useState<Suggestion | null>(null)
   const file = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
@@ -71,6 +74,7 @@ export function SetupChecklist() {
     setBusy('crest')
     setError(null)
     const supabase = createClient()
+    const reading = suggestFromImage(f)
     const prepared = await prepareImage(f)
     const ext = prepared.mime === 'image/png' ? 'png' : prepared.mime === 'image/svg+xml' ? 'svg' : prepared.mime === 'image/webp' ? 'webp' : 'jpg'
     const path = `${p.academy_id}/crest-${Date.now()}.${ext}`
@@ -81,9 +85,21 @@ export function SetupChecklist() {
     }
     const url = supabase.storage.from('club-logos').getPublicUrl(path).data.publicUrl
     const { error } = await supabase.rpc('set_academy_logo', { p_academy: p.academy_id, p_url: url })
+    const found = await reading
     setBusy(null)
     if (error) return setError(error.message)
+    setSuggest(found)
+    window.dispatchEvent(new Event('squadroom:club-changed'))
     await load()
+  }
+
+  async function acceptSuggestion() {
+    if (!suggest || !p) return
+    await saveColour(suggest.primary)
+    // The second colour arrives with 0209; before then this quietly does nothing.
+    if (suggest.secondary) await createClient().from('academies').update({ secondary_colour: suggest.secondary }).eq('id', p.academy_id)
+    setSuggest(null)
+    window.dispatchEvent(new Event('squadroom:club-changed'))
   }
 
   if (p === undefined) return <ScreenSkeleton />
@@ -147,6 +163,20 @@ export function SetupChecklist() {
             </button>
             <span className="text-xs text-ink-3">One picture, PNG or JPG. Pick the file; we never ask for your whole photo library.</span>
           </div>
+          {suggest && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border p-2.5 text-sm" style={{ borderColor: 'var(--line)' }} data-suggestion>
+              From your crest:
+              <span className="h-6 w-6 rounded-md" style={{ background: suggest.primary, boxShadow: 'inset 0 0 0 1px #00000024' }} title={suggest.primary} />
+              {suggest.secondary && <span className="h-6 w-6 rounded-md" style={{ background: suggest.secondary, boxShadow: 'inset 0 0 0 1px #00000024' }} title={suggest.secondary} />}
+              <button onClick={() => void acceptSuggestion()} className="ml-auto rounded-lg px-3 py-1.5 font-semibold" style={{ background: 'var(--brand)', color: 'var(--brand-ink)' }}>
+                Use these
+              </button>
+              <button onClick={() => setSuggest(null)} className="tap text-ink-2 underline underline-offset-4">Keep mine</button>
+            </div>
+          )}
+          <Link href="/settings/academy" className="mt-2 inline-block text-xs text-ink-2 underline underline-offset-4">
+            A second colour, and a preview on a phone, in Club settings
+          </Link>
         </section>
 
         {/* Steps 2–6: one tap to the page that does it. */}

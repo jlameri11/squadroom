@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OrgSwitcher } from '@/components/org-switcher'
 import { getOrg } from '@/lib/org'
+import { isPublicPage } from '@/lib/routes'
 
 /**
  * The app bar at the top and the tab bar at the bottom.
@@ -25,12 +26,15 @@ export function AppBar({
   title,
   meta,
   crest,
+  logo,
   back,
   action,
 }: {
   title: string
   meta?: string
   crest?: string
+  /** The club's logo. Replaces the initials tile wherever there is one. */
+  logo?: string | null
   back?: string
   action?: React.ReactNode
 }) {
@@ -68,7 +72,7 @@ export function AppBar({
             className="relative -ml-0.5 grid h-9 w-9 flex-none place-items-center rounded-[10px]"
             style={{ background: 'color-mix(in srgb, currentColor 16%, transparent)' }}
           >
-            <span className="display text-[0.9375rem]">{crest}</span>
+            <CrestFace crest={crest} logo={logo} />
             {/* A chevron on the crest, because a crest that does nothing on
                 every other account looks identical to one that does. */}
             <span
@@ -84,7 +88,7 @@ export function AppBar({
             className="display grid h-9 w-9 flex-none place-items-center rounded-[10px] text-[0.9375rem]"
             style={{ background: 'color-mix(in srgb, currentColor 16%, transparent)' }}
           >
-            {crest}
+            <CrestFace crest={crest} logo={logo} />
           </span>
         ))
       )}
@@ -98,6 +102,19 @@ export function AppBar({
 
       {action}
     </header>
+  )
+}
+
+/**
+ * The club's logo where it has one, its initials where it has not. The logo
+ * sits on white: a crest is drawn for a white shirt or a white page, and on
+ * the club's own colour it can vanish into it.
+ */
+function CrestFace({ crest, logo }: { crest: string; logo?: string | null }) {
+  if (!logo) return <span className="display text-[0.9375rem]">{crest}</span>
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- a club's own file from its bucket, any format
+    <img src={logo} alt="" className="h-9 w-9 rounded-[10px] bg-white object-contain p-0.5" data-club-logo />
   )
 }
 
@@ -200,54 +217,6 @@ type Badges = {
  * navigation from the browser costs almost nothing: the query is two integers
  * and, for anyone in Australia, Supabase is a few milliseconds away.
  */
-/**
- * Screens that have no tab bar.
- *
- * A full-screen conversation and the join flow are not places you tab away
- * from — the conversation has its own back arrow, and the join flow is for
- * somebody who is not signed in yet and has nowhere to go.
- */
-const BARE = [
-  '/signin', '/signup', '/start', '/auth',
-  '/join', '/join-competition',
-  // Opened by people with no account at all — a child with their family's
-  // link, or anyone with a public competition link. Offering them Home and
-  // Chat would be offering a sign-in screen to someone who must not have one.
-  '/my', '/c',
-  // The front door for a club that has heard of us, the privacy page, and
-  // the status page ("is it just me?") — none of them wants a sign-in.
-  '/for-clubs', '/privacy', '/status',
-]
-
-/**
- * Every top-level route the app itself owns. Anything else at one segment —
- * /nrifa, /ravens — is a club's public front door (app/[slug]), opened by
- * people with no account.
- *
- * Listed rather than inferred because a dynamic segment at the root cannot
- * be told from an app route by its shape: `/nrifa` and `/chat` are both one
- * word. A new top-level route has to be added here, and test-screens will
- * say so the first time its tab bar goes missing.
- */
-const APP_ROOTS = new Set([
-  'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'competitions', 'directory',
-  'for-clubs', 'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'privacy', 'programs', 'ref', 'referee',
-  'scan', 'settings', 'signin', 'signup', 'start', 'status',
-])
-
-/** A page opened by somebody who must not be offered a sign-in screen. */
-function isPublicPage(pathname: string) {
-  if (BARE.some((p) => pathname === p || pathname.startsWith(p + '/'))) return true
-  const segments = pathname.split('/').filter(Boolean)
-  if (segments.length === 0) return false
-  if (APP_ROOTS.has(segments[0])) return false
-  // A club's front door (/<slug>) and its register page (/<slug>/register).
-  // The register page used to be matched on its own; found by screenshotting
-  // it, when the tab bar offered a family with no account Home, Chat,
-  // Fixtures and Team — every one a sign-in screen for somebody who must not
-  // have one. The front door then had the same bar, found the same way.
-  return segments.length === 1 || (segments.length === 2 && segments[1] === 'register')
-}
 
 // Counts live outside the component, so moving between tabs does not throw
 // them away and ask for them again.
@@ -391,7 +360,7 @@ export function TabBar({ isStaff, unread }: { isStaff?: boolean; unread?: number
             <span
               aria-hidden
               className="h-[2px] w-5 rounded-full transition-opacity"
-              style={{ background: 'var(--brand)', opacity: on ? 1 : 0 }}
+              style={{ background: 'var(--highlight)', opacity: on ? 1 : 0 }}
             />
           </Link>
         )

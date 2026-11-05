@@ -529,6 +529,27 @@ one and is meant to reach hundreds of academies.
   at 48px and under) on `/join`. `scripts/test-brand.mjs` measures every
   token pair for AA in both themes, compares the two dark blocks, and fails
   on white text on a flipping surface, the old SQ tile, gold or navy.
+- **A club's colours are a layer over the brand, never paint by hand**
+  (G-10, Joey 4 Nov 2026). `lib/brand/colour.ts` turns a club's main and
+  second colour into the same tokens (`--bar`, `--brand`, `--brand-text`,
+  `--highlight`, each with its ink) for light and dark — black or white
+  text by contrast, the colour deepened or lightened only where it would
+  not read, the header never adjusted — and `clubThemeCss()` writes them as
+  a stylesheet. In the app it is switched on by `<html data-club>`, which
+  `lib/brand/theme-script.ts` (before the first frame) and
+  `components/theme-controller.tsx` set ONLY where `usesClubTheme()` in
+  `lib/routes.ts` says so and the person's Appearance is Club colours.
+  Sign-in, the join flow, `/for-clubs`, status, privacy and `/platform` are
+  Squadroom's and stay black and white; a club's public pages (`/{slug}`,
+  register, `/c/{slug}`) scope THAT club's colours with `[data-club-scope]`
+  and are never the reader's club. So: never `style={{ background:
+  club.primary_colour }}` — use the tokens, and a new Squadroom-only route
+  goes in `lib/routes.ts`. Orange, green and red are not in the layer and
+  never will be. Appearance (Club colours / Black & white × Match my phone
+  / Light / Dark) is `lib/brand/appearance.ts`: the phone's copy paints the
+  first frame, the profile's (0209) follows the person; sign-out clears
+  both. `scripts/test-branding.mjs` covers six club colours incl. yellow and
+  white, who may change branding, and all of the above in a browser.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

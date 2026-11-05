@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" role="img" aria-label="Sydney Premier League (demo stand-in logo)">
+  <!-- A STAND-IN for the demo, not the league's real logo: a plain shield in
+       the league's green with a gold rim and a ball. Replace it with the
+       real file through Settings → Club settings when there is one. -->
+  <path d="M50 4 L90 16 V48 C90 72 72 88 50 96 C28 88 10 72 10 48 V16 Z" fill="#0E7C5A"/>
+  <path d="M50 11 L84 21 V48 C84 68 69 81 50 88 C31 81 16 68 16 48 V21 Z" fill="none" stroke="#F2C230" stroke-width="4"/>
+  <circle cx="50" cy="50" r="17" fill="#ffffff"/>
+  <path d="M50 39 L58.6 45.2 L55.3 55.3 H44.7 L41.4 45.2 Z" fill="#101012"/>
+</svg>

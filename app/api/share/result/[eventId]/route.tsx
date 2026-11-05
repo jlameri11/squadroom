@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { NextResponse } from 'next/server'
 import { createClient, getUserId } from '@/lib/supabase/server'
-import { Eyebrow, Frame, inkOn, safeColour, sizeOf } from '@/lib/share/card'
+import { Eyebrow, Frame, inkOn, logoDataUri, safeColour, sizeOf } from '@/lib/share/card'
 
 /**
  * Saturday's result, as a picture a club can post.
@@ -45,7 +45,7 @@ export async function GET(
     supabase.rpc('event_result', { p_event: eventId }),
     supabase
       .from('academies')
-      .select('name, primary_colour')
+      .select('*')
       .eq('id', event.academy_id)
       .maybeSingle(),
     // X-08: "with thanks to" on the club's cards.
@@ -65,6 +65,9 @@ export async function GET(
   const { width, height } = sizeOf(new URL(request.url).searchParams.get('size'))
   const brand = safeColour(academy?.primary_colour)
   const ink = inkOn(brand)
+  // `*` above: secondary_colour arrives with 0209.
+  const accent = safeColour((academy as { secondary_colour?: string | null } | null)?.secondary_colour, '') || null
+  const logo = await logoDataUri(academy?.logo_url)
 
   const outcome = score.outcome === 'won' ? 'Won' : score.outcome === 'lost' ? 'Lost' : 'Drew'
   const when = new Date(event.starts_at).toLocaleDateString('en-AU', {
@@ -75,7 +78,7 @@ export async function GET(
 
   return new ImageResponse(
     (
-      <Frame brand={brand} width={width} height={height} footer={footer}>
+      <Frame brand={brand} width={width} height={height} footer={footer} logo={logo} accent={accent}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Eyebrow ink={ink}>{event.round ? `${outcome} · ${event.round}` : outcome}</Eyebrow>
 

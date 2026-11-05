@@ -35,6 +35,30 @@ const GROUNDS = [
 
 console.log('\nRefreshing the demo\n')
 
+// --- logos -----------------------------------------------------------------
+// The demo's clubs in their own marks (Joey, 4 Nov 2026: "NRIFA with its
+// crest, SPL with its logo"). NRIFA's is its real crest from the repo; SPL's
+// is a STAND-IN (scripts/fixtures/spl-demo-logo.svg) until the league sends
+// its file. Only a club with no logo gets one: a logo an owner uploaded is
+// never replaced.
+{
+  const { readFileSync } = await import('node:fs')
+  const LOGOS = [
+    { id: NRIFA, file: 'public/brand/nrifa-crest.svg', name: 'crest.svg' },
+    { id: '00000000-0000-0000-0000-0000000a0003', file: 'scripts/fixtures/spl-demo-logo.svg', name: 'logo-demo.svg' },
+  ]
+  for (const l of LOGOS) {
+    const { data: club } = await admin.from('academies').select('name, logo_url').eq('id', l.id).maybeSingle()
+    if (!club || club.logo_url) continue
+    const path = `${l.id}/${l.name}`
+    const { error: up } = await admin.storage.from('club-logos').upload(path, readFileSync(new URL(`../${l.file}`, import.meta.url)), { contentType: 'image/svg+xml', upsert: true })
+    if (up) { say(`could not upload ${club.name}'s logo: ${up.message}`); continue }
+    const url = admin.storage.from('club-logos').getPublicUrl(path).data.publicUrl
+    await admin.from('academies').update({ logo_url: url }).eq('id', l.id)
+    say(`${club.name}: logo set`)
+  }
+}
+
 // --- families --------------------------------------------------------------
 // Restored first, because everything else depends on them. A parent with no
 // guardian link has no children, and therefore no RSVP buttons, no payment

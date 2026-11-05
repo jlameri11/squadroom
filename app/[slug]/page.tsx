@@ -55,8 +55,24 @@ export async function generateMetadata(ctx: {
   }
 }
 
+/**
+ * The club's second colour, from public_brand (0209). Null until that
+ * migration is applied, and then for any club that has not chosen one — the
+ * page is right either way, in the club's main colour.
+ */
+async function loadSecondary(slug: string): Promise<string | null> {
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const { data, error } = await anon.rpc('public_brand', { p_slug: slug, p_kind: 'club' })
+  if (error || !data) return null
+  return ((data as { secondary?: string | null }).secondary ?? null) || null
+}
+
 export default async function Page(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params
-  const academy = await load(slug)
-  return <AcademyPage slug={slug} academy={academy} />
+  const [academy, secondary] = await Promise.all([load(slug), loadSecondary(slug)])
+  return <AcademyPage slug={slug} academy={academy} secondary={secondary} />
 }

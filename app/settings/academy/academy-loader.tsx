@@ -5,10 +5,15 @@ import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { AcademySettings } from './academy-settings'
+import { ClubBranding } from './club-branding'
 
 type Academy = {
   id: string
   name: string
+  type: string
+  logo_url: string | null
+  /** Arrives with 0209; undefined until then. */
+  secondary_colour?: string | null
   dm_policy: string
   directory_visibility: string
   primary_colour: string
@@ -49,7 +54,9 @@ export function AcademyLoader() {
       const [{ data: a }, { data: member }] = await Promise.all([
         supabase
           .from('academies')
-          .select('id, name, dm_policy, directory_visibility, primary_colour, public_player_names, sibling_discount_bps, playfootball_fees_disclosed_season, block_rsvp_when_overdue, overdue_grace_days')
+          // `*`: secondary_colour arrives with 0209, and naming it before
+          // then would fail the whole read.
+          .select('*')
           .eq('id', org)
           .maybeSingle(),
         supabase.from('academy_members').select('role').eq('academy_id', org).eq('profile_id', me).eq('status', 'active').maybeSingle(),
@@ -68,11 +75,20 @@ export function AcademyLoader() {
     <div className="p-4">
       <p className="mt-1 text-sm text-ink-2">{academy.name}</p>
       {isStaff ? (
+        <>
+        <div className="mt-5">
+          <ClubBranding
+            academyId={academy.id}
+            name={academy.name}
+            kind={academy.type}
+            primaryColour={academy.primary_colour}
+            secondaryColour={academy.secondary_colour ?? null}
+            logoUrl={academy.logo_url}
+          />
+        </div>
         <AcademySettings
           academyId={academy.id}
           dmPolicy={academy.dm_policy}
-          primaryColour={academy.primary_colour}
-          academyName={academy.name}
           directoryVisibility={academy.directory_visibility}
           publicPlayerNames={academy.public_player_names}
           siblingDiscountBps={academy.sibling_discount_bps ?? []}
@@ -80,6 +96,7 @@ export function AcademyLoader() {
           blockRsvpWhenOverdue={academy.block_rsvp_when_overdue}
           overdueGraceDays={academy.overdue_grace_days}
         />
+        </>
       ) : (
         <p className="mt-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
           Only owners and admins can change these.

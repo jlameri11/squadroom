@@ -6,6 +6,8 @@ import { TabBar } from '@/components/app-shell'
 import { OfflineBanner } from '@/components/offline-banner'
 import { TwoStepGate } from '@/components/two-step-gate'
 import { TEXT_SIZE_SCRIPT } from '@/lib/text-size'
+import { THEME_SCRIPT } from '@/lib/brand/theme-script'
+import { ThemeController } from '@/components/theme-controller'
 
 const plex = IBM_Plex_Sans({
   variable: '--font-plex',
@@ -51,9 +53,10 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
-  // suppressHydrationWarning: the scripts in <head> set data-theme and, on an
-  // iPhone set to larger text, the root font size before React hydrates, so
-  // the attributes differ from the server's on purpose. It covers this one
+  // suppressHydrationWarning: the scripts in <head> set data-theme,
+  // data-design and data-club (the person's appearance and their club's
+  // colours) and, on an iPhone set to larger text, the root font size before
+  // React hydrates, so the attributes differ from the server's on purpose. It covers this one
   // element only, not its children.
   return (
     <html lang="en-AU" className={`${plex.variable} ${barlow.variable} h-full`} suppressHydrationWarning>
@@ -63,17 +66,16 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         6am is worse than either theme.
       */}
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html:"try{var t=localStorage.getItem('squadroom.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}",
-          }}
-        />
+        {/* Light or dark from the person's Appearance, and their club's
+            colours on the app's own screens (lib/brand/theme-script.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {/* The iPhone's text size (Dynamic Type), before the first paint for
             the same reason. Does nothing anywhere else. */}
         <script dangerouslySetInnerHTML={{ __html: TEXT_SIZE_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />
+        <ThemeController />
         {/* Above every page: somebody with two-step sign-in on sees nothing
             until the second step is done (S-07). Renders nothing otherwise. */}
         <TwoStepGate />

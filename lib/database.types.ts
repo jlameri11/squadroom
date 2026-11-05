@@ -31,6 +31,7 @@ export type Database = {
           playfootball_fees_disclosed_season: string | null
           primary_colour: string
           public_player_names: Database["public"]["Enums"]["public_names_mode"]
+          secondary_colour: string | null
           setup_completed_at: string | null
           setup_started_at: string
           sibling_discount_bps: number[]
@@ -55,6 +56,7 @@ export type Database = {
           playfootball_fees_disclosed_season?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          secondary_colour?: string | null
           setup_completed_at?: string | null
           setup_started_at?: string
           sibling_discount_bps?: number[]
@@ -79,6 +81,7 @@ export type Database = {
           playfootball_fees_disclosed_season?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          secondary_colour?: string | null
           setup_completed_at?: string | null
           setup_started_at?: string
           sibling_discount_bps?: number[]
@@ -5143,6 +5146,8 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          appearance: string
+          colour_mode: string
           chat_language: string | null
           created_at: string
           erased_at: string | null
@@ -5153,6 +5158,8 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          appearance?: string
+          colour_mode?: string
           chat_language?: string | null
           created_at?: string
           erased_at?: string | null
@@ -5163,6 +5170,8 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          appearance?: string
+          colour_mode?: string
           chat_language?: string | null
           created_at?: string
           erased_at?: string | null
@@ -8112,6 +8121,7 @@ export type Database = {
         Returns: Json
       }
       public_academy: { Args: { p_slug: string }; Returns: Json }
+      public_brand: { Args: { p_kind?: string; p_slug: string }; Returns: Json }
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }

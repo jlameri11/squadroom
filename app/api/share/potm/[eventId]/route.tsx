@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { NextResponse } from 'next/server'
 import { createClient, getUserId } from '@/lib/supabase/server'
-import { Eyebrow, Frame, inkOn, safeColour, sizeOf } from '@/lib/share/card'
+import { Eyebrow, Frame, inkOn, logoDataUri, safeColour, sizeOf } from '@/lib/share/card'
 
 /**
  * The Player of the Match, as a picture a club can post (X-04, X-03).
@@ -23,7 +23,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ eventId: st
 
   const [{ data: stats }, { data: academy }, { data: result }, { data: team }, { data: sponsors }] = await Promise.all([
     supabase.rpc('event_stats', { p_event: eventId }),
-    supabase.from('academies').select('name, primary_colour').eq('id', event.academy_id).maybeSingle(),
+    supabase.from('academies').select('*').eq('id', event.academy_id).maybeSingle(),
     supabase.rpc('event_result', { p_event: eventId }),
     supabase.from('events').select('teams(name)').eq('id', eventId).maybeSingle(),
     supabase.rpc('card_sponsors', { p_academy: event.academy_id }),
@@ -38,12 +38,14 @@ export async function GET(request: Request, ctx: { params: Promise<{ eventId: st
   const { width, height } = sizeOf(new URL(request.url).searchParams.get('size'))
   const brand = safeColour(academy?.primary_colour)
   const ink = inkOn(brand)
+  const accent = safeColour((academy as { secondary_colour?: string | null } | null)?.secondary_colour, '') || null
+  const logo = await logoDataUri(academy?.logo_url)
   const score = result?.[0]
   const when = new Date(event.starts_at).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return new ImageResponse(
     (
-      <Frame brand={brand} width={width} height={height} footer={footer}>
+      <Frame brand={brand} width={width} height={height} footer={footer} logo={logo} accent={accent}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Eyebrow ink={ink}>{squad ? `${squad} · Player of the Match` : 'Player of the Match'}</Eyebrow>
           <div style={{ display: 'flex', fontSize: Math.round(width / 9), fontWeight: 800, color: ink, lineHeight: 1.05, marginTop: 12 }}>

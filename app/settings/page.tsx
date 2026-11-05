@@ -10,6 +10,7 @@ import { TwoStep } from './two-step'
 import { MyData } from './my-data'
 import { ChatLanguage } from './chat-language'
 import { NotificationPrefs } from './notification-prefs'
+import { AppearanceSettings } from './appearance'
 import { AppShellPage } from '@/components/shell-page'
 
 export default async function SettingsPage() {
@@ -44,6 +45,7 @@ export default async function SettingsPage() {
       />
       <ChatLanguage initial={langRow?.chat_language ?? null} />
       <NotificationPrefs initialDigest={(digest as number | null) ?? 0} />
+      <AppearanceSettings />
       {/*
         A permanent way to reach these two.
 

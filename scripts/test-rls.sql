@@ -1187,6 +1187,43 @@ begin
   insert into rls_results values (111,'a coach cannot start a competition under the club''s name; its owner can',
     case when b and b2 then 'PASS' else 'FAIL (coach refused '||b||', owner allowed '||b2||')' end);
 
+  -- 0209. A club's colours and logo are its owner's and admins' to change:
+  -- not a coach's, not a family's. Tried as each of them, on every branding
+  -- column — each write a self-assignment, so a broken rule is reported
+  -- without changing anybody's colours.
+  -- 112.
+  perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  with u as (update public.academies set primary_colour = primary_colour, secondary_colour = secondary_colour, logo_url = logo_url
+              where id = ACAD_A returning 1)
+  select count(*) into n from u;
+  b := (n = 0);
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  with u as (update public.academies set secondary_colour = secondary_colour where id = ACAD_A returning 1)
+  select count(*) into n from u;
+  b := b and (n = 0);
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  with u as (update public.academies set secondary_colour = secondary_colour where id = ACAD_A returning 1)
+  select count(*) into n from u;
+  b2 := (n = 1);
+  execute 'reset role';
+  insert into rls_results values (112,'a club''s colours and logo: its owner can change them; its coach and its families cannot',
+    case when b and b2 then 'PASS' else 'FAIL (coach and parent refused '||b||', owner allowed '||b2||')' end);
+
+  -- 113. Appearance is a person's own: they can change theirs, and nobody
+  -- else's.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  with u as (update public.profiles set appearance = appearance, colour_mode = colour_mode where id = PARENT returning 1)
+  select count(*) into n from u;
+  b := (n = 1);
+  with u as (update public.profiles set appearance = appearance where id = MARCUS returning 1)
+  select count(*) into n from u;
+  b2 := (n = 0);
+  execute 'reset role';
+  insert into rls_results values (113,'a parent can change their own appearance and nobody else''s',
+    case when b and b2 then 'PASS' else 'FAIL (own allowed '||b||', another refused '||b2||')' end);
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

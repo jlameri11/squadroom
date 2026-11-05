@@ -97,7 +97,7 @@ barInkOnBrand.length === 0 ? ok('no control on the bar takes the brand\'s ink (w
 
 head('3. The old marks are gone')
 const OLD = []
-const CLUB_PICKERS = /settings\/academy\/academy-settings\.tsx|start\/setup\/setup-checklist\.tsx/
+const CLUB_PICKERS = /settings\/academy\/academy-settings\.tsx|settings\/academy\/club-branding\.tsx|start\/setup\/setup-checklist\.tsx/
 for (const f of files) {
   const src = readFileSync(join(ROOT, f), 'utf8')
   if (/>\s*SQ\s*</.test(src)) OLD.push(`${f}: the SQ tile`)
@@ -152,7 +152,7 @@ const join_ = await fetch(`${BASE}/join`).then((r) => r.text())
 join_.includes('src="/brand/squadroom-icon-white-small.svg"') ? ok('/join carries the small icon (48px)') : bad('no icon on /join')
 for (const [path, html] of [['/signin', signin], ['/for-clubs', forClubs], ['/join', join_]]) if (/>\s*SQ\s*</.test(html)) bad(`${path} still shows "SQ"`)
 
-head('6. In a browser: the bar, the sign-in button, in light and dark')
+head('6. In a browser: Black & white (an Appearance choice; club colours are the default — test-branding), and sign-in')
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
 const parent = await signInBoth(admin, 'p61400000011@squadroom.invalid')
 if (!parent) { console.log("  could not sign in — the project's auth rate limit, not a failure"); process.exit(2) }
@@ -167,11 +167,11 @@ try {
     await page.setViewport({ width: 375, height: 812 })
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }])
     await page.setCookie(cookie)
-    await page.evaluateOnNewDocument(() => { try { localStorage.setItem('squadroom.org', '00000000-0000-0000-0000-0000000a0001') } catch {} })
+    await page.evaluateOnNewDocument(() => { try { localStorage.setItem('squadroom.org', '00000000-0000-0000-0000-0000000a0001'); localStorage.setItem('squadroom.appearance', JSON.stringify({ design: 'mono', mode: 'system' })) } catch {} })
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle2', timeout: 60000 })
     await page.waitForSelector('header', { timeout: 30000 })
     const bar = await page.evaluate(() => { const h = document.querySelector('header'); const s = getComputedStyle(h); return { bg: s.backgroundColor, fg: s.color } })
-    toHex(bar.bg) === '#101012' && toHex(bar.fg) === '#ffffff' ? ok(`${theme}: the app bar is #101012 with white`) : bad(`${theme}: the app bar is ${toHex(bar.bg)} with ${toHex(bar.fg)}`)
+    toHex(bar.bg) === '#101012' && toHex(bar.fg) === '#ffffff' ? ok(`${theme}, Black & white: the app bar is #101012 with white`) : bad(`${theme}, Black & white: the app bar is ${toHex(bar.bg)} with ${toHex(bar.fg)}`)
     await context.close()
     // Signed out: a signed-in visit to /signin goes straight home.
     const out = await browser.createBrowserContext()

@@ -89,12 +89,17 @@ export function OrgSwitcher({ onClose }: { onClose: () => void }) {
                     background: on ? 'var(--surface-2)' : 'var(--surface)',
                   }}
                 >
-                  <span
-                    className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[0.9375rem]"
-                    style={{ background: 'var(--surface-2)', color: 'var(--ink)' }}
-                  >
-                    {initials(o.name)}
-                  </span>
+                  {o.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- a club's own file, any format
+                    <img src={o.logo_url} alt="" className="h-10 w-10 flex-none rounded-[11px] border bg-white object-contain p-0.5" style={{ borderColor: 'var(--line)' }} data-club-logo />
+                  ) : (
+                    <span
+                      className="display grid h-10 w-10 flex-none place-items-center rounded-[11px] text-[0.9375rem]"
+                      style={{ background: 'var(--surface-2)', color: 'var(--ink)' }}
+                    >
+                      {initials(o.name)}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">{o.name}</span>
                     <span className="block truncate text-sm text-ink-3">

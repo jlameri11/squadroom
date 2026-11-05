@@ -4,9 +4,11 @@
  * X-04. A club that posts a result on Saturday afternoon is marketing itself
  * and, incidentally, us — so the card has to look like the club rather than
  * like a Squadroom template. Everything on it is built from the academy's own
- * colour and name; there is no logo, deliberately, because `logo_url` is
- * usually empty and a card that falls back to a grey box looks worse than one
- * that never had a logo in it.
+ * colour and name — and its logo beside the name when it has one (Joey, 4 Nov
+ * 2026), on a white tile so a crest never vanishes into the club's colour.
+ * No logo, no tile: a card that falls back to a grey box looks worse than
+ * one that never had a logo in it. The second colour, when there is one, is
+ * the line above the footer.
  *
  * SATORI, NOT A BROWSER. These render through next/og, which means a useful
  * subset of CSS and some hard rules worth stating once rather than
@@ -24,6 +26,8 @@
  * and scores and times; never a roster, never a scorer, never a photo.
  */
 
+import { inkOn as readableInk } from '@/lib/brand/colour'
+
 export const SIZES = {
   /** Instagram and WhatsApp stories. */
   story: { width: 1080, height: 1920 },
@@ -40,21 +44,37 @@ export function sizeOf(name: string | null): { width: number; height: number } {
 }
 
 /**
- * Is this colour dark enough for white text?
- *
- * A club's colour is whatever they picked, and some of them pick yellow.
- * White on #EFBD5B is unreadable, so the text colour is computed rather than
- * assumed — relative luminance, the same sum a contrast checker uses.
+ * Black or white text on the club's colour, whichever reads better — the
+ * same decision the app makes (lib/brand/colour.ts), so a yellow club's card
+ * and its app bar agree.
  */
 export function inkOn(hex: string): string {
-  const h = hex.replace('#', '')
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
-  const r = parseInt(full.slice(0, 2), 16) / 255
-  const g = parseInt(full.slice(2, 4), 16) / 255
-  const b = parseInt(full.slice(4, 6), 16) / 255
-  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
-  return luminance > 0.45 ? '#111827' : '#ffffff'
+  return readableInk(hex)
+}
+
+/**
+ * The club's logo as a data URI for Satori, or null. Fetched with a short
+ * deadline: a card that waits on a slow file is a card that sometimes does
+ * not render, and the card is complete without it. PNG, JPG and SVG only —
+ * what Satori draws.
+ */
+export async function logoDataUri(url: string | null | undefined): Promise<string | null> {
+  if (!url || !/^https:\/\//.test(url)) return null
+  const abort = new AbortController()
+  const timer = setTimeout(() => abort.abort(), 2000)
+  try {
+    const res = await fetch(url, { signal: abort.signal })
+    if (!res.ok) return null
+    const type = (res.headers.get('content-type') ?? '').split(';')[0].trim()
+    if (!['image/png', 'image/jpeg', 'image/svg+xml'].includes(type)) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length > 1_500_000) return null
+    return `data:${type};base64,${buf.toString('base64')}`
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /** A hex that Satori will accept, whatever the club typed. */
@@ -69,12 +89,18 @@ export function Frame({
   height,
   children,
   footer,
+  logo = null,
+  accent = null,
 }: {
   brand: string
   width: number
   height: number
   children: React.ReactNode
   footer: string
+  /** A data URI (logoDataUri), never a URL Satori would have to fetch. */
+  logo?: string | null
+  /** The club's second colour, for the line above the footer. */
+  accent?: string | null
 }) {
   const ink = inkOn(brand)
 
@@ -116,15 +142,27 @@ export function Frame({
             display: 'flex',
             // A hairline in the ink colour rather than a border, because
             // Satori treats a 1px border inconsistently at this scale.
-            height: 2,
+            height: accent ? 6 : 2,
             width: '100%',
-            background: ink,
-            opacity: 0.25,
+            background: accent ?? ink,
+            opacity: accent ? 1 : 0.25,
             marginBottom: 28,
           }}
         />
-        <div style={{ display: 'flex', fontSize: 34, letterSpacing: 1, opacity: 0.85 }}>
-          {footer}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {logo && (
+            // eslint-disable-next-line @next/next/no-img-element -- Satori draws <img>, not next/image
+            <img
+              src={logo}
+              alt=""
+              width={84}
+              height={84}
+              style={{ width: 84, height: 84, borderRadius: 18, background: '#ffffff', padding: 8, marginRight: 24, objectFit: 'contain' }}
+            />
+          )}
+          <div style={{ display: 'flex', fontSize: 34, letterSpacing: 1, opacity: 0.85 }}>
+            {footer}
+          </div>
         </div>
       </div>
     </div>

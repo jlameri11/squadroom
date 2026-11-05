@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { NextResponse } from 'next/server'
 import { createClient, getUserId } from '@/lib/supabase/server'
-import { Eyebrow, Frame, inkOn, safeColour, sizeOf } from '@/lib/share/card'
+import { Eyebrow, Frame, inkOn, logoDataUri, safeColour, sizeOf } from '@/lib/share/card'
 
 /**
  * This weekend's games, as one picture.
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 
   const { data: academyRow } = await supabase
     .from('academies')
-    .select('id, primary_colour')
+    .select('*')
     .eq('slug', data.academy.slug)
     .maybeSingle()
   // X-08: "with thanks to" on the club's cards.
@@ -92,6 +92,8 @@ export async function GET(request: Request) {
   const { width, height } = sizeOf(url.searchParams.get('size'))
   const brand = safeColour(academyRow?.primary_colour)
   const ink = inkOn(brand)
+  const accent = safeColour((academyRow as { secondary_colour?: string | null } | null)?.secondary_colour, '') || null
+  const logo = await logoDataUri(academyRow?.logo_url)
 
   // A range, not the Saturday. The card covers two days and the first
   // version headed it "31 October" above a Sunday fixture on the 1st, which
@@ -106,7 +108,7 @@ export async function GET(request: Request) {
 
   return new ImageResponse(
     (
-      <Frame brand={brand} width={width} height={height} footer={footer}>
+      <Frame brand={brand} width={width} height={height} footer={footer} logo={logo} accent={accent}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Eyebrow ink={ink}>This weekend</Eyebrow>
           <div
