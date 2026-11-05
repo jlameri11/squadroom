@@ -8,7 +8,8 @@ import { setOrg } from '@/lib/org'
 const TYPES = [
   { value: 'academy', label: 'Academy', hint: 'Several teams across age groups' },
   { value: 'club', label: 'Club or team', hint: 'One team, or a few mates' },
-  { value: 'league', label: 'League', hint: 'You run a competition others enter' },
+  // Joey, 5 Nov 2026: the organiser's choice, named for who picks it.
+  { value: 'league', label: 'Tournament & league organiser', hint: 'You run leagues or tournaments, e.g. Magic Group, Football NSW.' },
   { value: 'school', label: 'School', hint: 'A school football program' },
 ] as const
 
