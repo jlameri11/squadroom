@@ -567,6 +567,20 @@ one and is meant to reach hundreds of academies.
   first frame, the profile's (0209) follows the person; sign-out clears
   both. `scripts/test-branding.mjs` covers six club colours incl. yellow and
   white, who may change branding, and all of the above in a browser.
+- **A suite leaves the demo exactly as it found it** (5 Nov 2026). The
+  dev data IS the demo Joey shows people, and suites that passed their own
+  checks had been calling off real games and tonight's trainings, parking
+  the next game nine days out, deleting every DM in the club and leaving
+  113 "Message deleted" bubbles in the U8 chat. Rules: make your own rows
+  (a `TAG` in the title or body) and remove exactly those; when you must
+  touch a real row, read every field first and write every field back;
+  call off and cancel only on a ground or day nobody real uses; remove
+  messages with `scripts/_purge-test-messages.mjs` (a deleted message's
+  text lives in `deleted_message_archive`, so matching `messages.body`
+  misses it). `npm run test:all` snapshots the demo between suites
+  (`scripts/_demo-snapshot.mjs`) and fails a suite that leaves a game,
+  club, squad, program, membership, chat or clearance changed, naming the
+  row; `DEMO_GUARD=0` turns it off.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

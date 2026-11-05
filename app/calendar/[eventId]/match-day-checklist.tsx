@@ -46,14 +46,20 @@ export function MatchDayChecklist({ eventId }: { eventId: string }) {
       <ul className="rounded-xl border" style={{ borderColor: 'var(--line)' }}>
         {items.map((i, n) => (
           <li key={i.item} className={`flex items-start gap-2.5 px-3 py-2 ${n > 0 ? 'border-t' : ''}`} style={{ borderColor: 'var(--line-2)' }} data-item={i.item} data-done={i.done}>
+            {/* A 32px target around the 20px box, in the same place: the
+                padding is taken back by the margin (X-10, 5 Nov 2026). */}
             <button
               onClick={() => tick(i)}
               disabled={i.auto || busy !== null}
-              className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-md border text-xs font-bold"
-              style={i.done ? { background: 'var(--yes)', borderColor: 'var(--yes)', color: 'var(--yes-ink)' } : { borderColor: 'var(--line)' }}
+              className="-mx-1.5 -mb-1.5 -mt-1 flex-none p-1.5"
               aria-label={`${i.label}: ${i.done ? 'done' : 'to do'}${i.auto ? ' (ticks itself)' : ''}`}
             >
-              {i.done ? '✓' : ''}
+              <span
+                className="grid h-5 w-5 place-items-center rounded-md border text-xs font-bold"
+                style={i.done ? { background: 'var(--yes)', borderColor: 'var(--yes)', color: 'var(--yes-ink)' } : { borderColor: 'var(--line)' }}
+              >
+                {i.done ? '✓' : ''}
+              </span>
             </button>
             <span className="min-w-0 flex-1">
               <span className={`block text-sm ${i.done ? 'text-ink-3 line-through' : ''}`}>{i.label}</span>

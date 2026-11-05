@@ -210,7 +210,7 @@ export function ChannelView({
               <div className="mb-2 ml-4">
                 <button
                   onClick={() => setOpenThreads((s) => { const n = new Set(s); if (n.has(m.id)) n.delete(m.id); else n.add(m.id); return n })}
-                  className="mb-1 text-xs font-semibold underline underline-offset-2"
+                  className="tap mb-1 text-xs font-semibold underline underline-offset-2"
                   style={{ color: 'var(--brand-text)' }}
                 >
                   {openThreads.has(m.id) ? 'Hide replies' : `${threads.get(m.id)!.length} ${threads.get(m.id)!.length === 1 ? 'reply' : 'replies'} ›`}

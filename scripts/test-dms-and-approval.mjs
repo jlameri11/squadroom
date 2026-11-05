@@ -24,7 +24,11 @@ const sam     = await sess('p61400000011@squadroom.invalid')    // parent
 const priya   = await sess('p61400000012@squadroom.invalid')    // parent
 const ravens  = await sess('p61400000092@squadroom.invalid')    // other academy
 
-await admin.from('channels').delete().eq('type','direct').eq('academy_id', NRIFA)
+// The conversations that were here before this suite: kept. It used to
+// delete every direct message in the club before it started — a demo's real
+// conversations included — and then left its own two behind (5 Nov 2026).
+const { data: dmsBefore } = await admin.from('channels').select('id').eq('type','direct').eq('academy_id', NRIFA)
+const existedBefore = new Set((dmsBefore ?? []).map((c) => c.id))
 
 head('1. A parent can message their coach')
 const { data: dm, error: e1 } = await sam.client.rpc('open_direct_channel', { p_academy: NRIFA, p_other: coach.id })
@@ -108,5 +112,12 @@ const { data: edited } = await admin.from('messages').select('edited_at').eq('id
 
 await coach.client.from('channels').update({ restrictions: {} }).eq('id', u8.id)
 await admin.from('messages').delete().like('body','AQ::%')
+// Only the conversations this suite opened go.
+const { data: dmsAfter } = await admin.from('channels').select('id').eq('type','direct').eq('academy_id', NRIFA)
+const opened = (dmsAfter ?? []).map((c) => c.id).filter((id) => !existedBefore.has(id))
+if (opened.length) {
+  await admin.from('messages').delete().in('channel_id', opened)
+  await admin.from('channels').delete().in('id', opened)
+}
 console.log(process.exitCode ? '\n\x1b[31mBROKEN\x1b[0m\n' : '\n\x1b[32mDMs AND APPROVAL QUEUE HOLD\x1b[0m\n')
 process.exit(process.exitCode ?? 0)

@@ -438,3 +438,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
 /* A text-styled button is still a button a thumb has to hit: at least 32px of
    hit area without moving anything around it (X-10, 4 Nov 2026). */
 .tap { padding-block: 8px; margin-block: -8px; }
+
+/* Native radios, checkboxes and sliders in the brand's colour (the club's,
+   where it wears club colours) rather than the browser's own blue — which
+   the brand does not use anywhere else (5 Nov 2026). */
+input, progress { accent-color: var(--brand); }

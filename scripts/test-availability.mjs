@@ -64,10 +64,18 @@ const { data: g2 } = await coach.rpc('availability_grid', { p_team: U8, p_upcomi
 const cell = g2.players.find((p) => p.id === LEO)?.cells[first.id]
 cell?.status === 'no' && cell.note === 'TEST:: dentist at 9' ? ok(`Leo's cell for ${first.title} says can't play: "${cell.note}"`) : bad(`Leo's cell: ${JSON.stringify(cell)}`)
 cell?.by ? ok(`and who said so: ${cell.by}`) : bad('the cell does not say who answered')
-// Every other cell agrees with the RSVP table.
-const { data: rs } = await admin.from('event_rsvps').select('event_id, player_id, status').in('event_id', g2.events.map((e) => e.id))
+// Every other cell agrees with the RSVP table — with each child's LATEST
+// answer, because two guardians can answer differently ("maybe" from one,
+// "yes" from the other) and the grid, rightly, shows the most recent.
+const { data: rsAll } = await admin.from('event_rsvps').select('event_id, player_id, status, updated_at').in('event_id', g2.events.map((e) => e.id))
+const latest = new Map()
+for (const r of rsAll ?? []) {
+  const k = `${r.event_id}:${r.player_id}`
+  if (!latest.has(k) || latest.get(k).updated_at < r.updated_at) latest.set(k, r)
+}
+const rs = [...latest.values()]
 let agree = 0, disagree = 0
-for (const r of rs ?? []) {
+for (const r of rs) {
   const p = g2.players.find((x) => x.id === r.player_id)
   if (!p) continue
   const c = p.cells[r.event_id]

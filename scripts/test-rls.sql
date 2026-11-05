@@ -24,6 +24,7 @@ declare
   OUTSIDER constant uuid := '00000000-0000-0000-0000-0000000000c2'; -- other tenant
   ANNO     constant uuid := '00000000-0000-0000-0000-00000000c001';
   v_u8 uuid; v_rv uuid; n int; b bool; b2 bool; foreign_rows int;
+  v_kid uuid; v_g1 uuid; v_g2 uuid; v_ev114 uuid; v_grid jsonb; v_going int; v_maybe int; v_total int; v_roster int;
   v_ev uuid; v_ev_total int; v_msg uuid; v_comp uuid;
 begin
   -- For checks 44–45. Read here, before any role switch, so it is a real id.
@@ -1223,6 +1224,42 @@ begin
   execute 'reset role';
   insert into rls_results values (113,'a parent can change their own appearance and nobody else''s',
     case when b and b2 then 'PASS' else 'FAIL (own allowed '||b||', another refused '||b2||')' end);
+
+  -- 0211. A child is counted once. Two guardians answer the same game
+  -- differently (yes an hour ago, maybe now): the coach's tally counts the
+  -- child once, as their latest answer, and the availability grid agrees.
+  -- 114.
+  select pg.player_id, min(pg.profile_id::text)::uuid, max(pg.profile_id::text)::uuid
+    into v_kid, v_g1, v_g2
+    from public.player_guardians pg
+    join public.players pl on pl.id = pg.player_id and pl.team_id = '00000000-0000-0000-0000-0000000d0008'
+   group by pg.player_id having count(*) >= 2 limit 1;
+  if v_kid is null then
+    insert into rls_results values (114, 'a child with two guardians is counted once', 'SKIP (no U8 child with two guardians in the seed)');
+  else
+    insert into public.events (academy_id, team_id, type, title, starts_at, ends_at)
+      values (ACAD_A, '00000000-0000-0000-0000-0000000d0008', 'match', 'rls probe 114', now() + interval '3 days', now() + interval '3 days 1 hour')
+      returning id into v_ev114;
+    insert into public.event_rsvps (academy_id, event_id, profile_id, player_id, status, updated_at)
+      values (ACAD_A, v_ev114, v_g1, v_kid, 'yes', now() - interval '1 hour'),
+             (ACAD_A, v_ev114, v_g2, v_kid, 'maybe', now());
+    select count(*) into v_roster from public.players where team_id = '00000000-0000-0000-0000-0000000d0008';
+    perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    select s.going, s.maybe, s.going + s.maybe + s.out_count + s.no_reply into v_going, v_maybe, v_total
+      from public.event_rsvp_summary(v_ev114) s;
+    begin
+      v_grid := public.availability_grid('00000000-0000-0000-0000-0000000d0008', 4, 0);
+    exception when others then
+      v_grid := jsonb_build_object('refused', sqlerrm);
+    end;
+    execute 'reset role';
+    b := v_going = 0 and v_maybe = 1 and v_total = v_roster;
+    b2 := coalesce((select (x->>'going')::int from jsonb_array_elements(v_grid->'events') x where x->>'id' = v_ev114::text), -1) = 0;
+    delete from public.events where id = v_ev114;
+    insert into rls_results values (114, 'a child with two guardians is counted once, as their latest answer (tally and grid)',
+      case when b and b2 then 'PASS' else 'FAIL (tally going '||v_going||' maybe '||v_maybe||' total '||v_total||' of '||v_roster||'; grid ok '||b2||coalesce(' — grid refused: '||(v_grid->>'refused'), '')||')' end);
+  end if;
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.

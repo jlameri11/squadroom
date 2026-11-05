@@ -361,7 +361,7 @@ export function MessageBubble({
               key={c.emoji}
               onClick={() => react(c.emoji)}
               onContextMenu={(e) => { e.preventDefault(); whoReacted(c.emoji) }}
-              className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs ${
+              className={`flex min-h-6 items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs ${
                 c.reacted_by_me ? 'border-[var(--brand)] bg-[var(--surface-2)]' : 'border-[var(--line)]'
               }`}
             >

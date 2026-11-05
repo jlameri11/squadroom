@@ -85,13 +85,18 @@ const audit = () => {
     return (el.getAttribute('title') ?? el.getAttribute('value') ?? '').trim()
   }
   const visible = (el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' }
-  const out = { unnamed: [], unlabelled: [], noAlt: [], small: [], current: document.querySelector('nav [aria-current="page"], [role="tablist"] [aria-current], [data-tab][aria-current]') !== null }
+  const out = { unnamed: [], unlabelled: [], noAlt: [], small: [], under44: [], current: document.querySelector('nav [aria-current="page"], [role="tablist"] [aria-current], [data-tab][aria-current]') !== null }
   for (const el of document.querySelectorAll('button, a[href], [role="button"], [role="tab"], input[type="submit"], input[type="button"]')) {
     if (!visible(el) || el.getAttribute('aria-hidden') === 'true') continue
     const n = name(el)
     if (!n) out.unnamed.push(`${el.tagName.toLowerCase()}${el.className ? '.' + String(el.className).split(' ').slice(0, 2).join('.') : ''}${el.getAttribute('href') ? ` → ${el.getAttribute('href')}` : ''}`)
     const r = el.getBoundingClientRect()
     if (el.tagName === 'BUTTON' && (r.width < 24 || r.height < 24)) out.small.push(`${n.slice(0, 30)} ${Math.round(r.width)}×${Math.round(r.height)}`)
+    // X-10's 44px (Apple's minimum for a thumb): counted, not failed — the
+    // floor above (24px, WCAG 2.2 AA) is what fails. A link inside a line of
+    // text is exempt, as WCAG exempts it.
+    const inline = el.tagName === 'A' && getComputedStyle(el).display === 'inline'
+    if (!inline && (r.width < 44 || r.height < 44)) out.under44.push(`${n.replace(/\s+/g, ' ').slice(0, 28)} ${Math.round(r.width)}×${Math.round(r.height)}`)
   }
   for (const el of document.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]), select, textarea')) {
     if (!visible(el)) continue
@@ -125,6 +130,8 @@ const largeAudit = (px) => {
   for (const el of document.body.querySelectorAll('*')) {
     const r = el.getBoundingClientRect()
     if (r.width === 0 || r.height === 0) continue
+    // Visually hidden on purpose (.sr-only): clipped to a pixel by design.
+    if (r.width <= 1 && r.height <= 1) continue
     const s = getComputedStyle(el)
     if (s.visibility === 'hidden' || s.display === 'none') continue
     if (s.position === 'fixed' && r.width >= vw) continue
@@ -147,6 +154,7 @@ const largeProblems = (b) => [
 ]
 
 let failures = 0
+let under44 = 0
 try {
   for (const s of SCREENS) {
     // Its own context: cookies are per browser context, and a stranger's
@@ -165,6 +173,8 @@ try {
     const a = await page.evaluate(audit)
     const problems = [...a.unnamed.map((x) => `no name: ${x}`), ...a.unlabelled.map((x) => `no label: ${x}`), ...a.noAlt.map((x) => `no alt: ${x}`), ...a.small.map((x) => `tiny: ${x}`)]
     const label = `${s.who ?? 'stranger'} ${s.path}${where !== s.path ? ` (→ ${where})` : ''}`
+    under44 += a.under44.length
+    if (process.env.A11Y_TARGETS && a.under44.length) console.log(`    ~ under 44px on ${label}: ${a.under44.length} — ${a.under44.slice(0, 12).join(' · ')}`)
     if (problems.length === 0) ok(`${label}: every control named, every field labelled, every image described`)
     else { failures += problems.length; bad(`${label}: ${problems.length} problem${problems.length === 1 ? '' : 's'}`); for (const p of problems.slice(0, 8)) console.log(`      · ${p}`) }
     // The same screen with the text turned up.
@@ -186,5 +196,6 @@ try {
 } finally {
   await browser.close()
 }
+console.log(`\n  ${under44} controls under 44px across the screens (for the record; A11Y_TARGETS=1 lists them)`)
 console.log(failures === 0 ? '\n  \x1b[32mevery screen can be read aloud and survives text at 200%\x1b[0m\n' : `\n  \x1b[31m${failures} things a screen reader cannot say or that larger text breaks\x1b[0m\n`)
 process.exit(process.exitCode ?? 0)

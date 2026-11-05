@@ -16,6 +16,8 @@
 // failures that follow are about the rate limit, not the product.
 import { spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
+import { createClient } from '@supabase/supabase-js'
+import { difference, snapshot } from './_demo-snapshot.mjs'
 
 const PAUSE_MS = Number(process.env.TEST_PAUSE_MS ?? 1500)
 const only = process.argv.slice(2)
@@ -64,6 +66,13 @@ const RETRIES = Number(process.env.TEST_RETRIES ?? 2)
 const RETRY_WAIT_MS = Number(process.env.TEST_RETRY_WAIT_MS ?? 60_000)
 
 const results = []
+// The demo between suites (5 Nov 2026): a suite that passes its own checks
+// but leaves the data Joey demos with changed — a game moved, a session
+// called off, a chat full of "Message deleted" — is named here and counted
+// as not passing. DEMO_GUARD=0 turns it off.
+const guard = process.env.DEMO_GUARD !== '0'
+const admin = guard ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } }) : null
+let demo = guard ? await snapshot(admin) : null
 for (const file of suites) {
   const name = file.replace(/^test-|\.mjs$|\.ts$/g, '')
   let { code, out } = await run(file)
@@ -117,7 +126,14 @@ for (const file of suites) {
   else if (passed === 0) verdict = 'asserted nothing'
   else verdict = 'pass'
 
-  results.push({ name, verdict, passed, failed, out })
+  let left = []
+  if (guard) {
+    const now = await snapshot(admin)
+    left = difference(demo, now)
+    demo = now
+    if (left.length && verdict === 'pass') verdict = 'left the demo changed'
+  }
+  results.push({ name, verdict, passed, failed, out, left })
   const tag =
     verdict === 'pass'
       ? green(`pass ${passed}`)
@@ -126,7 +142,9 @@ for (const file of suites) {
         : red(`${verdict}${failed ? ' ' + failed : ''}`)
   console.log(`  ${name.padEnd(22)} ${tag}`)
 
-  if (verdict !== 'pass' && verdict !== 'by hand') {
+  for (const l of left.slice(0, 6)) console.log(dim(`      leaves: ${l.slice(0, 150)}`))
+  if (left.length > 6) console.log(dim(`      … and ${left.length - 6} more`))
+  if (verdict !== 'pass' && verdict !== 'by hand' && verdict !== 'left the demo changed') {
     const reason = out
       .split('\n')
       .filter((l) => l.includes('✗') || /Error|error:/.test(l))
