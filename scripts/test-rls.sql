@@ -1443,6 +1443,182 @@ begin
     end if;
   end;
 
+  -- 0214. Every account has an email — and nobody sees anybody else's but
+  -- their own organisation's owners and admins.
+  declare
+    LEAGUE_OWNER constant uuid := '00000000-0000-0000-0000-0000000000e1';
+    had_sam bool; had_marcus bool; had_out bool; v_j jsonb; r126 text; v_out public.account_emails;
+  begin
+    had_sam := exists (select 1 from public.account_emails where profile_id = PARENT);
+    had_marcus := exists (select 1 from public.account_emails where profile_id = MARCUS);
+    select * into v_out from public.account_emails where profile_id = OUTSIDER;
+    had_out := v_out.profile_id is not null;
+    insert into public.account_emails (profile_id, email) values (PARENT, 'sam.rls-probe@example.com') on conflict do nothing;
+    insert into public.account_emails (profile_id, email) values (MARCUS, 'marcus.rls-probe@example.com') on conflict do nothing;
+
+    -- 124. Your own, and nobody else's.
+    perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    select count(*) into n from public.account_emails where profile_id = PARENT;
+    select count(*) into foreign_rows from public.account_emails where profile_id <> PARENT;
+    execute 'reset role';
+    perform set_config('request.jwt.claims', json_build_object('sub',LEAGUE_OWNER,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    select count(*) into v_total from public.account_emails where profile_id in (PARENT, MARCUS);
+    execute 'reset role';
+    insert into rls_results values (124, 'a person reads their own email and nobody else''s (a league reads none)',
+      case when n = 1 and foreign_rows = 0 and v_total = 0 then 'PASS'
+           else 'FAIL (own '||n||', others '||foreign_rows||', league '||v_total||')' end);
+
+    -- 125. Staff see their own members' emails, only: NRIFA's owner sees Sam's;
+    -- not Ravens'; NRIFA's coach, Ravens' coach and the league see none of NRIFA's.
+    perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    select count(*) into n from public.member_emails(ACAD_A) where profile_id = PARENT;
+    b := false;
+    begin perform * from public.member_emails(ACAD_B); exception when others then b := true; end;
+    execute 'reset role';
+    b2 := true;
+    foreach v_kid in array array[MARCUS, '00000000-0000-0000-0000-0000000000c1'::uuid, LEAGUE_OWNER] loop
+      perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform * from public.member_emails(ACAD_A);
+        b2 := false;
+      exception when others then null;
+      end;
+      execute 'reset role';
+    end loop;
+    insert into rls_results values (125, 'staff see emails only for their own members (no club''s coach, other club or league)',
+      case when n = 1 and b and b2 then 'PASS' else 'FAIL (own members '||n||', other club refused '||b||', others refused '||b2||')' end);
+
+    -- 126–127. The news opt-in starts off and is only ever what was ticked,
+    -- with a record of each change; a placeholder address is refused.
+    perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    v_j := public.set_my_email('outsider.rls-probe@example.com');
+    r126 := case when (v_j->>'news')::boolean is false then 'off' else 'on' end;
+    v_j := public.set_my_news(true);
+    r126 := r126 || ',' || case when (v_j->>'news')::boolean then 'on' else 'off' end;
+    v_j := public.set_my_news(false);
+    r126 := r126 || ',' || case when (v_j->>'news')::boolean then 'on' else 'off' end;
+    b := false;
+    begin perform public.set_my_email('p61400000099@squadroom.invalid'); exception when others then b := true; end;
+    b2 := false;
+    begin perform public.set_my_email('not an email'); exception when others then b2 := true; end;
+    execute 'reset role';
+    select count(*) into n from public.news_consents where profile_id = OUTSIDER and email = 'outsider.rls-probe@example.com';
+    insert into rls_results values (126, 'the news opt-in defaults to off, and each yes and no is kept with its time',
+      case when r126 = 'off,on,off' and n = 2 then 'PASS' else 'FAIL ('||r126||', '||n||' records)' end);
+    insert into rls_results values (127, 'an address nobody reads, or no address at all, is refused',
+      case when b and b2 then 'PASS' else 'FAIL' end);
+
+    -- 128. The addresses for emailing a notice are the server's alone.
+    insert into rls_results values (128, 'a signed-in person cannot ask for a notice''s email list',
+      case when not has_function_privilege('authenticated', 'public.notice_email_recipients(uuid)', 'execute')
+            and not has_function_privilege('anon', 'public.notice_email_recipients(uuid)', 'execute')
+           then 'PASS' else 'FAIL' end);
+
+    -- 129. And no email rides on a profile, which every clubmate can read.
+    select count(*) into n from information_schema.columns
+     where table_schema = 'public' and table_name = 'profiles' and column_name ilike '%email%';
+    select count(*) into foreign_rows from pg_policies where schemaname = 'public' and tablename = 'account_emails';
+    insert into rls_results values (129, 'no email on profiles; account_emails has one policy, your own',
+      case when n = 0 and foreign_rows = 1 then 'PASS' else 'FAIL (profile email columns '||n||', policies '||foreign_rows||')' end);
+
+    delete from public.news_consents where email = 'outsider.rls-probe@example.com';
+    if had_out then
+      update public.account_emails
+         set email = v_out.email, verified_at = v_out.verified_at, news_opt_in_at = v_out.news_opt_in_at
+       where profile_id = OUTSIDER;
+    else
+      delete from public.account_emails where profile_id = OUTSIDER;
+    end if;
+    if not had_sam then delete from public.account_emails where profile_id = PARENT; end if;
+    if not had_marcus then delete from public.account_emails where profile_id = MARCUS; end if;
+  end;
+
+  -- 0215. A teenager's login, with a parent's yes. Probed inside a block that
+  -- rolls itself back: the verdicts are kept, the memberships are not.
+  declare
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    v_teen uuid; r130 text; r131 text; r132 text; r133 text;
+  begin
+    begin
+      -- 130. An under-13 cannot have a login, by invitation or by linking.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b := false;
+      begin perform public.invite_player_login(LEO, 'leo.rls-probe@example.com'); exception when others then b := true; end;
+      execute 'reset role';
+      b2 := false;
+      begin update public.players set profile_id = OUTSIDER where id = LEO; exception when others then b2 := true; end;
+      r130 := case when b and b2 then 'PASS' else 'FAIL (invite refused '||b||', link refused '||b2||')' end;
+
+      -- A fourteen-year-old in U12, Sam their guardian.
+      insert into public.players (academy_id, team_id, full_name, dob)
+      values (ACAD_A, U12, 'RLS Probe Teen', (current_date - interval '14 years')::date)
+      returning id into v_teen;
+      insert into public.player_guardians (academy_id, player_id, profile_id, relationship, is_primary)
+      values (ACAD_A, v_teen, PARENT, 'parent', true);
+
+      -- 132. Their login needs their own address, not the parent's.
+      insert into public.account_emails (profile_id, email) values (PARENT, 'sam.rls-probe@example.com') on conflict do nothing;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b := false;
+      begin perform public.invite_player_login(v_teen, (select email from public.account_emails where profile_id = PARENT)); exception when others then b := true; end;
+      perform public.invite_player_login(v_teen, 'teen.rls-probe@example.com');
+      execute 'reset role';
+      r132 := case when b then 'PASS' else 'FAIL' end;
+
+      -- 133. Nobody but a guardian invites or approves: not a stranger, not the coach.
+      b := true;
+      foreach v_kid in array array[OUTSIDER, MARCUS] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        begin perform public.invite_player_login(v_teen, 'someone.rls-probe@example.com'); b := false; exception when others then null; end;
+        begin perform public.decide_player_login(v_teen, true); b := false; exception when others then null; end;
+        execute 'reset role';
+      end loop;
+      r133 := case when b then 'PASS' else 'FAIL' end;
+
+      -- 131. The teenager signs in (OUTSIDER plays the part) and WAITS: no
+      -- membership, no link, no squad place until Sam says yes — and none
+      -- can be made by hand meanwhile. Then yes, and they are in.
+      update public.player_logins set profile_id = OUTSIDER, status = 'waiting', claimed_at = now() where player_id = v_teen;
+      select count(*) into n from public.academy_members where academy_id = ACAD_A and profile_id = OUTSIDER and role = 'player';
+      b := false;
+      begin update public.players set profile_id = OUTSIDER where id = v_teen; exception when others then b := true; end;
+      b2 := false;
+      begin insert into public.team_members (academy_id, team_id, profile_id, role) values (ACAD_A, U12, OUTSIDER, 'player');
+      exception when others then b2 := true; end;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.decide_player_login(v_teen, true);
+      execute 'reset role';
+      select count(*) into v_total from public.players where id = v_teen and profile_id = OUTSIDER;
+      select count(*) into foreign_rows from public.team_members where team_id = U12 and profile_id = OUTSIDER and role = 'player';
+      r131 := case when n = 0 and b and b2 and v_total = 1 and foreign_rows = 1 then 'PASS'
+                   else 'FAIL (member before '||n||', link refused '||b||', squad refused '||b2||', linked after '||v_total||', in squad after '||foreign_rows||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r130 := coalesce(r130, 'FAIL (stopped: '||sqlerrm||')');
+        r131 := coalesce(r131, 'FAIL (stopped: '||sqlerrm||')');
+        r132 := coalesce(r132, 'FAIL (stopped: '||sqlerrm||')');
+        r133 := coalesce(r133, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (130, 'an under-13 cannot get a login, by invitation or by linking', r130);
+    insert into rls_results values (131, 'a 13-and-over login waits for a parent''s approval, and nothing can be linked meanwhile', r131);
+    insert into rls_results values (132, 'a child''s login needs their own email, not the parent''s', r132);
+    insert into rls_results values (133, 'only a guardian invites or approves a child''s login', r133);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
