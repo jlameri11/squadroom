@@ -91,6 +91,12 @@ policies); #14 Stripe on the live site + NRIFA's Express click-through;
     spec (D-5, D-6).
   - New NEEDS JOEY: **#19** Resend + a sending domain for December, **#20**
     three questions the 13+ logins reopen (the under-16 rules first).
+  - Full run **#21**: 135 suites, 2,690 assertions — not passing: `rls`
+    (the token), and two the evening's changes caused, fixed and re-run
+    green: `register-flow` 16 (registration now needs an email) and
+    `text-size` 17 (email HTML is exempt like the sign-in email: mail
+    clients read px). No suite left the demo changed. 0208–0215 parse with
+    PostgreSQL's own parser (pglast), every function and trigger body too.
   - Nothing deployed (the brief: no deploy).
 
 ## Evening summary — 3 Nov 2026: the money moves (Stripe test mode), and the first deploy

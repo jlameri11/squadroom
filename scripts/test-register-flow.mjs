@@ -88,6 +88,8 @@ head('2. Half-way through, the phone goes in a pocket — the draft survives a r
 try {
   await typeInto('Your name', `${TAG} Parent`)
   await typeInto('Mobile', '0400 999 777')
+  // Every account has an email (5 Nov 2026): registration requires one.
+  await typeInto('Email', 'flow.parent@example.com')
   await sleep(500)
   await page.reload({ waitUntil: 'networkidle2' })
   await sleep(1500)

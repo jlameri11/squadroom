@@ -33,7 +33,9 @@ const ROOT = new URL('..', import.meta.url).pathname
 head('1. No text size in the product is written in px')
 // Emails and the generated share images are not pages: an email client and
 // an image renderer have no root font size to follow.
-const NOT_PAGES = [/^app\/api\/auth\/send-link\//, /^app\/api\/share\//, /^lib\/share\//]
+// Not the app's pages: emails (read by mail clients, where px is the size
+// that works — the sign-in link, a notice, a confirmation) and share cards.
+const NOT_PAGES = [/^app\/api\/auth\/send-link\//, /^app\/api\/email\//, /^app\/api\/notices\//, /^lib\/mail\//, /^app\/api\/share\//, /^lib\/share\//]
 const files = []
 const walk = (dir) => {
   for (const name of readdirSync(join(ROOT, dir))) {
