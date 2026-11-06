@@ -631,6 +631,20 @@ one and is meant to reach hundreds of academies.
   `page.setOfflineMode`, and request interception for bars that carry
   nothing) — the pure test of the queue passed the whole time it was
   broken.
+- **Every migration must replay from empty, and is tried locally before
+  it is committed** (6 Nov 2026). A Supabase branch — and the scale test —
+  is built by replaying the migrations folder; a change made on the database
+  by hand ('tournament' in event_type) or a migration edited after it ran
+  (0121's apostrophe) breaks that replay without breaking dev. So: never
+  change the database except through a migration, and before committing
+  one, `node scripts/local-db/run.mjs` (all migrations into a local
+  Postgres; opt-in `npm i --no-save embedded-postgres@17.11.0-beta.19`).
+  To test policies on real data: `run.mjs --until <last applied>`, then
+  `node --env-file=.env.local scripts/local-db/copy-dev.mjs` (read-only on
+  squadroom-dev), then `run.mjs --keep --from <next> --rls`. Locally the
+  migration user owns the extensions, which Supabase does not — the runner
+  restores their EXECUTE after each migration; keep that in mind before
+  trusting a grant failure seen only locally.
 - **A server page never picks the organisation.** "The first academy by
   name" was wrong for everyone in more than one organisation (a league
   secretary whose child plays; Joey) and was found on seven pages on 4 Nov

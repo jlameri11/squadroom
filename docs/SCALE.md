@@ -103,7 +103,12 @@ costing nothing; whoever asks first starts a shared request).
 
 ## 4. The big run — what it must answer
 
-When the token and #18's answer exist:
+**(6 Nov) Where:** the dataset and the query plans can be done on this
+laptop, in the embedded Postgres `scripts/local-db/` already runs every
+migration in — free, no token, no branch. What that cannot give is
+Sydney's network timings; a hosted branch is only needed for those (NEEDS
+JOEY #18).
+
 
 1. **Seed** the dataset with a script (never the dev data): 60 clubs, 400
    teams, 6,000 players, 10,000 parents with guardianships, 500,000
