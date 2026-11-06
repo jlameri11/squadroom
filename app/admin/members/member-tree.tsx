@@ -12,7 +12,16 @@ export type TreeRow = {
   depth: number
 }
 
-export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeRow[] }) {
+export function MemberTree({
+  academyId,
+  rows,
+  emails = {},
+}: {
+  academyId: string
+  rows: TreeRow[]
+  /** Your own members' emails (0214); nobody else's ever reaches this screen. */
+  emails?: Record<string, { email: string; verified: boolean }>
+}) {
   const [items, setItems] = useState(rows)
   const [confirming, setConfirming] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -81,6 +90,12 @@ export function MemberTree({ academyId, rows }: { academyId: string; rows: TreeR
               {r.inviterName ? `Invited by ${r.inviterName}` : 'Founded this organisation'}
               {kids > 0 && ` · brought ${kids}`}
             </div>
+            {emails[r.profileId] && (
+              <div className="mt-0.5 break-all text-xs text-ink-3" data-member-email>
+                {emails[r.profileId].email}
+                {!emails[r.profileId].verified && ' · not confirmed yet'}
+              </div>
+            )}
 
             {!removed && r.depth > 0 && (
               <div className="mt-2">

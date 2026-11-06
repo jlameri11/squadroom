@@ -12,13 +12,21 @@ type Row = { profileId: string; fullName: string; role: string; status: string; 
 export function MembersLoader() {
   const org = useCurrentOrg()
   const [rows, setRows] = useState<Row[] | null>(null)
+  // 0214: this organisation's members' emails — for its own owners and
+  // admins only (member_emails refuses anyone else); none before 0214.
+  const [emails, setEmails] = useState<Record<string, { email: string; verified: boolean }>>({})
 
   useEffect(() => {
     if (!org) return
     let live = true
     ;(async () => {
-      const { data: tree } = await createClient().rpc('academy_invite_tree', { p_academy: org.id })
+      const supabase = createClient()
+      const [{ data: tree }, { data: mail }] = await Promise.all([
+        supabase.rpc('academy_invite_tree', { p_academy: org.id }),
+        supabase.rpc('member_emails', { p_academy: org.id }),
+      ])
       if (!live) return
+      setEmails(Object.fromEntries((mail ?? []).map((m) => [m.profile_id, { email: m.email, verified: m.verified }])))
       setRows(
         ((tree ?? []) as Record<string, unknown>[]).map((r) => ({
           profileId: r.profile_id as string,
@@ -38,7 +46,7 @@ export function MembersLoader() {
   if (!org || !rows) return <ScreenSkeleton />
   return (
     <div className="p-4" data-org={org.id}>
-      <MemberTree academyId={org.id} rows={rows} />
+      <MemberTree academyId={org.id} rows={rows} emails={emails} />
     </div>
   )
 }
