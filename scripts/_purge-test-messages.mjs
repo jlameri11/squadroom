@@ -10,7 +10,8 @@
  * 113 "Message deleted" bubbles out of 161 messages.
  *
  * This finds a suite's messages by their tag in either place, and removes
- * the message and its archive row. Only ever called with a suite's own tag.
+ * the message, its archive row and any push queued for it. Only ever called
+ * with a suite's own tag.
  */
 export async function purgeTestMessages(admin, prefixes) {
   const ids = new Set()
@@ -28,6 +29,10 @@ export async function purgeTestMessages(admin, prefixes) {
     if (m) errors.push(m.message)
     const { error: a } = await admin.from('deleted_message_archive').delete().in('message_id', chunk)
     if (a) errors.push(a.message)
+    // And the pushes queued for them (7 Nov 2026): 1,449 from one day's
+    // suites were waiting for the first phone to switch push on.
+    const { error: q } = await admin.from('notification_queue').delete().in('payload->>message_id', chunk)
+    if (q) errors.push(q.message)
   }
   return { purged: list.length, errors }
 }
