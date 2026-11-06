@@ -53,7 +53,7 @@ comment on column public.teams.external_ref is
 
 comment on column public.teams.skip_import is
   'A squad in the league draw that nobody in this app answers for. Its games
-   are left out of an import rather than put in families' calendars.';
+   are left out of an import rather than put in families'' calendars.';
 
 /**
  * Which of our squads is this league name?

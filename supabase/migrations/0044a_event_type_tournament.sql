@@ -1,0 +1,13 @@
+-- 0044a: 'tournament' is an event type.
+--
+-- It always has been in the database — the app has used `type =
+-- 'tournament'` since the competitions work — but it was added outside this
+-- folder, so the migrations could not rebuild the database from empty: 0045
+-- uses it as a default and failed on a fresh replay. A Supabase branch is
+-- built by exactly that replay, so the scale test's branch would have
+-- failed here. Found 6 Nov 2026 by scripts/local-db/run.mjs.
+--
+-- On squadroom-dev the value is already there; `if not exists` makes this a
+-- no-op. On its own because ADD VALUE cannot share a transaction with a use
+-- of the new value (0073a is the precedent).
+alter type public.event_type add value if not exists 'tournament';
