@@ -224,6 +224,12 @@ type Badges = {
 let lastBadges: Badges | null = null
 let inFlight: Promise<Badges | null> | null = null
 const badgeListeners = new Set<(b: Badges | null) => void>()
+// Which page and organisation the last answer was for, and when. A second
+// component asking on the same page a moment later gets that answer instead
+// of a second request — every page load asked twice (time-screens, 6 Nov).
+let lastKey: string | null = null
+let lastAt = 0
+const FRESH_MS = 5000
 
 /**
  * The counts, fetched once however many components ask.
@@ -245,7 +251,11 @@ function useNavBadges(): Badges | null {
     const fn = (b: Badges | null) => setBadges(b)
     badgeListeners.add(fn)
 
-    if (!inFlight) {
+    const key = `${pathname}|${getOrg() ?? ''}`
+    const fresh = lastKey === key && Date.now() - lastAt < FRESH_MS
+    if (!inFlight && !fresh) {
+      lastKey = key
+      lastAt = Date.now()
       // The generated types are produced from the deployed schema, which does
       // not yet have 0080's p_academy. Cast at the call rather than hand-
       // editing lib/database.types.ts, which is regenerated.

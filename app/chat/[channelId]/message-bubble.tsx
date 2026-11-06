@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type TouchEvent } from 'react'
 import { ReportMessage } from './report-message'
+import { batched } from '@/lib/batch'
 import { createClient } from '@/lib/supabase/client'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 import { firstUrl } from '@/lib/links'
@@ -59,6 +60,23 @@ function Ticks({ receipt }: { receipt: Receipt | null }) {
 }
 
 type Count = { emoji: string; reaction_count: number; reacted_by_me: boolean }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Every bubble on screen asks for its reactions; the asks made in the same
+ * moment go as ONE reaction_counts call (lib/batch.ts) — 46 requests on
+ * opening the U8 chat became one (6 Nov 2026).
+ */
+const reactionCountsFor = batched<string, Count[]>(async (ids) => {
+  const { data } = await createClient().rpc('reaction_counts', { p_message_ids: ids })
+  const byMessage = new Map<string, Count[]>()
+  for (const r of (data ?? []) as (Count & { message_id: string })[]) {
+    byMessage.set(r.message_id, [...(byMessage.get(r.message_id) ?? []), { emoji: r.emoji, reaction_count: r.reaction_count, reacted_by_me: r.reacted_by_me }])
+  }
+  for (const id of ids) if (!byMessage.has(id)) byMessage.set(id, [])
+  return byMessage
+})
 
 export function MessageBubble({
   message, mine, isHost, academyId, myId, showDay, onReply, translation = null, receipt = null, notice = null,
@@ -126,14 +144,14 @@ export function MessageBubble({
 
   const inNotices = notice !== null
   useEffect(() => {
-    // Nobody reacts to a notice (0213), so there is nothing to count.
-    if (inNotices) return
+    // Nobody reacts to a notice (0213), and a message still being sent has
+    // nothing yet — so nothing to count for either.
+    if (inNotices || !UUID.test(message.id)) return
     let cancelled = false
-    supabase.rpc('reaction_counts', { p_message_ids: [message.id] }).then(({ data }) => {
-      if (!cancelled) setCounts((data ?? []) as Count[])
+    void reactionCountsFor(message.id).then((c) => {
+      if (!cancelled) setCounts(c ?? [])
     })
     return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message.id, inNotices])
 
   async function react(emoji: string) {

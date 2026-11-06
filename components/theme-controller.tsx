@@ -52,19 +52,25 @@ export function ThemeController() {
     let live = true
     const refresh = async () => {
       const supabase = createClient()
-      const { data: claims } = await supabase.auth.getClaims()
-      const uid = claims?.claims?.sub
+      // The phone's own session is enough to choose colours: getClaims()
+      // verified the token against the auth server's keys first, a request
+      // on every page load for a theme (time-screens, 6 Nov 2026).
+      const { data: s } = await supabase.auth.getSession()
+      const uid = s.session?.user.id
       if (!live) return
       if (!uid) {
         // Signed out: nobody's club colours stay behind on a shared phone.
         if (readClub()) writeClub(null)
         return
       }
-      // `*`, not a column list: secondary_colour and the appearance columns
-      // arrive with 0209, and naming a column that is not there yet would
-      // fail the whole read.
+      // The two appearance columns by name. `*` was refused outright — the
+      // phone column is withheld from everyone (0012), so asking for every
+      // column is asking for one you may not have — and so a person's own
+      // Appearance never loaded (found by time-screens, 6 Nov 2026). Before
+      // 0209 the columns are not there and this answers an error, which
+      // reads as "nothing chosen".
       const [{ data: profile }, { data: rows }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+        supabase.from('profiles').select('appearance, colour_mode').eq('id', uid).maybeSingle(),
         supabase.from('academy_members').select('academies(*)').eq('profile_id', uid).eq('status', 'active'),
       ])
       if (!live) return

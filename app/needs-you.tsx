@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { takeEarly } from '@/lib/early'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import type { JobsHandoff } from './home-jobs'
@@ -49,9 +50,8 @@ export function NeedsYou({ jobs }: { jobs?: JobsHandoff | null }) {
       // `?? undefined`, because getOrg returns null for "no preference" and
       // the generated signature takes an optional uuid rather than a
       // nullable one.
-      const { data } = await createClient().rpc('needs_you', {
-        p_academy: getOrg() ?? undefined,
-      })
+      const org = getOrg() ?? undefined
+      const { data } = await takeEarly(`needs_you:${org ?? ''}`, () => createClient().rpc('needs_you', { p_academy: org }))
       if (!live) return
       setItems((data ?? []) as Item[])
     })()

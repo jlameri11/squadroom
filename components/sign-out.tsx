@@ -6,6 +6,7 @@ import { setOrg } from '@/lib/org'
 import { APPEARANCE_KEY, CLUB_KEY, LEGACY_THEME_KEY } from '@/lib/brand/keys'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
 import { clearOffline } from '@/lib/offline/idb'
+import { forgetSignedLinks } from '@/lib/signed-links'
 import { OWNER_KEY } from '@/lib/offline/owner'
 import { KICK_OFF_KEY } from '@/lib/offline/kick-off'
 
@@ -62,6 +63,7 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
     invalidateScreen()
     try {
       for (const k of [CLUB_KEY, APPEARANCE_KEY, LEGACY_THEME_KEY, OWNER_KEY, KICK_OFF_KEY]) localStorage.removeItem(k)
+      forgetSignedLinks()
     } catch {}
     // Awaited, unlike the rest. The redirect below reloads the page, and a
     // clear that is still running when that happens leaves the previous

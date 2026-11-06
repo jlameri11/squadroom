@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { signedLink } from '@/lib/signed-links'
 import { kindOf, type Attachment } from '@/lib/adapters/images'
 import { formatDuration } from '@/lib/adapters/recorder'
 
@@ -17,27 +17,24 @@ import { formatDuration } from '@/lib/adapters/recorder'
 export function MessageAttachments({ attachments }: { attachments: unknown }) {
   const [urls, setUrls] = useState<Record<string, string>>({})
   const list = normalise(attachments)
+  const key = JSON.stringify(list.map((a) => a.path))
 
   useEffect(() => {
-    if (list.length === 0) return
+    const paths = JSON.parse(key) as string[]
+    if (paths.length === 0) return
     let cancelled = false
-    const supabase = createClient()
-
-    supabase.storage
-      .from('attachments')
-      .createSignedUrls(list.map((a) => a.path), 3600)
-      .then(({ data }) => {
-        if (cancelled || !data) return
-        const map: Record<string, string> = {}
-        for (const row of data) {
-          if (row.path && row.signedUrl) map[row.path] = row.signedUrl
-        }
-        setUrls(map)
+    // Kept for the tab and batched with every other bubble's (lib/signed-links.ts).
+    void Promise.all(paths.map((p) => signedLink(p))).then((signed) => {
+      if (cancelled) return
+      const map: Record<string, string> = {}
+      paths.forEach((p, i) => {
+        const url = signed[i]
+        if (url) map[p] = url
       })
-
+      setUrls(map)
+    })
     return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(list.map((a) => a.path))])
+  }, [key])
 
   if (list.length === 0) return null
 

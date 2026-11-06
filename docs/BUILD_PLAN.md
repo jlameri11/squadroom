@@ -488,6 +488,11 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    with the Supabase plan, backups and compute size for launch. Two
    questions first (NIGHT_LOG NEEDS JOEY #18): branching is billed, and a
    branch is a project of its own.
+   **6 Nov: the first half is done on the dev data** — `scripts/time-screens.mjs`
+   times every key screen in a production build; the app's own waste it
+   found is fixed (the chat's 61 requests are 14; every screen under 1 s
+   cold) and a person's Appearance, which had never loaded, does. See
+   `docs/SCALE.md`. The big run waits for the token and #18.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

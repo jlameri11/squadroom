@@ -89,6 +89,13 @@ language sql stable security definer set search_path = public as $fn$
   end;
 $fn$;
 
+-- A person reads their own Appearance from the profile. profiles is read by
+-- column grant (0012 withheld phone from everyone), so the two new columns
+-- need theirs, or asking for them is refused (found 6 Nov 2026: the theme
+-- asked for `*` and was refused on every page). Club-mates can read them
+-- too, as with every granted profile column; a theme choice is not private.
+grant select (appearance, colour_mode) on public.profiles to authenticated;
+
 revoke execute on function public.public_brand(text, text) from public;
 grant execute on function public.public_brand(text, text) to anon, authenticated;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { takeEarly } from '@/lib/early'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg, setOrg } from '@/lib/org'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
@@ -83,7 +84,8 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
     let live = true
     ;(async () => {
       const supabase = createClient()
-      const { data } = await supabase.rpc('home_jobs', { p_academy: getOrg() ?? undefined })
+      const org = getOrg() ?? undefined
+      const { data } = await takeEarly(`home_jobs:${org ?? ''}`, () => supabase.rpc('home_jobs', { p_academy: org }))
       if (!live) return
       const jobs = (data as unknown as Jobs | null) ?? null
       setData(jobs)

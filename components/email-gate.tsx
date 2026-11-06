@@ -41,16 +41,42 @@ export function EmailGate() {
     ;(async () => {
       const supabase = createClient()
       const { data: s } = await supabase.auth.getSession()
-      if (!s.session) return
-      const { data: teen, error: teenError } = await supabase.rpc('claim_player_login')
-      const t = teen as { status?: string; first_name?: string | null; club?: string | null } | null
-      if (!teenError && t && (t.status === 'waiting' || t.status === 'refused')) {
-        if (live) setGate({ kind: 'teen', status: t.status, firstName: t.first_name ?? null, club: t.club ?? null })
+      const user = s.session?.user
+      if (!user) return
+      // Asked once per browser session, not on every page: an answer of
+      // "nothing to do" — or of "these functions are not there yet", before
+      // 0214–0215 — is remembered until the tab closes (time-screens found
+      // two requests on every page, 6 Nov 2026).
+      const memo = `squadroom.gate.${user.id}`
+      try {
+        if (sessionStorage.getItem(memo) === 'clear') return
+      } catch {
+        // A private window: ask every time.
+      }
+      // A login made from a phone number is a parent's, never a child's
+      // (a child signs in with their own address), so only a real address
+      // is matched to a parent's invitation.
+      const realAddress = Boolean(user.email) && !user.email!.toLowerCase().endsWith('@squadroom.invalid')
+      const [claim, mine] = await Promise.all([
+        realAddress ? supabase.rpc('claim_player_login') : Promise.resolve({ data: null, error: null }),
+        supabase.rpc('my_email'),
+      ])
+      if (!live) return
+      const t = claim.data as { status?: string; first_name?: string | null; club?: string | null } | null
+      if (!claim.error && t && (t.status === 'waiting' || t.status === 'refused')) {
+        setGate({ kind: 'teen', status: t.status, firstName: t.first_name ?? null, club: t.club ?? null })
         return
       }
-      const { data: me, error } = await supabase.rpc('my_email')
-      if (!live || error || !me) return
-      if ((me as { needs_email?: boolean }).needs_email) setGate({ kind: 'email' })
+      const me = mine.data as { needs_email?: boolean } | null
+      if (!mine.error && me?.needs_email) {
+        setGate({ kind: 'email' })
+        return
+      }
+      try {
+        sessionStorage.setItem(memo, 'clear')
+      } catch {
+        // Nothing to remember it in.
+      }
     })()
     return () => {
       live = false

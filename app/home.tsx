@@ -14,6 +14,7 @@ import { HomeCompetitions } from './home-competitions'
 import { HomeOwing } from './home-owing'
 import { EditHome } from './edit-home'
 import { type SectionId } from '@/lib/home-sections'
+import { startEarly, takeEarly } from '@/lib/early'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrQueue, signedInHere } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
@@ -64,6 +65,16 @@ type HomeData = {
 export function Home() {
   const org = useOrg()
   const { data, failed } = useScreen<HomeData>('home_screen', { p_academy: org })
+
+  // The sections' requests start now, alongside the screen's, instead of
+  // after it has rendered (lib/early.ts; one round trip fewer on every open).
+  useEffect(() => {
+    const o = getOrg() ?? undefined
+    const supabase = createClient()
+    startEarly(`home_layout:${o ?? ''}`, () => supabase.rpc('home_layout', { p_academy: o }))
+    startEarly(`needs_you:${o ?? ''}`, () => supabase.rpc('needs_you', { p_academy: o }))
+    startEarly(`home_jobs:${o ?? ''}`, () => supabase.rpc('home_jobs', { p_academy: o }))
+  }, [])
 
   // The server says which organisation it actually served. If that is not the
   // one we asked for, the remembered choice belongs to somewhere this person
@@ -191,9 +202,8 @@ function HomeScreen({
   useEffect(() => {
     let live = true
     ;(async () => {
-      const { data } = await createClient().rpc('home_layout', {
-        p_academy: getOrg() ?? undefined,
-      })
+      const org = getOrg() ?? undefined
+      const { data } = await takeEarly(`home_layout:${org ?? ''}`, () => createClient().rpc('home_layout', { p_academy: org }))
       if (!live || !data) return
       const l = data as unknown as {
         sections: SectionId[]
