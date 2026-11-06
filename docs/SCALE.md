@@ -7,12 +7,10 @@ queries and RLS policies explained and fixed, a Saturday 8 am spike (2,000
 people opening the app, 300 live chats and score updates at once), and the
 Supabase plan we need at launch.
 
-**Where it stands (6 Nov):** the first half is done on the dev data — the
-screens are timed in a production build and the app's own waste is gone.
-The big run waits for two things only Joey can give (NIGHT_LOG, NEEDS JOEY
-#12 and #18): a working Supabase access token, and an answer on where the
-big dataset lives (a billed Supabase branch, or a free local Supabase whose
-timings are a laptop's).
+**Where it stands (7 Nov):** done. The screens are timed in a production
+build and the app's own waste is gone (sections 1–3); the big dataset, the
+query costs and the Saturday spike ran on this laptop, free, as Joey asked
+(section 4); the launch plan is section 5 and NEEDS JOEY #21.
 
 ---
 
@@ -101,36 +99,122 @@ the game page and the ladder.
 promise (one request for many asks, each answer to its asker, a failure
 costing nothing; whoever asks first starts a shared request).
 
-## 4. The big run — what it must answer
+## 4. The big run — on this laptop (6–7 Nov)
 
-**(6 Nov) Where:** the dataset and the query plans can be done on this
-laptop, in the embedded Postgres `scripts/local-db/` already runs every
-migration in — free, no token, no branch. What that cannot give is
-Sydney's network timings; a hosted branch is only needed for those (NEEDS
-JOEY #18).
+Joey, 6 Nov: "use the free local Supabase on the laptop for the big
+dataset — no billed branch." The embedded Postgres in `scripts/local-db/`
+runs every migration (all 217 apply from empty); the dataset goes in on top.
 
+### The dataset — `scripts/scale/seed.sql`
 
-1. **Seed** the dataset with a script (never the dev data): 60 clubs, 400
-   teams, 6,000 players, 10,000 parents with guardianships, 500,000
-   messages spread over channels the way real chats are (a few busy, most
-   quiet), the SPL season's fixtures and results, read state for everyone.
-2. **Time** the same screens with `time-screens` against it.
-3. **EXPLAIN** the slowest. The suspects from reading the code:
-   - `my_channels` (behind the Chat list, the tab bar's badge and Home):
-     an unread count per channel, per person, on every page.
-   - `messages` RLS: `is_channel_member` per row, and from 0213
-     `sees_staff_notices` for club-staff notices.
-   - `home_screen`, `fixtures_screen`, `chat_screen`, `nav_badges`.
-   - 0213's `notices_standing` and `notices_people` for a competition the
-     size of the SPL (every family of 400 teams).
-   - Indexes to confirm: `messages (channel_id, created_at)`,
-     `channel_members (profile_id)`, `team_members (profile_id)`,
-     `competition_entries (competition_id, team_id)`,
-     `notification_queue` by `scheduled_for`.
-4. **The Saturday spike:** 2,000 simulated people opening Home and the
-   chat within a minute, and 300 live games ticking scores and posting
-   chat lines, while the push queue drains. Watch database CPU, connection
-   count and the slowest request.
-5. **The plan for launch:** the Supabase tier, compute size, backups and
-   point-in-time recovery the numbers call for — written here, and put to
-   Joey under NEEDS JOEY. No figure is given before it is measured.
+| | |
+|---|---|
+| Clubs | 60, each with an owner, an admin and eight coaches (all with a current check) |
+| A league | one, running a season with all 60 clubs and 120 squads entered, six divisions of 20 |
+| Squads | 400 (U7–U16), one coach each |
+| Players | 6,000 (15 a squad), with 10,000 guardian links |
+| Parents | 10,000 (10,601 people in all) |
+| Fixtures | 1,140 (a 19-round round robin per division); 300 played, with scores |
+| Sessions | 9,600 trainings, six weeks either side of today, plus the games |
+| Answers | 25,236 for the next three weeks |
+| Messages | 499,960 over 120 days — 1,000 in each squad chat and club channel |
+| Size | 475 MB (messages 278 MB) |
+
+Structure goes in with triggers on, so channels, memberships, settings and
+the competition's Notices come about as they do in the product (20 s to
+load). Run: `node scripts/local-db/run.mjs && node scripts/local-db/sql.mjs
+-f scripts/scale/seed.sql`.
+
+### One call at a time — `scripts/scale/measure.mjs`
+
+Each function behind a key screen, called as the person who uses it, under
+their RLS; Postgres's own execution time, median of three, in milliseconds.
+
+| Function | Parent | Coach | Owner | League |
+|---|---|---|---|---|
+| home_screen | 6.0 | 18.1 | 9.3 | |
+| home_jobs | 6.8 (was 10.5) | 18.3 (was 24.0) | | |
+| needs_you | 0.7 | | 1.8 | |
+| nav_badges | 1.3 | 1.4 | 1.4 | 1.3 |
+| chat_screen | 1.3 | | | |
+| channel_messages (50) | 1.5 | | | |
+| fixtures_screen | 4.4 | | | |
+| search_chat | 13.4 | | | |
+| event_rsvp_summary | | 0.2 | | |
+| availability_grid | | 0.8 | | |
+| competition_ladder | | | | 0.5 |
+| notices_reach | | | | 0.2 |
+
+Writes, triggers and fan-out included:
+
+| Write | ms |
+|---|---|
+| A league notice to everyone (3,602 people get a push) | 86 |
+| A notice to club staff only | 9 |
+| A line in a squad chat (25 members) | 1.0 |
+| A parent's answer | 0.4 |
+| A live score tap | 1.3 |
+
+### The Saturday 8 am spike — `scripts/scale/spike.mjs`
+
+2,000 parents opening the app (Home's five calls; four in ten also open
+their squad's chat) while 300 live games each take four score taps and
+five chat lines — 4,700 sessions, 15,100 calls, all at once, shuffled
+together, through a pool of 15 connections (the size of Supabase's pooler
+for the small computes):
+
+| | Before 0216 | After 0216 |
+|---|---|---|
+| The whole morning | 7.1 s | 5.6 s |
+| Calls a second | 2,132 | 2,704 |
+| home_jobs p50 / p95 / p99 | 19 / 40 / 56 ms | 10 / 29 / 40 ms |
+| home_screen p50 / p95 / p99 | 11 / 26 / 35 ms | 10 / 29 / 40 ms |
+| Everything else, p99 | under 18 ms | under 18 ms |
+| Database time per Home open | 41 ms | 31 ms |
+
+### What it found, and fixed
+
+- **0216: Home's jobs asked for the next three weeks up to three times an
+  open**, and that list works out who has answered and who is coming for
+  every event in it — for a coach, the whole club's. Now once. The new
+  version was checked against the old for twenty people: the same jobs,
+  except that a tie (two squads training at the same minute) now goes the
+  same way every time. A quarter off the database time of an open.
+- **What still grows with a club's size:** `my_upcoming_events` works out
+  a summary for every event in the window. A coach at a 60-squad club would
+  pay about ten times what one at NRIFA's size does (~200 ms). The fix, when
+  such a club signs up, is to ask for summaries only for the events shown.
+- **Nothing grows with the size of Squadroom.** Every call reads its own
+  club, squad or channel through indexes; 500,000 messages cost a chat
+  screen 1.5 ms.
+- **A league notice is the heaviest single write** (86 ms for 3,602
+  recipients — a push row each). Fine at a few a week; a league ten times the
+  SPL would make it about a second, still acceptable for something sent a
+  few times a week.
+
+## 5. The plan for launch
+
+What the numbers say, for 10,000 parents:
+
+- **The database is not the constraint.** The worst case — every family
+  opening the app in the same minute — is 2,000 opens × 31 ms ≈ one CPU-core
+  second per second on this laptop. A cloud vCPU is slower (call it two to
+  three times), so two vCPUs would be busy for that minute and idle most of
+  the week. Real Saturdays spread the opens over the morning.
+- **Memory:** the whole dataset is under 500 MB; the part read on a
+  Saturday (this week's events, recent messages) is a fraction of it. 2 GB
+  holds it with room.
+- **Recommendation:** the **Pro plan**, on the **Small compute** at launch
+  (2 vCPUs, 2 GB — check the current figures on supabase.com/pricing), and
+  watch Saturday morning's CPU in the dashboard: move to Medium if it sits
+  above about 60 %.
+- **Backups:** Pro keeps daily backups for seven days. For a product that
+  holds a season's chat and answers, add **point-in-time recovery** (seven
+  days) before the first real club, so a bad Saturday loses minutes rather
+  than a day. It is an add-on with its own price.
+- **What this cannot tell us:** Supabase's API, Auth and Realtime are their
+  own services, sized by Supabase; the network from a phone in Sydney adds
+  what `time-screens` measured on the dev data (section 2). Push sending
+  runs on Netlify functions.
+
+The decision, and its cost, is Joey's: NIGHT_LOG, NEEDS JOEY #21.

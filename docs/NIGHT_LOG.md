@@ -98,6 +98,14 @@ policies); #14 Stripe on the live site + NRIFA's Express click-through;
     clients read px). No suite left the demo changed. 0208–0215 parse with
     PostgreSQL's own parser (pglast), every function and trigger body too.
   - Nothing deployed (the brief: no deploy).
+- **6 → 7 Nov (Joey: "keep building", then "use the free local Supabase"):**
+  every key screen timed and under 1 s (the chat's 61 requests are 14; a
+  person's Appearance, which had never loaded, does); a local Postgres that
+  applies all 217 migrations and passes all 133 RLS checks on a copy of the
+  demo — so the eight migrations waiting for the token are tested, and two
+  faults in the history were found and fixed (0044a, 0121); the scale test
+  done locally (`docs/SCALE.md`), with 0216 from it. New NEEDS JOEY #21 (the
+  launch plan). Nothing deployed.
 
 ## Evening summary — 3 Nov 2026: the money moves (Stripe test mode), and the first deploy
 
@@ -428,6 +436,7 @@ Exact steps are in NEEDS JOEY below.
 | **A teenager's login, with a parent's yes** (Joey, 5 Nov, late; S-06 reversed in part, D-6; 0215 written, unapplied) | **Done in the app.** Under 13 never; from 13, My family → Their own login (the child's own email) → the teenager signs in and waits → the parent approves or says "not them". The database refuses any other route (player membership, player link, squad place). An account already in a club is never claimed as a child's. Regulatory questions in NEEDS JOEY #20 | test-rls 130–133 written (the probes roll themselves back) |
 | **The scale test, first half: every key screen under a second** (6 Nov; migration-free bar one grant added to unapplied 0209) | **Done on the dev data.** `scripts/time-screens.mjs` times parent Home, Chat, the U8 chat, Fixtures, a game, coach Home, Admin (coach and owner), the SPL ladder and a public match centre in a production build — cold and warm, requests counted, repeats named. It found: the chat asked for reactions once per bubble (61 requests → 14, `lib/batch.ts`), file links re-signed on every visit (kept per tab, cleared at sign-out: warm chat 788 → 420 ms), the tab bar's badges fetched twice per page, Home a chain of two round trips (now one, `lib/early.ts`), the new email/teen checks on every page (now once per session) — and **a real bug: a person's Appearance had never loaded**, because the theme asked for `*` on profiles and the withheld phone column made the database refuse it; it now asks for its two columns and 0209 grants them. All ten screens under 1 s cold. Write-up and the plan for the big run: `docs/SCALE.md`. The big run itself waits for #12 and #18 | time-screens (a tool, not a suite), test-request-sharing 9 (new); chat, attachments, media, role-nav, self-onboarding, vouchers, brand, branding, first-run, organisations, required-email, screens, a11y, text-size re-run green |
 | **A local Postgres for the migrations: all 216 apply, all 133 RLS checks pass** (6 Nov; tooling, one new no-op migration, one fixed) | **Done.** `scripts/local-db/run.mjs` replays every migration into an embedded Postgres 17 on this laptop (opt-in, `npm i --no-save embedded-postgres`; stand-ins for Supabase's auth, storage, realtime, pg_cron and pg_net in `supabase-stubs.sql`); `copy-dev.mjs` copies the demo's rows from squadroom-dev, read-only, so the pending migrations run on top of real data as they will on token day. **0208–0215 all apply on the demo's data, and test-rls passes all 133 checks, 111–133 included** — the eight migrations waiting for the token are no longer untested. Found and fixed: `'tournament'` was never added to `event_type` by a migration (added on the database by hand), so a replay from empty — which is how a Supabase branch is built — failed at 0045 (new 0044a, a no-op on dev); 0121 had an unescaped apostrophe and could never have run as written. Mirrored: Supabase owns the extensions, so 0015's sweep could not revoke citext's EXECUTE there; locally it could, so the runner restores it | test-rls 133/133 locally |
+| **The scale test, done on this laptop** (Joey, 6 Nov: "use the free local Supabase … no billed branch"; 7 Nov) | **Done.** `scripts/scale/seed.sql` builds the brief's dataset in the local Postgres (60 clubs, 400 squads, 6,000 players, 10,000 parents, 499,960 messages, a 1,140-fixture season; 20 s); `measure.mjs` times every function behind a key screen as its person under RLS (all under 25 ms; a league notice to 3,602 people 86 ms); `spike.mjs` runs Saturday 8 am (2,000 opens + 300 live games, 15,100 calls through a pool of 15) in 5.6 s. Found and fixed: Home's jobs asked for the next three weeks up to three times an open — **0216** (unapplied), checked against the old version for twenty people, a quarter off an open's database time. Write-up and the launch plan (Pro, Small compute, point-in-time recovery): `docs/SCALE.md` | all 217 migrations apply locally; test-rls 133/133 with 0216 on the demo copy |
 | **Simplicity pass on Home** (Joey, 4 Nov; parent and coach, 375px) | **Done**, no migration. (1) Parent Home **2.4 → 1.4 screens**: the "Your jobs" strip is folded into Needs you (the three jobs are rows there, still `data-job` for the two-tap rule), the Channels list is gone from Home for everyone (the Chat tab carries it), a parent sees the next two fixtures and a coach three with "All N in the next 3 weeks". Coach Home 1.7 → 1.3. (2) One number: "to answer" everywhere is games and sessions in the next three weeks a child has not been answered for (`home_jobs`'s count) — Needs you says it, the training block's total counts sessions, the Fixtures list's per-game pills say "To answer" without a number so one game never reads as two. (3) One orange card, the most urgent; the rest plain rows. (4) An announcement older than 14 days is not shown (the "event date passed" half needs a column — migration day). (5) A signed-out visit to / goes to /signin: the screen hook now checks the session when a fetch fails. (6) Training rows sat on the card's edge — the block lacked the event card's padding class. (7) "17 quiet" → "17 not answered" (Home and Fixtures). (8) ☰ → "✎ Edit". (9) **Sam in COACHES SPL:** a *custom* chat Joey made by hand with two parents in it, not the coaches channel; the parents are out of it, and `test-coaches-channel` proves no parent sits in any channel named or typed for coaches and that RLS hides the real one from Sam. **Marcus's Admin:** the hub offered a coach New season, Venues and Start a competition, which the database refuses (`only an admin…`) — hidden now; `test-coach-scope` proves the refusals and the hub. One gap: the database still lets a coach *insert* a competition (0022's policy says coach) — **0208 written, unapplied until NEEDS JOEY #12**. Before/after: `.shots/home/{parent,coach}-{before,after}-*.png` (gitignored; on the laptop) | test-coaches-channel 5, test-coach-scope 15 (+1 note), role-nav 33, screens 36, tsc clean; Home as parent and coach at 375px light and dark |
 | **Every screen follows the organisation the browser is showing** (4 Nov, found by the 375px pass: Admin → Payments showed the stray "NRIFA" for Joey) | **Done**, no migration. `lib/use-current-org.ts` resolves the remembered organisation against the person's active memberships (else their first, and corrects the memory); the Admin hub, Admin → Payments, Members, Invites, the roster importer, Scan and the family's Payments became thin pages with browser-side loaders (RLS does the reading); Teams and Directory prefer the remembered organisation. NEEDS JOEY #8 closed bar the `nrifa-1` question | test-org-follows 21 (a throwaway "AAA" organisation that sorts first; nine pages; switch; fallback; nothing remembered), role-nav 33 and screens 36 re-run against the new code, tsc + eslint clean, Admin → Payments and the family's list at 375px both themes |
 | **The Stripe half** (3 Nov, Joey's key): B-01 card step, R-04 one checkout for the family, B-02 instalments, B-03 siblings, B-07 vouchers, B-04 refunds, L-02/L-16 entry fees; L-07 referee payouts tried and **parked** | **Done** (0207: one payments row per child per session; `entry_fees` remember their session). Routes: connect (Express, v2) · checkout (many children) · entry-fee · refund (named refunds) · webhook (`capability.updated`, `refund.*`). Screens: Admin → Payments reads the status back on return; the family's list gets "Pay … for X and Y in one go". Checkout cards only. Referee payouts: Stripe refuses connected-to-connected transfers; Joey parked them (tracking only) and the referee Stripe button, the league's "Pay through Stripe" and both routes came out. See the evening summary | test-stripe-e2e (by hand, 36 checks, every money path green), payments / fees / program-fees / fee-settings / league-entry / referee-payments / vouchers suites green, tsc + eslint clean |
@@ -487,7 +496,8 @@ late) **0212–0213** (a competition's Notices; test-rls 115–123), **0214**
 a parent's yes; 130–133). **6 Nov: all of them are tested** — applied to a
 local Postgres on top of a read-only copy of the demo, every RLS check
 passes (`scripts/local-db/`). Token day is a `npm run db:migrate` (which
-will also apply 0044a, a no-op on dev) and a full run, not a gamble.
+will also apply 0044a, a no-op on dev, and 0216, Home's jobs asking once)
+and a full run, not a gamble. Joey, 6 Nov: the token comes this weekend.
 
 **13. — decided.** Referee payouts through Stripe are **parked** (Joey, 3
 Nov, evening): no Stripe payouts and no bank files for referees; tracking
@@ -530,8 +540,9 @@ dark, and Match my phone is the default for the second choice. If you meant
 four separate looks in one list (with Light and Dark being something other
 than those), say how they should differ and I will change the screen.
 
-**18. The scale test (your 5 Nov brief) — queued for after the weekend,
-with two questions first.** It needs the token (#12) anyway. Before I
+**18. — decided (Joey, 6 Nov): the scale test runs on the free local
+database on this laptop, no billed branch. Done 7 Nov — `docs/SCALE.md`,
+and the launch plan is #21.** What was asked: It needs the token (#12) anyway. Before I
 start: (a) **Supabase branching is a paid feature** — it needs the Pro plan
 (about $25 a month) and each branch is billed for as long as it exists:
 $0.01344 an hour on the smallest compute (about $10 a month if left
@@ -588,6 +599,17 @@ a login (0161) and declare themselves under 18, with no parent involved —
 should that route need a guardian's approval too? Also: anyone can make an
 account at /signup and nothing asks their age; that was true before and is
 unchanged.
+
+**21. The Supabase plan for launch — your call, with the numbers in
+`docs/SCALE.md` §5.** At 10,000 parents the database is not the
+constraint: every family opening the app in the same minute is about two
+cloud vCPUs busy for that minute. My recommendation: the **Pro plan on the
+Small compute** at launch, watching Saturday morning's CPU and moving to
+Medium if it sits above ~60 %; and **point-in-time recovery** (seven days)
+before the first real club, so a bad day loses minutes, not a day — Pro's
+daily backups alone could lose up to a day of chat and answers. Both cost
+money; the current prices are on supabase.com/pricing, and nothing is
+bought without you.
 
 **1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
 than the file; it is in `.env.local` now and nowhere else, but a key that

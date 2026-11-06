@@ -492,7 +492,10 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    times every key screen in a production build; the app's own waste it
    found is fixed (the chat's 61 requests are 14; every screen under 1 s
    cold) and a person's Appearance, which had never loaded, does. See
-   `docs/SCALE.md`. The big run waits for the token and #18.
+   `docs/SCALE.md`. **7 Nov: the big run is done too**, on this laptop as
+   Joey asked (no billed branch): the dataset, every hot function under
+   25 ms, the Saturday spike in 5.6 s, 0216 from it, and the launch plan
+   (NEEDS JOEY #21).
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.
