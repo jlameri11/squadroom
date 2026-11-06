@@ -18,6 +18,8 @@ type Announcement = {
   sender_name: string | null
   created_at: string
   reply_count: number
+  /** 0217: the day it was about; Home stops showing it after (the database already filters). */
+  relevant_until?: string | null
 }
 type Elsewhere = {
   id: string

@@ -6,7 +6,7 @@ import { prepareImage, kindOf, extensionFor, MAX_MEDIA_BYTES, type Attachment, t
 import { canRecord, startRecording, formatDuration, MAX_VOICE_SECONDS, type Recording } from '@/lib/adapters/recorder'
 import { PhotoConsent } from './photo-consent'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
-import { DEFAULT_TZ } from '@/lib/time'
+import { DEFAULT_TZ, zonedToUtc } from '@/lib/time'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
@@ -60,6 +60,8 @@ export function Composer({
   }
   const candidates = mentionQuery === null || !people ? [] : people.filter((p) => p.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
   const [announcement, setAnnouncement] = useState(false)
+  // 0217: the day an announcement is about. Home stops showing it after.
+  const [aboutDay, setAboutDay] = useState('')
   // C-04: send later.
   const [laterOpen, setLaterOpen] = useState(false)
   const [laterAt, setLaterAt] = useState('')
@@ -285,16 +287,24 @@ export function Composer({
     // Only names still in the text count; a deleted "@Sarah" mentions nobody.
     const mentions = mentioned.filter((m) => body.includes('@' + m.name)).map((m) => m.id)
     const everyone = isHost && /(^|\s)@everyone(\s|$)/.test(body)
-    const { data, error } = await supabase
+    const row = {
+      academy_id: academyId, channel_id: channelId, sender_id: myId,
+      body: body || null, attachments: uploaded,
+      reply_to_id: replyId, is_announcement: announcement && isHost,
+      mentions, mention_everyone: everyone,
+    }
+    // The end of the day it is about, where the club is (0217).
+    const until = announcement && isHost && aboutDay ? zonedToUtc(aboutDay, '23:59', DEFAULT_TZ).toISOString() : null
+    let { data, error } = await supabase
       .from('messages')
-      .insert({
-        academy_id: academyId, channel_id: channelId, sender_id: myId,
-        body: body || null, attachments: uploaded,
-        reply_to_id: replyId, is_announcement: announcement && isHost,
-        mentions, mention_everyone: everyone,
-      })
+      // One shape for the checker; the date rides along only when there is one.
+      .insert((until ? { ...row, relevant_until: until } : row) as typeof row)
       .select('id, created_at')
       .single()
+    // Before 0217 there is no column for the date: the announcement still goes.
+    if (error && until && /relevant_until|column|schema cache/i.test(error.message)) {
+      ;({ data, error } = await supabase.from('messages').insert(row).select('id, created_at').single())
+    }
 
     if (error) {
       replaceOptimistic(tempId, null)
@@ -311,6 +321,7 @@ export function Composer({
     }
 
     setAnnouncement(false)
+    setAboutDay('')
     setMentioned([])
     replaceOptimistic(tempId, null)
   }
@@ -373,6 +384,19 @@ export function Composer({
               onChange={(e) => setAnnouncement(e.target.checked)}
             />
             Send as an announcement
+          </label>
+        )}
+        {isHost && announcement && (
+          <label className="flex items-center gap-2" data-about-day>
+            About a day?
+            <input
+              type="date"
+              value={aboutDay}
+              onChange={(e) => setAboutDay(e.target.value)}
+              className="rounded-lg border px-2 py-1 text-xs"
+              style={{ borderColor: 'var(--line)' }}
+              aria-label="The day it is about — Home stops showing it after"
+            />
           </label>
         )}
         {canPost && !archived && (

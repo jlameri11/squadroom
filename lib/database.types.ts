@@ -3913,6 +3913,7 @@ export type Database = {
           pinned_at: string | null
           pinned_by: string | null
           poll_id: string | null
+          relevant_until: string | null
           reply_to_id: string | null
           scheduled_for: string | null
           sender_id: string | null
@@ -3938,6 +3939,7 @@ export type Database = {
           pinned_at?: string | null
           pinned_by?: string | null
           poll_id?: string | null
+          relevant_until?: string | null
           reply_to_id?: string | null
           scheduled_for?: string | null
           sender_id?: string | null
@@ -3963,6 +3965,7 @@ export type Database = {
           pinned_at?: string | null
           pinned_by?: string | null
           poll_id?: string | null
+          relevant_until?: string | null
           reply_to_id?: string | null
           scheduled_for?: string | null
           sender_id?: string | null
