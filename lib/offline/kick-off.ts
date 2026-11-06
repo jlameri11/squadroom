@@ -8,9 +8,9 @@
  * twenty minutes early. The phone that tapped the whistle knows when it blew.
  * Kept across a reload for the same reason; pruned after six hours.
  *
- * KNOWN LIMIT: other phones (an assistant's, a family's) still count from the
- * database's row. Letting a queued kick-off carry its own time is a change to
- * live_tick — a migration, filed for the day the Supabase token is back.
+ * Once 0218 is applied a queued kick-off carries its own time, and the
+ * database's row — which every other phone counts from — is right too; this
+ * memory then only matters for the moments before the kick-off arrives.
  */
 export const KICK_OFF_KEY = 'squadroom.live.kickoff'
 

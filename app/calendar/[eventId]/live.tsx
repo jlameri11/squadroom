@@ -22,6 +22,8 @@ type Live = {
   undoable: string | null
   ticks: Tick[]
   players: { id: string; name: string; preferred_name: string | null }[]
+  /** 0218: live_tick takes a tap's own id and a kick-off's time. Absent before it. */
+  taps_have_ids?: boolean
 }
 
 const ICON: Record<string, string> = { kick_off: '🟢', goal_for: '⚽', goal_against: '⚽', half_time: '⏸', full_time: '🏁', yellow: '🟨', red: '🟥', note: '📣' }
@@ -126,8 +128,15 @@ export function LiveScore({ eventId }: { eventId: string }) {
     setBusy(true)
     setError(null)
     const minute = kind === 'kick_off' ? null : minuteNow()
-    if (kind === 'kick_off') rememberKickOff(eventId, Date.now())
-    const args = { p_event: eventId, p_kind: kind, ...extra, ...(minute !== null ? { p_minute: minute } : {}) }
+    const tappedAt = Date.now()
+    if (kind === 'kick_off') rememberKickOff(eventId, tappedAt)
+    // 0218: an id made here, so a tap sent twice (its answer lost to the
+    // signal) is counted once; and a kick-off's own time, so the clock starts
+    // when the whistle went. Only when the database says it takes them.
+    const once = live?.taps_have_ids
+      ? { p_client_id: crypto.randomUUID(), ...(kind === 'kick_off' ? { p_at: new Date(tappedAt).toISOString() } : {}) }
+      : {}
+    const args = { p_event: eventId, p_kind: kind, ...extra, ...(minute !== null ? { p_minute: minute } : {}), ...once }
     const outcome = await sendOrQueue({ kind: 'rpc', fn: 'live_tick', args })
     setBusy(false)
     if (outcome.status === 'refused') {

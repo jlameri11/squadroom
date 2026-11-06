@@ -42,11 +42,10 @@ export type SendOutcome =
  * two; past this, it is a phone with no real signal, and a coach whose next
  * tap is the next goal cannot wait for it.
  *
- * KNOWN LIMIT: a request that reached the database but whose answer was lost
- * is sent again from the queue. For an RSVP or a register that is the same
- * answer twice; for a score tap it is a goal twice, which the coach sees and
- * can correct with a word. Making taps idempotent needs a client id on
- * live_tick — a migration, filed for the day the Supabase token is back.
+ * A request that reached the database but whose answer was lost is sent
+ * again from the queue. For an RSVP or a register that is the same answer
+ * twice; a score tap carries its own id (0218), so a tap already in is not
+ * put in again.
  */
 export const SEND_WAIT_MS = 6000
 

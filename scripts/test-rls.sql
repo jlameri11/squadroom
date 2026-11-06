@@ -1622,6 +1622,34 @@ begin
     insert into rls_results values (133, 'only a guardian invites or approves a child''s login', r133);
   end;
 
+  -- 0218. A score tap sent twice — its answer lost to the signal — counts
+  -- once, and a replayed kick-off is not refused. Rolled back, like 130–133.
+  declare r134 text; v_ev134 uuid;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, MARCUS, 'wwcc', 'RLS134', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at)
+      values (ACAD_A, '00000000-0000-0000-0000-0000000d0008', 'match', 'RLS 134', 'Probe', now() - interval '20 minutes', now() + interval '40 minutes')
+      returning id into v_ev134;
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.live_tick(v_ev134, 'kick_off', p_client_id => 'bbbbbbbb-0000-0000-0000-000000000134');
+      perform public.live_tick(v_ev134, 'kick_off', p_client_id => 'bbbbbbbb-0000-0000-0000-000000000134');
+      perform public.live_tick(v_ev134, 'goal_for', p_client_id => 'bbbbbbbb-0000-0000-0000-000000001340');
+      perform public.live_tick(v_ev134, 'goal_for', p_client_id => 'bbbbbbbb-0000-0000-0000-000000001340');
+      execute 'reset role';
+      select case when count(*) filter (where kind = 'goal_for') = 1 and count(*) filter (where kind = 'kick_off') = 1
+                  then 'PASS' else 'FAIL ('||count(*)||' ticks)' end
+        into r134 from public.event_ticker where event_id = v_ev134;
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then r134 := 'FAIL (stopped: '||sqlerrm||')'; end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (134, 'a score tap sent twice counts once, and a replayed kick-off is not refused', r134);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
