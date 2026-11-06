@@ -107,7 +107,11 @@ create or replace function public.handle_user_email()
 returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if new.email is null or new.email ilike '%@squadroom.invalid' then
+  -- A placeholder, or an address the table would refuse: skip it rather
+  -- than fail the sign-up the trigger rides on. The email screen asks.
+  if new.email is null
+     or new.email ilike '%@squadroom.invalid'
+     or new.email !~* '^[^@\s]+@[^@\s]+\.[^@\s]+$' then
     return new;
   end if;
   insert into public.account_emails (profile_id, email, verified_at)
