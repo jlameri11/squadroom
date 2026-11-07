@@ -9,6 +9,7 @@ import { LiveScore } from './live'
 import { ParentPulse } from './pulse'
 import { MatchVideo } from './video'
 import { MatchPhotos } from './photos'
+import { EventHelpers } from './helpers'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -335,6 +336,8 @@ export function EventDetail({
           <h1 className="mt-1.5 text-2xl font-semibold">{event.title}</h1>
         </header>
         {details}
+        {/* G-07: the jobs the day needs, and who has put their name down. */}
+        {!cancelled && <EventHelpers eventId={event.id} clubWide={!event.team_id} />}
         {result}
         {isCoach && <EditOccurrence event={event} tz={tz} />}
         {isCoach && <CallItOff event={event} />}
@@ -397,6 +400,8 @@ export function EventDetail({
           {/* F-07: the coach's match-day list — what ticks itself and what to tick. */}
           {!cancelled && isCoach && event.type === 'match' && <MatchDayChecklist eventId={event.id} />}
           {details}
+          {/* G-07: the canteen, a linesman — before kick-off, where a parent looks. */}
+          {!cancelled && <EventHelpers eventId={event.id} clubWide={!event.team_id} />}
           {game && <TeamForm game={game} ourName={ourName} theirName={theirName} />}
           {game && <MiniLadder game={game} onOpen={() => choose('ladder')} />}
           {isCoach && <EditOccurrence event={event} tz={tz} />}

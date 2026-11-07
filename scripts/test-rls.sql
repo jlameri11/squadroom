@@ -2018,6 +2018,164 @@ begin
     insert into rls_results values (149, 'league roles and platform admin need both steps too; nobody without two-step is touched', r149);
   end;
 
+  -- 0225. Helpers wanted. Rolled back: a U8 game three days out, Marcus its
+  -- coach, Sam and Hana's parent families in it, Ben Carter a family of
+  -- other squads, OUTSIDER another club.
+  declare
+    U8    constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    OTHER constant uuid := '00000000-0000-0000-0000-0000000000b9';
+    HANA_PARENT constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    v_ev uuid; v_res jsonb; v_canteen uuid; v_lines uuid; v_at timestamptz; v_want timestamptz;
+    v_sam int; v_other int; v_out int; v_full boolean; v_asked int; v_ben int; v_again boolean; v_told int;
+    r150 text; r151 text; r152 text; r153 text; r154 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, MARCUS, 'wwcc', 'RLS150', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at)
+      values (ACAD_A, U8, 'match', 'RLS 150', 'Probe',
+              ((((now() at time zone 'Australia/Sydney')::date + 3) + time '10:00')::timestamp at time zone 'Australia/Sydney'),
+              ((((now() at time zone 'Australia/Sydney')::date + 3) + time '11:00')::timestamp at time zone 'Australia/Sydney'))
+      returning id into v_ev;
+
+      -- 151. Only the squad's coach sets the jobs; nobody writes them by hand.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b := false;
+      begin perform public.set_event_jobs(v_ev, '[{"title":"Canteen"}]'::jsonb); exception when others then b := true; end;
+      n := 0;
+      begin insert into public.event_jobs (academy_id, event_id, title) values (ACAD_A, v_ev, 'By hand'); n := 1; exception when others then null; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_res := public.set_event_jobs(v_ev, '[{"title":"Canteen","start_time":"08:00","end_time":"10:00","spots":2},{"title":"Linesman","spots":1}]'::jsonb);
+      execute 'reset role';
+      select id into v_canteen from public.event_jobs where event_id = v_ev and title = 'Canteen';
+      select id into v_lines from public.event_jobs where event_id = v_ev and title = 'Linesman';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin insert into public.event_job_helpers (job_id, academy_id, profile_id) values (v_lines, ACAD_A, PARENT); n := n + 1; exception when others then null; end;
+      execute 'reset role';
+      r151 := case when b and n = 0 and jsonb_array_length(v_res -> 'jobs') = 2 and (v_res ->> 'can_manage')::boolean
+                         and (v_res -> 'jobs' -> 0 ->> 'time') = '8:00 am–10:00 am'
+                    then 'PASS' else 'FAIL (parent refused '||b||', by hand '||n||', jobs '||coalesce(v_res::text, 'none')||')' end;
+
+      -- 150. The squad's families see them; other squads and other clubs do not.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_sam from public.event_jobs where event_id = v_ev;
+      v_res := public.event_helpers(v_ev);
+      execute 'reset role';
+      v_other := 0; v_out := 0; b := true;
+      foreach v_kid in array array[OTHER, OUTSIDER] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        select count(*) into n from public.event_jobs where event_id = v_ev;
+        v_other := v_other + n;
+        select count(*) into n from public.event_job_helpers where job_id in (v_canteen, v_lines);
+        v_out := v_out + n;
+        begin perform public.event_helpers(v_ev); b := false; exception when others then null; end;
+        execute 'reset role';
+      end loop;
+      r150 := case when v_sam = 2 and jsonb_array_length(v_res -> 'jobs') = 2 and not (v_res ->> 'can_manage')::boolean
+                         and v_other = 0 and v_out = 0 and b
+                    then 'PASS' else 'FAIL (Sam sees '||v_sam||', others see '||v_other||', others refused '||b||')' end;
+
+      -- 152. Sam takes the linesman's flag: Hana's parent finds it full; Sam
+      -- is reminded at 6 pm the evening before, the reminder moves with the
+      -- game, and goes when the game is called off.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.help_with(v_lines);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HANA_PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_full := false;
+      begin perform public.help_with(v_lines); exception when others then v_full := sqlerrm like '%is full%'; end;
+      execute 'reset role';
+      select scheduled_for into v_at from public.notification_queue
+       where kind = 'helper_reminder' and profile_id = PARENT and payload->>'event_id' = v_ev::text and sent_at is null;
+      v_want := ((((now() at time zone 'Australia/Sydney')::date + 2) + time '18:00')::timestamp at time zone 'Australia/Sydney');
+      b := v_at = v_want;
+      update public.events set starts_at = starts_at + interval '1 day', ends_at = ends_at + interval '1 day' where id = v_ev;
+      select scheduled_for into v_at from public.notification_queue
+       where kind = 'helper_reminder' and profile_id = PARENT and payload->>'event_id' = v_ev::text and sent_at is null;
+      b2 := v_at = ((((now() at time zone 'Australia/Sydney')::date + 3) + time '18:00')::timestamp at time zone 'Australia/Sydney');
+
+      -- 153. "Ask for help": the squad's people, not other squads', not the
+      -- coach; once in twelve hours; a parent cannot ask.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_asked := public.ask_for_helpers(v_ev);
+      v_again := false;
+      begin perform public.ask_for_helpers(v_ev); exception when others then v_again := true; end;
+      execute 'reset role';
+      select count(*) into v_ben from public.notification_queue where kind = 'helpers_wanted' and payload->>'event_id' = v_ev::text and profile_id in (OTHER, MARCUS);
+      select count(*) into n from public.notification_queue where kind = 'helpers_wanted' and payload->>'event_id' = v_ev::text and profile_id = PARENT;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_told := 0;
+      begin perform public.ask_for_helpers(v_ev); v_told := 1; exception when others then null; end;
+      execute 'reset role';
+      r153 := case when v_asked > 0 and n = 1 and v_ben = 0 and v_again and v_told = 0 then 'PASS'
+                   else 'FAIL (asked '||v_asked||', Sam told '||n||', other squad or coach told '||v_ben||', twice refused '||v_again||', parent asked '||v_told||')' end;
+
+      -- 154. The coach takes Sam off the flag: Sam is told, and Sam's
+      -- reminder goes with it. Sam takes the canteen, the game comes forward
+      -- to tomorrow, Sam drops out: the coach is told.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.stop_helping(v_lines, PARENT);
+      execute 'reset role';
+      select count(*) into v_told from public.notification_queue where kind = 'helper_changed' and profile_id = PARENT and payload->>'event_id' = v_ev::text;
+      select count(*) into n from public.notification_queue where kind = 'helper_reminder' and profile_id = PARENT and payload->>'event_id' = v_ev::text and sent_at is null;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.help_with(v_canteen);
+      execute 'reset role';
+      update public.events set starts_at = now() + interval '30 hours', ends_at = now() + interval '31 hours' where id = v_ev;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.stop_helping(v_canteen);
+      execute 'reset role';
+      select count(*) into v_sam from public.notification_queue where kind = 'helper_changed' and profile_id = MARCUS and payload->>'event_id' = v_ev::text;
+      r154 := case when v_told = 1 and n = 0 and v_sam = 1 then 'PASS'
+                   else 'FAIL (Sam told '||v_told||', reminder left '||n||', coach told '||v_sam||')' end;
+
+      -- 152, the last part: back three days out, Sam on the canteen, then
+      -- called off — the reminder goes.
+      update public.events
+         set starts_at = ((((now() at time zone 'Australia/Sydney')::date + 3) + time '10:00')::timestamp at time zone 'Australia/Sydney'),
+             ends_at = ((((now() at time zone 'Australia/Sydney')::date + 3) + time '11:00')::timestamp at time zone 'Australia/Sydney')
+       where id = v_ev;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.help_with(v_canteen);
+      execute 'reset role';
+      select count(*) into v_other from public.notification_queue where kind = 'helper_reminder' and profile_id = PARENT and payload->>'event_id' = v_ev::text and sent_at is null;
+      update public.events set cancelled_at = now() where id = v_ev;
+      select count(*) into v_out from public.notification_queue where kind = 'helper_reminder' and profile_id = PARENT and payload->>'event_id' = v_ev::text and sent_at is null;
+      r152 := case when v_full and b and b2 and v_other = 1 and v_out = 0 then 'PASS'
+                   else 'FAIL (full refused '||v_full||', 6 pm the evening before '||b||', moved with the game '||b2||', queued '||v_other||', after calling off '||v_out||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r150 := coalesce(r150, 'FAIL (stopped: '||sqlerrm||')');
+        r151 := coalesce(r151, 'FAIL (stopped: '||sqlerrm||')');
+        r152 := coalesce(r152, 'FAIL (stopped: '||sqlerrm||')');
+        r153 := coalesce(r153, 'FAIL (stopped: '||sqlerrm||')');
+        r154 := coalesce(r154, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (150, 'a game''s helper jobs: its squad''s families see them, other squads and clubs do not', r150);
+    insert into rls_results values (151, 'only the squad''s coach sets the jobs, and nobody writes them by hand', r151);
+    insert into rls_results values (152, 'a full job refuses; the reminder is 6 pm the evening before, moves with the game, goes when it is called off', r152);
+    insert into rls_results values (153, 'asking for help reaches the squad''s people only, once in twelve hours, and only the coach asks', r153);
+    insert into rls_results values (154, 'taken off a job you are told; dropping out in the last two days tells the coach', r154);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

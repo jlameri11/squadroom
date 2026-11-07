@@ -1712,6 +1712,102 @@ export type Database = {
           },
         ]
       }
+      event_job_helpers: {
+        Row: {
+          academy_id: string
+          added_by: string | null
+          created_at: string
+          job_id: string
+          profile_id: string
+        }
+        Insert: {
+          academy_id: string
+          added_by?: string | null
+          created_at?: string
+          job_id: string
+          profile_id: string
+        }
+        Update: {
+          academy_id?: string
+          added_by?: string | null
+          created_at?: string
+          job_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_job_helpers_job_id_academy_id_fkey"
+            columns: ["job_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "event_jobs"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_job_helpers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_jobs: {
+        Row: {
+          academy_id: string
+          created_at: string
+          created_by: string | null
+          end_time: string | null
+          event_id: string
+          id: string
+          note: string | null
+          position: number
+          spots: number
+          start_time: string | null
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          created_by?: string | null
+          end_time?: string | null
+          event_id: string
+          id?: string
+          note?: string | null
+          position?: number
+          spots?: number
+          start_time?: string | null
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          created_by?: string | null
+          end_time?: string | null
+          event_id?: string
+          id?: string
+          note?: string | null
+          position?: number
+          spots?: number
+          start_time?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_jobs_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_jobs_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       event_lineup_players: {
         Row: {
           academy_id: string
@@ -7256,6 +7352,7 @@ export type Database = {
         }
         Returns: string
       }
+      ask_for_helpers: { Args: { p_event: string }; Returns: number }
       attendance_summary: {
         Args: { p_academy: string; p_from?: string; p_team?: string }
         Returns: {
@@ -7681,6 +7778,7 @@ export type Database = {
       entry_requests: { Args: { p_competition: string }; Returns: Json }
       erase_me: { Args: never; Returns: Json }
       event_checklist: { Args: { p_event: string }; Returns: Json }
+      event_helpers: { Args: { p_event: string }; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
       event_live: { Args: { p_event: string }; Returns: Json }
       event_pulse_view: { Args: { p_event: string }; Returns: Json }
@@ -7873,6 +7971,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      help_with: { Args: { p_job: string }; Returns: Json }
       home_jobs: { Args: { p_academy?: string }; Returns: Json }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
@@ -8659,6 +8758,7 @@ export type Database = {
         Args: { p_division: string; p_entry: string; p_note?: string }
         Returns: undefined
       }
+      set_event_jobs: { Args: { p_event: string; p_jobs: Json }; Returns: Json }
       set_event_result: {
         Args: {
           p_event: string
@@ -8790,6 +8890,7 @@ export type Database = {
         Args: { p_into: number; p_pitch: string }
         Returns: number
       }
+      stop_helping: { Args: { p_job: string; p_profile?: string }; Returns: Json }
       submit_concussion_clearance: {
         Args: { p_concussion: string; p_note?: string; p_path: string }
         Returns: undefined
