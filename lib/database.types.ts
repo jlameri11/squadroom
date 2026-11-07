@@ -5692,7 +5692,6 @@ export type Database = {
           referee_id: string
           run_id: string
           status: Database["public"]["Enums"]["payment_item_status"]
-          stripe_transfer_id: string | null
         }
         Insert: {
           academy_id: string
@@ -5704,7 +5703,6 @@ export type Database = {
           referee_id: string
           run_id: string
           status?: Database["public"]["Enums"]["payment_item_status"]
-          stripe_transfer_id?: string | null
         }
         Update: {
           academy_id?: string
@@ -5716,7 +5714,6 @@ export type Database = {
           referee_id?: string
           run_id?: string
           status?: Database["public"]["Enums"]["payment_item_status"]
-          stripe_transfer_id?: string | null
         }
         Relationships: [
           {
@@ -5832,7 +5829,6 @@ export type Database = {
           phone: string | null
           profile_id: string | null
           status: string
-          stripe_account_id: string | null
           under_18: boolean
         }
         Insert: {
@@ -5850,7 +5846,6 @@ export type Database = {
           phone?: string | null
           profile_id?: string | null
           status?: string
-          stripe_account_id?: string | null
           under_18?: boolean
         }
         Update: {
@@ -5868,7 +5863,6 @@ export type Database = {
           phone?: string | null
           profile_id?: string | null
           status?: string
-          stripe_account_id?: string | null
           under_18?: boolean
         }
         Relationships: [
