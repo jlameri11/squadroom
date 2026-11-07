@@ -638,6 +638,29 @@ authenticator app). My suggestion: announce it to clubs with a date a few
 weeks out, and keep the Admin hub's "turn it on" card until then; the switch
 is then a one-line migration.
 
+**23. B-09, the league–club fee split, cannot be built as written — which
+way instead? (8 Nov)** The spec says one checkout, two transfers: the
+league's share to the league's Stripe account, the club's to the club's.
+Stripe refuses that: a family's payment is a *direct charge* on the club's
+account (your 30 Oct rule — Squadroom is never in the flow of funds), and
+Stripe will not move money from one connected account to another ("Cannot
+create transfers between connected accounts" — the same wall the referee
+payouts hit on 3 Nov). Three ways round it:
+- **A. The club collects it all and owes the league its share**
+  (recommended). The family sees and pays one total to the club, as now;
+  Squadroom records the league's share of each registration and shows the
+  league what each club owes it, ticked off when the club pays — the way
+  entry fees already work (L-02). No new money path, nothing for Stripe to
+  refuse, refunds stay with the club.
+- **B. Two payments in one flow.** The family pays the league's part on
+  the league's account and the club's part on the club's: two card
+  payments, one after the other. Honest, but a family pays twice, and a
+  half-finished pair is a support call.
+- **C. Squadroom takes the money and pays both out** (destination charges).
+  It works with Stripe, but it puts Squadroom in the flow of funds and on
+  the hook for disputes — the opposite of the 30 Oct rule.
+Say A, B or C (or "not yet"). Nothing is built until you do.
+
 **1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
 than the file; it is in `.env.local` now and nowhere else, but a key that
 has been in a chat window is a key worth rolling one day (Developers → API
