@@ -666,6 +666,16 @@ one and is meant to reach hundreds of academies.
   "quiet"); the home editor is a button that says Edit, not ☰. A coach who
   is not staff sees on the Admin hub only what the database lets them do
   (`scripts/test-coach-scope.mjs`).
+- **An open offer holds its place** (R-20, 0221). A place offered after a
+  trial, or to a returning player at rollover, is counted against everyone
+  else until it is answered or lapses — but never against another offer
+  (first to answer, first in). Free places are counted in one place,
+  `app_private.program_spots_left` / `places_held_by_offers`, and the 0083
+  guard uses the same; a new screen or route that counts registrations by
+  itself will sell a returning child's place to a newcomer. An offered
+  place bends the program's birth years and dates (the club placed the
+  child), never gender, and PlayFootball-first still holds (accepted as
+  pending). A returning family's "no" takes the child off the squad.
 - **RLS costs are per row SCANNED, not per row returned.** Measured on
   60,000 messages: filtered by channel it is an index scan at ~1ms; an
   unfiltered `select from messages` is a seq scan at ~836ms, because the

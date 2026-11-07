@@ -82,7 +82,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | R-11 | Program questions UI | Builder in `/admin/programs/[id]` (text, select, yes/no, date, file); answers shown in the queue |
 | R-17 | Settings → My family | Each child: profile, medical, emergency contacts, consents (view/withdraw), kit sizes, number, squads. Given an ID on 29 Oct: it was only ever a dash in this table, which is how it stayed unbuilt while every field behind it got built |
 | R-18 | **Circular 26-02 compliance** (FA, 1 Oct 2026; `SQUADI_INTEL.md` §1, §6B.13) | Per-program "requires PlayFootball registration"; FFA number and FIFA ID captured on the form; **approval blocked until official status is confirmed** where required (route and trigger); a PlayFootball **export** import that ticks off statuses — a file the club downloads from its own account, **never a login or a scrape**; a reminder to disclose every fee in PlayFootball, ticked per season |
-| R-20 | Registration dashboard (§6B.21) | New vs returning, age, gender, against the club's targets |
+| R-21 | Registration dashboard (§6B.21) | New vs returning, age, gender, against the club's targets |
 | S-07 | Mandatory 2FA for owners, admins and league admins (§6B.20) | TOTP via Supabase MFA; enforced at sign-in for those roles only; parents untouched |
 | B-14 | Shop (§6B.19) | Standalone and at checkout; inventory and variants; pickup or shipped; partial refunds. Kit sizes (R-05) feed the order so a supplier can fulfil it. Needs the Stripe key |
 | — | Merch / kit add-ons | Optional purchasable items at checkout (a training top, a spare pair of socks), as extra line items on the same session. Distinct from R-05 kit *sizes*, which exist only so a club can place an order offline |

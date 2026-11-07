@@ -1650,6 +1650,157 @@ begin
     insert into rls_results values (134, 'a score tap sent twice counts once, and a replayed kick-off is not refused', r134);
   end;
 
+  -- 0221. Last season's players are offered their places. Rolled back, like
+  -- 130–134: a squad of next season rolled from U8, its program for four,
+  -- with Leo and Zoe (Sam's) and Arjun on it, and Mila already registered.
+  declare
+    LEO   constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    ARJUN constant uuid := '00000000-0000-0000-0000-0000000e0002';
+    MILA  constant uuid := '00000000-0000-0000-0000-0000000e0003';
+    HANA  constant uuid := '00000000-0000-0000-0000-0000000e0004';
+    ZOE   constant uuid := '00000000-0000-0000-0000-0000000e0006';
+    ARJUN_PARENT constant uuid := '00000000-0000-0000-0000-0000000000b2';
+    HANA_PARENT  constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    v_nx uuid; v_sp uuid; v_res jsonb; v_res2 jsonb; v_leo uuid; v_zoe uuid; v_arjun uuid; v_told int; v_want int;
+    r135 text; r136 text; r137 text; r138 text; r139 text; r140 text;
+  begin
+    begin
+      insert into public.teams (academy_id, name, age_group, season, status, capacity, rolled_from, created_by)
+      values (ACAD_A, 'RLS Next U9', 'U9', 'RLS-next', 'active', 4, '00000000-0000-0000-0000-0000000d0008', COACH)
+      returning id into v_nx;
+      insert into public.programs (academy_id, name, kind, status, season, team_id, capacity, created_by)
+      values (ACAD_A, 'RLS Next U9 — RLS-next season', 'squad', 'open', 'RLS-next', v_nx, 4, COACH)
+      returning id into v_sp;
+      update public.players set team_id = v_nx where id in (LEO, ZOE, ARJUN, MILA);
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      insert into public.program_registrations (academy_id, program_id, player_id, submitted_by, status)
+      values (ACAD_A, v_sp, MILA, COACH, 'approved');
+
+      -- 135. Only staff offer them: not a parent, a coach who is not staff, or another club.
+      b := true;
+      foreach v_kid in array array[PARENT, MARCUS, OUTSIDER] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        begin perform public.offer_returning_places(ACAD_A, 'RLS-next', current_date + 10); b := false; exception when others then null; end;
+        execute 'reset role';
+      end loop;
+      r135 := case when b then 'PASS' else 'FAIL' end;
+
+      -- 136. The owner offers: Leo, Zoe and Arjun, not Mila; every guardian
+      -- told once. Sent again with the same date, nobody is told twice.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_res := public.offer_returning_places(ACAD_A, 'RLS-next', current_date + 10);
+      v_res2 := public.offer_returning_places(ACAD_A, 'RLS-next', current_date + 10);
+      execute 'reset role';
+      select count(*) into n from public.offers where squad_program_id = v_sp and kind = 'returning' and status = 'open';
+      select id into v_leo from public.offers where squad_program_id = v_sp and player_id = LEO;
+      select id into v_zoe from public.offers where squad_program_id = v_sp and player_id = ZOE;
+      select id into v_arjun from public.offers where squad_program_id = v_sp and player_id = ARJUN;
+      select count(*) into v_told from public.notification_queue
+       where kind = 'offer' and payload->>'offer_id' in (v_leo::text, v_zoe::text, v_arjun::text);
+      select count(*) into v_want from public.player_guardians where player_id in (LEO, ZOE, ARJUN);
+      r136 := case when (v_res->>'offered')::int = 3 and (v_res->>'skipped')::int = 1 and n = 3
+                         and (v_res2->>'offered')::int = 0 and (v_res2->>'unchanged')::int = 3
+                         and v_want > 0 and v_told = v_want
+                    then 'PASS'
+                    else 'FAIL ('||v_res::text||' then '||v_res2::text||'; '||n||' open; told '||v_told||' of '||v_want||')' end;
+
+      -- 137. An open offer holds its place: Mila's registration and three
+      -- offers fill four, so a newcomer (Hana) is waitlisted — and Leo,
+      -- offered, is accepted though the program is now for 2017 births.
+      perform set_config('request.jwt.claims', json_build_object('sub',HANA_PARENT,'role','authenticated')::text, true);
+      insert into public.program_registrations (academy_id, program_id, player_id, submitted_by, status)
+      values (ACAD_A, v_sp, HANA, HANA_PARENT, 'pending');
+      update public.programs set born_from_year = 2017, born_to_year = 2017 where id = v_sp;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_res := public.accept_offer(v_leo);
+      execute 'reset role';
+      r137 := case when (select status::text from public.program_registrations where program_id = v_sp and player_id = HANA) = 'waitlisted'
+                     and (select status::text from public.program_registrations where program_id = v_sp and player_id = LEO) = 'approved'
+                     and (select status::text from public.offers where id = v_leo) = 'accepted'
+                     and v_res->>'waiting_for' is null
+                    then 'PASS'
+                    else 'FAIL (Hana '||coalesce((select status::text from public.program_registrations where program_id = v_sp and player_id = HANA), 'none')
+                         ||', Leo '||coalesce((select status::text from public.program_registrations where program_id = v_sp and player_id = LEO), 'none')||', '||v_res::text||')' end;
+
+      -- 138. Where PlayFootball comes first, accepting holds the place as
+      -- pending for the club to confirm, and asks for no money yet.
+      update public.programs set requires_official_rego = true where id = v_sp;
+      update public.players set official_status = 'unknown' where id = ZOE;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_res := public.accept_offer(v_zoe);
+      execute 'reset role';
+      r138 := case when (select status::text from public.program_registrations where program_id = v_sp and player_id = ZOE) = 'pending'
+                     and (select status::text from public.offers where id = v_zoe) = 'accepted'
+                     and v_res->>'waiting_for' = 'playfootball' and v_res->>'payment_request_id' is null
+                    then 'PASS' else 'FAIL ('||v_res::text||')' end;
+
+      -- 139. Only the child's guardian answers (Sam cannot decline Arjun's),
+      -- and a "no" takes the child off the squad and frees the place.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b := false;
+      begin perform public.decline_offer(v_arjun); exception when others then b := true; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',ARJUN_PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.decline_offer(v_arjun);
+      execute 'reset role';
+      r139 := case when b and (select team_id from public.players where id = ARJUN) is null
+                     and (select status::text from public.offers where id = v_arjun) = 'declined'
+                     and app_private.program_spots_left(v_sp) = 1
+                    then 'PASS'
+                    else 'FAIL (Sam refused '||b||'; Arjun''s squad '||coalesce((select team_id::text from public.players where id = ARJUN), 'none')
+                         ||'; places left '||coalesce(app_private.program_spots_left(v_sp)::text, 'null')||')' end;
+
+      -- 140. An offer is from a trial or for a returning player — never
+      -- neither, never both — and nobody writes one by hand.
+      b := false;
+      begin
+        insert into public.offers (academy_id, kind, player_id, squad_program_id, expires_at)
+        values (ACAD_A, 'trial', HANA, v_sp, now() + interval '1 day');
+      exception when check_violation then b := true; end;
+      b2 := false;
+      begin
+        insert into public.offers (academy_id, kind, trial_registration_id, player_id, squad_program_id, expires_at)
+        values (ACAD_A, 'returning', (select id from public.program_registrations where program_id = v_sp and player_id = MILA),
+                HANA, v_sp, now() + interval '1 day');
+      exception when check_violation then b2 := true; end;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      n := 0;
+      begin
+        insert into public.offers (academy_id, kind, player_id, squad_program_id, expires_at)
+        values (ACAD_A, 'returning', HANA, v_sp, now() + interval '1 day');
+        n := 1;
+      exception when others then null; end;
+      execute 'reset role';
+      r140 := case when b and b2 and n = 0 then 'PASS'
+                   else 'FAIL (trial with none refused '||b||', returning with one refused '||b2||', by hand '||n||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r135 := coalesce(r135, 'FAIL (stopped: '||sqlerrm||')');
+        r136 := coalesce(r136, 'FAIL (stopped: '||sqlerrm||')');
+        r137 := coalesce(r137, 'FAIL (stopped: '||sqlerrm||')');
+        r138 := coalesce(r138, 'FAIL (stopped: '||sqlerrm||')');
+        r139 := coalesce(r139, 'FAIL (stopped: '||sqlerrm||')');
+        r140 := coalesce(r140, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (135, 'only staff offer next season''s places (not a parent, a coach, another club)', r135);
+    insert into rls_results values (136, 'each returning child not yet registered is offered their place once, and their guardians told once', r136);
+    insert into rls_results values (137, 'an open offer holds its place against a newcomer; the offered child is accepted outside the birth year', r137);
+    insert into rls_results values (138, 'where PlayFootball comes first, an accepted offer holds the place as pending and asks no money', r138);
+    insert into rls_results values (139, 'only the child''s guardian answers, and a "no" takes the child off the squad and frees the place', r139);
+    insert into rls_results values (140, 'an offer is from a trial or for a returning player, and nobody writes one by hand', r140);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

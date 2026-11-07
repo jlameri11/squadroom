@@ -23,12 +23,40 @@ type Preview = { from: string; to: string; oldest_age_group: string | null; squa
 type Intake = { name: string; age_group: string; capacity: string }
 type RollResult = { teams: number; players: number; left_out: number; intake: number; numbers_kept: number; numbers_not_kept: number }
 
+type OfferState = 'open' | 'accepted' | 'declined' | 'lapsed'
 type Report = {
   team_id: string
   team: string
+  /** The squad's open program, which offers are made into (0221). */
+  program_id?: string | null
   total: number
   registered: number
-  not_yet: { player_id: string; name: string; guardians: { name: string; phone: string | null }[] }[]
+  not_yet: {
+    player_id: string
+    name: string
+    guardians: { name: string; phone: string | null }[]
+    registration?: string | null
+    offer?: { id: string; state: OfferState; expires_at: string } | null
+  }[]
+  /** Families who said no to their offer; the child is off the squad. */
+  declined?: { player_id: string; name: string; decided_at: string | null }[]
+}
+type OfferResult = { offered: number; unchanged: number; skipped: number; no_family: number; closed: string[]; expires_at: string }
+
+/** A date n days from today, as a date input wants it. */
+function inDays(n: number) {
+  return new Date(Date.now() + n * 864e5).toLocaleDateString('en-CA')
+}
+const shortDay = (iso: string) => new Date(iso).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+
+/** One line under a child's name: where their offer or form has got to. */
+function childStatus(p: Report['not_yet'][number]): { text: string; colour: string } | null {
+  if (p.offer?.state === 'accepted' && p.registration === 'pending') return { text: 'Accepted · PlayFootball to confirm', colour: 'var(--ink-3)' }
+  if (p.registration === 'pending') return { text: 'Registered · yours to approve', colour: 'var(--accent)' }
+  if (p.registration === 'waitlisted') return { text: 'On the waitlist', colour: 'var(--ink-3)' }
+  if (p.offer?.state === 'open') return { text: `Offered · until ${shortDay(p.offer.expires_at)}`, colour: 'var(--ink-3)' }
+  if (p.offer?.state === 'lapsed') return { text: 'Offer lapsed · offer again', colour: 'var(--accent)' }
+  return null
 }
 
 type Squad = { id: string; name: string; season: string; status: string }
@@ -60,6 +88,12 @@ const OUT = '__out__'
  * not re-registered and nudges them. And mid-season, the same move — chat,
  * number and calendar following the child — is a tool of its own.
  *
+ * The chase starts with an offer (R-20): every returning child not yet
+ * registered is offered their place, to accept by a date — two taps for the
+ * family instead of a form and a queue, and the place held for them until
+ * then. A family that says no takes the child off the squad; the club can
+ * ask again by name.
+ *
  * Moves are a select per player, not a drag: a drag is a desktop gesture
  * and this screen is used on a phone at a kitchen table.
  */
@@ -80,6 +114,8 @@ export function SeasonScreen() {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [nudged, setNudged] = useState<number | null>(null)
+  const [until, setUntil] = useState(() => inDays(14))
+  const [offered, setOffered] = useState<OfferResult | null>(null)
 
   // Mid-season moves.
   const [activeSquads, setActiveSquads] = useState<Squad[]>([])
@@ -236,6 +272,21 @@ export function SeasonScreen() {
     await loadSquads(academyId as string)
   }
 
+  async function doOffer(players?: string[]) {
+    setBusy(players ? `offer:${players[0]}` : 'offer')
+    setError(null)
+    const { data, error } = await createClient().rpc('offer_returning_places', {
+      p_academy: academyId as string,
+      p_season: reportSeason,
+      p_until: until,
+      ...(players ? { p_players: players } : {}),
+    })
+    setBusy(null)
+    if (error) return setError(error.message)
+    setOffered(data as unknown as OfferResult)
+    await loadReport(reportSeason)
+  }
+
   async function doNudge() {
     setBusy('nudge')
     setError(null)
@@ -269,6 +320,12 @@ export function SeasonScreen() {
     setPicked(new Set())
     await loadSquads(academyId as string)
   }
+
+  // Who an offer is still for: on a squad with an open program, not
+  // registered, and either never offered or the offer has lapsed.
+  const offerable = (report ?? []).flatMap((r) => (r.program_id ? r.not_yet.filter((p) => !p.registration && p.offer?.state !== 'accepted') : []))
+  const notOffered = offerable.filter((p) => !p.offer || p.offer.state === 'lapsed').length
+  const canOffer = offerable.length > 0
 
   const input = 'mt-0.5 w-full rounded-lg border px-3 py-2 text-base'
   const small = 'rounded-lg border px-2 py-1 text-xs'
@@ -501,7 +558,7 @@ export function SeasonScreen() {
           <p className="mt-3 rounded-lg p-2.5 text-sm" style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }} data-result>
             Done. {result.teams} squads, {result.players} players placed{result.left_out ? `, ${result.left_out} left out` : ''}
             {result.intake ? `, ${result.intake} new intake` : ''}, {result.numbers_kept} numbers kept
-            {result.numbers_not_kept ? `, ${result.numbers_not_kept} to reissue` : ''}. Each family is asked to re-register below.
+            {result.numbers_not_kept ? `, ${result.numbers_not_kept} to reissue` : ''}. Nobody has been told yet: offer each family their place below.
           </p>
         )}
       </section>
@@ -615,25 +672,95 @@ export function SeasonScreen() {
                   </span>
                 </p>
                 {r.not_yet.length > 0 && (
-                  <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-                    {r.not_yet.map((p) => (
-                      <li key={p.player_id} className="flex items-baseline justify-between gap-2">
-                        <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                        <span className="flex-none text-xs text-ink-3">
-                          {p.guardians[0]?.phone ? (
-                            <a href={`tel:${p.guardians[0].phone}`} className="underline underline-offset-2">
-                              {p.guardians[0].name}
-                            </a>
-                          ) : (
-                            p.guardians[0]?.name ?? 'no guardian'
-                          )}
+                  <ul className="mt-1 flex flex-col gap-1 text-sm">
+                    {r.not_yet.map((p) => {
+                      const status = childStatus(p)
+                      return (
+                        <li key={p.player_id} className="flex items-baseline justify-between gap-2" data-not-yet={p.player_id}>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate">{p.name}</span>
+                            {status && (
+                              <span className="block text-xs" style={{ color: status.colour }} data-offer-state={p.offer?.state ?? 'none'}>
+                                {status.text}
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex-none text-xs text-ink-3">
+                            {p.guardians[0]?.phone ? (
+                              <a href={`tel:${p.guardians[0].phone}`} className="underline underline-offset-2">
+                                {p.guardians[0].name}
+                              </a>
+                            ) : (
+                              p.guardians[0]?.name ?? 'no guardian'
+                            )}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+                {!r.program_id && r.not_yet.length > 0 && (
+                  <p className="mt-1 text-xs text-ink-3">Its registration is closed, so there is nothing to offer a place in.</p>
+                )}
+                {(r.declined?.length ?? 0) > 0 && (
+                  <ul className="mt-1.5 flex flex-col gap-1 text-sm">
+                    {r.declined!.map((p) => (
+                      <li key={p.player_id} className="flex items-center justify-between gap-2" data-declined={p.player_id}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-ink-2">{p.name}</span>
+                          <span className="block text-xs text-ink-3">
+                            Said no{p.decided_at ? ` on ${shortDay(p.decided_at)}` : ''} · off the squad
+                          </span>
                         </span>
+                        <button
+                          onClick={() => doOffer([p.player_id])}
+                          disabled={busy !== null || !until}
+                          className={`${small} tap flex-none font-semibold disabled:opacity-50`}
+                          style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }}
+                        >
+                          {busy === `offer:${p.player_id}` ? 'Asking…' : 'Ask again'}
+                        </button>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
             ))}
+            {canOffer && (
+              <div className="mt-4 rounded-lg border p-3" style={line} data-offer-places>
+                <p className="text-sm font-semibold">Offer their places</p>
+                <p className="mt-0.5 text-xs text-ink-3">
+                  Each family gets a push and a row on Home: accept by the date, in two taps, and the squad&apos;s fee is
+                  paid next. Until then nobody new can take the place. Saying no takes the child off the squad.
+                </p>
+                <label className="mt-2 block text-sm">
+                  <span className="text-ink-2">Accept by</span>
+                  <input type="date" value={until} min={inDays(0)} max={inDays(60)} onChange={(e) => setUntil(e.target.value)} className={input} style={line} />
+                </label>
+                <button
+                  onClick={() => doOffer()}
+                  disabled={busy !== null || !until}
+                  className="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
+                  style={{ background: 'var(--brand)' }}
+                  data-offer-button
+                >
+                  {busy === 'offer'
+                    ? 'Offering…'
+                    : notOffered > 0
+                      ? `Offer ${notOffered} ${notOffered === 1 ? 'place' : 'places'}`
+                      : 'Change the date on the offers'}
+                </button>
+              </div>
+            )}
+            {offered && (
+              <p className="mt-2 rounded-lg p-2.5 text-sm" style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }} data-offered>
+                {offered.offered > 0
+                  ? `Offered ${offered.offered} ${offered.offered === 1 ? 'place' : 'places'}, to accept by ${shortDay(offered.expires_at)}.`
+                  : 'Nothing new to send: every family already has this offer.'}
+                {offered.no_family > 0 ? ` ${offered.no_family} ${offered.no_family === 1 ? 'child has' : 'children have'} no parent in the app — ring them.` : ''}
+                {offered.closed.length > 0 ? ` ${offered.closed.join(', ')}: registration is closed, so nothing was offered there.` : ''}
+              </p>
+            )}
             {report.some((r) => r.not_yet.length > 0) && (
               <button
                 onClick={doNudge}

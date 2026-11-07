@@ -4120,11 +4120,12 @@ export type Database = {
           decided_at: string | null
           expires_at: string
           id: string
+          kind: string
           player_id: string
           registration_id: string | null
           squad_program_id: string
           status: Database["public"]["Enums"]["offer_status"]
-          trial_registration_id: string
+          trial_registration_id: string | null
         }
         Insert: {
           academy_id: string
@@ -4133,11 +4134,12 @@ export type Database = {
           decided_at?: string | null
           expires_at: string
           id?: string
+          kind?: string
           player_id: string
           registration_id?: string | null
           squad_program_id: string
           status?: Database["public"]["Enums"]["offer_status"]
-          trial_registration_id: string
+          trial_registration_id?: string | null
         }
         Update: {
           academy_id?: string
@@ -4146,11 +4148,12 @@ export type Database = {
           decided_at?: string | null
           expires_at?: string
           id?: string
+          kind?: string
           player_id?: string
           registration_id?: string | null
           squad_program_id?: string
           status?: Database["public"]["Enums"]["offer_status"]
-          trial_registration_id?: string
+          trial_registration_id?: string | null
         }
         Relationships: [
           {
@@ -8076,6 +8079,15 @@ export type Database = {
       nudge_unregistered: {
         Args: { p_academy: string; p_season: string }
         Returns: number
+      }
+      offer_returning_places: {
+        Args: {
+          p_academy: string
+          p_players?: string[]
+          p_season: string
+          p_until: string
+        }
+        Returns: Json
       }
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
