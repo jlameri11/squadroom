@@ -8841,6 +8841,7 @@ export type Database = {
         Returns: Json
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
+      two_step_needed: { Args: never; Returns: boolean }
       undo_last_tick: { Args: { p_event: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
       venue_layout: { Args: { p_venue: string }; Returns: Json }

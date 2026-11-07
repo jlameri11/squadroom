@@ -519,13 +519,19 @@ one and is meant to reach hundreds of academies.
   keeps Supabase's defaults). `scripts/_sql.mjs` runs a read-only query
   against the catalog, which is how the sweep asked what is TRUE rather
   than what a migration said.
-- **Two-step sign-in (S-07) is half built.** The app's half: enrol in
-  Settings, a gate in the root layout (`components/two-step-gate.tsx`) that
-  shows nothing until an AAL1 session with a verified factor types its six
-  digits, a nag card for staff without it. The database's half is NOT
-  there: no policy checks `auth.jwt()->>'aal'`, so staff writes still
-  accept a password-only session. Do not call it "mandatory" until that
-  migration exists. TOTP codes are accepted once per thirty-second period.
+- **Two-step sign-in (S-07).** The app's half: enrol in Settings, a gate
+  in the root layout (`components/two-step-gate.tsx`) that shows nothing
+  until an AAL1 session with a verified factor types its six digits, a nag
+  card for staff without it. The database's half is 0224 (written 8 Nov,
+  unapplied until the token): someone who has turned it on gets no staff,
+  coaching, league or platform powers on a password alone — the rule is in
+  `app_private.two_step_ok()`, called by `academy_role_of`, `is_team_coach`,
+  `league_roles_of` and `is_platform_admin`, so any new role check that
+  reads `academy_members.role` itself bypasses it: go through the helpers.
+  Not "mandatory" for staff who never turned it on — a date for Joey
+  (NEEDS JOEY #22). TOTP codes are accepted once per thirty-second period.
+  The role helpers are PL/pgSQL on purpose (SQL ones are re-planned on
+  every call; 0224 measured 44 µs vs 6 µs a staff check).
 - **Every control can be read aloud and hit with a thumb** (X-10, 4 Nov
   2026): an icon button carries `aria-label`, a field has a `<label>` or
   `aria-label` (a placeholder is not a label), an image has `alt`, a

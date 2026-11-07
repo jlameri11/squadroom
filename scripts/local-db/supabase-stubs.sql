@@ -57,6 +57,19 @@ create table if not exists auth.users (
   is_anonymous boolean default false
 );
 
+-- Two-step sign-in's factors (0224 reads them).
+create table if not exists auth.mfa_factors (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  friendly_name text,
+  factor_type text not null default 'totp',
+  status text not null default 'unverified',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  secret text
+);
+create index if not exists mfa_factors_user_idx on auth.mfa_factors (user_id);
+
 -- What PostgREST sets per request: request.jwt.claims.
 create or replace function auth.jwt() returns jsonb language sql stable as $$
   select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb

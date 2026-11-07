@@ -180,6 +180,13 @@ for the small computes):
   version was checked against the old for twenty people: the same jobs,
   except that a tie (two squads training at the same minute) now goes the
   same way every time. A quarter off the database time of an open.
+- **The role helpers are PL/pgSQL now (0224, 8 Nov).** Adding the two-step
+  rule to `academy_role_of` as a SQL function made a staff check 44 µs, from
+  19 — Postgres 17 plans a SQL-language function again on every call, and
+  the nested check made that plan bigger. In PL/pgSQL, which keeps its plans
+  for the session, the same rule costs 6 µs a staff check, 9 a squad
+  coach's and 5 a parent's — each faster than before the rule existed
+  (100,000 calls each, on the demo copy).
 - **What still grows with a club's size:** `my_upcoming_events` works out
   a summary for every event in the window. A coach at a 60-squad club would
   pay about ten times what one at NRIFA's size does (~200 ms). The fix, when

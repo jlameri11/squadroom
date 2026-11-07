@@ -1936,6 +1936,88 @@ begin
     insert into rls_results values (145, 'the photos bucket is private and its read rule is the photo''s row', r145);
   end;
 
+  -- 0224. Two steps means two steps. Rolled back: the owner and Marcus turn
+  -- two-step on; the owner is also given a league role and platform admin.
+  declare
+    U8  constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    s_before boolean; s_weak boolean; s_strong boolean; m_weak boolean; refused boolean;
+    c_weak boolean; c_strong boolean; l_weak int; l_strong int; p_weak boolean; p_strong boolean; g_sam boolean; s_sam boolean;
+    r146 text; r147 text; r148 text; r149 text;
+  begin
+    begin
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      s_before := coalesce(app_private.is_academy_staff(ACAD_A), false);
+      execute 'reset role';
+      insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at)
+      values (gen_random_uuid(), COACH, 'rls-probe-owner', 'totp', 'verified', now(), now()),
+             (gen_random_uuid(), MARCUS, 'rls-probe-coach', 'totp', 'verified', now(), now());
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, MARCUS, 'wwcc', 'RLS146', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      insert into public.league_roles (academy_id, profile_id, role) values (ACAD_A, COACH, 'competition_manager');
+      insert into public.platform_admins (profile_id, note) values (COACH, 'rls probe') on conflict do nothing;
+
+      -- 146/147. The owner, two-step on, password only (aal1): no staff or
+      -- coaching powers, a staff-only function refuses — still a member.
+      -- With the second step (aal2): staff again.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      s_weak := coalesce(app_private.is_academy_staff(ACAD_A), false) or coalesce(app_private.is_academy_coach(ACAD_A), false);
+      refused := false;
+      begin perform public.rollover_report(ACAD_A, '2026'); exception when others then refused := true; end;
+      m_weak := coalesce(app_private.is_academy_member(ACAD_A), false);
+      select cardinality(app_private.league_roles_of(ACAD_A)) into l_weak;
+      p_weak := coalesce(app_private.is_platform_admin(), false);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal2')::text, true);
+      execute 'set local role authenticated';
+      s_strong := coalesce(app_private.is_academy_staff(ACAD_A), false);
+      select cardinality(app_private.league_roles_of(ACAD_A)) into l_strong;
+      p_strong := coalesce(app_private.is_platform_admin(), false);
+      execute 'reset role';
+      r146 := case when s_before and not s_weak and refused and s_strong then 'PASS'
+                   else 'FAIL (staff before '||s_before||', with a password only '||s_weak||', refused '||refused||', with both steps '||s_strong||')' end;
+      r147 := case when m_weak then 'PASS' else 'FAIL (not even a member)' end;
+
+      -- 148. Marcus coaches U8 with two-step on: not its coach on a password
+      -- alone, its coach with the second step.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      c_weak := coalesce(app_private.is_team_coach(U8), false);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated','aal','aal2')::text, true);
+      execute 'set local role authenticated';
+      c_strong := coalesce(app_private.is_team_coach(U8), false);
+      execute 'reset role';
+      r148 := case when not c_weak and c_strong then 'PASS' else 'FAIL (password only '||c_weak||', both steps '||c_strong||')' end;
+
+      -- 149. League roles and platform admin the same way; and someone who
+      -- never turned it on (Sam, password only) is untouched.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      g_sam := coalesce(app_private.is_guardian_of(LEO), false);
+      s_sam := coalesce(app_private.is_academy_member(ACAD_A), false);
+      execute 'reset role';
+      r149 := case when l_weak = 0 and l_strong = 1 and not p_weak and p_strong and g_sam and s_sam then 'PASS'
+                   else 'FAIL (league roles '||l_weak||'/'||l_strong||', platform '||p_weak||'/'||p_strong||', Sam still Leo''s guardian '||g_sam||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r146 := coalesce(r146, 'FAIL (stopped: '||sqlerrm||')');
+        r147 := coalesce(r147, 'FAIL (stopped: '||sqlerrm||')');
+        r148 := coalesce(r148, 'FAIL (stopped: '||sqlerrm||')');
+        r149 := coalesce(r149, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (146, 'an owner with two-step on has no staff powers on a password alone, and has them with both steps', r146);
+    insert into rls_results values (147, 'on a password alone they are still a member', r147);
+    insert into rls_results values (148, 'a squad''s coach with two-step on is not its coach on a password alone', r148);
+    insert into rls_results values (149, 'league roles and platform admin need both steps too; nobody without two-step is touched', r149);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

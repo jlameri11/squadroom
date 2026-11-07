@@ -8,9 +8,11 @@
 // without it to turn it on, and the settings screen turns it off again.
 // The throwaway person and club are removed at the end.
 //
-// What is NOT proven here, on purpose: that the database refuses a
-// password-only session for staff work. It does not yet — that is the
-// migration half (NIGHT_LOG, NEEDS JOEY #12).
+// And the database's half (0224): with two-step on, a password-only session
+// has no staff powers in the database either — a script with the password
+// alone is refused what the app's gate hides — and with both steps it has
+// them. Until 0224 is applied on squadroom-dev that part says it is waiting
+// (test-rls 146–149 prove it locally).
 import { createClient } from '@supabase/supabase-js'
 import { createHmac } from 'node:crypto'
 import puppeteer from 'puppeteer-core'
@@ -106,6 +108,21 @@ try {
   aal?.currentLevel === 'aal2' ? ok('that session is now fully proven (AAL2)') : bad(`AAL after verify: ${JSON.stringify(aal)}`)
   const { error: wrong } = await first.client.auth.mfa.verify({ factorId: enrolled.id, challengeId: (await first.client.auth.mfa.challenge({ factorId: enrolled.id })).data.id, code: '000000' })
   wrong ? ok('a wrong code is refused') : bad('000000 was accepted')
+
+  head('2b. The database asks too (0224)')
+  {
+    const weak = await freshSession()
+    const { data: owes, error: noFn } = weak ? await weak.client.rpc('two_step_needed') : { error: { message: 'no session' } }
+    if (noFn) {
+      console.log(`  \x1b[2m… waiting for 0224 on squadroom-dev — until then a password-only session still has staff powers in the database, and only the app's gate stands in front of them\x1b[0m`)
+    } else {
+      const { error: weakErr } = await weak.client.rpc('rollover_report', { p_academy: org.id, p_season: '2026' })
+      const { data: firstOwes } = await first.client.rpc('two_step_needed')
+      const { error: strongErr } = await first.client.rpc('rollover_report', { p_academy: org.id, p_season: '2026' })
+      owes === true && weakErr?.code === '42501' ? ok('a password-only session owes the six digits, and the database refuses it staff work') : bad(`password only: owes ${owes}, ${weakErr?.message ?? 'not refused'}`)
+      firstOwes === false && !strongErr ? ok('with both steps the same owner has their powers') : bad(`both steps: owes ${firstOwes}, ${strongErr?.message ?? 'ok'}`)
+    }
+  }
 
   head('3. A fresh password-only session is stopped by the gate until the six digits are typed')
   const second = await freshSession()
