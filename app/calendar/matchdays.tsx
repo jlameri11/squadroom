@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { DEFAULT_TZ } from '@/lib/time'
 
 type Scorer = { name: string; goals: number }
-type Game = { id: string; title: string; starts_at: string; opponent: string | null; venue: string | null; team_id: string; team: string | null; ours: number | null; theirs: number | null; scorers: Scorer[]; videos: number }
+type Game = { id: string; title: string; starts_at: string; opponent: string | null; venue: string | null; team_id: string; team: string | null; ours: number | null; theirs: number | null; scorers: Scorer[]; videos: number; photos?: number }
 
 const TINT = { won: 'var(--yes)', drew: 'var(--maybe)', lost: 'var(--no)' } as const
 const INK = { won: 'var(--yes-ink)', drew: 'var(--maybe-ink)', lost: 'var(--no-ink)' } as const
@@ -54,8 +54,10 @@ export function Matchdays({ academyId }: { academyId: string }) {
                   {g.scorers.length > 0 ? g.scorers.map((s) => `${s.name.split(' ')[0]}${s.goals > 1 ? ` ×${s.goals}` : ''}`).join(', ') : outcome ? 'No scorers recorded' : 'Score to come'}
                 </span>
               </span>
-              <span className="flex-none text-right text-xs text-ink-3">
-                {g.videos > 0 ? <span className="pill" style={{ background: 'var(--brand-soft)', color: 'var(--brand-text)' }} data-has-video>🎬 video</span> : '›'}
+              <span className="flex flex-none flex-col items-end gap-1 text-xs text-ink-3">
+                {g.videos > 0 && <span className="pill" style={{ background: 'var(--brand-soft)', color: 'var(--brand-text)' }} data-has-video>🎬 video</span>}
+                {(g.photos ?? 0) > 0 && <span className="pill" style={{ background: 'var(--brand-soft)', color: 'var(--brand-text)' }} data-has-photos>📷 {g.photos}</span>}
+                {g.videos === 0 && !g.photos && '›'}
               </span>
             </Link>
           </li>

@@ -1801,6 +1801,141 @@ begin
     insert into rls_results values (140, 'an offer is from a trial or for a returning player, and nobody writes one by hand', r140);
   end;
 
+  -- 0223. The game in pictures. Rolled back, like 130–140: a U8 game that
+  -- has been played, two photos on it, Marcus its coach, Sam a family in
+  -- it, Ben Carter a family of other squads. (Adding through the bucket is
+  -- test-match-photos': files are written through the Storage API.)
+  declare
+    U8    constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    OTHER constant uuid := '00000000-0000-0000-0000-0000000000b9';
+    v_ev uuid; v_dir text; v_res jsonb; v_p1 uuid; v_p2 uuid; v_seen int; v_other int; v_told int;
+    r141 text; r142 text; r143 text; r144 text; r145 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, MARCUS, 'wwcc', 'RLS141', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at)
+      values (ACAD_A, U8, 'match', 'RLS 141', 'Probe', now() - interval '3 hours', now() - interval '2 hours')
+      returning id into v_ev;
+      v_dir := ACAD_A::text || '/' || v_ev::text || '/';
+      insert into public.event_photos (academy_id, event_id, storage_path, thumb_path, added_by)
+      values (ACAD_A, v_ev, v_dir || 'a.jpg', v_dir || 'a.thumb.jpg', MARCUS) returning id into v_p1;
+      insert into public.event_photos (academy_id, event_id, storage_path, thumb_path, added_by)
+      values (ACAD_A, v_ev, v_dir || 'b.jpg', v_dir || 'b.thumb.jpg', MARCUS) returning id into v_p2;
+
+      -- 141. The squad's family sees the game's photos; a family of other
+      -- squads sees none, and cannot open the game's list.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_seen from public.event_photos where event_id = v_ev;
+      v_res := public.match_photos(v_ev);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OTHER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_other from public.event_photos where event_id = v_ev;
+      b := false;
+      begin perform public.match_photos(v_ev); exception when others then b := true; end;
+      execute 'reset role';
+      r141 := case when v_seen = 2 and jsonb_array_length(v_res -> 'photos') = 2 and not (v_res ->> 'can_add')::boolean
+                         and v_other = 0 and b
+                    then 'PASS' else 'FAIL (family sees '||v_seen||', other squad sees '||v_other||', other refused '||b||')' end;
+
+      -- 142. Nobody writes a photo's row by hand, coach or family.
+      n := 0;
+      foreach v_kid in array array[MARCUS, PARENT] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        begin
+          insert into public.event_photos (academy_id, event_id, storage_path, added_by) values (ACAD_A, v_ev, v_dir || 'by-hand.jpg', v_kid);
+          n := n + 1;
+        exception when others then null; end;
+        begin
+          update public.event_photos set hidden_at = null, hidden_by = null where id = v_p1;
+          if found then n := n + 1; end if;
+        exception when others then null; end;
+        execute 'reset role';
+      end loop;
+      r142 := case when n = 0 then 'PASS' else 'FAIL ('||n||' written by hand)' end;
+
+      -- 143. Only the squad's coach adds photos, only into the game's own
+      -- folder, and only files that have uploaded.
+      b := true;
+      foreach v_kid in array array[PARENT, OTHER] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        begin perform public.add_match_photos(v_ev, jsonb_build_array(jsonb_build_object('path', v_dir || 'c.jpg'))); b := false;
+        exception when others then null; end;
+        execute 'reset role';
+      end loop;
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b2 := false;
+      begin perform public.add_match_photos(v_ev, jsonb_build_array(jsonb_build_object('path', ACAD_B::text || '/' || v_ev::text || '/c.jpg')));
+      exception when others then b2 := (sqlerrm like '%this game''s folder%'); end;
+      n := 0;
+      begin perform public.add_match_photos(v_ev, jsonb_build_array(jsonb_build_object('path', v_dir || 'never-uploaded.jpg')));
+      exception when others then n := case when sqlerrm like '%did not finish uploading%' then 1 else 0 end; end;
+      execute 'reset role';
+      r143 := case when b and b2 and n = 1 then 'PASS'
+                   else 'FAIL (others refused '||b||', another folder refused '||b2||', a missing file refused '||(n = 1)||')' end;
+
+      -- 144. Sam takes one down: gone for Sam at once, still there for the
+      -- coach marked hidden, the coach told; only the coach puts it back.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.take_down_match_photo(v_p1);
+      select count(*) into v_seen from public.event_photos where event_id = v_ev;
+      b := app_private.may_see_match_photo(v_dir || 'a.jpg') or app_private.may_see_match_photo(v_dir || 'a.thumb.jpg');
+      b2 := false;
+      begin perform public.restore_match_photo(v_p1); exception when others then b2 := true; end;
+      execute 'reset role';
+      select count(*) into v_told from public.notification_queue
+       where kind = 'photo_hidden' and payload->>'photo_id' = v_p1::text and profile_id = MARCUS;
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_res := public.match_photos(v_ev);
+      n := case when app_private.may_see_match_photo(v_dir || 'a.jpg') then 1 else 0 end;
+      perform public.restore_match_photo(v_p1);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_other from public.event_photos where event_id = v_ev;
+      execute 'reset role';
+      r144 := case when v_seen = 1 and not b and b2 and v_told = 1 and n = 1 and v_other = 2
+                         and exists (select 1 from jsonb_array_elements(v_res -> 'photos') x where (x ->> 'id')::uuid = v_p1 and (x ->> 'hidden')::boolean)
+                    then 'PASS'
+                    else 'FAIL (Sam sees '||v_seen||' after, can still open it '||b||', Sam cannot restore '||b2||', coach told '||v_told
+                         ||', coach sees it '||n||', back for Sam '||v_other||')' end;
+
+      -- 145. The bucket is private, and its read rule is the row's.
+      select count(*) into n from storage.buckets where id = 'match-photos' and not public;
+      select count(*) into v_seen from pg_policies
+       where schemaname = 'storage' and tablename = 'objects' and policyname = 'match_photos_read'
+         and qual like '%may_see_match_photo%';
+      perform set_config('request.jwt.claims', json_build_object('sub',OTHER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b := app_private.may_see_match_photo(v_dir || 'b.jpg');
+      execute 'reset role';
+      r145 := case when n = 1 and v_seen = 1 and not b then 'PASS' else 'FAIL (private '||n||', rule '||v_seen||', other squad can open '||b||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r141 := coalesce(r141, 'FAIL (stopped: '||sqlerrm||')');
+        r142 := coalesce(r142, 'FAIL (stopped: '||sqlerrm||')');
+        r143 := coalesce(r143, 'FAIL (stopped: '||sqlerrm||')');
+        r144 := coalesce(r144, 'FAIL (stopped: '||sqlerrm||')');
+        r145 := coalesce(r145, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (141, 'a game''s photos: its squad''s families see them, other squads see none', r141);
+    insert into rls_results values (142, 'nobody writes a photo''s row by hand, coach or family', r142);
+    insert into rls_results values (143, 'only the squad''s coach adds photos, into the game''s own folder, of files that uploaded', r143);
+    insert into rls_results values (144, 'a family takes a photo down at once; the coach still sees it, is told, and alone puts it back', r144);
+    insert into rls_results values (145, 'the photos bucket is private and its read rule is the photo''s row', r145);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

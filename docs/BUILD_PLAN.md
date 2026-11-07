@@ -462,7 +462,7 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    M4 / M5, M1 + M6's Stripe halves when the key exists, M8 SaaS.
    **3 Nov, afternoon:** M4 done (E-05, E-06, F-05 for results and form,
    F-07; E-07/E-08 were already covered; the division Table from an export
-   is the one piece not built). M5 done bar photos and X-08 sponsor slots
+   is the one piece not built). M5 done bar photos (built 8 Nov, 0223, waiting for the token) and X-08 sponsor slots
    (X-01, X-02, X-03, X-04's star card, X-07, X-11; X-05 as sections on one
    page). **3 Nov, evening: the Stripe halves are done** (the key landed; see
    NIGHT_LOG's evening summary) and **referee payouts are parked** (L-07).

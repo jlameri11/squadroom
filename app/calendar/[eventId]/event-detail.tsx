@@ -8,6 +8,7 @@ import { EventStats } from './stats'
 import { LiveScore } from './live'
 import { ParentPulse } from './pulse'
 import { MatchVideo } from './video'
+import { MatchPhotos } from './photos'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -415,6 +416,8 @@ export function EventDetail({
           {!cancelled && <EventStats eventId={event.id} />}
           {/* Matchdays: the game video — a link or an upload, the squad's own. */}
           {!cancelled && <MatchVideo eventId={event.id} />}
+          {/* M5: the game's photos — the squad's own, and any of them can take one down. */}
+          {!cancelled && <MatchPhotos eventId={event.id} />}
           {/* X-11: how was today? One tap from the family; the coaches see it. */}
           {!cancelled && <ParentPulse eventId={event.id} />}
           {register}

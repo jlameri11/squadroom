@@ -1822,6 +1822,63 @@ export type Database = {
           },
         ]
       }
+      event_photos: {
+        Row: {
+          academy_id: string
+          added_by: string | null
+          created_at: string
+          event_id: string
+          height: number | null
+          hidden_at: string | null
+          hidden_by: string | null
+          id: string
+          storage_path: string
+          thumb_path: string | null
+          width: number | null
+        }
+        Insert: {
+          academy_id: string
+          added_by?: string | null
+          created_at?: string
+          event_id: string
+          height?: number | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          id?: string
+          storage_path: string
+          thumb_path?: string | null
+          width?: number | null
+        }
+        Update: {
+          academy_id?: string
+          added_by?: string | null
+          created_at?: string
+          event_id?: string
+          height?: number | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          id?: string
+          storage_path?: string
+          thumb_path?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_photos_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_photos_event_id_academy_id_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       event_player_stats: {
         Row: {
           academy_id: string
@@ -7123,6 +7180,10 @@ export type Database = {
         Args: { p_body: string; p_request: string }
         Returns: string
       }
+      add_match_photos: {
+        Args: { p_event: string; p_photos: Json }
+        Returns: Json
+      }
       add_match_video: {
         Args: {
           p_event: string
@@ -7902,6 +7963,7 @@ export type Database = {
       }
       match_day_ops: { Args: { p_competition: string }; Returns: Json }
       match_sheet_view: { Args: { p_fixture: string }; Returns: Json }
+      match_photos: { Args: { p_event: string }; Returns: Json }
       matchday_videos: { Args: { p_event: string }; Returns: Json }
       member_contact: {
         Args: { p_academy: string; p_profile: string }
@@ -8406,6 +8468,7 @@ export type Database = {
           status: string
         }[]
       }
+      remove_match_photo: { Args: { p_photo: string }; Returns: Json }
       remove_match_video: { Args: { p_video: string }; Returns: Json }
       reopen_match: {
         Args: { p_fixture: string; p_note: string }
@@ -8478,6 +8541,7 @@ export type Database = {
         Args: { p_accept: boolean; p_appointment: string; p_note?: string }
         Returns: undefined
       }
+      restore_match_photo: { Args: { p_photo: string }; Returns: Json }
       review_conduct_report: {
         Args: {
           p_outcome?: string
@@ -8745,6 +8809,7 @@ export type Database = {
         Returns: undefined
       }
       support_threads: { Args: { p_inbox?: boolean }; Returns: Json }
+      take_down_match_photo: { Args: { p_photo: string }; Returns: Json }
       take_register: {
         Args: { p_event: string; p_marks: Json }
         Returns: number

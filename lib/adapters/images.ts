@@ -12,6 +12,8 @@
 
 const MAX_EDGE = 1600
 const QUALITY = 0.82
+/** A grid's thumbnail (0223's game photos): small enough that sixty load on a data plan. */
+export const THUMB = { maxEdge: 400, quality: 0.72 }
 
 export type PreparedImage = {
   blob: Blob
@@ -20,7 +22,9 @@ export type PreparedImage = {
   mime: string
 }
 
-export async function prepareImage(file: File): Promise<PreparedImage> {
+export async function prepareImage(file: File, size: { maxEdge?: number; quality?: number } = {}): Promise<PreparedImage> {
+  const maxEdge = size.maxEdge ?? MAX_EDGE
+  const quality = size.quality ?? QUALITY
   // Anything we cannot decode (HEIC on some browsers, PDFs) goes up as-is
   // rather than being silently mangled.
   if (!file.type.startsWith('image/') || file.type === 'image/gif') {
@@ -30,7 +34,7 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
   const bitmap = await createImageBitmap(file).catch(() => null)
   if (!bitmap) return { blob: file, width: 0, height: 0, mime: file.type }
 
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
   const width = Math.round(bitmap.width * scale)
   const height = Math.round(bitmap.height * scale)
 
@@ -44,7 +48,7 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
   bitmap.close()
 
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/jpeg', QUALITY)
+    canvas.toBlob(resolve, 'image/jpeg', quality)
   )
 
   // Re-encoding is not always a win — a small screenshot can come out bigger.

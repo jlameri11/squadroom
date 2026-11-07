@@ -666,6 +666,14 @@ one and is meant to reach hundreds of academies.
   "quiet"); the home editor is a button that says Edit, not ☰. A coach who
   is not staff sees on the Admin hub only what the database lets them do
   (`scripts/test-coach-scope.mjs`).
+- **A game's photos come down at a family's word** (M5, 0223). Only the
+  squad's coach adds them, after being shown who must not be photographed
+  (0128 — we never claim to have looked at a picture); only the squad sees
+  them, never the public match centre or a share card. Anyone in the squad
+  can take one down AT ONCE, without a reason, and only a coach puts it
+  back: a family should never have to argue for a picture of their child to
+  come down. The bucket's read rule is the row's (`may_see_match_photo`),
+  so "hidden" holds for the file too.
 - **An open offer holds its place** (R-20, 0221). A place offered after a
   trial, or to a returning player at rollover, is counted against everyone
   else until it is answered or lapses — but never against another offer
