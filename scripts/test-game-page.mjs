@@ -175,10 +175,14 @@ try {
     // Today, a few hours from now, if today has a few hours left in Sydney.
     const hourNow = Number(new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Sydney', hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
     if (hourNow <= 21) {
-      const today = await mk('today v Hornsby Heat', sydneyAt(0, Math.min(hourNow + 2, 23), 20))
+      const hour = Math.min(hourNow + 2, 23)
+      const today = await mk('today v Hornsby Heat', sydneyAt(0, hour, 20))
       const { context, page } = await open(parent, today.id)
       const st = await page.$eval('[data-game-hero]', (e) => ({ state: e.getAttribute('data-state'), kick: e.querySelector('[data-kick-off]')?.textContent, text: e.innerText }))
-      st.state === 'today' && /today/i.test(st.text) && /pm$/.test(st.kick ?? '') ? ok(`on the day: “Today”, “${st.kick}”`) : bad(`on the day: ${JSON.stringify(st)}`)
+      // The exact time at the venue. (It said /pm$/, which failed whenever the
+      // suite ran before 10 am — two hours on is still morning.)
+      const want = `${hour % 12 || 12}:20 ${hour >= 12 ? 'pm' : 'am'}`
+      st.state === 'today' && /today/i.test(st.text) && st.kick === want ? ok(`on the day: “Today”, “${st.kick}”`) : bad(`on the day, wanted ${want}: ${JSON.stringify(st)}`)
       await context.close()
     } else ok('on the day: skipped — it is after 9 pm in Sydney, so "today" has no evening left to test')
   }
