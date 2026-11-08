@@ -2272,6 +2272,115 @@ begin
     insert into rls_results values (157, 'no voucher on money already sent; a withdrawal waits for it to clear, then refunds', r157);
   end;
 
+  -- 0227. Pay later, by a day. Rolled back: a fee for U8 due in ten days,
+  -- Leo, Zoe and Hana on it, Zoe's paid.
+  declare
+    U8   constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO  constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    ZOE  constant uuid := '00000000-0000-0000-0000-0000000e0006';
+    HANA constant uuid := '00000000-0000-0000-0000-0000000e0004';
+    HANA_PARENT constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    OTHER constant uuid := '00000000-0000-0000-0000-0000000000b9';
+    v_req uuid; v_by date; v_hand int; v_too boolean; v_today boolean; v_paidfee boolean; v_notmine boolean;
+    n_leo int; n_hana int; n_prom int; n_late int; v_regd date; v_owes date; v_mine date; v_read int;
+    r158 text; r159 text; r160 text;
+  begin
+    begin
+      update public.players set team_id = U8 where id in (LEO, ZOE, HANA);
+      update public.academies set fee_reminders = true where id = ACAD_A;
+      insert into public.payment_requests (academy_id, team_id, title, amount_cents, due_on, created_by)
+      values (ACAD_A, U8, 'RLS 158 fee', 5000, current_date + 10, COACH) returning id into v_req;
+      insert into public.payments (academy_id, request_id, profile_id, player_id, amount_cents, status, paid_at)
+      values (ACAD_A, v_req, PARENT, ZOE, 5000, 'paid', now());
+
+      -- 158. Sam names a day for Leo: not today, not three months out, not
+      -- for someone else's child, not on a fee already paid, never by hand.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.promise_to_pay(v_req, LEO, current_date + 5);
+      v_today := false;
+      begin perform public.promise_to_pay(v_req, LEO, current_date); exception when others then v_today := true; end;
+      v_too := false;
+      begin perform public.promise_to_pay(v_req, LEO, current_date + 90); exception when others then v_too := true; end;
+      v_paidfee := false;
+      begin perform public.promise_to_pay(v_req, ZOE, current_date + 5); exception when others then v_paidfee := sqlerrm like '%nothing left%'; end;
+      v_hand := 0;
+      begin
+        insert into public.payment_promises (academy_id, request_id, player_id, profile_id, by_date)
+        values (ACAD_A, v_req, HANA, PARENT, current_date + 5);
+        v_hand := 1;
+      exception when others then null; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HANA_PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_notmine := false;
+      begin perform public.promise_to_pay(v_req, LEO, current_date + 5); exception when others then v_notmine := (sqlstate = '42501'); end;
+      execute 'reset role';
+      select by_date into v_by from public.payment_promises where request_id = v_req and player_id = LEO;
+      r158 := case when v_by = current_date + 5 and v_today and v_too and v_paidfee and v_hand = 0 and v_notmine then 'PASS'
+                   else 'FAIL (kept '||coalesce(v_by::text, 'none')||', today refused '||v_today||', 90 days refused '||v_too
+                        ||', paid fee refused '||v_paidfee||', by hand '||v_hand||', other parent refused '||v_notmine||')' end;
+
+      -- 159. The chase holds until the day: due in three days, Hana's family
+      -- is reminded and Sam is not; the day before Sam's day, Sam is told it
+      -- is tomorrow; after it, unpaid, the overdue chase resumes.
+      update public.payment_requests set due_on = current_date + 3 where id = v_req;
+      perform public.queue_fee_reminders();
+      select count(*) into n_leo from public.notification_queue q
+       where q.kind in ('fee_due', 'fee_overdue') and q.payload->>'request_id' = v_req::text and q.payload->>'player_id' = LEO::text;
+      select count(*) into n_hana from public.notification_queue q
+       where q.kind = 'fee_due' and q.payload->>'request_id' = v_req::text and q.payload->>'player_id' = HANA::text;
+      update public.payment_promises set by_date = current_date + 1 where request_id = v_req and player_id = LEO;
+      perform public.queue_fee_reminders();
+      select count(*) into n_prom from public.notification_queue q
+       where q.kind = 'fee_due' and q.dedupe_key like 'promise:%' and q.payload->>'player_id' = LEO::text
+         and q.profile_id = PARENT and q.title like '%by tomorrow%';
+      update public.payment_promises set by_date = current_date - 1 where request_id = v_req and player_id = LEO;
+      update public.payment_requests set due_on = current_date - 3 where id = v_req;
+      perform public.queue_fee_reminders();
+      select count(*) into n_late from public.notification_queue q
+       where q.kind = 'fee_overdue' and q.payload->>'request_id' = v_req::text and q.payload->>'player_id' = LEO::text
+         and q.profile_id = PARENT;
+      r159 := case when n_leo = 0 and n_hana >= 1 and n_prom = 1 and n_late = 1 then 'PASS'
+                   else 'FAIL (Leo chased while promised '||n_leo||', Hana reminded '||n_hana||', the day before '||n_prom||', after the day '||n_late||')' end;
+
+      -- 160. The club sees the day beside the name (the register, who-owes),
+      -- Sam sees it on the fee, and nobody else reads it.
+      update public.payment_promises set by_date = current_date + 5 where request_id = v_req and player_id = LEO;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select r.promised_by into v_regd from public.payment_register(v_req) r where r.player_id = LEO;
+      select f.promised_by into v_owes from public.outstanding_fees(ACAD_A) f where f.request_id = v_req and f.player_id = LEO;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select m.promised_by into v_mine from public.my_payment_requests(ACAD_A) m where m.request_id = v_req and m.player_id = LEO;
+      execute 'reset role';
+      v_read := 0;
+      foreach v_kid in array array[HANA_PARENT, OTHER, OUTSIDER] loop
+        perform set_config('request.jwt.claims', json_build_object('sub',v_kid,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        select v_read + count(*) into v_read from public.payment_promises where request_id = v_req;
+        execute 'reset role';
+      end loop;
+      r160 := case when v_regd = current_date + 5 and v_owes = current_date + 5 and v_mine = current_date + 5 and v_read = 0 then 'PASS'
+                   else 'FAIL (register '||coalesce(v_regd::text, 'none')||', who-owes '||coalesce(v_owes::text, 'none')
+                        ||', Sam sees '||coalesce(v_mine::text, 'none')||', others read '||v_read||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r158 := coalesce(r158, 'FAIL (stopped: '||sqlerrm||')');
+        r159 := coalesce(r159, 'FAIL (stopped: '||sqlerrm||')');
+        r160 := coalesce(r160, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (158, 'a family names a day to pay by: their own child, from tomorrow, within sixty days, on a fee still owed, never by hand', r158);
+    insert into rls_results values (159, 'the chase holds until the day, the family is reminded the day before, and after it the chase resumes', r159);
+    insert into rls_results values (160, 'the club sees the day beside the name, the family on the fee, and nobody else', r160);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

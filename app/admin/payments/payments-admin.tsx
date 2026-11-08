@@ -33,6 +33,14 @@ type RegisterRow = {
   status: string
   paid_at: string | null
   amount_cents: number
+  /** B-08 (0227): the day the family said they would pay by. */
+  promised_by?: string | null
+}
+
+/** A date-only string, read as the reader's own day. */
+function dayOf(ymd: string) {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 }
 
 /** A fill keeps the club's colour; text uses INK. See --brand-text. */
@@ -192,6 +200,9 @@ function RequestCard({ request }: { request: RequestRow }) {
   // bank is moving it.
   const clearing = register?.filter((r) => r.status === 'processing') ?? []
   const unpaid = register?.filter((r) => r.status !== 'paid' && r.status !== 'processing') ?? []
+  // A family that named a day (0227) is listed last: they are not the ones to ring today.
+  const promised = unpaid.filter((r) => r.promised_by).length
+  const chase = [...unpaid.filter((r) => !r.promised_by), ...unpaid.filter((r) => r.promised_by)]
 
   return (
     <li className="rounded-xl border border-[var(--line)] p-3">
@@ -218,7 +229,7 @@ function RequestCard({ request }: { request: RequestRow }) {
       {open && register && (
         <div className="mt-3 border-t border-[var(--line-2)] pt-3">
           <p className="text-sm font-medium">
-            {paid.length} paid{clearing.length ? ` · ${clearing.length} clearing` : ''} · {unpaid.length} outstanding ·{' '}
+            {paid.length} paid{clearing.length ? ` · ${clearing.length} clearing` : ''} · {unpaid.length} outstanding{promised ? ` (${promised} promised)` : ''} ·{' '}
             <span style={{ color: 'var(--yes)' }}>
               {money(paid.reduce((sum, r) => sum + r.amount_cents, 0), request.currency)} collected
             </span>
@@ -229,9 +240,12 @@ function RequestCard({ request }: { request: RequestRow }) {
             to do it.
           */}
           <ul className="mt-2 flex flex-col gap-1 text-sm">
-            {unpaid.map((r) => (
-              <li key={r.player_id} className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate">{r.player_name}</span>
+            {chase.map((r) => (
+              <li key={r.player_id} className="flex items-center justify-between gap-2" data-promised={r.promised_by ?? undefined}>
+                <span className="min-w-0 truncate">
+                  {r.player_name}
+                  {r.promised_by && <span className="ml-1 text-xs text-ink-3">· promised by {dayOf(r.promised_by)}</span>}
+                </span>
                 {r.guardian_phone ? (
                   <a
                     href={`sms:${r.guardian_phone}`}

@@ -16,6 +16,7 @@ export function FamilyPaymentsLoader() {
   const org = useCurrentOrg()
   const params = useSearchParams()
   const [owing, setOwing] = useState<Owing[] | null>(null)
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
     if (!org) return
@@ -27,7 +28,7 @@ export function FamilyPaymentsLoader() {
     return () => {
       live = false
     }
-  }, [org])
+  }, [org, tick])
 
   if (!org || !owing) return <ScreenSkeleton />
   return (
@@ -36,7 +37,7 @@ export function FamilyPaymentsLoader() {
         <h1 className="text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>Payments</h1>
         <p className="mt-0.5 text-sm text-ink-2">{org.name}</p>
       </header>
-      <PaymentsList owing={owing} justPaid={params.get('paid') === '1'} cancelled={params.get('cancelled') === '1'} />
+      <PaymentsList owing={owing} justPaid={params.get('paid') === '1'} cancelled={params.get('cancelled') === '1'} onChanged={() => setTick((t) => t + 1)} />
     </main>
   )
 }

@@ -21,7 +21,16 @@ export type Owing = {
   /** B-07 (0193): a voucher already on this fee. */
   voucher_cents?: number
   voucher_label?: string | null
+  /** B-08 (0227): the day the family said they would pay by. */
+  promised_by?: string | null
 }
+
+/** A date-only string, read as the reader's own day (never through UTC). */
+function dayOf(ymd: string) {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+const inDays = (n: number) => new Date(Date.now() + n * 864e5).toLocaleDateString('en-CA')
 
 /** A fill keeps the club's colour; text uses INK. See --brand-text. */
 const BRAND = 'var(--brand)'
@@ -36,10 +45,13 @@ export function PaymentsList({
   owing,
   justPaid,
   cancelled,
+  onChanged,
 }: {
   owing: Owing[]
   justPaid: boolean
   cancelled: boolean
+  /** The list is read again — after a day is picked (0227). */
+  onChanged?: () => void
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -48,6 +60,32 @@ export function PaymentsList({
   const [codeFor, setCodeFor] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [applied, setApplied] = useState<string | null>(null)
+  // B-08: "Can't pay today? Pick a day" — the family's own day, before the chase.
+  const [laterFor, setLaterFor] = useState<string | null>(null)
+  const [laterDate, setLaterDate] = useState('')
+
+  const latestDay = (row: Owing) => {
+    const sixty = inDays(60)
+    const closes = row.closes_at ? new Date(row.closes_at).toLocaleDateString('en-CA') : null
+    return closes && closes < sixty ? closes : sixty
+  }
+  function openLater(row: Owing) {
+    const last = latestDay(row)
+    const due = row.due_on && row.due_on > inDays(0) && row.due_on <= last ? row.due_on : null
+    setLaterDate(row.promised_by ?? due ?? (inDays(14) <= last ? inDays(14) : last))
+    setLaterFor(row.request_id + (row.player_id ?? ''))
+    setError(null)
+  }
+  async function promise(row: Owing) {
+    const key = row.request_id + (row.player_id ?? '')
+    setBusy(key + ':later')
+    setError(null)
+    const { error } = await createClient().rpc('promise_to_pay', { p_request: row.request_id, p_player: row.player_id ?? undefined, p_by: laterDate })
+    setBusy(null)
+    if (error) return setError(error.message)
+    setLaterFor(null)
+    onChanged?.()
+  }
 
   async function redeem(row: Owing) {
     const key = row.request_id + (row.player_id ?? '')
@@ -218,6 +256,53 @@ export function PaymentsList({
                 <p className="mt-3 rounded-lg bg-[var(--surface-2)] p-2.5 text-center text-xs text-ink-2">
                   Your club is still setting up payments. Nothing to do yet.
                 </p>
+              )}
+
+              {/* B-08 (0227): a day of their own. The club sees it instead of
+                  chasing; a reminder comes the day before; nothing owed changes. */}
+              {laterFor === key ? (
+                <div className="mt-2 rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }} data-pay-later-form>
+                  <label className="block text-xs text-ink-2">
+                    I&apos;ll pay by
+                    <input
+                      type="date"
+                      value={laterDate}
+                      min={inDays(1)}
+                      max={latestDay(row)}
+                      onChange={(e) => setLaterDate(e.target.value)}
+                      className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-base"
+                      style={{ borderColor: 'var(--line)' }}
+                    />
+                  </label>
+                  <p className="mt-1 text-[0.6875rem] text-ink-3">
+                    The club sees your day instead of chasing you, and you get a reminder the day before. What is owed does not change.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => promise(row)}
+                      disabled={busy === key + ':later' || !laterDate}
+                      className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50"
+                      style={{ background: BRAND }}
+                      data-pay-later-save
+                    >
+                      {busy === key + ':later' ? '…' : 'Set the day'}
+                    </button>
+                    <button onClick={() => setLaterFor(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : row.promised_by ? (
+                <p className="mt-2 text-xs text-ink-2" data-promised={row.promised_by}>
+                  You said you&apos;d pay by {dayOf(row.promised_by)}. We&apos;ll remind you the day before.{' '}
+                  <button onClick={() => openLater(row)} className="tap underline underline-offset-2">
+                    Change
+                  </button>
+                </p>
+              ) : (
+                <button onClick={() => openLater(row)} className="tap mt-2 text-xs underline underline-offset-2 text-ink-3" data-pay-later>
+                  Can&apos;t pay today? Pick a day
+                </button>
               )}
             </li>
           )

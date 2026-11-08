@@ -15,6 +15,8 @@ type Row = {
   outstanding_cents: number
   next_due: string
   days_overdue: number
+  /** B-08 (0227): the day the family said they would pay by. */
+  promised_by?: string | null
 }
 
 /**
@@ -122,6 +124,7 @@ export function Outstanding({ academyId }: { academyId: string }) {
                   </span>
                   <span className="block truncate text-xs text-ink-3">
                     {r.guardian_name ?? 'No guardian linked'}
+                    {r.promised_by && <span className="text-ink-2"> · promised by {dayOf(r.promised_by)}</span>}
                     {r.days_overdue > 0 && (
                       <span style={{ color: 'var(--no)' }}>
                         {' '}
@@ -167,6 +170,12 @@ export function Outstanding({ academyId }: { academyId: string }) {
       )}
     </section>
   )
+}
+
+/** A date-only string, read as the reader's own day. */
+function dayOf(ymd: string) {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
 }
 
 /** Integer cents, never a float. 49.9 * 100 is 4989.999999999999. */

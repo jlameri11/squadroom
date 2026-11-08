@@ -4349,6 +4349,54 @@ export type Database = {
           },
         ]
       }
+      payment_promises: {
+        Row: {
+          academy_id: string
+          by_date: string
+          created_at: string
+          id: string
+          player_id: string | null
+          profile_id: string
+          request_id: string
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          by_date: string
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          profile_id: string
+          request_id: string
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          by_date?: string
+          created_at?: string
+          id?: string
+          player_id?: string | null
+          profile_id?: string
+          request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_promises_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_promises_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_requests: {
         Row: {
           academy_id: string
@@ -8166,6 +8214,7 @@ export type Database = {
           title: string
           voucher_cents: number
           voucher_label: string
+          promised_by: string | null
         }[]
       }
       my_poll_votes: {
@@ -8291,6 +8340,7 @@ export type Database = {
           player_name: string
           request_id: string
           title: string
+          promised_by: string | null
         }[]
       }
       overturn_suspension: {
@@ -8307,6 +8357,7 @@ export type Database = {
           player_id: string
           player_name: string
           status: string
+          promised_by: string | null
         }[]
       }
       peek_competition_invite: {
@@ -8413,6 +8464,10 @@ export type Database = {
       }
       preview_season_rollover: {
         Args: { p_academy: string; p_from: string; p_to: string }
+        Returns: Json
+      }
+      promise_to_pay: {
+        Args: { p_by?: string; p_player?: string; p_request: string }
         Returns: Json
       }
       propose_fixture_change: {

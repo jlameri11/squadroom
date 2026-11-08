@@ -428,6 +428,11 @@ one and is meant to reach hundreds of academies.
     `payments.status` treats it as neither — `status = 'paid'` alone is a
     bug. Checkout offers BECS only when `academy_billing.becs_enabled`,
     which is read back from Stripe's capability, never set by hand.
+  - **A promise is not a payment** (B-08, 0227). "Pay later by a day" is a
+    `payment_promises` row the family makes through `promise_to_pay`; it
+    changes the chasing (the 0193 sweep holds until the day, nudges the day
+    before, then resumes) and what the club sees beside the name — never
+    what is owed. Nothing reads it as money.
   - Amounts are integer cents, never a float. Dollars typed in the UI are
     `Math.round(x * 100)`: 49.9 * 100 is 4989.999999999999.
   - **Squadroom charges CLUBS, never parents.** Revenue is `academies.plan`;
