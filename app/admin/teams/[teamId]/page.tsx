@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { AttendancePanel } from './attendance-panel'
 import { AvailabilityGrid } from './availability-grid'
 import { FormStrip } from './form-strip'
+import { DivisionTable } from './division-table'
 import { TeamStats } from './team-stats'
 import { redirect, notFound } from 'next/navigation'
 import QRCode from 'qrcode'
@@ -95,6 +96,8 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       <BulkInvite teamId={team.id} academyId={team.academy_id} />
 
       <FormStrip teamId={team.id} />
+
+      <DivisionTable teamId={team.id} />
 
       <TeamStats teamId={team.id} />
 

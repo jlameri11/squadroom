@@ -150,6 +150,17 @@ export const FIELDS: FieldSpec[] = [
     required: false,
     matches: ['round', 'match round', 'stage', 'week'],
   },
+  // F-05 (0228): the division, when a file covers more than one. The table
+  // is worked out from the games around our squad either way; a column
+  // keeps two age groups apart when their team names overlap.
+  {
+    key: 'division',
+    label: 'Division',
+    hint: 'Only if the file covers more than one — for the division table',
+    required: false,
+    matches: ['division', 'age group', 'grade', 'pool'],
+    excludes: ['id', 'ref', 'home', 'away', 'status'],
+  },
   {
     key: 'end_time',
     label: 'Finish',

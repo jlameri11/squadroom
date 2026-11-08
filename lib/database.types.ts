@@ -3069,6 +3069,62 @@ export type Database = {
           },
         ]
       }
+      imported_games: {
+        Row: {
+          academy_id: string
+          away: string
+          away_score: number | null
+          division: string | null
+          external_ref: string | null
+          home: string
+          home_score: number | null
+          id: string
+          imported_at: string
+          imported_by: string | null
+          local_date: string
+          round: string | null
+          season: string
+        }
+        Insert: {
+          academy_id: string
+          away: string
+          away_score?: number | null
+          division?: string | null
+          external_ref?: string | null
+          home: string
+          home_score?: number | null
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          local_date: string
+          round?: string | null
+          season: string
+        }
+        Update: {
+          academy_id?: string
+          away?: string
+          away_score?: number | null
+          division?: string | null
+          external_ref?: string | null
+          home?: string
+          home_score?: number | null
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          local_date?: string
+          round?: string | null
+          season?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_games_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_teams: {
         Row: {
           academy_id: string
@@ -7789,6 +7845,7 @@ export type Database = {
       }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
+      division_table: { Args: { p_team: string }; Returns: Json }
       draw_quality: {
         Args: { p_competition: string; p_division: string }
         Returns: Json
@@ -8949,6 +9006,7 @@ export type Database = {
         Returns: number
       }
       stop_helping: { Args: { p_job: string; p_profile?: string }; Returns: Json }
+      store_imported_games: { Args: { p_academy: string; p_rows: Json; p_season: string }; Returns: Json }
       submit_concussion_clearance: {
         Args: { p_concussion: string; p_note?: string; p_path: string }
         Returns: undefined

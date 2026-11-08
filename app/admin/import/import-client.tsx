@@ -46,6 +46,13 @@ type Prepared = {
   /** The squad this row belongs to, matched on what the league calls it. */
   team_id: string | null
   team_name: string | null
+  /** F-05 (0228): the file's two sides and its own home/away score, for the division table. */
+  home_team: string
+  away_team: string
+  home_score: number | null
+  away_score: number | null
+  division: string
+  foreign: boolean
 }
 
 /**
@@ -68,6 +75,8 @@ type Team = {
   /** What the league calls this squad, so a row can be routed to it. */
   external_ref: string | null
   skip_import: boolean
+  /** F-05 (0228): the season the division table is filed under. */
+  season?: string | null
 }
 
 type Screen = {
@@ -188,6 +197,11 @@ function Importer({
     }
     const text = (row: Row, key: FieldKey) => String(cell(row, key) ?? '').trim()
 
+    // 0228: does the file route itself? When our squads are known by their
+    // league names and a row names none of them, it is another club's game.
+    const norm = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase()
+    const anyRouted = rows.some((row) => byLeagueName.has(norm(text(row, 'home_team'))) || byLeagueName.has(norm(text(row, 'away_team'))))
+
     return rows.map((row, index) => {
       const local_date = toLocalDate(cell(row, 'local_date'))
       const local_time = toLocalTime(cell(row, 'local_time'))
@@ -218,13 +232,17 @@ function Importer({
               derby: Boolean(mineHome && mineAway),
               foreign: false,
             }
-          : resolveSides(
-              ourClub,
-              text(row, 'home_club'),
-              text(row, 'away_club'),
-              homeTeam,
-              awayTeam
-            )
+          : !ourClub && anyRouted
+            ? // The file routes itself and this row names none of our squads:
+              // another club's game, kept for the division table (0228).
+              { opponent: null, wasHome: null, derby: false, foreign: true }
+            : resolveSides(
+                ourClub,
+                text(row, 'home_club'),
+                text(row, 'away_club'),
+                homeTeam,
+                awayTeam
+              )
 
       const team = mineHome ?? mineAway ?? null
       const opponent = text(row, 'opponent') || sides.opponent || ''
@@ -258,12 +276,27 @@ function Importer({
           their_score = sides.wasHome ? as : hs
         }
       }
+      // F-05 (0228): the file's own home and away scores, for the division
+      // table — turned back from ours and theirs when that is all a file has.
+      let home_score: number | null = num('home_score')
+      let away_score: number | null = num('away_score')
+      if (home_score === null || away_score === null) {
+        const scoreCell = text(row, 'score').match(/^(\d+)\s*[-–:]\s*(\d+)$/)
+        if (scoreCell) {
+          home_score = Number(scoreCell[1])
+          away_score = Number(scoreCell[2])
+        } else if (our_score !== null && their_score !== null && typeof sides.wasHome === 'boolean') {
+          home_score = sides.wasHome ? our_score : their_score
+          away_score = sides.wasHome ? their_score : our_score
+        }
+      }
+      const divisionColumn = mapping['division']
 
       let problem: string | null = null
       if (isBye(text(row, 'bye'))) problem = 'Marked as a bye — not a game'
       else if (!local_date) problem = 'Could not read the date'
       else if (!local_time) problem = 'Could not read the time'
-      else if (sides.foreign) problem = 'Neither team is yours'
+      else if (sides.foreign) problem = "Another club's game — kept for the division table, not imported"
       else if (team?.skip_import) problem = `${team.name} is set to be left out of imports`
 
       const bothTeams = [text(row, 'home_team'), text(row, 'away_team')].filter(Boolean)
@@ -294,12 +327,36 @@ function Importer({
         derby: sides.derby,
         team_id: team?.id ?? null,
         team_name: team?.name ?? null,
+        home_team: homeTeam,
+        away_team: awayTeam,
+        home_score,
+        away_score,
+        division: divisionColumn ? String(row[divisionColumn] ?? '').trim() : '',
+        foreign: sides.foreign,
       }
     })
   }, [rows, mapping, ourClub, byLeagueName])
 
   const good = prepared.filter((p) => !p.problem)
   const bad = prepared.filter((p) => p.problem)
+
+  // F-05 (0228): every game in the file with two named sides — ours and the
+  // other clubs' — is kept for the division table. Byes and rows whose day
+  // could not be read are not games.
+  const tableRows = prepared.filter((p) => p.local_date && p.home_team && p.away_team && !p.problem?.startsWith('Marked as a bye'))
+  // The season the table is filed under: the squad this file is for, else
+  // the squads its rows were routed to, else the club's latest.
+  const tableSeason = useMemo(() => {
+    const chosen = teams.find((t) => t.id === teamId)?.season
+    if (chosen) return chosen
+    const counts = new Map<string, number>()
+    for (const p of prepared) {
+      const s = teams.find((t) => t.id === p.team_id)?.season
+      if (s) counts.set(s, (counts.get(s) ?? 0) + 1)
+    }
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+    return top ?? teams.map((t) => t.season).filter((s): s is string => Boolean(s)).sort().pop() ?? null
+  }, [teams, teamId, prepared])
 
   // The clubs named in the file, so the coach can say which one is them.
   // Taken from the rows rather than a list of clubs we know about, because
@@ -329,8 +386,13 @@ function Importer({
   // Not asked when the file routes itself. Every row that matched a squad by
   // its league name already knows which side was ours, so the question would
   // be asked and then ignored.
+  // And only when the file routes NONE of its rows. A league's results file
+  // (0228) carries every club's games, so once our squads are known by their
+  // league names the unrouted rows are the other clubs' — kept for the
+  // division table, and no reason to ask. The question stays on the screen
+  // for a coach whose squad has no league name yet.
   const routed = prepared.filter((p) => p.team_id).length
-  const needsClub = clubsInFile.length > 1 && !ourClub && routed < rows.length
+  const needsClub = clubsInFile.length > 1 && !ourClub && routed === 0
 
   const ready =
     good.length > 0 &&
@@ -406,6 +468,27 @@ function Importer({
       }
       recorded = rr as unknown as { results: number; unmatched: number }
     }
+    // F-05 (0228): the whole file's games, the other clubs' included, for
+    // the division table. Before 0228 the function is not there, and the
+    // import above stands on its own.
+    let kept: { added: number; updated: number } | null = null
+    if (tableSeason && tableRows.length > 0) {
+      const { data: tk, error: te } = await createClient().rpc('store_imported_games', {
+        p_academy: academyId,
+        p_season: tableSeason,
+        p_rows: tableRows.map((p) => ({
+          division: p.division || null,
+          round: p.round || null,
+          local_date: p.local_date,
+          home: p.home_team,
+          away: p.away_team,
+          home_score: p.home_score,
+          away_score: p.away_score,
+          external_ref: p.external_ref || null,
+        })) as never,
+      })
+      if (!te) kept = tk as unknown as { added: number; updated: number }
+    }
     setBusy(null)
     const r = data?.[0]
     setResult(
@@ -416,6 +499,7 @@ function Importer({
         r?.skipped ? `${r.skipped} skipped` : null,
         recorded?.results ? `${recorded.results} ${recorded.results === 1 ? 'result' : 'results'} recorded` : null,
         recorded?.unmatched ? `${recorded.unmatched} ${recorded.unmatched === 1 ? 'score' : 'scores'} for games not found` : null,
+        kept ? `${kept.added + kept.updated} ${kept.added + kept.updated === 1 ? 'game' : 'games'} kept for the division table` : null,
       ]
         .filter(Boolean)
         .join(', ') + '.' || 'Nothing to do.'
@@ -632,7 +716,7 @@ function Importer({
             <section className="mt-5">
               <h2 className="font-semibold" style={{ color: INK }}>
                 {good.length} {good.length === 1 ? 'game' : 'games'} read
-                {bad.length > 0 && `, ${bad.length} left out`}
+                {bad.length > 0 && `, ${bad.length} not imported`}
               </h2>
               <p className="mt-0.5 text-xs text-ink-2">
                 Times are read exactly as written and set in {timezone}. Check the changes

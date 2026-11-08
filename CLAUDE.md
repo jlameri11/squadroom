@@ -187,6 +187,11 @@ one and is meant to reach hundreds of academies.
   - Never `toISOString()` a spreadsheet date. A local midnight in Sydney
     becomes the previous day in UTC, which moves every Saturday game to
     Friday.
+  - **The other clubs' games in a file are the division table, never
+    events** (F-05, 0228). A row where neither side is ours is kept in
+    `imported_games` for `division_table`, and is not imported into any
+    calendar. The division is the connected set of teams around our
+    squad's league name (`teams.external_ref`), not a guess from names.
   - Do NOT try to replace Dribl for association competition. Football NSW
     mandates registration there for eligibility, insurance and age
     verification - that is governance, not software, and the failure mode is

@@ -2381,6 +2381,97 @@ begin
     insert into rls_results values (160, 'the club sees the day beside the name, the family on the fee, and nobody else', r160);
   end;
 
+  -- 0228. The file says who leads. Rolled back: U8 is "NRFA U8" to the
+  -- league; a file of four U8 teams, one game still to play, and a U9 game
+  -- that came along with it.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    OTHER constant uuid := '00000000-0000-0000-0000-0000000000b9';
+    v_season text; v_res jsonb; v_t jsonb; v_rows jsonb; v_n int; v_again jsonb;
+    v_parent boolean; v_hand int; v_out int; v_outside boolean; v_other boolean;
+    r161 text; r162 text; r163 text;
+  begin
+    begin
+      update public.teams set external_ref = 'NRFA U8' where id = U8;
+      select season into v_season from public.teams where id = U8;
+      v_rows := jsonb_build_array(
+        jsonb_build_object('round', '1', 'local_date', current_date - 14, 'home', 'NRFA U8', 'away', 'Hornsby U8', 'home_score', 2, 'away_score', 1, 'external_ref', 'RLS161-1'),
+        jsonb_build_object('round', '1', 'local_date', current_date - 14, 'home', 'Mosman U8', 'away', 'Manly U8', 'home_score', 0, 'away_score', 0),
+        jsonb_build_object('round', '2', 'local_date', current_date - 7, 'home', 'Hornsby U8', 'away', 'Mosman U8', 'home_score', 3, 'away_score', 0, 'external_ref', 'RLS161-3'),
+        jsonb_build_object('round', '2', 'local_date', current_date - 7, 'home', 'Manly U8', 'away', 'NRFA U8', 'external_ref', 'RLS161-4'),
+        jsonb_build_object('round', '2', 'local_date', current_date - 7, 'home', 'Hornsby U9', 'away', 'Mosman U9', 'home_score', 5, 'away_score', 5));
+
+      -- 161. A parent cannot store them, nor anyone by hand; the coach can,
+      -- and the same file again — with last week's score filled in — updates
+      -- the game rather than doubling it.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_parent := false;
+      begin perform public.store_imported_games(ACAD_A, v_season, v_rows); exception when others then v_parent := (sqlstate = '42501'); end;
+      v_hand := 0;
+      begin
+        insert into public.imported_games (academy_id, season, local_date, home, away) values (ACAD_A, v_season, current_date, 'A', 'B');
+        v_hand := 1;
+      exception when others then null; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_res := public.store_imported_games(ACAD_A, v_season, v_rows);
+      v_again := public.store_imported_games(ACAD_A, v_season,
+                   v_rows || jsonb_build_array(jsonb_build_object('round', '2', 'local_date', current_date - 7, 'home', 'Manly U8', 'away', 'NRFA U8', 'home_score', 1, 'away_score', 4, 'external_ref', 'RLS161-4')));
+      execute 'reset role';
+      select count(*) into v_n from public.imported_games g where g.academy_id = ACAD_A and g.season = v_season and g.home like '% U_' ;
+      r161 := case when v_parent and v_hand = 0 and (v_res->>'added')::int = 5 and (v_again->>'added')::int = 0 and (v_again->>'updated')::int = 6 and v_n = 5
+                         and (select g.away_score from public.imported_games g where g.external_ref = 'RLS161-4') = 4
+                    then 'PASS'
+                    else 'FAIL (parent refused '||v_parent||', by hand '||v_hand||', first '||coalesce(v_res::text, 'null')||', again '||coalesce(v_again::text, 'null')||', rows '||v_n||')' end;
+
+      -- 162. The U8 table, for Sam: the four U8 sides and not the U9s; the
+      -- scores add up (NRFA 6 on +4, Hornsby 3, then Manly over Mosman on
+      -- goals for with 1 point and −3 each); ours is marked.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_t := public.division_table(U8);
+      execute 'reset role';
+      r162 := case when jsonb_array_length(v_t -> 'rows') = 4
+                         and (v_t -> 'rows' -> 0 ->> 'team') = 'NRFA U8' and (v_t -> 'rows' -> 0 ->> 'ours')::boolean
+                         and (v_t -> 'rows' -> 0 ->> 'pts')::int = 6 and (v_t -> 'rows' -> 0 ->> 'gd')::int = 4
+                         and (v_t -> 'rows' -> 1 ->> 'team') = 'Hornsby U8' and (v_t -> 'rows' -> 1 ->> 'pts')::int = 3
+                         and (v_t -> 'rows' -> 2 ->> 'team') = 'Manly U8' and (v_t -> 'rows' -> 3 ->> 'team') = 'Mosman U8'
+                         and (v_t ->> 'games')::int = 4
+                         and not exists (select 1 from jsonb_array_elements(v_t -> 'rows') x where x ->> 'team' like '%U9')
+                    then 'PASS' else 'FAIL ('||coalesce(v_t::text, 'null')||')' end;
+
+      -- 163. Another club reads none of it and cannot ask for the table; a
+      -- family of another squad at this club cannot ask for U8's.
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_out from public.imported_games where academy_id = ACAD_A;
+      v_outside := false;
+      begin perform public.division_table(U8); exception when others then v_outside := true; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OTHER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_other := false;
+      begin perform public.division_table(U8); exception when others then v_other := true; end;
+      execute 'reset role';
+      r163 := case when v_out = 0 and v_outside and v_other then 'PASS'
+                   else 'FAIL (other club reads '||v_out||', refused '||v_outside||', other squad refused '||v_other||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r161 := coalesce(r161, 'FAIL (stopped: '||sqlerrm||')');
+        r162 := coalesce(r162, 'FAIL (stopped: '||sqlerrm||')');
+        r163 := coalesce(r163, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (161, 'the file''s games are kept by the coach only, and a re-import updates a game rather than doubling it', r161);
+    insert into rls_results values (162, 'the division table is the teams around ours, adding up 3/1/0 with goal difference, and not the other age group', r162);
+    insert into rls_results values (163, 'another club reads none of it; only the squad''s own people ask for its table', r163);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

@@ -10,6 +10,7 @@ import { ParentPulse } from './pulse'
 import { MatchVideo } from './video'
 import { MatchPhotos } from './photos'
 import { EventHelpers } from './helpers'
+import { DivisionTable } from '@/app/admin/teams/[teamId]/division-table'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
 import { Result } from './result'
@@ -404,6 +405,8 @@ export function EventDetail({
           {!cancelled && <EventHelpers eventId={event.id} clubWide={!event.team_id} />}
           {game && <TeamForm game={game} ourName={ourName} theirName={theirName} />}
           {game && <MiniLadder game={game} onOpen={() => choose('ladder')} />}
+          {/* F-05 (0228): the division table from the league's file, for a game outside our own competitions. */}
+          {event.team_id && !game?.ladder && <DivisionTable teamId={event.team_id} />}
           {isCoach && <EditOccurrence event={event} tz={tz} />}
           {isCoach && <CallItOff event={event} />}
         </div>

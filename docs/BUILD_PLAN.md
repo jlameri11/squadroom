@@ -133,7 +133,7 @@ Nothing after this matters if chat drops messages, push never reaches a phone, a
 | F-02 | Club-wide draw | Fixtures tab toggle: My teams / Whole club. Saturday and Sunday tabs, team filter chips. **Public share link** (replaces the fixturefeed site). Shareable weekend graphic |
 | F-03 | Import diff preview | Before confirming a Dribl export: "3 moved · 1 new · 1 removed · 40 unchanged", each with old → new. Moved games fire the existing alerts |
 | F-04 | Retire fixturefeed | Once Joey has club-admin export access, the weekly routine becomes export → drop into `/admin/import` on Fri 3pm and Sat/Sun morning. Saved column mapping so it's one click. Push to admins if no import has happened by Friday 4pm |
-| F-05 | Results/ladders import | If the export has scores, fill in results; show Table/Form for official comps. **Done 3 Nov (0201) for results and Form** — score columns in the importer, results onto the games, the form strip on the team page. The division Table from an export is not built (it needs every club's games stored) |
+| F-05 | Results/ladders import | If the export has scores, fill in results; show Table/Form for official comps. **Done 3 Nov (0201) for results and Form** — score columns in the importer, results onto the games, the form strip on the team page. The division Table from an export: **done 9 Nov (0228)** — every game in the file is kept, the table is the teams around our squad |
 | E-05 | Availability grid | Players × next 4 events, colour-coded, tap a cell to see the reason. **Done 3 Nov (0199)** — on the team page, with the last two registers alongside |
 | E-06 | Squad selection | Pick from the available players → positions (optional), meet time, kit → "Selected" push to those families; "Not selected this week" handled gently. **Done 3 Nov (0199)** — publishing the sheet (0125) now tells the selected families once per role; the left-out families only when the coach ticks it, gently |
 | E-08 | Venues table | Maps link, parking, field map photo, toilets/canteen notes; reused by events and competitions. **Done 3 Nov (L-29, 0198)** |
@@ -462,7 +462,7 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    M4 / M5, M1 + M6's Stripe halves when the key exists, M8 SaaS.
    **3 Nov, afternoon:** M4 done (E-05, E-06, F-05 for results and form,
    F-07; E-07/E-08 were already covered; the division Table from an export
-   is the one piece not built). M5 done bar photos (built 8 Nov, 0223, waiting for the token) and X-08 sponsor slots
+   was the one piece not built — built 9 Nov, 0228, waiting for the token). M5 done bar photos (built 8 Nov, 0223, waiting for the token) and X-08 sponsor slots
    (X-01, X-02, X-03, X-04's star card, X-07, X-11; X-05 as sections on one
    page). **3 Nov, evening: the Stripe halves are done** (the key landed; see
    NIGHT_LOG's evening summary) and **referee payouts are parked** (L-07).
