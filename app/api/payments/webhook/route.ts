@@ -67,8 +67,21 @@ export async function POST(request: Request) {
       // with the payment still processing — BECS direct debit takes days —
       // and calling that paid would tell a coach money had arrived when it
       // had not.
-      if (session.payment_status !== 'paid') break
       const intent = typeof session.payment_intent === 'string' ? session.payment_intent : null
+      if (session.payment_status !== 'paid') {
+        // B-08 (0226): the family has authorised a bank debit and the money
+        // is on its way. Not paid — but not owed either, or they are offered
+        // Pay again while their bank is still moving it. Paid arrives as
+        // async_payment_succeeded; a failed debit is owed again.
+        if (event.type === 'checkout.session.completed' && session.payment_status === 'unpaid' && session.metadata?.kind !== 'entry_fee') {
+          await admin
+            .from('payments')
+            .update({ status: 'processing', stripe_payment_intent: intent })
+            .eq('stripe_session_id', session.id)
+            .eq('status', 'pending')
+        }
+        break
+      }
       if (session.metadata?.kind === 'entry_fee' && session.metadata.entry_fee_id) {
         await admin
           .from('entry_fees')
@@ -87,13 +100,15 @@ export async function POST(request: Request) {
     case 'checkout.session.async_payment_failed':
     case 'checkout.session.expired': {
       const session = event.data.object
-      // Only a pending row. A payment that already succeeded must never be
-      // walked backwards by a late expiry event arriving out of order.
+      // Only a row still waiting: pending, or a bank debit that was clearing
+      // and has failed. A payment that already succeeded must never be
+      // walked backwards by a late event arriving out of order.
+      const failed = event.type.endsWith('failed')
       await admin
         .from('payments')
-        .update({ status: event.type.endsWith('failed') ? 'failed' : 'cancelled' })
+        .update({ status: failed ? 'failed' : 'cancelled' })
         .eq('stripe_session_id', session.id)
-        .eq('status', 'pending')
+        .in('status', failed ? ['pending', 'processing'] : ['pending'])
       break
     }
 

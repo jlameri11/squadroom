@@ -55,11 +55,10 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
-  const { data: billing } = await admin
-    .from('academy_billing')
-    .select('stripe_account_id, charges_enabled, currency')
-    .eq('academy_id', req.academy_id)
-    .maybeSingle()
+  // select('*'): becs_enabled arrives with 0226, and naming it before then
+  // would fail the whole read and every family's checkout with it.
+  const { data: billingRow } = await admin.from('academy_billing').select('*').eq('academy_id', req.academy_id).maybeSingle()
+  const billing = billingRow as { stripe_account_id: string | null; charges_enabled: boolean; becs_enabled?: boolean } | null
   if (!billing?.stripe_account_id || !billing.charges_enabled) {
     return NextResponse.json({ error: 'This academy has not finished setting up payments yet.' }, { status: 409 })
   }
@@ -69,30 +68,43 @@ export async function POST(request: Request) {
   // quote_payment checks that this person is a guardian of this child.
   const { data: names } = children.length ? await admin.from('players').select('id, full_name').in('id', children) : { data: [] as { id: string; full_name: string }[] }
   const parts: { player_id: string | null; name: string | null; seq: number; amount_cents: number; count: number }[] = []
+  let clearing = 0
   for (const child of children.length ? children : [null]) {
     const { data: quote, error } = await supabase.rpc('quote_payment', { p_request: requestId, p_player: child ?? undefined })
     if (error || !quote) return NextResponse.json({ error: 'Could not work out what is owed.' }, { status: 500 })
     const schedule = (quote as Quote).schedule
     // The next part that has not been paid. One instalment per checkout: a
     // parent paying a term fee in four presses this four times over four
-    // months, and each press must charge one part rather than the lot.
-    const next = schedule.find((s) => s.status !== 'paid')
-    if (!next) continue
+    // months, and each press must charge one part rather than the lot. A
+    // part whose bank payment is clearing (0226) is never offered again —
+    // that is how a family pays twice.
+    const next = schedule.find((s) => s.status !== 'paid' && s.status !== 'processing')
+    if (!next) {
+      if (schedule.some((s) => s.status === 'processing')) clearing += 1
+      continue
+    }
     parts.push({ player_id: child, name: names?.find((n) => n.id === child)?.full_name ?? null, seq: next.seq, amount_cents: next.amount_cents, count: schedule.length })
   }
-  if (parts.length === 0) return NextResponse.json({ error: 'This is already paid.' }, { status: 409 })
+  if (parts.length === 0) {
+    return NextResponse.json(
+      { error: clearing ? 'Your bank payment for this is still clearing — it takes two or three business days. Nothing more to pay.' : 'This is already paid.' },
+      { status: 409 }
+    )
+  }
   const zero = parts.filter((p) => p.amount_cents === 0)
   if (zero.length === parts.length) return NextResponse.json({ error: 'Nothing to pay — a voucher covers it.' }, { status: 409 })
 
   const session = await stripe.checkout.sessions.create(
     {
       mode: 'payment',
-      // Cards only. Left to Stripe's defaults, an AU account also offers
-      // Klarna, Zip and Link, which puts buy-now-pay-later on a junior
-      // club's fee page — instalments are the club's own feature here, on
-      // the club's terms, and a family sees one clear total. (Decided 3 Nov
-      // 2026; one line to change if a club asks.)
-      payment_method_types: ['card'],
+      // Cards, and a bank account (BECS direct debit) once Stripe has
+      // switched it on for the club (B-08; 0226 keeps a debit that is
+      // clearing from being offered again). Nothing else: left to Stripe's
+      // defaults, an AU account also offers Klarna, Zip and Link, which puts
+      // buy-now-pay-later on a junior club's fee page — instalments are the
+      // club's own feature here, on the club's terms, and a family sees one
+      // clear total. (Decided 3 Nov 2026.)
+      payment_method_types: billing.becs_enabled && req.currency.toLowerCase() === 'aud' ? ['card', 'au_becs_debit'] : ['card'],
       line_items: parts.filter((p) => p.amount_cents > 0).map((p) => ({
         quantity: 1,
         price_data: {

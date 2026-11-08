@@ -2176,6 +2176,102 @@ begin
     insert into rls_results values (154, 'taken off a job you are told; dropping out in the last two days tells the coach', r154);
   end;
 
+  -- 0226. A bank payment clears. Rolled back: a fee for U8 due in three
+  -- days, the program it belongs to with Leo registered, Leo's bank payment
+  -- clearing, Zoe's not paid (both Sam's).
+  declare
+    U8  constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    ZOE constant uuid := '00000000-0000-0000-0000-0000000e0006';
+    v_req uuid; v_prog uuid; v_reg uuid; v_pay uuid; v_q jsonb; v_wd2 jsonb;
+    c0 int; c1 int; c2 int; v_owed_leo int; v_owed_zoe int; v_rem_leo int; v_rem_zoe int;
+    v_vou boolean; v_wd boolean; v_bad boolean;
+    r155 text; r156 text; r157 text;
+  begin
+    begin
+      update public.players set team_id = U8 where id in (LEO, ZOE);
+      update public.academies set fee_reminders = true where id = ACAD_A;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select coalesce((select (x->>'count')::int from jsonb_array_elements(public.needs_you(ACAD_A)) x where x->>'kind' = 'fees'), 0) into c0;
+      execute 'reset role';
+      insert into public.payment_requests (academy_id, team_id, title, amount_cents, due_on, created_by)
+      values (ACAD_A, U8, 'RLS 155 fee', 5000, current_date + 3, COACH) returning id into v_req;
+      insert into public.programs (academy_id, name, kind, status, season, team_id, payment_request_id, created_by)
+      values (ACAD_A, 'RLS 155 program', 'squad', 'open', '2026', U8, v_req, COACH) returning id into v_prog;
+      insert into public.vouchers (academy_id, code, label, kind, amount_cents, created_by)
+      values (ACAD_A, 'RLS157', 'RLS probe', 'club', 1000, COACH);
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      insert into public.program_registrations (academy_id, program_id, player_id, submitted_by, status)
+      values (ACAD_A, v_prog, LEO, COACH, 'approved') returning id into v_reg;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select coalesce((select (x->>'count')::int from jsonb_array_elements(public.needs_you(ACAD_A)) x where x->>'kind' = 'fees'), 0) into c1;
+      execute 'reset role';
+
+      -- 155. A payment can be processing, and nothing made up.
+      insert into public.payments (academy_id, request_id, profile_id, player_id, stripe_session_id, amount_cents, status)
+      values (ACAD_A, v_req, PARENT, LEO, 'cs_rls155', 5000, 'processing') returning id into v_pay;
+      v_bad := false;
+      begin
+        insert into public.payments (academy_id, request_id, profile_id, player_id, amount_cents, status)
+        values (ACAD_A, v_req, PARENT, ZOE, 5000, 'cleared');
+      exception when check_violation then v_bad := true; end;
+      r155 := case when v_bad then 'PASS' else 'FAIL (a made-up status was accepted)' end;
+
+      -- 156. Not owed while it clears: not on Sam's Home, not in who-owes,
+      -- no reminder for Leo (Zoe's still comes), nothing outstanding on the
+      -- quote and the part says it is clearing.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select coalesce((select (x->>'count')::int from jsonb_array_elements(public.needs_you(ACAD_A)) x where x->>'kind' = 'fees'), 0) into c2;
+      v_q := public.quote_payment(v_req, LEO);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select coalesce(sum(f.outstanding_cents), 0) into v_owed_leo from public.outstanding_fees(ACAD_A) f where f.request_id = v_req and f.player_id = LEO;
+      select coalesce(sum(f.outstanding_cents), 0) into v_owed_zoe from public.outstanding_fees(ACAD_A) f where f.request_id = v_req and f.player_id = ZOE;
+      execute 'reset role';
+      perform public.queue_fee_reminders();
+      select count(*) into v_rem_leo from public.notification_queue q where q.kind = 'fee_due' and q.payload->>'request_id' = v_req::text and q.payload->>'player_id' = LEO::text;
+      select count(*) into v_rem_zoe from public.notification_queue q where q.kind = 'fee_due' and q.payload->>'request_id' = v_req::text and q.payload->>'player_id' = ZOE::text;
+      r156 := case when c1 = c0 + 2 and c2 = c0 + 1 and v_owed_leo = 0 and v_owed_zoe > 0 and v_rem_leo = 0 and v_rem_zoe = 1
+                         and (v_q->>'outstanding_cents')::int = 0 and v_q->'schedule'->0->>'status' = 'processing'
+                    then 'PASS'
+                    else 'FAIL (Home '||c0||'/'||c1||'/'||c2||', owed Leo '||v_owed_leo||' Zoe '||v_owed_zoe||', reminders Leo '||v_rem_leo||' Zoe '||v_rem_zoe
+                         ||', quote '||coalesce(v_q->>'outstanding_cents', 'null')||' '||coalesce(v_q->'schedule'->0->>'status', 'null')||')' end;
+
+      -- 157. No voucher on money already sent; a withdrawal waits for it to
+      -- clear, and goes through — with its refund — once it has.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_vou := false;
+      begin perform public.redeem_voucher('RLS157', v_req, LEO); exception when others then v_vou := sqlerrm like '%already paid%'; end;
+      v_wd := false;
+      begin perform public.withdraw_registration(v_reg, 'rls probe'); exception when others then v_wd := sqlerrm like '%still clearing%'; end;
+      execute 'reset role';
+      update public.payments set status = 'paid', paid_at = now() where id = v_pay;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_wd2 := public.withdraw_registration(v_reg, 'rls probe');
+      execute 'reset role';
+      r157 := case when v_vou and v_wd and (v_wd2->>'refunds')::int = 1 then 'PASS'
+                   else 'FAIL (voucher refused '||v_vou||', withdrawal waited '||v_wd||', then '||coalesce(v_wd2::text, 'null')||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r155 := coalesce(r155, 'FAIL (stopped: '||sqlerrm||')');
+        r156 := coalesce(r156, 'FAIL (stopped: '||sqlerrm||')');
+        r157 := coalesce(r157, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (155, 'a payment can be processing (a bank debit clearing), and no status is made up', r155);
+    insert into rls_results values (156, 'a clearing fee is not owed: not on Home, not in who-owes, not reminded, nothing outstanding on the quote', r156);
+    insert into rls_results values (157, 'no voucher on money already sent; a withdrawal waits for it to clear, then refunds', r157);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

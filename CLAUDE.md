@@ -419,6 +419,15 @@ one and is meant to reach hundreds of academies.
     a price from the client is how somebody pays 50c for a $50 gala day.
   - `checkout.session.completed` does NOT mean paid — check `payment_status`.
     BECS direct debit completes the session days before the money arrives.
+  - **A bank debit clearing is `processing`** (B-08, 0226): completed with
+    the payment unpaid sets it, `async_payment_succeeded` pays it,
+    `async_payment_failed` fails it, an expiry cannot undo it. It is owed by
+    nobody (Home, who-owes, reminders, the quote, the checkout, vouchers,
+    withdrawals all treat it as settled) and paid by nobody (the family sees
+    "Clearing", the club "bank payment clearing"). Anything new that reads
+    `payments.status` treats it as neither — `status = 'paid'` alone is a
+    bug. Checkout offers BECS only when `academy_billing.becs_enabled`,
+    which is read back from Stripe's capability, never set by hand.
   - Amounts are integer cents, never a float. Dollars typed in the UI are
     `Math.round(x * 100)`: 49.9 * 100 is 4989.999999999999.
   - **Squadroom charges CLUBS, never parents.** Revenue is `academies.plan`;

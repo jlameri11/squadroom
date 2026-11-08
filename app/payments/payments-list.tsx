@@ -92,7 +92,10 @@ export function PaymentsList({
     window.location.href = payload.url
   }
 
-  const outstanding = owing.filter((o) => o.status !== 'paid')
+  // A bank payment that is clearing (B-08) is neither owed nor paid yet:
+  // never a Pay button, and never "Paid" before the bank has said so.
+  const outstanding = owing.filter((o) => o.status !== 'paid' && o.status !== 'processing')
+  const clearing = owing.filter((o) => o.status === 'processing')
   const settled = owing.filter((o) => o.status === 'paid')
 
   return (
@@ -220,6 +223,29 @@ export function PaymentsList({
           )
         })}
       </ul>
+
+      {clearing.length > 0 && (
+        <section className="mt-7" data-clearing>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-2">Clearing</h2>
+          <p className="mt-1 text-xs text-ink-3">
+            Paid from your bank account. A bank payment takes two or three business days to arrive — nothing more to do.
+          </p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {clearing.map((row) => (
+              <li
+                key={row.request_id + (row.player_id ?? '')}
+                className="flex justify-between gap-3 border-b border-[var(--line-2)] py-2 text-sm"
+              >
+                <span className="min-w-0 truncate">
+                  {row.title}
+                  {row.player_name ? ` · ${row.player_name}` : ''}
+                </span>
+                <span className="flex-none tabular-nums text-ink-2">{money(row.amount_cents, row.currency)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {settled.length > 0 && (
         <section className="mt-7">

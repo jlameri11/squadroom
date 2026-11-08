@@ -14,6 +14,8 @@ export async function syncBilling(academyId: string, accountId: string) {
     include: ['configuration.merchant', 'configuration.recipient', 'requirements'],
   })
   const charges = account.configuration?.merchant?.capabilities?.card_payments?.status === 'active'
+  // B-08: a bank account beside the card, once Stripe has switched BECS on.
+  const becs = account.configuration?.merchant?.capabilities?.au_becs_debit_payments?.status === 'active'
   const transfers = account.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers?.status === 'active'
   const entries = account.requirements?.entries ?? []
   const outstanding = entries.filter((e) => e.minimum_deadline?.status === 'currently_due' || e.minimum_deadline?.status === 'past_due')
@@ -24,8 +26,13 @@ export async function syncBilling(academyId: string, accountId: string) {
     requirements: { outstanding: outstanding.length, summary: account.requirements?.summary ?? null } as never,
     connected_at: charges ? new Date().toISOString() : null,
   }
-  await createAdminClient().from('academy_billing').update(row).eq('academy_id', academyId).eq('stripe_account_id', accountId)
-  return { ...row, account_id: accountId }
+  const admin = createAdminClient()
+  const { error } = await admin.from('academy_billing').update({ ...row, becs_enabled: becs }).eq('academy_id', academyId).eq('stripe_account_id', accountId)
+  // Until 0226 is applied the column is not there: keep the rest.
+  if (error && /becs_enabled/.test(error.message)) {
+    await admin.from('academy_billing').update(row).eq('academy_id', academyId).eq('stripe_account_id', accountId)
+  }
+  return { ...row, becs_enabled: becs, account_id: accountId }
 }
 
 /** The same, for whichever academy holds the account a Connect event names. */

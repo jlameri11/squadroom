@@ -190,6 +190,7 @@ export type Database = {
       academy_billing: {
         Row: {
           academy_id: string
+          becs_enabled: boolean
           charges_enabled: boolean
           connected_at: string | null
           country: string
@@ -202,6 +203,7 @@ export type Database = {
         }
         Insert: {
           academy_id: string
+          becs_enabled?: boolean
           charges_enabled?: boolean
           connected_at?: string | null
           country?: string
@@ -214,6 +216,7 @@ export type Database = {
         }
         Update: {
           academy_id?: string
+          becs_enabled?: boolean
           charges_enabled?: boolean
           connected_at?: string | null
           country?: string

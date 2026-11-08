@@ -188,7 +188,10 @@ function RequestCard({ request }: { request: RequestRow }) {
   }
 
   const paid = register?.filter((r) => r.status === 'paid') ?? []
-  const unpaid = register?.filter((r) => r.status !== 'paid') ?? []
+  // A bank payment clearing (B-08) is not chased: the family has paid, the
+  // bank is moving it.
+  const clearing = register?.filter((r) => r.status === 'processing') ?? []
+  const unpaid = register?.filter((r) => r.status !== 'paid' && r.status !== 'processing') ?? []
 
   return (
     <li className="rounded-xl border border-[var(--line)] p-3">
@@ -215,7 +218,7 @@ function RequestCard({ request }: { request: RequestRow }) {
       {open && register && (
         <div className="mt-3 border-t border-[var(--line-2)] pt-3">
           <p className="text-sm font-medium">
-            {paid.length} paid · {unpaid.length} outstanding ·{' '}
+            {paid.length} paid{clearing.length ? ` · ${clearing.length} clearing` : ''} · {unpaid.length} outstanding ·{' '}
             <span style={{ color: 'var(--yes)' }}>
               {money(paid.reduce((sum, r) => sum + r.amount_cents, 0), request.currency)} collected
             </span>
@@ -240,6 +243,12 @@ function RequestCard({ request }: { request: RequestRow }) {
                 ) : (
                   <span className="flex-none text-xs text-ink-3">no number</span>
                 )}
+              </li>
+            ))}
+            {clearing.map((r) => (
+              <li key={r.player_id} className="flex justify-between gap-2 text-ink-2" data-clearing>
+                <span className="min-w-0 truncate">{r.player_name}</span>
+                <span className="flex-none text-xs">bank payment clearing</span>
               </li>
             ))}
             {paid.map((r) => (
