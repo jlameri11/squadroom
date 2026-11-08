@@ -14,90 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      email_confirmations: {
-        Row: { created_at: string; email: string; expires_at: string; profile_id: string; token_hash: string; used_at: string | null }
-        Insert: { created_at?: string; email: string; expires_at?: string; profile_id: string; token_hash: string; used_at?: string | null }
-        Update: { created_at?: string; email?: string; expires_at?: string; profile_id?: string; token_hash?: string; used_at?: string | null }
-        Relationships: []
-      }
-      news_consents: {
-        Row: { at: string; email: string | null; id: number; opted_in: boolean; profile_id: string }
-        Insert: { at?: string; email?: string | null; id?: never; opted_in: boolean; profile_id: string }
-        Update: { at?: string; email?: string | null; id?: never; opted_in?: boolean; profile_id?: string }
-        Relationships: []
-      }
-      account_emails: {
-        Row: {
-          created_at: string
-          email: string
-          news_opt_in_at: string | null
-          profile_id: string
-          updated_at: string
-          verified_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          news_opt_in_at?: string | null
-          profile_id: string
-          updated_at?: string
-          verified_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          news_opt_in_at?: string | null
-          profile_id?: string
-          updated_at?: string
-          verified_at?: string | null
-        }
-        Relationships: []
-      }
-      notice_emails: {
-        Row: { message_id: string; profile_id: string; provider_id: string | null; sent_at: string }
-        Insert: { message_id: string; profile_id: string; provider_id?: string | null; sent_at?: string }
-        Update: { message_id?: string; profile_id?: string; provider_id?: string | null; sent_at?: string }
-        Relationships: []
-      }
-      player_logins: {
-        Row: {
-          academy_id: string
-          claimed_at: string | null
-          created_at: string
-          decided_at: string | null
-          decided_by: string | null
-          email: string
-          invited_by: string
-          player_id: string
-          profile_id: string | null
-          status: string
-        }
-        Insert: {
-          academy_id: string
-          claimed_at?: string | null
-          created_at?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          email: string
-          invited_by: string
-          player_id: string
-          profile_id?: string | null
-          status?: string
-        }
-        Update: {
-          academy_id?: string
-          claimed_at?: string | null
-          created_at?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          email?: string
-          invited_by?: string
-          player_id?: string
-          profile_id?: string | null
-          status?: string
-        }
-        Relationships: []
-      }
       academies: {
         Row: {
           block_rsvp_when_overdue: boolean
@@ -403,6 +319,41 @@ export type Database = {
           },
         ]
       }
+      account_emails: {
+        Row: {
+          created_at: string
+          email: string
+          news_opt_in_at: string | null
+          profile_id: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          news_opt_in_at?: string | null
+          profile_id: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          news_opt_in_at?: string | null
+          profile_id?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_emails_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_feeds: {
         Row: {
           created_at: string
@@ -554,6 +505,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channels_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
             referencedColumns: ["id"]
           },
           {
@@ -1445,6 +1403,41 @@ export type Database = {
           },
         ]
       }
+      email_confirmations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          profile_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          profile_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          profile_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_confirmations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_fees: {
         Row: {
           academy_id: string
@@ -1739,6 +1732,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "event_job_helpers_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_job_helpers_job_id_academy_id_fkey"
             columns: ["job_id", "academy_id"]
             isOneToOne: false
@@ -1800,6 +1800,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_jobs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1970,11 +1977,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_photos_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_photos_event_id_academy_id_fkey"
             columns: ["event_id", "academy_id"]
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_photos_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2325,6 +2346,7 @@ export type Database = {
         Row: {
           academy_id: string
           assist_id: string | null
+          client_id: string | null
           created_at: string
           created_by: string | null
           event_id: string
@@ -2339,6 +2361,7 @@ export type Database = {
         Insert: {
           academy_id: string
           assist_id?: string | null
+          client_id?: string | null
           created_at?: string
           created_by?: string | null
           event_id: string
@@ -2353,6 +2376,7 @@ export type Database = {
         Update: {
           academy_id?: string
           assist_id?: string | null
+          client_id?: string | null
           created_at?: string
           created_by?: string | null
           event_id?: string
@@ -3121,6 +3145,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imported_games_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4249,6 +4280,107 @@ export type Database = {
           },
         ]
       }
+      news_consents: {
+        Row: {
+          at: string
+          email: string | null
+          id: number
+          opted_in: boolean
+          profile_id: string
+        }
+        Insert: {
+          at?: string
+          email?: string | null
+          id?: never
+          opted_in: boolean
+          profile_id: string
+        }
+        Update: {
+          at?: string
+          email?: string | null
+          id?: never
+          opted_in?: boolean
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_consents_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notice_emails: {
+        Row: {
+          message_id: string
+          profile_id: string
+          provider_id: string | null
+          sent_at: string
+        }
+        Insert: {
+          message_id: string
+          profile_id: string
+          provider_id?: string | null
+          sent_at?: string
+        }
+        Update: {
+          message_id?: string
+          profile_id?: string
+          provider_id?: string | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_emails_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notice_emails_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notice_reads: {
+        Row: {
+          channel_id: string
+          last_read_at: string
+          profile_id: string
+        }
+        Insert: {
+          channel_id: string
+          last_read_at?: string
+          profile_id: string
+        }
+        Update: {
+          channel_id?: string
+          last_read_at?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_reads_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notice_reads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_queue: {
         Row: {
           academy_id: string
@@ -4445,11 +4577,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payment_promises_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
             foreignKeyName: "payment_promises_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_promises_request_fkey"
+            columns: ["request_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id", "academy_id"]
           },
         ]
       }
@@ -5044,6 +5190,81 @@ export type Database = {
           },
         ]
       }
+      player_logins: {
+        Row: {
+          academy_id: string
+          claimed_at: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          email: string
+          invited_by: string
+          player_id: string
+          profile_id: string | null
+          status: string
+        }
+        Insert: {
+          academy_id: string
+          claimed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email: string
+          invited_by: string
+          player_id: string
+          profile_id?: string | null
+          status?: string
+        }
+        Update: {
+          academy_id?: string
+          claimed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          email?: string
+          invited_by?: string
+          player_id?: string
+          profile_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_logins_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_logins_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_logins_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_logins_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_logins_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_medical: {
         Row: {
           academy_id: string
@@ -5510,10 +5731,10 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_url: string | null
           appearance: string
-          colour_mode: string
+          avatar_url: string | null
           chat_language: string | null
+          colour_mode: string
           created_at: string
           erased_at: string | null
           full_name: string
@@ -5522,10 +5743,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          avatar_url?: string | null
           appearance?: string
-          colour_mode?: string
+          avatar_url?: string | null
           chat_language?: string | null
+          colour_mode?: string
           created_at?: string
           erased_at?: string | null
           full_name?: string
@@ -5534,10 +5755,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          avatar_url?: string | null
           appearance?: string
-          colour_mode?: string
+          avatar_url?: string | null
           chat_language?: string | null
+          colour_mode?: string
           created_at?: string
           erased_at?: string | null
           full_name?: string
@@ -7318,41 +7539,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_player_login: { Args: never; Returns: Json }
-      decide_player_login: {
-        Args: { p_approve: boolean; p_player: string }
-        Returns: Json
-      }
-      end_player_login: { Args: { p_player: string }; Returns: Json }
-      invite_player_login: {
-        Args: { p_email: string; p_player: string }
-        Returns: Json
-      }
-      member_emails: {
-        Args: { p_academy: string }
-        Returns: { email: string; profile_id: string; verified: boolean }[]
-      }
-      my_email: { Args: never; Returns: Json }
-      notice_email_recipients: {
-        Args: { p_message: string }
-        Returns: {
-          competition: string
-          email: string
-          league: string
-          profile_id: string
-          reply_to: string | null
-          standing: string
-        }[]
-      }
-      notices_reach: {
-        Args: { p_channel: string; p_message_ids: string[] }
-        Returns: { message_id: string; seen: number; total: number }[]
-      }
-      set_my_email: {
-        Args: { p_email: string; p_news?: boolean }
-        Returns: Json
-      }
-      set_my_news: { Args: { p_news: boolean }; Returns: Json }
       abandon_round: {
         Args: {
           p_cancel?: boolean
@@ -7627,6 +7813,7 @@ export type Database = {
           url: string
         }[]
       }
+      claim_player_login: { Args: never; Returns: Json }
       claim_referee: { Args: { p_token: string }; Returns: Json }
       claim_sms_escalations: {
         Args: { p_limit?: number }
@@ -7843,6 +8030,10 @@ export type Database = {
         Args: { p_apply: boolean; p_correction: string; p_note?: string }
         Returns: undefined
       }
+      decide_player_login: {
+        Args: { p_approve: boolean; p_player: string }
+        Returns: Json
+      }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
       division_table: { Args: { p_team: string }; Returns: Json }
@@ -7863,6 +8054,7 @@ export type Database = {
         Args: { p_fixture: string; p_note?: string }
         Returns: string
       }
+      end_player_login: { Args: { p_player: string }; Returns: Json }
       enqueue_event_reminders: { Args: never; Returns: number }
       ensure_system_channel: {
         Args: {
@@ -8101,6 +8293,10 @@ export type Database = {
         Returns: Json
       }
       import_screen: { Args: { p_academy?: string }; Returns: Json }
+      invite_player_login: {
+        Args: { p_email: string; p_player: string }
+        Returns: Json
+      }
       is_academy_coach: { Args: { p_academy: string }; Returns: boolean }
       is_team_coach: { Args: { p_team: string }; Returns: boolean }
       kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
@@ -8112,6 +8308,8 @@ export type Database = {
       live_tick: {
         Args: {
           p_assist?: string
+          p_at?: string
+          p_client_id?: string
           p_event: string
           p_kind: string
           p_minute?: number
@@ -8169,8 +8367,8 @@ export type Database = {
         }[]
       }
       match_day_ops: { Args: { p_competition: string }; Returns: Json }
-      match_sheet_view: { Args: { p_fixture: string }; Returns: Json }
       match_photos: { Args: { p_event: string }; Returns: Json }
+      match_sheet_view: { Args: { p_fixture: string }; Returns: Json }
       matchday_videos: { Args: { p_event: string }; Returns: Json }
       member_contact: {
         Args: { p_academy: string; p_profile: string }
@@ -8193,6 +8391,14 @@ export type Database = {
           profile_id: string
           role: Database["public"]["Enums"]["academy_role"]
           teams: string[]
+        }[]
+      }
+      member_emails: {
+        Args: { p_academy: string }
+        Returns: {
+          email: string
+          profile_id: string
+          verified: boolean
         }[]
       }
       mirror_fixture: { Args: { p_fixture: string }; Returns: undefined }
@@ -8233,6 +8439,7 @@ export type Database = {
       }
       my_competition_access: { Args: { p_competition: string }; Returns: Json }
       my_digest_minutes: { Args: never; Returns: number }
+      my_email: { Args: never; Returns: Json }
       my_entries: { Args: { p_competition: string }; Returns: Json }
       my_entry_fees: { Args: { p_competition: string }; Returns: Json }
       my_family: { Args: never; Returns: Json }
@@ -8265,13 +8472,13 @@ export type Database = {
           paid_at: string
           player_id: string
           player_name: string
+          promised_by: string
           request_id: string
           status: string
           team_name: string
           title: string
           voucher_cents: number
           voucher_label: string
-          promised_by: string | null
         }[]
       }
       my_poll_votes: {
@@ -8345,6 +8552,25 @@ export type Database = {
         Args: { p_note: string; p_suspension: string }
         Returns: undefined
       }
+      notice_email_recipients: {
+        Args: { p_message: string }
+        Returns: {
+          competition: string
+          email: string
+          league: string
+          profile_id: string
+          reply_to: string
+          standing: string
+        }[]
+      }
+      notices_reach: {
+        Args: { p_channel: string; p_message_ids: string[] }
+        Returns: {
+          message_id: string
+          seen: number
+          total: number
+        }[]
+      }
       nudge_non_responders: { Args: { p_event: string }; Returns: Json }
       nudge_unregistered: {
         Args: { p_academy: string; p_season: string }
@@ -8395,9 +8621,9 @@ export type Database = {
           paid_cents: number
           player_id: string
           player_name: string
+          promised_by: string
           request_id: string
           title: string
-          promised_by: string | null
         }[]
       }
       overturn_suspension: {
@@ -8413,8 +8639,8 @@ export type Database = {
           paid_at: string
           player_id: string
           player_name: string
+          promised_by: string
           status: string
-          promised_by: string | null
         }[]
       }
       peek_competition_invite: {
@@ -8916,6 +9142,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_my_email: {
+        Args: { p_email: string; p_news?: boolean }
+        Returns: Json
+      }
+      set_my_news: { Args: { p_news: boolean }; Returns: Json }
       set_my_profile: {
         Args: { p_full_name: string; p_phone: string }
         Returns: undefined
@@ -9005,8 +9236,14 @@ export type Database = {
         Args: { p_into: number; p_pitch: string }
         Returns: number
       }
-      stop_helping: { Args: { p_job: string; p_profile?: string }; Returns: Json }
-      store_imported_games: { Args: { p_academy: string; p_rows: Json; p_season: string }; Returns: Json }
+      stop_helping: {
+        Args: { p_job: string; p_profile?: string }
+        Returns: Json
+      }
+      store_imported_games: {
+        Args: { p_academy: string; p_rows: Json; p_season: string }
+        Returns: Json
+      }
       submit_concussion_clearance: {
         Args: { p_concussion: string; p_note?: string; p_path: string }
         Returns: undefined

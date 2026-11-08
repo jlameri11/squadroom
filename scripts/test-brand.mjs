@@ -156,6 +156,12 @@ head('6. In a browser: Black & white (an Appearance choice; club colours are the
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
 const parent = await signInBoth(admin, 'p61400000011@squadroom.invalid')
 if (!parent) { console.log("  could not sign in — the project's auth rate limit, not a failure"); process.exit(2) }
+// Since 0209 the choice lives in the person's profile and wins over the
+// phone's copy, so Black & white is set the way Settings sets it — on the
+// profile, as Sam — and put back exactly afterwards.
+const { data: wasAppearance } = await admin.from('profiles').select('appearance, colour_mode').eq('id', parent.session.user.id).maybeSingle()
+const hasAppearance = Boolean(wasAppearance && 'appearance' in wasAppearance)
+if (hasAppearance) await parent.client.from('profiles').update({ appearance: 'mono', colour_mode: 'system' }).eq('id', parent.session.user.id)
 const ref = process.env.NEXT_PUBLIC_SUPABASE_URL.split('//')[1].split('.')[0]
 const cookie = { name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(parent.session)).toString('base64'), domain: 'localhost', path: '/' }
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
@@ -194,5 +200,6 @@ try {
   }
 } finally {
   await browser.close()
+  if (hasAppearance) await admin.from('profiles').update({ appearance: wasAppearance.appearance, colour_mode: wasAppearance.colour_mode }).eq('id', parent.session.user.id)
 }
 console.log(process.exitCode ? '' : '\n  \x1b[32mthe brand holds: white on #101012, colour only where it means something\x1b[0m\n')

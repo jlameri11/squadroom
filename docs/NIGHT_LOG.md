@@ -529,6 +529,14 @@ dev server with everything above. Two not passing: `rls` (the token) and
 Sunday evening, after the list had rightly let them go — fixed to follow
 the clock. All else green, the demo guard quiet.
 
+**9 Nov (Mon), the token arrived.** A read-only call to the management
+API answered 200 with squadroom-dev the only project visible; `npm run
+db:migrate` then applied 0044a and 0208–0228 to squadroom-dev in one go,
+all 22 clean, in numbered order, each in its own transaction. The types
+were regenerated from the real schema (114 tables, 304 functions) and the
+app type-checks against them. Full run #21, with the demo guard on,
+followed — see the deploy below for its result.
+
 **13. — decided.** Referee payouts through Stripe are **parked** (Joey, 3
 Nov, evening): no Stripe payouts and no bank files for referees; tracking
 only — who refereed, the fee owed, the treasurer marks the run paid. The
