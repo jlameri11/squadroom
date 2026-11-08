@@ -155,6 +155,15 @@ head('4. The weekend card renders, and covers the right two days')
   sat.setHours(9, 30, 0, 0)
   const sun = new Date(sat)
   sun.setDate(sat.getDate() + 1)
+  // The list the card reads keeps a game until three hours after kick-off.
+  // On a weekend, then, each game goes after now where its day still
+  // allows it, and a day already gone is not expected (it failed every
+  // Sunday evening, when both 9:30 games had rightly left the list).
+  const soon = new Date(Date.now() + 60 * 60e3)
+  if (sat < soon && soon.getDay() === 6) sat.setTime(soon.getTime())
+  if (sun < soon && soon.getDay() === 0) sun.setTime(soon.getTime())
+  const listedFrom = new Date(Date.now() - 3 * 3600e3)
+  const expected = [sat, sun].filter((t) => t >= listedFrom).length
   // And one well outside the weekend, which must NOT appear.
   const far = new Date(sat)
   far.setDate(sat.getDate() + 9)
@@ -201,9 +210,9 @@ head('4. The weekend card renders, and covers the right two days')
     const t = new Date(e.starts_at)
     return t >= start && t < monday && e.title?.startsWith(TAG)
   })
-  inWindow.length === 2
-    ? ok('the Saturday and Sunday games are in the window')
-    : bad(`${inWindow.length} of ours in the weekend window`)
+  inWindow.length === expected
+    ? ok(expected === 2 ? 'the Saturday and Sunday games are in the window' : `the weekend's games still to play are in the window (${expected} of 2 — the rest are over)`)
+    : bad(`${inWindow.length} of ours in the weekend window, expected ${expected}`)
   inWindow.some((e) => e.title.endsWith('far'))
     ? bad('a game nine days away is in the weekend window')
     : ok('and the one nine days out is not')
