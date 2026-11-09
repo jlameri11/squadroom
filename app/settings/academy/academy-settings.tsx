@@ -20,6 +20,7 @@ export function AcademySettings({
   blockRsvpWhenOverdue = false,
   overdueGraceDays = 14,
   contactEmail,
+  twoStepRequired,
 }: {
   academyId: string
   dmPolicy: string
@@ -37,6 +38,8 @@ export function AcademySettings({
    * Undefined until the column exists, and then the section is not shown.
    */
   contactEmail?: string | null
+  /** 0231: whether the club requires two-step sign-in of its owners and admins; undefined until the column exists. */
+  twoStepRequired?: boolean
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -79,6 +82,17 @@ export function AcademySettings({
   })()
   const ladderDirty = JSON.stringify(ladder) !== JSON.stringify(siblingDiscountBps)
 
+  // S-07 (0231): two-step sign-in for the people who run the club — one way.
+  const [requiring, setRequiring] = useState(false)
+  async function requireTwoStep() {
+    setBusy(true)
+    setError(null)
+    const { error } = await createClient().rpc('require_two_step', { p_academy: academyId })
+    setBusy(false)
+    setRequiring(false)
+    if (error) return setError(error.message)
+    router.refresh()
+  }
   async function update(patch: Patch) {
     setBusy(true)
     setError(null)
@@ -92,6 +106,37 @@ export function AcademySettings({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {error && <p className="text-sm ">{error}</p>}
+      {twoStepRequired !== undefined && (
+        <section data-two-step-required={twoStepRequired ? 'on' : 'off'}>
+          <h2 className="font-semibold">Two-step sign-in for owners and admins</h2>
+          {twoStepRequired ? (
+            <p className="mt-1 text-sm text-ink-2">
+              Required. Everyone who runs this club signs in with their password and a six-digit code from an authenticator app;
+              an owner or admin without one is asked to set it up before anything else. Coaches and families may choose.
+            </p>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-ink-2">
+                Not yet. New clubs on Squadroom require it from day one; this club was here before that. When you turn it on,
+                every owner and admin without an authenticator app meets a set-up screen on their next open, and has no admin
+                powers until they finish it — so tell them first. It cannot be turned off again.
+              </p>
+              {requiring ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button onClick={requireTwoStep} disabled={busy} className="min-w-fit rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-two-step-require-confirm>
+                    {busy ? 'Turning it on…' : 'Yes, require it from now'}
+                  </button>
+                  <button onClick={() => setRequiring(false)} className="min-w-fit rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>Not yet</button>
+                </div>
+              ) : (
+                <button onClick={() => setRequiring(true)} disabled={busy} className="mt-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50" style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }} data-two-step-require>
+                  Require two-step sign-in
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       {contactEmail !== undefined && (
         <section data-contact-email>

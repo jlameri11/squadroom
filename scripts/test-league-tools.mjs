@@ -63,7 +63,7 @@ const mkUser = async (email, name) => {
 const VISITOR = await mkUser(VISITOR_EMAIL, 'Vera Visitor')
 const REF1 = await mkUser(REF1_EMAIL, 'Rita Referee')
 const REF2 = await mkUser(REF2_EMAIL, 'Lenny Learner')
-const { data: club } = await admin.from('academies').insert({ name: `${TAG} FC`, slug: 'toolstest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
+const { data: club } = await admin.from('academies').insert({ two_step_required: false, name: `${TAG} FC`, slug: 'toolstest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
 await admin.from('academy_members').insert({ academy_id: club.id, profile_id: VISITOR, role: 'owner', status: 'active' })
 const { data: vteam } = await admin.from('teams').insert({ academy_id: club.id, name: `${TAG} U8`, age_group: 'U8', season: '2026', status: 'active' }).select('id').single()
 const { data: vkids } = await admin.from('players').insert([

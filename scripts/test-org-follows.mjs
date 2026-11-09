@@ -35,7 +35,7 @@ async function tidy() {
 }
 await tidy()
 
-const { data: aaa, error: aaaErr } = await admin.from('academies').insert({ name: AAA_NAME, slug: 'orgfollow-aaa', type: 'academy', primary_colour: '#333333' }).select('id').single()
+const { data: aaa, error: aaaErr } = await admin.from('academies').insert({ two_step_required: false, name: AAA_NAME, slug: 'orgfollow-aaa', type: 'academy', primary_colour: '#333333' }).select('id').single()
 if (aaaErr) { console.log(`  could not make the throwaway organisation: ${aaaErr.message}`); process.exit(1) }
 await admin.from('academy_members').insert({ academy_id: aaa.id, profile_id: OWNER, role: 'owner', status: 'active' })
 

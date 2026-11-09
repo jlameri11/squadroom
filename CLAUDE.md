@@ -547,8 +547,16 @@ one and is meant to reach hundreds of academies.
   `app_private.two_step_ok()`, called by `academy_role_of`, `is_team_coach`,
   `league_roles_of` and `is_platform_admin`, so any new role check that
   reads `academy_members.role` itself bypasses it: go through the helpers.
-  Not "mandatory" for staff who never turned it on — a date for Joey
-  (NEEDS JOEY #22). TOTP codes are accepted once per thirty-second period.
+  **Compulsory where the organisation requires it** (0231, Joey 9 Nov
+  2026): `academies.two_step_required` — true for every organisation made
+  from then, false for the ones before until an owner turns it on (one
+  way). There, owners, admins and league staff have their powers only at
+  AAL2 (`two_step_ok_for`), and `two-step-wall.tsx` walks the unenrolled
+  through enrolling before anything else. Coaches keep their own choice;
+  families are untouched. A test that signs a NEW owner up must enrol them
+  (`enrolTwoStep` in `_auth.mjs`); one that makes a club by hand marks it
+  `two_step_required: false`; Joey's real account is never enrolled by a
+  test. TOTP codes are accepted once per thirty-second period.
   The role helpers are PL/pgSQL on purpose (SQL ones are re-planned on
   every call; 0224 measured 44 µs vs 6 µs a staff check).
 - **Every control can be read aloud and hit with a thumb** (X-10, 4 Nov

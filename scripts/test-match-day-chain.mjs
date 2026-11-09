@@ -63,7 +63,7 @@ const mkUser = async (email, name) => {
 const VISITOR = await mkUser(VISITOR_EMAIL, 'Vera Visitor')
 const COACH = await mkUser(COACH_EMAIL, 'Carl Coach')
 const REF = await mkUser(REF_EMAIL, 'Rita Referee')
-const { data: club } = await admin.from('academies').insert({ name: `${TAG} FC`, slug: 'chaintest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
+const { data: club } = await admin.from('academies').insert({ two_step_required: false, name: `${TAG} FC`, slug: 'chaintest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
 // The owner first; then the coach's clearance, then the coach — 0120 refuses
 // a coach without one, and a multi-row insert fails as a whole.
 const { error: ownerErr } = await admin.from('academy_members').insert({ academy_id: club.id, profile_id: VISITOR, role: 'owner', status: 'active' })

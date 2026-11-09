@@ -12,6 +12,7 @@
 // there — there is none — but that nothing ERRORS and that each screen says
 // something useful instead of rendering a void.
 import { createClient } from '@supabase/supabase-js'
+import { enrolTwoStep } from './_auth.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -79,10 +80,10 @@ try {
     await cleanUp()
     process.exit(2)
   }
-  const me = createClient(URL_, PUB, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${s.session.access_token}` } },
-  })
+  // A client that HOLDS the session (not a bearer header): a new club's
+  // owner must set up two-step sign-in (0231), and enrolling needs one.
+  const me = createClient(URL_, PUB, { auth: { persistSession: false, autoRefreshToken: false } })
+  await me.auth.setSession({ access_token: s.session.access_token, refresh_token: s.session.refresh_token })
 
   // The home screen's contract for somebody in no academy: `academy: null`,
   // which is what sends them to /start. An ERROR here, or a null payload,
@@ -108,6 +109,11 @@ try {
     await cleanUp()
     process.exit(1)
   }
+  // 0231: a club made today requires two-step sign-in of its owners. The
+  // founder sets it up the way the wall has them do it; the session is then
+  // fully proven and every owner's power below is theirs.
+  await enrolTwoStep(me)
+  ok('the founder sets up two-step sign-in, as every new club\'s owner must (0231)')
   const { data: mine } = await me.from('academies').select('id, name, type').limit(1).single()
   academyId = mine.id
   ok(`"${mine.name}" created as a ${mine.type}`)

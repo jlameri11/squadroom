@@ -56,7 +56,7 @@ const { error: memErr } = await admin.from('academy_members').insert({ academy_i
 if (memErr) console.log('  (official membership:', memErr.message + ')')
 const { data: vis } = await admin.auth.admin.createUser({ email: VISITOR_EMAIL, email_confirm: true })
 await admin.from('profiles').upsert({ id: vis.user.id, full_name: 'Vic Visitor' })
-const { data: club } = await admin.from('academies').insert({ name: `${TAG} FC`, slug: 'lpubtest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
+const { data: club } = await admin.from('academies').insert({ two_step_required: false, name: `${TAG} FC`, slug: 'lpubtest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
 await admin.from('academy_members').insert({ academy_id: club.id, profile_id: vis.user.id, role: 'owner', status: 'active' })
 const { data: vteam } = await admin.from('teams').insert({ academy_id: club.id, name: `${TAG} U8`, age_group: 'U8', season: '2026', status: 'active' }).select('id').single()
 await admin.from('players').insert([1, 2].map((i) => ({ academy_id: club.id, team_id: vteam.id, full_name: `Visitor ${i} ${TAG}`, dob: '2018-01-01' })))

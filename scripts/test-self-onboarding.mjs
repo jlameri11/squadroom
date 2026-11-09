@@ -6,7 +6,7 @@
 // with every step read back from the data and the clock showing it took
 // well under thirty minutes. Nobody from Squadroom in the loop.
 import { createClient } from '@supabase/supabase-js'
-import { signInBoth } from './_auth.mjs'
+import { signInBoth, enrolTwoStep } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -52,6 +52,14 @@ const parent = parentSigned.client
 
 head('1. Found the club; the checklist starts at nothing')
 const { data: academyId, error: foundErr } = await me.rpc('create_academy', { p_name: `${TAG} Rovers`, p_type: 'club' })
+// 0231: a club made today requires two-step sign-in of its owners; the
+// founder sets it up (as the wall has them), and the proven session is the
+// one the rest of this walk uses.
+if (!foundErr) {
+  await enrolTwoStep(me, FOUNDER_EMAIL)
+  const { data: proven } = await me.auth.getSession()
+  if (proven?.session) founder.session = proven.session
+}
 foundErr ? bad(`found: ${foundErr.message}`) : ok('a stranger founds a club and owns it')
 const progress = async () => (await me.rpc('setup_progress', { p_academy: academyId })).data
 {

@@ -18,6 +18,7 @@
 // `admin` is the caller's own service-role client, so this file holds no key.
 import { createClient } from '@supabase/supabase-js'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createHmac } from 'node:crypto'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -87,4 +88,50 @@ export async function signInAs(admin, profileId) {
 
 function pick(s) {
   return { access_token: s.access_token, refresh_token: s.refresh_token, expires_at: s.expires_at }
+}
+
+/** Keep a session for an email, so later suites reuse it (an AAL2 one included). */
+export function rememberSession(email, session) {
+  const cache = readCache()
+  cache[email] = pick(session)
+  writeCache(cache)
+}
+
+/** RFC 6238, six digits, thirty seconds — what every authenticator app does. */
+export function totp(secretBase32, at = Date.now()) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  let bits = ''
+  for (const c of secretBase32.replace(/=+$/, '').toUpperCase()) bits += alphabet.indexOf(c).toString(2).padStart(5, '0')
+  const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)))
+  const counter = Buffer.alloc(8)
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 1000 / 30)))
+  const h = createHmac('sha1', key).update(counter).digest()
+  const o = h[h.length - 1] & 0xf
+  const code = ((h[o] & 0x7f) << 24 | h[o + 1] << 16 | h[o + 2] << 8 | h[o + 3]) % 1_000_000
+  return String(code).padStart(6, '0')
+}
+
+/**
+ * Two-step sign-in, the way a new club's owner does it (0231): enrol an
+ * authenticator factor on this client's account and verify it with a code
+ * computed here, so the client's session is fully proven (AAL2). Returns
+ * the secret, or null when a verified factor is already there (its secret
+ * is not knowable). `email`, when given, keeps the proven session for later
+ * suites. The client must hold a session of its own (signInBoth gives one).
+ */
+export async function enrolTwoStep(client, email = null) {
+  const { data: factors } = await client.auth.mfa.listFactors()
+  for (const f of factors?.all ?? []) if (f.factor_type === 'totp' && f.status !== 'verified') await client.auth.mfa.unenroll({ factorId: f.id })
+  if ((factors?.totp ?? []).some((f) => f.status === 'verified')) return null
+  const { data: en, error } = await client.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'test' })
+  if (error || !en) throw new Error(`could not enrol two-step: ${error?.message ?? 'no factor'}`)
+  const { data: ch, error: chErr } = await client.auth.mfa.challenge({ factorId: en.id })
+  if (chErr || !ch) throw new Error(`could not challenge two-step: ${chErr?.message ?? 'no challenge'}`)
+  const { error: vErr } = await client.auth.mfa.verify({ factorId: en.id, challengeId: ch.id, code: totp(en.totp.secret) })
+  if (vErr) throw new Error(`could not verify two-step: ${vErr.message}`)
+  if (email) {
+    const { data: s } = await client.auth.getSession()
+    if (s?.session) rememberSession(email, s.session)
+  }
+  return en.totp.secret
 }

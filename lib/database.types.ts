@@ -38,6 +38,7 @@ export type Database = {
           sibling_discount_bps: number[]
           slug: string
           timezone: string
+          two_step_required: boolean
           type: Database["public"]["Enums"]["org_type"]
           updated_at: string
         }
@@ -64,6 +65,7 @@ export type Database = {
           sibling_discount_bps?: number[]
           slug: string
           timezone?: string
+          two_step_required?: boolean
           type?: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
@@ -90,6 +92,7 @@ export type Database = {
           sibling_discount_bps?: number[]
           slug?: string
           timezone?: string
+          two_step_required?: boolean
           type?: Database["public"]["Enums"]["org_type"]
           updated_at?: string
         }
@@ -1048,7 +1051,15 @@ export type Database = {
           levy_cents?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "competition_levies_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competition_referee_fees: {
         Row: {
@@ -3672,7 +3683,29 @@ export type Database = {
           paid_on?: string
           recorded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "levy_payments_club_academy_id_fkey"
+            columns: ["club_academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "levy_payments_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "levy_payments_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       link_previews: {
         Row: {
@@ -8896,7 +8929,17 @@ export type Database = {
         Args: { p_note?: string; p_occurred_on: string; p_player: string }
         Returns: string
       }
-      record_levy_payment: { Args: { p_amount_cents: number; p_club: string; p_competition: string; p_method?: string; p_note?: string; p_paid_on?: string }; Returns: Json }
+      record_levy_payment: {
+        Args: {
+          p_amount_cents: number
+          p_club: string
+          p_competition: string
+          p_method?: string
+          p_note?: string
+          p_paid_on?: string
+        }
+        Returns: Json
+      }
       record_match_event: {
         Args: {
           p_code?: string
@@ -9018,6 +9061,7 @@ export type Database = {
         }
         Returns: string
       }
+      require_two_step: { Args: { p_academy: string }; Returns: boolean }
       reschedule_fixture: {
         Args: {
           p_field?: string
@@ -9153,7 +9197,15 @@ export type Database = {
         }
         Returns: undefined
       }
-      set_competition_levy: { Args: { p_competition: string; p_division: string; p_instructions?: string; p_levy_cents: number }; Returns: Json }
+      set_competition_levy: {
+        Args: {
+          p_competition: string
+          p_division: string
+          p_instructions?: string
+          p_levy_cents: number
+        }
+        Returns: Json
+      }
       set_consent: {
         Args: { p_accepted: boolean; p_document: string; p_player: string }
         Returns: undefined
@@ -9360,6 +9412,7 @@ export type Database = {
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
       two_step_needed: { Args: never; Returns: boolean }
+      two_step_status: { Args: never; Returns: Json }
       undo_last_tick: { Args: { p_event: string }; Returns: Json }
       undo_levy_payment: { Args: { p_payment: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }

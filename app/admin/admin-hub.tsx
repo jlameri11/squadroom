@@ -9,17 +9,25 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 
 type Counts = { pending: number; pendingRegistrations: number; pendingSignups: number }
 
-/** Whether this person has two-step sign-in on (S-07): the club's admins are asked to. */
+/**
+ * Whether this person has two-step sign-in on (S-07): the club's admins are
+ * asked to. Asked again whenever the auth state changes — the wall (0231)
+ * enrols a factor over this very screen, and the card must not go on asking.
+ */
 function useTwoStep() {
   const [on, setOn] = useState<boolean | null>(null)
   useEffect(() => {
     let live = true
-    ;(async () => {
-      const { data } = await createClient().auth.mfa.listFactors()
+    const supabase = createClient()
+    const check = async () => {
+      const { data } = await supabase.auth.mfa.listFactors()
       if (live) setOn(Boolean(data?.totp?.some((f) => f.status === 'verified')))
-    })()
+    }
+    void check()
+    const { data: sub } = supabase.auth.onAuthStateChange(() => void check())
     return () => {
       live = false
+      sub.subscription.unsubscribe()
     }
   }, [])
   return on

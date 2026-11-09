@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { enrolTwoStep } from './_auth.mjs'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
@@ -35,7 +36,10 @@ async function sessionFor(email){
     process.exit(2)
   }
   const { data:s } = await anon.auth.verifyOtp({token_hash:l.properties.hashed_token, type:'email'})
-  return createClient(URL, PUB, {auth:{persistSession:false}, global:{headers:{Authorization:`Bearer ${s.session.access_token}`}}})
+  // A client that holds its session: a new organiser must set up two-step (0231).
+  const c = createClient(URL, PUB, {auth:{persistSession:false, autoRefreshToken:false}})
+  await c.auth.setSession({ access_token: s.session.access_token, refresh_token: s.session.refresh_token })
+  return c
 }
 
 // clean
@@ -46,6 +50,8 @@ const magicUid = await userFor('promoter@magicgroup.test','Magic Promoter')
 const magic = await sessionFor('promoter@magicgroup.test')
 const { data: magicOrg, error: e1 } = await magic.rpc('create_academy', { p_name:'Magic Group', p_type:'league' })
 e1 ? bad(e1.message) : ok('Magic Group created as a league')
+// 0231: a new league requires two-step sign-in of its staff; the promoter sets it up.
+if (!e1) await enrolTwoStep(magic)
 
 const { data: comp, error: e2 } = await magic.from('competitions')
   .insert({ organiser_id: magicOrg, name:'SPL Season 4', type:'season', season:'2027',
@@ -85,6 +91,9 @@ peek.data?.[0]?.competition_name==='SPL Season 4'
 await userFor('owner@jogabonito.test','Joga Owner')
 const joey = await sessionFor('owner@jogabonito.test')
 const { data: jogaOrg } = await joey.rpc('create_academy', { p_name:'Joga Bonito FC', p_type:'academy' })
+// Joey's own account is never enrolled by a test: this club stands in for one
+// that signed up before 0231, so it is grandfathered as those are.
+await admin.from('academies').update({ two_step_required: false }).eq('id', jogaOrg)
 const { data: jogaTeam } = await joey.from('teams')
   .insert({ academy_id: jogaOrg, name:'U8s', age_group:'U8', season:'2027' }).select('id').single()
 const { error: e5 } = await joey.rpc('claim_competition_invite', {

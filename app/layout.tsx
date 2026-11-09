@@ -6,6 +6,7 @@ import { TabBar } from '@/components/app-shell'
 import { OfflineBanner } from '@/components/offline-banner'
 import { EmailGate } from '@/components/email-gate'
 import { TwoStepGate } from '@/components/two-step-gate'
+import { TwoStepWall } from '@/components/two-step-wall'
 import { TEXT_SIZE_SCRIPT } from '@/lib/text-size'
 import { THEME_SCRIPT } from '@/lib/brand/theme-script'
 import { ThemeController } from '@/components/theme-controller'
@@ -80,6 +81,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         {/* Above every page: somebody with two-step sign-in on sees nothing
             until the second step is done (S-07). Renders nothing otherwise. */}
         <TwoStepGate />
+        {/* 0231: an owner, admin or league staff member at an organisation that requires two-step, not yet enrolled, sees nothing else until they are. */}
+        <TwoStepWall />
         {/* Every account has an email: one screen, once, for an account
             without one (Joey, 5 Nov 2026; 0214). Renders nothing otherwise. */}
         <EmailGate />

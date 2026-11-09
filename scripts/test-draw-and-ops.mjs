@@ -50,7 +50,7 @@ await cleanup()
 const { data: created } = await admin.auth.admin.createUser({ email: VISITOR_EMAIL, email_confirm: true })
 const VISITOR = created.user.id
 await admin.from('profiles').upsert({ id: VISITOR, full_name: 'Vera Visitor' })
-const { data: club } = await admin.from('academies').insert({ name: `${TAG} FC`, slug: 'drawops-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
+const { data: club } = await admin.from('academies').insert({ two_step_required: false, name: `${TAG} FC`, slug: 'drawops-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
 await admin.from('academy_members').insert({ academy_id: club.id, profile_id: VISITOR, role: 'owner', status: 'active' })
 const { data: vteam } = await admin.from('teams').insert({ academy_id: club.id, name: `${TAG} U8`, age_group: 'U8', season: '2026', status: 'active' }).select('id').single()
 

@@ -98,6 +98,7 @@ export function AcademyLoader() {
           blockRsvpWhenOverdue={academy.block_rsvp_when_overdue}
           overdueGraceDays={academy.overdue_grace_days}
           contactEmail={academy.contact_email === undefined ? undefined : academy.contact_email}
+          twoStepRequired={(academy as { two_step_required?: boolean }).two_step_required}
         />
         </>
       ) : (

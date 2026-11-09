@@ -2591,6 +2591,103 @@ begin
     insert into rls_results values (166, 'only the organiser records or undoes a club''s payment, and both sides see the balance move', r166);
   end;
 
+  -- 0231. Two-step is compulsory for those who run things. Rolled back: a
+  -- new club (requires it by default) with COACH as owner and MARCUS as a
+  -- squad's coach; a new league with MARCUS as competition manager.
+  declare
+    v_new uuid; v_lg uuid; v_tm uuid; v_st jsonb;
+    b_default boolean; b_nrifa boolean; b_parent boolean; b_after boolean;
+    s_none boolean; s_factor boolean; s_aal2 boolean; c_coach boolean; l_weak int; l_strong int; g_sam boolean;
+    r167 text; r168 text; r169 text;
+  begin
+    begin
+      insert into public.academies (name, slug, type, primary_colour) values ('RLS 167 FC', 'rls-167-fc', 'academy', '#333333') returning id into v_new;
+      insert into public.academies (name, slug, type, primary_colour) values ('RLS 169 League', 'rls-169-league', 'league', '#333333') returning id into v_lg;
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (v_new, COACH, 'wwcc', 'RLS167A', 'cleared', current_date + 300, COACH), (v_new, MARCUS, 'wwcc', 'RLS167B', 'cleared', current_date + 300, COACH)
+      on conflict do nothing;
+      insert into public.academy_members (academy_id, profile_id, role, status) values (v_new, COACH, 'owner', 'active'), (v_new, MARCUS, 'coach', 'active');
+      insert into public.teams (academy_id, name, age_group, season, status, created_by) values (v_new, 'RLS 167 U9', 'U9', '2026', 'active', COACH) returning id into v_tm;
+      insert into public.team_members (academy_id, team_id, profile_id, role) values (v_new, v_tm, MARCUS, 'coach');
+      insert into public.league_roles (academy_id, profile_id, role) values (v_lg, MARCUS, 'competition_manager');
+
+      -- 167. New organisations require it; the ones that exist do not until an
+      -- owner turns it on — one way, and it bites at once.
+      select two_step_required into b_default from public.academies where id = v_new;
+      select two_step_required into b_nrifa from public.academies where id = ACAD_A;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      b_parent := false;
+      begin perform public.require_two_step(ACAD_A); exception when others then b_parent := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      perform public.require_two_step(ACAD_A);
+      b_after := coalesce(app_private.is_academy_staff(ACAD_A), false);
+      v_st := public.two_step_status();
+      execute 'reset role';
+      r167 := case when b_default and not b_nrifa and b_parent and not b_after
+                         and (v_st ->> 'required')::boolean and not (v_st ->> 'enrolled')::boolean
+                    then 'PASS'
+                    else 'FAIL (new requires '||b_default||', NRIFA before '||b_nrifa||', parent refused '||b_parent||', owner still staff after '||b_after||', status '||coalesce(v_st::text, 'null')||')' end;
+      update public.academies set two_step_required = false where id = ACAD_A;
+
+      -- 168. At the new club: its owner has no powers without an authenticator
+      -- app, none with one on a password alone, all of them with both steps;
+      -- its coach, with nothing enrolled, still coaches.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      s_none := coalesce(app_private.is_academy_staff(v_new), false);
+      execute 'reset role';
+      insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at)
+      values (gen_random_uuid(), COACH, 'rls-probe-168', 'totp', 'verified', now(), now());
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      s_factor := coalesce(app_private.is_academy_staff(v_new), false);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated','aal','aal2')::text, true);
+      execute 'set local role authenticated';
+      s_aal2 := coalesce(app_private.is_academy_staff(v_new), false);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      c_coach := coalesce(app_private.is_team_coach(v_tm), false);
+      execute 'reset role';
+      r168 := case when not s_none and not s_factor and s_aal2 and c_coach then 'PASS'
+                   else 'FAIL (no app '||s_none||', password only '||s_factor||', both steps '||s_aal2||', the coach still coaches '||c_coach||')' end;
+
+      -- 169. League staff at a league that requires it, the same way; a
+      -- family is untouched.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      select cardinality(app_private.league_roles_of(v_lg)) into l_weak;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated','aal','aal2')::text, true);
+      execute 'set local role authenticated';
+      select cardinality(app_private.league_roles_of(v_lg)) into l_strong;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      g_sam := coalesce(app_private.is_guardian_of('00000000-0000-0000-0000-0000000e0001'), false)
+               and not (public.two_step_status() ->> 'required')::boolean;
+      execute 'reset role';
+      r169 := case when l_weak = 0 and l_strong = 1 and g_sam then 'PASS'
+                   else 'FAIL (league roles '||l_weak||'/'||l_strong||', Sam untouched and not required '||g_sam||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r167 := coalesce(r167, 'FAIL (stopped: '||sqlerrm||')');
+        r168 := coalesce(r168, 'FAIL (stopped: '||sqlerrm||')');
+        r169 := coalesce(r169, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (167, 'a new organisation requires two-step; an existing one does not until its owner turns it on, one way, and it bites at once', r167);
+    insert into rls_results values (168, 'where required, an owner has no powers without an authenticator app or with a password alone, all of them with both steps; a coach still coaches', r168);
+    insert into rls_results values (169, 'league staff at a league that requires it need both steps; a family is untouched', r169);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
