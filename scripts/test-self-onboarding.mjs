@@ -52,9 +52,10 @@ const parent = parentSigned.client
 
 head('1. Found the club; the checklist starts at nothing')
 const { data: academyId, error: foundErr } = await me.rpc('create_academy', { p_name: `${TAG} Rovers`, p_type: 'club' })
-// 0231: a club made today requires two-step sign-in of its owners; the
-// founder sets it up (as the wall has them), and the proven session is the
-// one the rest of this walk uses.
+// 0231/0232: a club made today requires two-step sign-in of its owners; the
+// founder proves the second step (the optional authenticator route — the
+// wall's default, a code by text, is test-two-step's), and the proven
+// session is the one the rest of this walk uses.
 if (!foundErr) {
   await enrolTwoStep(me, FOUNDER_EMAIL)
   const { data: proven } = await me.auth.getSession()

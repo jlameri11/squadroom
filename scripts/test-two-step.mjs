@@ -1,18 +1,23 @@
 // Run: node --env-file=.env.local scripts/test-two-step.mjs
+//   (needs the app running — npm run dev, or serve:test)
 //
-// S-07, both halves. A throwaway club owner — a club made today, which
-// requires two-step sign-in of its owners (0231) — opens the app and meets
-// the WALL: nothing of the app until an authenticator app is set up. They
-// set it up there (a real TOTP code computed here), the wall lifts, and
-// their powers are theirs. A fresh password-only session is then stopped by
-// the 0224 gate until the six digits are typed; the database refuses a
-// password-only session staff work (2b); Settings turns it off again (and
-// the wall would be back). The throwaway person and club are removed at the
-// end.
+// S-07 as Joey changed it (9 Nov 2026; 0231 + 0232): no authenticator apps
+// needed. A throwaway club made today requires two-step sign-in of its
+// owners. Its owner — a placeholder account, so the code comes to the screen
+// instead of a text — opens the app and meets the WALL: the six digits, with
+// "Trust this device for 30 days". With a password alone the database
+// refuses them an owner's powers; a wrong code is refused; the right code
+// lifts the wall and the powers are theirs. A fresh sign-in on the same
+// device meets no wall; on another device the wall is back; when the
+// device's trust lapses, back again. The club's coach is never asked. Codes
+// are held to one a minute and five wrong tries. An authenticator app stays
+// an optional choice (0224's gate). The throwaway people and club are
+// removed at the end.
 import { createClient } from '@supabase/supabase-js'
-import { createHmac } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 import puppeteer from 'puppeteer-core'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { sessionIdOf, totp } from './_auth.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -23,194 +28,255 @@ const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/M
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m) => { console.log(`  \x1b[31m✗\x1b[0m ${m}`); process.exitCode = 1 }
 const head = (m) => console.log(`\n${m}`)
-const EMAIL = 'twostep-owner@squadroom.invalid'
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const OWNER_EMAIL = 'twostep-owner@squadroom.invalid'
+const COACH_EMAIL = 'twostep-coach@squadroom.invalid'
 const SLUG = 'twostep-zzz'
+// At least 32 characters, like the token the wall makes (lib/two-step/device.ts) — a shorter one is replaced.
+const DEVICE = 'test-device-' + randomBytes(16).toString('hex')
+const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 
-// RFC 6238, six digits, thirty seconds — what every authenticator app does.
-function totp(secretBase32, at = Date.now()) {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
-  let bits = ''
-  for (const c of secretBase32.replace(/=+$/, '').toUpperCase()) bits += alphabet.indexOf(c).toString(2).padStart(5, '0')
-  const key = Buffer.from(bits.match(/.{8}/g).map((b) => parseInt(b, 2)))
-  const counter = Buffer.alloc(8)
-  counter.writeBigUInt64BE(BigInt(Math.floor(at / 1000 / 30)))
-  const h = createHmac('sha1', key).update(counter).digest()
-  const o = h[h.length - 1] & 0xf
-  const code = ((h[o] & 0x7f) << 24 | h[o + 1] << 16 | h[o + 2] << 8 | h[o + 3]) % 1_000_000
-  return String(code).padStart(6, '0')
+const { error: no0232 } = await admin.from('two_step_passes').select('session_id').limit(1)
+if (no0232) {
+  console.log('  \x1b[2m… waiting for 0232 on squadroom-dev — test-rls 170–173 prove it locally meanwhile\x1b[0m')
+  process.exit(0)
 }
 
 // A session straight from a magic link: password-strength only (AAL1).
-async function freshSession() {
-  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email: EMAIL })
+async function freshSession(email) {
+  const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
   const client = createClient(URL_, PUB, { auth: { persistSession: false, autoRefreshToken: false } })
   const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
   return data?.session ? { client, session: data.session } : null
 }
 const cookieFor = (session) => ({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(session)).toString('base64'), domain: 'localhost', path: '/' })
+const daysFromNow = (iso) => (new Date(iso).getTime() - Date.now()) / 864e5
 
 async function tidy() {
   const { data: orgs } = await admin.from('academies').select('id').eq('slug', SLUG)
   for (const o of orgs ?? []) await admin.from('academies').delete().eq('id', o.id)
   const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  const u = users?.users?.find((x) => x.email === EMAIL)
-  if (u) await admin.auth.admin.deleteUser(u.id)
+  for (const email of [OWNER_EMAIL, COACH_EMAIL]) {
+    const u = users?.users?.find((x) => x.email === email)
+    if (u) await admin.auth.admin.deleteUser(u.id)
+  }
 }
 await tidy()
-const { data: made } = await admin.auth.admin.createUser({ email: EMAIL, email_confirm: true })
-await admin.from('profiles').upsert({ id: made.user.id, full_name: 'Tess Twostep' })
-// Every account has an email (0214): a sign-up records one, and an account
-// without one meets the email gate on every screen — which, once the gate
-// worked in development, sat over the two-step gate and took its taps.
-await admin.from('account_emails').insert({ profile_id: made.user.id, email: 'tess.twostep@squadroom-demo.test', verified_at: new Date().toISOString() }).then(() => null, () => null)
-const { data: org } = await admin.from('academies').insert({ name: 'ZZZ Two Step Club', slug: SLUG, type: 'academy', primary_colour: '#333333' }).select('id').single()
-await admin.from('academy_members').insert({ academy_id: org.id, profile_id: made.user.id, role: 'owner', status: 'active' })
+const { data: madeOwner } = await admin.auth.admin.createUser({ email: OWNER_EMAIL, email_confirm: true })
+const { data: madeCoach } = await admin.auth.admin.createUser({ email: COACH_EMAIL, email_confirm: true })
+const OWNER = madeOwner.user.id
+const COACH = madeCoach.user.id
+await admin.from('profiles').upsert([{ id: OWNER, full_name: 'Tess Twostep' }, { id: COACH, full_name: 'Kit Coach' }])
+// Every account has an email (0214); without one the email gate sits over the wall.
+await admin.from('account_emails').insert([
+  { profile_id: OWNER, email: 'tess.twostep@squadroom-demo.test', verified_at: new Date().toISOString() },
+  { profile_id: COACH, email: 'kit.coach@squadroom-demo.test', verified_at: new Date().toISOString() },
+]).then(() => null, () => null)
+const { data: org } = await admin.from('academies').insert({ name: 'ZZZ Two Step Club', slug: SLUG, type: 'academy', primary_colour: '#333333' }).select('id, two_step_required').single()
+const expires = new Date(Date.now() + 300 * 864e5).toISOString().slice(0, 10)
+await admin.from('staff_clearances').insert([
+  { academy_id: org.id, profile_id: OWNER, kind: 'wwcc', number: 'TS-OWNER', outcome: 'cleared', expires_on: expires, verified_by: OWNER },
+  { academy_id: org.id, profile_id: COACH, kind: 'wwcc', number: 'TS-COACH', outcome: 'cleared', expires_on: expires, verified_by: OWNER },
+])
+await admin.from('academy_members').insert([
+  { academy_id: org.id, profile_id: OWNER, role: 'owner', status: 'active' },
+  { academy_id: org.id, profile_id: COACH, role: 'coach', status: 'active' },
+])
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
-const open = async (session, path, waitFor) => {
+const open = async (session, path, waitFor, device = DEVICE, orgId = org.id) => {
   const context = await browser.createBrowserContext()
   const page = await context.newPage()
   await page.setViewport({ width: 375, height: 812 })
   await page.setCookie(cookieFor(session))
-  await page.evaluateOnNewDocument((o) => { try { localStorage.setItem('squadroom.org', o) } catch {} }, org.id)
+  await page.evaluateOnNewDocument((o, d) => { try { localStorage.setItem('squadroom.org', o); if (d) localStorage.setItem('squadroom.device', d) } catch {} }, orgId, device)
   await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle2', timeout: 60000 })
   if (waitFor) await page.waitForSelector(waitFor, { timeout: 20000 }).catch(() => null)
-  await new Promise((r) => setTimeout(r, 400))
+  await sleep(400)
   return { page, context }
+}
+// Scroll a control to the middle before tapping it: puppeteer's own scroll
+// leaves a low control at the bottom edge, under the fixed tab bar, and the
+// tap opens Home instead (found by part 5's first run).
+const tap = async (page, sel) => {
+  await page.$eval(sel, (el) => el.scrollIntoView({ block: 'center' }))
+  await sleep(150)
+  await page.click(sel)
+}
+const noWallSettles = async (page) => {
+  // The wall decides after two calls (status, then the device); give it a
+  // moment to appear before saying it did not.
+  await sleep(2500)
+  return !(await page.$('[data-two-step-wall]'))
 }
 
 try {
-  head('1. A new club requires two-step sign-in: its owner meets the wall, and sets it up there (0231)')
-  const first = await freshSession()
+  head('1. A club made today asks its owner for a code: the wall, the code, the powers')
+  const first = await freshSession(OWNER_EMAIL)
   if (!first) { console.log("  could not sign in — the project's auth rate limit, not a failure"); await tidy(); process.exit(2) }
+  org.two_step_required ? ok('a club made today requires two-step sign-in of its owners') : bad(`two_step_required: ${org.two_step_required}`)
+  {
+    const { error: weak } = await first.client.from('academies').update({ primary_colour: '#444444' }).eq('id', org.id).select('id').single()
+    weak ? ok("with a password alone, the owner has no owner's powers in the database") : bad('an owner with a password alone changed the club')
+    const { data: st } = await first.client.rpc('two_step_status')
+    st?.required && !st.ok && !st.passed ? ok(`the database says: required by ${st.where}, not yet passed`) : bad(`status: ${JSON.stringify(st)}`)
+  }
+  let shown = null
+  {
+    const { page, context } = await open(first.session, '/admin', '[data-two-step-wall]')
+    ;(await page.$('[data-two-step-wall]')) ? ok('the wall: "Your six-digit code", naming the club') : bad('no wall for a required owner')
+    ;(await page.$('[data-two-step-gate]')) ? bad('the authenticator gate, with no factor to check') : ok('not the authenticator gate — nothing was set up, nothing is needed')
+    await page.waitForSelector('[data-two-step-demo-code]', { timeout: 20000 }).catch(() => null)
+    shown = await page.$eval('[data-two-step-demo-code]', (e) => e.textContent?.trim() ?? '').catch(() => null)
+    ;/^\d{6}$/.test(shown ?? '') ? ok('a demo account: the six digits come to the screen (a real account is texted)') : bad(`no code shown: ${await page.evaluate(() => document.querySelector('[data-two-step-wall]')?.innerText.replace(/\s+/g, ' ').slice(0, 200))}`)
+    const ticked = await page.$eval('[data-two-step-trust]', (e) => e.checked).catch(() => null)
+    ticked === true ? ok('"Trust this device for 30 days" is offered, ticked') : bad(`trust checkbox: ${ticked}`)
+    const buttons = await page.$$eval('[data-two-step-wall] button', (bs) => bs.map((b) => b.innerText.trim()))
+    !buttons.some((b) => /skip|later|not now|close/i.test(b)) ? ok(`no way past but the code, an authenticator app, or signing out (${buttons.join(' · ')})`) : bad(`a way to skip: ${buttons}`)
+    await page.type('[data-two-step-wall-code]', shown === '000000' ? '111111' : '000000')
+    await page.click('[data-two-step-wall-verify]')
+    await page.waitForFunction(() => document.querySelector('[data-two-step-wall]')?.innerText.includes('did not match'), { timeout: 15000 }).then(() => ok('a wrong code says so, counts the tries left, and keeps the wall up')).catch(() => bad('a wrong code gave no answer'))
+    await page.click('[data-two-step-wall-code]')
+    await page.type('[data-two-step-wall-code]', shown ?? '000000')
+    await page.click('[data-two-step-wall-verify]')
+    await page.waitForFunction(() => !document.querySelector('[data-two-step-wall]') && !!document.querySelector('[data-org]'), { timeout: 30000 }).then(() => ok('the right code lifts the wall: the Admin hub is there')).catch(async () => {
+      bad(`the wall did not lift: ${await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 200))}`)
+    })
+    ;(await page.$('[data-two-step-nag]')) ? bad('a card still asks for something') : ok('and no card asks for an authenticator app')
+    await context.close()
+  }
+  {
+    const { data: st } = await first.client.rpc('two_step_status')
+    st?.ok && st.passed && daysFromNow(st.trusted_until) > 29 && daysFromNow(st.trusted_until) < 31 ? ok('the database holds the pass for this session — 30 days, the device trusted') : bad(`status after: ${JSON.stringify(st)}`)
+    const { error: strong } = await first.client.from('academies').update({ primary_colour: '#454545' }).eq('id', org.id).select('id').single()
+    strong ? bad(`with the pass, still refused: ${strong.message}`) : ok("with the pass, the owner's powers are theirs (two_step_ok_for, 0232)")
+    const { data: devices } = await admin.from('trusted_devices').select('label, trusted_until, device_hash').eq('profile_id', OWNER)
+    devices?.length === 1 && devices[0].label && devices[0].device_hash !== DEVICE ? ok(`the device is remembered by its hash, as "${devices[0].label}"`) : bad(`devices: ${JSON.stringify(devices)}`)
+    const { data: peek } = await first.client.from('two_step_passes').select('session_id')
+    ;(peek ?? []).length === 0 ? ok('nobody reads the passes table from a browser') : bad('a member read the passes table')
+    const { page, context } = await open(first.session, '/settings', '[data-trusted-devices]')
+    const listed = await page.$eval('[data-trusted-devices]', (e) => e.innerText).catch(() => '')
+    ;/trusted until/.test(listed) && /Forget them all/.test(listed) ? ok('Settings lists the trusted device, with "Forget them all"') : bad(`trusted devices in Settings: ${listed.slice(0, 120) || 'none'}`)
+    await context.close()
+  }
+
+  head('2. A trusted device skips the code; a new device does not; a lapsed one does not')
+  const second = await freshSession(OWNER_EMAIL)
+  {
+    const { data: before } = await second.client.rpc('two_step_status')
+    before && !before.ok ? ok('a fresh sign-in has no pass yet') : bad(`fresh: ${JSON.stringify(before)}`)
+    const { page, context } = await open(second.session, '/', '[data-persona], [data-needs-you], main')
+    ;(await noWallSettles(page)) ? ok('on the trusted device, no wall: the session took its pass from the device') : bad('the wall is up on the trusted device')
+    await context.close()
+    const { data: after } = await second.client.rpc('two_step_status')
+    after?.ok && after.passed && daysFromNow(after.trusted_until) > 28 ? ok("the API sees the same pass, for the device's remaining days") : bad(`after: ${JSON.stringify(after)}`)
+  }
+  const third = await freshSession(OWNER_EMAIL)
+  {
+    const { page, context } = await open(third.session, '/', '[data-two-step-wall]', 'another-device-' + randomBytes(16).toString('hex'))
+    ;(await page.$('[data-two-step-wall]')) ? ok('a device the account has not been seen on is asked again') : bad('no wall on a new device')
+    await page.waitForSelector('[data-two-step-demo-code]', { timeout: 20000 }).then(() => ok('and a new code is sent')).catch(() => bad('no code on the new device'))
+    await context.close()
+  }
+  await admin.from('trusted_devices').update({ trusted_until: new Date(Date.now() - 864e5).toISOString() }).eq('profile_id', OWNER)
+  await admin.from('two_step_passes').delete().eq('profile_id', OWNER).neq('session_id', sessionIdOf(first.session))
+  await admin.from('two_step_codes').delete().eq('profile_id', OWNER)
+  const fourth = await freshSession(OWNER_EMAIL)
+  let fourthPage = null
+  {
+    const { page, context } = await open(fourth.session, '/', '[data-two-step-wall]')
+    ;(await page.$('[data-two-step-wall]')) ? ok("when the device's 30 days are up, the wall is back on it") : bad('no wall on a lapsed device')
+    await page.waitForSelector('[data-two-step-demo-code]', { timeout: 20000 }).catch(() => null)
+    fourthPage = { page, context }
+  }
+
+  head('3. The club\'s coach is never asked')
+  const coach = await freshSession(COACH_EMAIL)
+  {
+    const { data: st } = await coach.client.rpc('two_step_status')
+    st && st.required === false ? ok('the database asks nothing of a coach') : bad(`coach status: ${JSON.stringify(st)}`)
+    const { page, context } = await open(coach.session, '/admin', '[data-org]')
+    ;(await noWallSettles(page)) ? ok('no wall for a coach') : bad('a coach met the wall')
+    await context.close()
+    const { data: mine } = await coach.client.from('academy_members').select('role').eq('academy_id', org.id).eq('profile_id', COACH).maybeSingle()
+    mine?.role === 'coach' ? ok('and coaches with a password alone, as before') : bad(`coach membership: ${JSON.stringify(mine)}`)
+  }
+
+  head('4. Codes are held: one a minute, five wrong tries')
+  if (fourthPage) {
+    const { page, context } = fourthPage
+    const again = await page.evaluate(() => fetch('/api/two-step/send', { method: 'POST' }).then((r) => r.json()))
+    again.sent && again.resent === false && again.wait > 0 ? ok(`asking again inside a minute sends nothing new (${again.wait} s to wait)`) : bad(`again: ${JSON.stringify(again)}`)
+    const code = await page.$eval('[data-two-step-demo-code]', (e) => e.textContent?.trim() ?? '').catch(() => '')
+    const wrong = code === '000000' ? '111111' : '000000'
+    const statuses = []
+    for (let i = 0; i < 5; i++) {
+      statuses.push(await page.evaluate((c) => fetch('/api/two-step/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: c }) }).then((r) => r.status), wrong))
+    }
+    const after = await page.evaluate((c) => fetch('/api/two-step/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: c }) }).then((r) => r.json()), code)
+    statuses.every((s) => s === 400) && after.ok === false && after.error === 'no-code' ? ok('five wrong tries burn the code; the right one is then refused until a new one is sent') : bad(`tries ${statuses.join(',')} then ${JSON.stringify(after)}`)
+    const { data: st } = await fourth.client.rpc('two_step_status')
+    st && !st.ok ? ok('and the session is still unproven') : bad(`after the burn: ${JSON.stringify(st)}`)
+    await context.close()
+  }
+
+  head('5. An authenticator app stays an optional choice (0224)')
   let secret = null
   let usedPeriod = Math.floor(Date.now() / 30000)
   {
-    const { data: required } = await admin.from('academies').select('two_step_required').eq('id', org.id).single()
-    required?.two_step_required ? ok('a club made today requires two-step sign-in of its owners') : bad(`two_step_required: ${JSON.stringify(required)}`)
-    const { error: weak } = await first.client.from('academies').update({ primary_colour: '#444444' }).eq('id', org.id).select('id').single()
-    weak ? ok('with no authenticator app, the owner has no owner\'s powers in the database') : bad('an owner without two-step changed the club')
-    const { page, context } = await open(first.session, '/admin', '[data-two-step-wall]')
-    ;(await page.$('[data-two-step-wall]')) ? ok('the wall: "Set up two-step sign-in", naming the club') : bad('no wall for a required owner without two-step')
-    ;(await page.$('[data-two-step-gate]')) ? bad('the six-digit gate, with no factor to check') : ok('not the six-digit gate — there is nothing to check yet')
-    const buttons = await page.$$eval('[data-two-step-wall] button', (bs) => bs.map((b) => b.innerText.trim()))
-    !buttons.some((b) => /skip|later|not now|close/i.test(b)) ? ok(`no way past but setting it up or signing out (${buttons.join(' · ')})`) : bad(`a way to skip: ${buttons}`)
-    await page.click('[data-two-step-wall-start]')
-    await page.waitForSelector('[data-two-step-wall-secret]', { timeout: 20000 })
-    secret = (await page.$eval('[data-two-step-wall-secret]', (e) => e.textContent?.trim())) ?? null
-    secret ? ok('a QR code and its key are shown') : bad('no key to put in an authenticator app')
-    await page.type('[data-two-step-wall-code]', '000000')
-    await page.click('[data-two-step-wall-verify]')
-    await page.waitForFunction(() => document.querySelector('[data-two-step-wall]')?.innerText.includes('did not match'), { timeout: 15000 }).then(() => ok('a wrong code says so and keeps the wall up')).catch(() => bad('a wrong code gave no answer'))
-    usedPeriod = Math.floor(Date.now() / 30000)
-    await page.click('[data-two-step-wall-code]')
-    await page.type('[data-two-step-wall-code]', totp(secret))
-    await page.click('[data-two-step-wall-verify]')
-    await page.waitForFunction(() => !document.querySelector('[data-two-step-wall]') && !!document.querySelector('[data-org]'), { timeout: 30000 }).then(() => ok('the right code lifts the wall: the Admin hub is there')).catch(async () => {
-      const t = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 200))
-      bad(`the wall did not lift: ${t}`)
-    })
-    ;(await page.$('[data-two-step-nag]')) ? bad('still asked to turn it on') : ok('and no card asks for what is done')
-    await context.close()
-  }
-
-  head('2. The factor is real')
-  const { data: factors } = await first.client.auth.mfa.listFactors()
-  const enrolled = factors?.totp?.find((f) => f.status === 'verified')
-  enrolled ? ok('a verified authenticator factor is on the account') : bad(`factors: ${JSON.stringify(factors?.all)}`)
-  if (enrolled) {
-    const { error: wrong } = await first.client.auth.mfa.verify({ factorId: enrolled.id, challengeId: (await first.client.auth.mfa.challenge({ factorId: enrolled.id })).data.id, code: '000000' })
-    wrong ? ok('a wrong code is refused by the API too') : bad('000000 was accepted')
-  }
-
-  // The API client steps up with a code of its own, as the phone did, so
-  // the proven side of the checks below has a proven session.
-  if (enrolled && secret) {
-    while (Math.floor(Date.now() / 30000) <= usedPeriod) await new Promise((r) => setTimeout(r, 1000))
-    usedPeriod = Math.floor(Date.now() / 30000)
-    const { data: ch2 } = await first.client.auth.mfa.challenge({ factorId: enrolled.id })
-    const { error: up } = await first.client.auth.mfa.verify({ factorId: enrolled.id, challengeId: ch2.id, code: totp(secret) })
-    up ? bad(`could not step the API session up: ${up.message}`) : ok('the API session steps up with its own code (AAL2)')
-    const { data: proven } = await first.client.auth.getSession()
-    if (proven?.session) first.session = proven.session
-  }
-
-  head('2b. The database asks too (0224)')
-  {
-    const weak = await freshSession()
-    const { data: owes, error: noFn } = weak ? await weak.client.rpc('two_step_needed') : { error: { message: 'no session' } }
-    if (noFn) {
-      console.log(`  \x1b[2m… waiting for 0224 on squadroom-dev — until then a password-only session still has staff powers in the database, and only the app's gate stands in front of them\x1b[0m`)
-    } else {
-      const { error: weakErr } = await weak.client.rpc('rollover_report', { p_academy: org.id, p_season: '2026' })
-      const { data: firstOwes } = await first.client.rpc('two_step_needed')
-      const { error: strongErr } = await first.client.rpc('rollover_report', { p_academy: org.id, p_season: '2026' })
-      owes === true && weakErr?.code === '42501' ? ok('a password-only session owes the six digits, and the database refuses it staff work') : bad(`password only: owes ${owes}, ${weakErr?.message ?? 'not refused'}`)
-      firstOwes === false && !strongErr ? ok('with both steps the same owner has their powers') : bad(`both steps: owes ${firstOwes}, ${strongErr?.message ?? 'ok'}`)
-    }
-  }
-
-  head('3. A fresh password-only session is stopped by the gate until the six digits are typed')
-  const second = await freshSession()
-  {
-    const { page, context } = await open(second.session, '/', '[data-two-step-gate]')
-    const gate = await page.$('[data-two-step-gate]')
-    gate ? ok('the gate is up before anything of Home') : bad('no gate for an AAL1 session with a verified factor')
-    const home = await page.$('[data-needs-you], [data-persona]')
-    const behind = await page.evaluate(() => { const g = document.querySelector('[data-two-step-gate]'); return g ? getComputedStyle(g).position === 'fixed' : false })
-    behind ? ok('and it covers the whole screen') : bad(home ? 'Home is visible around the gate' : 'the gate is not fixed over the screen')
-    if (gate) {
-      await page.type('[data-two-step-code]', '123456')
-      await page.click('[data-two-step-gate] button[type="submit"]')
-      await page.waitForFunction(() => document.querySelector('[data-two-step-gate]')?.innerText.includes('did not match'), { timeout: 15000 }).then(() => ok('a wrong code says so and keeps the gate up')).catch(() => bad('a wrong code gave no answer'))
-      // The gate clears the field on a miss; and the code must be from a
-      // period no earlier code was accepted in.
-      while (Math.floor(Date.now() / 30000) <= usedPeriod) await new Promise((r) => setTimeout(r, 1000))
-      usedPeriod = Math.floor(Date.now() / 30000)
-      await page.click('[data-two-step-code]')
-      await page.type('[data-two-step-code]', totp(secret))
-      await page.click('[data-two-step-gate] button[type="submit"]')
-      await page.waitForFunction(() => !document.querySelector('[data-two-step-gate]') && !!document.querySelector('[data-persona], [data-needs-you], main'), { timeout: 30000 }).then(() => ok('the right code lets them through to Home')).catch(async () => {
-        const why = await page.evaluate(() => {
-          const gate = document.querySelector('[data-two-step-gate]')
-          const raw = document.cookie.split('; ').filter((c) => c.includes('auth-token')).map((c) => c.split('=').slice(1).join('=')).join('')
-          let aal = '?'
-          try {
-            const json = raw.startsWith('base64-') ? atob(raw.slice(7)) : decodeURIComponent(raw)
-            const token = JSON.parse(json).access_token
-            aal = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).aal
-          } catch (e) { aal = 'unreadable: ' + String(e).slice(0, 40) }
-          return { url: location.href, gate: gate ? gate.innerText.replace(/\s+/g, ' ').slice(0, 160) : null, aal, body: document.body.innerText.replace(/\s+/g, ' ').slice(0, 120) }
-        })
-        bad(`the gate did not lift on the right code — ${JSON.stringify(why)}`)
-      })
-      ;(await page.$('[data-two-step-nag]')) ? bad('still nagged after turning it on') : ok('no nag once it is on')
-    }
-    await context.close()
-  }
-
-  head('4. Settings shows it on, and turns it off')
-  {
-    // The session the browser just upgraded is not ours to reuse; the
-    // API-verified one is AAL2 and can turn it off.
     const { page, context } = await open(first.session, '/settings', '[data-two-step]')
     const state = await page.evaluate(() => document.querySelector('[data-two-step]')?.getAttribute('data-two-step'))
-    state === 'on' ? ok('Settings → Two-step sign-in: On') : bad(`settings says ${state}`)
-    await page.click('[data-two-step-off]').catch(() => null)
-    await page.waitForSelector('[data-two-step-off-confirm]', { timeout: 10000 }).catch(() => null)
-    await page.click('[data-two-step-off-confirm]').catch(() => null)
-    await page.waitForFunction(() => document.querySelector('[data-two-step]')?.getAttribute('data-two-step') === 'off', { timeout: 15000 }).then(() => ok('turned off from Settings, with a confirmation first')).catch(() => bad('could not turn it off from Settings'))
+    const text = await page.$eval('[data-two-step]', (e) => e.innerText).catch(() => '')
+    state === 'off' && /optional/i.test(text) ? ok('Settings: an authenticator app is offered as optional, off') : bad(`settings: ${state} — ${text.slice(0, 120)}`)
+    ;(await page.$('[data-two-step-wall]')) ? bad('the wall is over Settings for a passed session') : ok('no wall over Settings: this session passed in part 1')
+    await tap(page, '[data-two-step-on]')
+    await page.waitForSelector('[data-two-step-secret]', { timeout: 20000 }).catch(() => null)
+    secret = (await page.$eval('[data-two-step-secret]', (e) => e.textContent?.trim()).catch(() => null)) ?? null
+    if (secret) {
+      usedPeriod = Math.floor(Date.now() / 30000)
+      await page.type('[data-two-step-code]', totp(secret))
+      await tap(page, '[data-two-step-finish]')
+      await page.waitForFunction(() => document.querySelector('[data-two-step]')?.getAttribute('data-two-step') === 'on', { timeout: 20000 }).then(() => ok('set up from Settings with a real code')).catch(() => bad('could not set up the app from Settings'))
+    } else bad(`no key to put in an authenticator app: ${await page.evaluate(() => document.querySelector('[data-two-step]')?.innerText.replace(/\s+/g, ' ').slice(0, 160))}`)
     await context.close()
   }
-  const { data: after } = await first.client.auth.mfa.listFactors()
-  ;(after?.totp ?? []).length === 0 ? ok('no factor left on the account') : bad(`factors left: ${after.totp.length}`)
+  const fifth = secret ? await freshSession(OWNER_EMAIL) : null
+  if (fifth) {
+    const { page, context } = await open(fifth.session, '/', '[data-two-step-gate]')
+    const gate = await page.$('[data-two-step-gate]')
+    gate && !(await page.$('[data-two-step-wall]')) ? ok('a password-only sign-in now meets the six-digit gate, not the texted code') : bad(`gate ${Boolean(gate)}, wall ${Boolean(await page.$('[data-two-step-wall]'))}`)
+    if (gate && secret) {
+      while (Math.floor(Date.now() / 30000) <= usedPeriod) await sleep(1000)
+      usedPeriod = Math.floor(Date.now() / 30000)
+      await page.type('[data-two-step-code]', totp(secret))
+      await page.click('[data-two-step-gate] button[type="submit"]')
+      await page.waitForFunction(() => !document.querySelector('[data-two-step-gate]') && !document.querySelector('[data-two-step-wall]'), { timeout: 30000 }).then(() => ok("the app's six digits let them through")).catch(() => bad('the gate did not lift on the right code'))
+    }
+    await context.close()
+  }
+  // Turning it off needs a proven (AAL2) session: the API client steps up with its own code.
+  if (secret) {
+    const { data: factors } = await first.client.auth.mfa.listFactors()
+    const f = factors?.totp?.find((x) => x.status === 'verified')
+    if (f) {
+      while (Math.floor(Date.now() / 30000) <= usedPeriod) await sleep(1000)
+      usedPeriod = Math.floor(Date.now() / 30000)
+      const { data: ch } = await first.client.auth.mfa.challenge({ factorId: f.id })
+      const { error: up } = await first.client.auth.mfa.verify({ factorId: f.id, challengeId: ch.id, code: totp(secret) })
+      const { data: proven } = await first.client.auth.getSession()
+      if (!up && proven?.session) first.session = proven.session
+      const { page, context } = await open(first.session, '/settings', '[data-two-step]')
+      await tap(page, '[data-two-step-off]').catch(() => null)
+      await page.waitForSelector('[data-two-step-off-confirm]', { timeout: 10000 }).catch(() => null)
+      await tap(page, '[data-two-step-off-confirm]').catch(() => null)
+      await page.waitForFunction(() => document.querySelector('[data-two-step]')?.getAttribute('data-two-step') === 'off', { timeout: 15000 }).then(() => ok('turned off from Settings, with a confirmation first — it was optional')).catch(() => bad('could not turn it off from Settings'))
+      await context.close()
+    }
+  }
 
-  head('5. A club from before the rule: its owner is offered the one-way switch, and nothing is pressed')
+  head('6. A club from before the rule: its owner is reminded the switch is theirs, and nothing is pressed')
   {
-    // NRIFA is grandfathered (0231): its owner sees "Require two-step
-    // sign-in" in Club settings. Pressing it would wall the demo's owner, so
-    // this only looks.
-    const { data: nrifa } = await admin.from('academies').select('two_step_required').eq('id', '00000000-0000-0000-0000-0000000a0001').single()
+    const { data: nrifa } = await admin.from('academies').select('two_step_required').eq('id', NRIFA).single()
     nrifa?.two_step_required === false ? ok('NRIFA, here before the rule, does not require it yet') : bad(`NRIFA two_step_required: ${JSON.stringify(nrifa)}`)
     const { data: ju } = await admin.auth.admin.listUsers({ perPage: 200 })
     const joeyUser = ju?.users?.find((x) => x.email === 'joeylameri@outlook.com')
@@ -219,21 +285,19 @@ try {
       const jc = createClient(URL_, PUB, { auth: { persistSession: false, autoRefreshToken: false } })
       const { data: js } = await jc.auth.verifyOtp({ token_hash: jl.properties.hashed_token, type: 'email' })
       if (js?.session) {
-        const context = await browser.createBrowserContext()
-        const page = await context.newPage()
-        await page.setViewport({ width: 375, height: 812 })
-        await page.setCookie(cookieFor(js.session))
-        await page.evaluateOnNewDocument(() => { try { localStorage.setItem('squadroom.org', '00000000-0000-0000-0000-0000000a0001') } catch {} })
+        const { page, context } = await open(js.session, '/admin', '[data-org]', null, NRIFA)
+        ;(await page.$('[data-two-step-nag]')) && !(await page.$('[data-two-step-wall]')) ? ok('the Admin hub reminds the owner that two-step is off for NRIFA — a card, not a wall') : bad('no reminder card for a grandfathered club\'s owner')
         await page.goto(`${BASE}/settings/academy`, { waitUntil: 'networkidle2', timeout: 60000 })
         await page.waitForSelector('[data-two-step-required]', { timeout: 20000 }).catch(() => null)
         const state = await page.$eval('[data-two-step-required]', (e) => e.getAttribute('data-two-step-required')).catch(() => null)
         state === 'off' && (await page.$('[data-two-step-require]')) ? ok('Club settings offers "Require two-step sign-in", one way — not pressed here') : bad(`settings: ${state}`)
         await context.close()
-      } else ok('skipped the settings look — the project would not sign the owner in (rate limit)')
+      } else ok('skipped the look — the project would not sign the owner in (rate limit)')
     }
   }
 } finally {
   await browser.close()
   await tidy()
 }
+console.log(process.exitCode ? '' : '\n  \x1b[32mthe second step is a code by text, and a trusted device is asked once a month\x1b[0m\n')
 process.exit(process.exitCode ?? 0)

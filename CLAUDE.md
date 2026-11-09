@@ -550,13 +550,28 @@ one and is meant to reach hundreds of academies.
   **Compulsory where the organisation requires it** (0231, Joey 9 Nov
   2026): `academies.two_step_required` — true for every organisation made
   from then, false for the ones before until an owner turns it on (one
-  way). There, owners, admins and league staff have their powers only at
-  AAL2 (`two_step_ok_for`), and `two-step-wall.tsx` walks the unenrolled
-  through enrolling before anything else. Coaches keep their own choice;
-  families are untouched. A test that signs a NEW owner up must enrol them
-  (`enrolTwoStep` in `_auth.mjs`); one that makes a club by hand marks it
+  way). **The second step there is a six-digit code by text, not an app**
+  (0232, Joey the same day: "too hard for volunteers"): owners, admins and
+  league staff have their powers with AAL2 *or* a live row in
+  `two_step_passes` for the token's `session_id` (`two_step_ok_for`). The
+  pass is minted only by `two_step_pass` (service role), which only
+  `/api/two-step/verify` calls, after Twilio Verify approved the texted
+  code or our salted hash matched an emailed one; `/api/two-step/send`
+  picks the mobile first, the email second, and shows the code on screen
+  for a demo/placeholder account (never a real one). "Trust this device
+  for 30 days": the pass runs 30 days and the device's hash is kept in
+  `trusted_devices`, so a new sign-in on it is passed by
+  `two_step_trust_this_session` with no code; unticked, twelve hours.
+  `two-step-wall.tsx` is the screen; `two_step_status()` says whether to
+  ask. An authenticator app is optional (Settings; 0224's gate) and nobody
+  is told to get one. Coaches keep their own choice; families are
+  untouched. A test that signs a NEW owner up either passes them
+  (`passTwoStep` in `_auth.mjs`, the server's word) or enrols an app
+  (`enrolTwoStep`); one that makes a club by hand marks it
   `two_step_required: false`; Joey's real account is never enrolled by a
-  test. TOTP codes are accepted once per thirty-second period.
+  test. TOTP codes are accepted once per thirty-second period. A text
+  costs money: a demo number is never sent to Twilio, and the live site
+  texts nothing until the Twilio variables are in Netlify's environment.
   The role helpers are PL/pgSQL on purpose (SQL ones are re-planned on
   every call; 0224 measured 44 µs vs 6 µs a staff check).
 - **Every control can be read aloud and hit with a thumb** (X-10, 4 Nov

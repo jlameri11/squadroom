@@ -2688,6 +2688,114 @@ begin
     insert into rls_results values (169, 'league staff at a league that requires it need both steps; a family is untouched', r169);
   end;
 
+  -- 0232. The second step is a code by text: a pass for the session, the
+  -- server's word only; a trusted device for 30 days; a coach never asked.
+  -- Rolled back: a club made today (requires by default), OUTSIDER its
+  -- owner, MARCUS its coach.
+  declare
+    v_new uuid; v_sess uuid := gen_random_uuid(); v_other uuid := gen_random_uuid(); v_new_sess uuid := gen_random_uuid(); v_until timestamptz;
+    r_none public.academy_role; r_pass public.academy_role; r_other_sess public.academy_role; r_expired public.academy_role; r_other_person public.academy_role;
+    r_coach public.academy_role; r_trusted public.academy_role;
+    s_none jsonb; s_pass jsonb; s_coach jsonb; t_known jsonb; t_unknown jsonb; t_expired jsonb;
+    m_pass boolean; n_hash integer;
+    r170 text; r171 text; r172 text; r173 text;
+  begin
+    begin
+      insert into public.academies (name, slug, type, primary_colour) values ('RLS 170 FC', 'rls-170-fc', 'academy', '#333333') returning id into v_new;
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (v_new, OUTSIDER, 'wwcc', 'RLS170A', 'cleared', current_date + 300, COACH), (v_new, MARCUS, 'wwcc', 'RLS170B', 'cleared', current_date + 300, COACH)
+      on conflict do nothing;
+      insert into public.academy_members (academy_id, profile_id, role, status) values (v_new, OUTSIDER, 'owner', 'active'), (v_new, MARCUS, 'coach', 'active');
+
+      -- 170. The owner with a password alone has no owner's powers; with the
+      -- server's pass for this session they have them all. The pass is the
+      -- server's to give: a member cannot call two_step_pass.
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',v_sess)::text, true);
+      execute 'set local role authenticated';
+      r_none := app_private.academy_role_of(v_new);
+      s_none := public.two_step_status();
+      execute 'reset role';
+      m_pass := has_function_privilege('authenticated', 'public.two_step_pass(uuid, uuid, boolean, text, text)', 'execute');
+      perform public.two_step_pass(OUTSIDER, v_sess, false, null, null);
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',v_sess)::text, true);
+      execute 'set local role authenticated';
+      r_pass := app_private.academy_role_of(v_new);
+      s_pass := public.two_step_status();
+      execute 'reset role';
+      r170 := case when r_none is null and (s_none->>'required')::boolean and not (s_none->>'ok')::boolean
+                    and r_pass = 'owner' and (s_pass->>'ok')::boolean and (s_pass->>'passed')::boolean and not m_pass then 'PASS'
+                   else 'FAIL (no code: role '||coalesce(r_none::text,'none')||' status '||coalesce(s_none::text,'null')||'; passed: role '||coalesce(r_pass::text,'none')||' status '||coalesce(s_pass::text,'null')||'; member may mint a pass '||m_pass||')' end;
+
+      -- 171. A pass is one session's: another session of theirs has none,
+      -- an expired pass is no pass, and a pass minted for somebody else's
+      -- session id is not theirs.
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',v_other)::text, true);
+      execute 'set local role authenticated';
+      r_other_sess := app_private.academy_role_of(v_new);
+      execute 'reset role';
+      update public.two_step_passes set trusted_until = now() - interval '1 minute' where session_id = v_sess;
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',v_sess)::text, true);
+      execute 'set local role authenticated';
+      r_expired := app_private.academy_role_of(v_new);
+      execute 'reset role';
+      perform public.two_step_pass(MARCUS, v_other, false, null, null);
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',v_other)::text, true);
+      execute 'set local role authenticated';
+      r_other_person := app_private.academy_role_of(v_new);
+      execute 'reset role';
+      r171 := case when r_other_sess is null and r_expired is null and r_other_person is null then 'PASS'
+                   else 'FAIL (another session '||coalesce(r_other_sess::text,'none')||', expired '||coalesce(r_expired::text,'none')||', someone else''s pass '||coalesce(r_other_person::text,'none')||')' end;
+
+      -- 172. A coach at the same club is never asked, and coaches as before.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated','aal','aal1','session_id',gen_random_uuid())::text, true);
+      execute 'set local role authenticated';
+      r_coach := app_private.academy_role_of(v_new);
+      s_coach := public.two_step_status();
+      execute 'reset role';
+      r172 := case when r_coach = 'coach' and not (s_coach->>'required')::boolean and (s_coach->>'where') is null then 'PASS'
+                   else 'FAIL (coach role '||coalesce(r_coach::text,'none')||', status '||coalesce(s_coach::text,'null')||')' end;
+
+      -- 173. "Trust this device for 30 days": the server trusts the device
+      -- at the pass; a new session on it gets its pass with no code, for the
+      -- device's remaining 30 days; an unknown device gets nothing; a device
+      -- whose trust ran out gets nothing; only the device's hash is kept.
+      delete from public.two_step_passes where profile_id = OUTSIDER;
+      perform public.two_step_pass(OUTSIDER, v_sess, true, 'device-token-rls-173', 'RLS phone');
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',v_new_sess)::text, true);
+      execute 'set local role authenticated';
+      t_unknown := public.two_step_trust_this_session('some-other-device');
+      t_known := public.two_step_trust_this_session('device-token-rls-173');
+      r_trusted := app_private.academy_role_of(v_new);
+      execute 'reset role';
+      select p.trusted_until into v_until from public.two_step_passes p where p.session_id = v_new_sess;
+      update public.trusted_devices set trusted_until = now() - interval '1 day' where profile_id = OUTSIDER;
+      delete from public.two_step_passes where profile_id = OUTSIDER;
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1','session_id',gen_random_uuid())::text, true);
+      execute 'set local role authenticated';
+      t_expired := public.two_step_trust_this_session('device-token-rls-173');
+      execute 'reset role';
+      select count(*) into n_hash from public.trusted_devices where profile_id = OUTSIDER and device_hash = 'device-token-rls-173';
+      r173 := case when not (t_unknown->>'trusted')::boolean and (t_known->>'trusted')::boolean and r_trusted = 'owner'
+                    and v_until between now() + interval '29 days' and now() + interval '31 days'
+                    and not (t_expired->>'trusted')::boolean and n_hash = 0 then 'PASS'
+                   else 'FAIL (unknown device '||coalesce(t_unknown::text,'null')||', known '||coalesce(t_known::text,'null')||' → role '||coalesce(r_trusted::text,'none')||', until '||coalesce(v_until::text,'null')||', expired device '||coalesce(t_expired::text,'null')||', token stored in clear '||n_hash||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r170 := coalesce(r170, 'FAIL (stopped: '||sqlerrm||')');
+        r171 := coalesce(r171, 'FAIL (stopped: '||sqlerrm||')');
+        r172 := coalesce(r172, 'FAIL (stopped: '||sqlerrm||')');
+        r173 := coalesce(r173, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (170, 'an owner with a password alone has no powers; with the server''s pass for the session they have them, and only the server mints one', r170);
+    insert into rls_results values (171, 'a pass is one session''s: another session, an expired pass, or someone else''s pass gives nothing', r171);
+    insert into rls_results values (172, 'a coach at a club that requires two-step is never asked', r172);
+    insert into rls_results values (173, 'a trusted device gives a new session its pass for the device''s 30 days; unknown or lapsed devices nothing; only the hash is kept', r173);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

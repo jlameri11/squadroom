@@ -119,6 +119,28 @@ export function totp(secretBase32, at = Date.now()) {
  * is not knowable). `email`, when given, keeps the proven session for later
  * suites. The client must hold a session of its own (signInBoth gives one).
  */
+/** The session's id, from its token — what the database keys a two-step pass on (0232). */
+export function sessionIdOf(session) {
+  try {
+    const payload = JSON.parse(Buffer.from(session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString())
+    return payload.session_id ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 0232: the server's word that the second step was passed — what the wall
+ * does after the six digits — for an owner a suite made at an organisation
+ * that requires two-step sign-in. Service role only, like the route.
+ */
+export async function passTwoStep(admin, session, trust = false) {
+  const sid = sessionIdOf(session)
+  if (!sid) throw new Error('no session_id claim in the token')
+  const { error } = await admin.rpc('two_step_pass', { p_profile: session.user.id, p_session: sid, p_trust: trust })
+  if (error) throw new Error(`could not pass two-step: ${error.message}`)
+}
+
 export async function enrolTwoStep(client, email = null) {
   const { data: factors } = await client.auth.mfa.listFactors()
   for (const f of factors?.all ?? []) if (f.factor_type === 'totp' && f.status !== 'verified') await client.auth.mfa.unenroll({ factorId: f.id })

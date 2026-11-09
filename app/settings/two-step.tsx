@@ -7,11 +7,15 @@ type Factor = { id: string; status: string; friendly_name?: string | null }
 type Enrolling = { factorId: string; qr: string; secret: string }
 
 /**
- * Turning two-step sign-in on and off (S-07). An authenticator app (Google
- * Authenticator, Authy, 1Password, the iPhone's own Passwords) scans the
- * code or takes the secret, and from then on signing in takes the password
- * and the six digits. Required of the people who run a club — their account
- * can reach every family's details — and open to anyone.
+ * Two-step sign-in in Settings (S-07; 0232, Joey 9 Nov 2026).
+ *
+ * The compulsory part needs nothing set up here: where a club requires it,
+ * its owners and admins are asked for a six-digit code by text (or email)
+ * when they sign in, and a trusted device is asked once in 30 days. This
+ * section is the OPTIONAL extra — an authenticator app (Google
+ * Authenticator, Authy, 1Password, the iPhone's own Passwords) for anyone
+ * who prefers one; its six digits then replace the texted code — and the
+ * list of trusted devices, which can be forgotten in one tap.
  */
 export function TwoStep() {
   const [factors, setFactors] = useState<Factor[] | null>(null)
@@ -95,7 +99,12 @@ export function TwoStep() {
     <section id="two-step" className="mt-6" data-two-step={on ? 'on' : 'off'}>
       <h2 className="font-semibold">Two-step sign-in</h2>
       <p className="mt-0.5 text-sm text-ink-2">
-        Your password and a six-digit code from an authenticator app. Required for anyone who runs a club; a good idea for everyone.
+        Where a club requires it, its owners and admins get a six-digit code by text when they sign in, and a trusted device is asked once in 30 days. Nothing to set up.
+      </p>
+      <TrustedDevices />
+      <h3 className="mt-4 text-sm font-semibold">An authenticator app — optional</h3>
+      <p className="mt-0.5 text-sm text-ink-2">
+        For anyone who prefers one. Its six digits replace the texted code. Never required.
       </p>
 
       {on && !confirmOff && (
@@ -162,5 +171,72 @@ export function TwoStep() {
         </p>
       )}
     </section>
+  )
+}
+
+type Device = { id: string; label: string | null; trusted_until: string; last_used_at: string }
+
+/**
+ * The devices this account trusted for 30 days (0232), and one tap to
+ * forget them all — every other session's pass goes with them; this one
+ * stays, since they are holding the phone.
+ */
+function TrustedDevices() {
+  const [devices, setDevices] = useState<Device[] | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [gone, setGone] = useState(false)
+
+  // Only devices whose trust is still running; the filter happens when the
+  // rows arrive, not in render (the clock is not a pure input).
+  const stillTrusted = (rows: Device[] | null) => (rows ?? []).filter((d) => new Date(d.trusted_until).getTime() > Date.now())
+  async function load() {
+    const { data } = await createClient().from('trusted_devices').select('id, label, trusted_until, last_used_at').order('last_used_at', { ascending: false })
+    setDevices(stillTrusted(data as Device[] | null))
+  }
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().from('trusted_devices').select('id, label, trusted_until, last_used_at').order('last_used_at', { ascending: false })
+      if (live) setDevices(stillTrusted(data as Device[] | null))
+    })()
+    return () => {
+      live = false
+    }
+  }, [])
+
+  async function forget() {
+    setBusy(true)
+    await createClient().rpc('two_step_forget_devices')
+    setBusy(false)
+    setGone(true)
+    await load()
+  }
+
+  const live = devices ?? []
+  if (!devices || (live.length === 0 && !gone)) return null
+  const day = (iso: string) => new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+  return (
+    <div className="mt-3 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }} data-trusted-devices={live.length}>
+      <div className="flex items-center justify-between gap-3">
+        <b>Trusted devices</b>
+        {live.length > 0 && (
+          <button onClick={forget} disabled={busy} className="tap text-sm underline underline-offset-4 text-ink-2 disabled:opacity-50" data-forget-devices>
+            Forget them all
+          </button>
+        )}
+      </div>
+      {live.length === 0 ? (
+        <p className="mt-1 text-xs text-ink-3">None. Every device will be asked for a code next time.</p>
+      ) : (
+        <ul className="mt-1 divide-y text-xs text-ink-2" style={{ borderColor: 'var(--line-2)' }}>
+          {live.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2 py-1.5">
+              <span className="truncate">{d.label ?? 'A device'}</span>
+              <span className="flex-none text-ink-3">trusted until {day(d.trusted_until)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

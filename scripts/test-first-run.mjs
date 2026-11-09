@@ -109,11 +109,12 @@ try {
     await cleanUp()
     process.exit(1)
   }
-  // 0231: a club made today requires two-step sign-in of its owners. The
-  // founder sets it up the way the wall has them do it; the session is then
-  // fully proven and every owner's power below is theirs.
+  // 0231/0232: a club made today requires two-step sign-in of its owners.
+  // The wall's default is a code by text (test-two-step); the founder here
+  // takes the optional authenticator route, which proves the session just
+  // the same, and every owner's power below is theirs.
   await enrolTwoStep(me)
-  ok('the founder sets up two-step sign-in, as every new club\'s owner must (0231)')
+  ok('the founder proves the second step (an authenticator app, the optional route; 0231/0232)')
   const { data: mine } = await me.from('academies').select('id, name, type').limit(1).single()
   academyId = mine.id
   ok(`"${mine.name}" created as a ${mine.type}`)

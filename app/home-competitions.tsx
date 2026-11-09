@@ -39,7 +39,7 @@ export function HomeCompetitions() {
       // SPANS tenants, which is why it is not scoped to one.
       const { data: comps } = await supabase
         .from('competitions')
-        .select('id, name, season, status, academies!competitions_organiser_id_fkey(name)')
+        .select('id, name, season, status, academies!organiser_id(name)')
         .neq('status', 'ended')
         .order('created_at', { ascending: false })
         .limit(4)
@@ -86,7 +86,7 @@ export function HomeCompetitions() {
   if (!rows || rows.length === 0) return null
 
   return (
-    <section className="px-3.5 pb-5 pt-4">
+    <section className="px-3.5 pb-5 pt-4" data-home-competitions={rows.length}>
       <div className="sect">
         <span className="eyebrow">Competitions</span>
         <Link href="/competitions" className="text-xs text-ink-3 underline underline-offset-2">

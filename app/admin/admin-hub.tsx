@@ -14,23 +14,27 @@ type Counts = { pending: number; pendingRegistrations: number; pendingSignups: n
  * asked to. Asked again whenever the auth state changes — the wall (0231)
  * enrols a factor over this very screen, and the card must not go on asking.
  */
-function useTwoStep() {
-  const [on, setOn] = useState<boolean | null>(null)
+/**
+ * Whether this organisation requires two-step sign-in of its owners and
+ * admins (0231/0232). Null until known. Where it does, the wall has already
+ * had them pass; where it does not — the clubs from before the rule — the
+ * owner is reminded that it is theirs to turn on. Nobody is told to get an
+ * authenticator app (Joey, 9 Nov 2026: optional, never required).
+ */
+function useTwoStepRequired(orgId: string | null | undefined) {
+  const [required, setRequired] = useState<boolean | null>(null)
   useEffect(() => {
+    if (!orgId) return
     let live = true
-    const supabase = createClient()
-    const check = async () => {
-      const { data } = await supabase.auth.mfa.listFactors()
-      if (live) setOn(Boolean(data?.totp?.some((f) => f.status === 'verified')))
-    }
-    void check()
-    const { data: sub } = supabase.auth.onAuthStateChange(() => void check())
+    ;(async () => {
+      const { data } = await createClient().from('academies').select('two_step_required').eq('id', orgId).maybeSingle()
+      if (live) setRequired(typeof (data as { two_step_required?: boolean } | null)?.two_step_required === 'boolean' ? Boolean((data as { two_step_required?: boolean }).two_step_required) : null)
+    })()
     return () => {
       live = false
-      sub.subscription.unsubscribe()
     }
-  }, [])
-  return on
+  }, [orgId])
+  return required
 }
 
 /**
@@ -47,7 +51,7 @@ function useTwoStep() {
 export function AdminHub() {
   const org = useCurrentOrg()
   const [counts, setCounts] = useState<Counts | null>(null)
-  const twoStep = useTwoStep()
+  const twoStepRequired = useTwoStepRequired(org?.id)
 
   useEffect(() => {
     if (!org) return
@@ -126,13 +130,14 @@ export function AdminHub() {
           </Link>
         ) : null}
 
-        {/* S-07: the people who run a club are asked for two-step sign-in.
-            A card until the database can insist (the migration half). */}
-        {isStaff && twoStep === false && (
-          <Link href="/settings#two-step" className="card mb-4 flex items-center gap-3 p-3.5 text-sm" style={{ borderColor: 'var(--brand)' }} data-two-step-nag>
+        {/* S-07 (0231/0232): a club from before the rule does not yet ask its
+            owners and admins for a code. Its owner is reminded, once per
+            visit, that the switch is theirs — one way, in Club settings. */}
+        {org.role === 'owner' && twoStepRequired === false && (
+          <Link href="/settings/academy" className="card mb-4 flex items-center gap-3 p-3.5 text-sm" style={{ borderColor: 'var(--brand)' }} data-two-step-nag>
             <span className="min-w-0 flex-1">
-              <b className="block">Turn on two-step sign-in</b>
-              <span className="block text-xs text-ink-3">Your account reaches every family&apos;s details. A six-digit code from an authenticator app keeps a stolen password out.</span>
+              <b className="block">Two-step sign-in is off for {org.name}</b>
+              <span className="block text-xs text-ink-3">Owners and admins reach every family&apos;s details. Require a six-digit code by text when they sign in — trusted devices are asked once in 30 days.</span>
             </span>
             <span className="flex-none text-lg text-ink-3">›</span>
           </Link>

@@ -24,6 +24,13 @@ with a phone number and a dead end for a demo. `scripts/demo-passwords.mjs`
 gives them passwords instead; the sign-in screen defaults to a password rather
 than a link. **Dev only.**
 
+**Two-step sign-in in the demo (0232).** NRIFA and the SPL do not require
+it yet (the switch is in Club settings, one way). Where an organisation does,
+its owners and admins are asked for a six-digit code; a real account is
+texted it, and a demo or placeholder account — which can receive nothing —
+has the code **shown on the wall itself**, so the demo is never locked out.
+Tick "Trust this device for 30 days" and that browser is not asked again.
+
 Open a second browser profile or a private window to hold two sessions at
 once. Showing the coach and the parent side by side is the demo.
 

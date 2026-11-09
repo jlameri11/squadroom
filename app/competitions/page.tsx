@@ -11,7 +11,7 @@ export default async function CompetitionsPage() {
   // RLS returns competitions you organise or your club has entered.
   const { data: comps } = await supabase
     .from('competitions')
-    .select('id, name, type, season, organiser, starts_on, ends_on, status, organiser_id, academies!competitions_organiser_id_fkey(name)')
+    .select('id, name, type, season, organiser, starts_on, ends_on, status, organiser_id, academies!organiser_id(name)')
     .order('starts_on', { ascending: false })
 
   return (
@@ -33,7 +33,10 @@ export default async function CompetitionsPage() {
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{c.name}</span>
             <span className="block truncate text-sm capitalize text-ink-2">
-              {[c.type.replace('_', ' '), orgName(c.academies), c.season].filter(Boolean).join(' · ')}
+              {/* The organiser's own row is withheld from another club's
+                  people by policy; the competition carries the league's name
+                  for exactly that (0213 went live and a coach read nothing). */}
+              {[c.type.replace('_', ' '), orgName(c.academies) ?? c.organiser, c.season].filter(Boolean).join(' · ')}
             </span>
           </span>
           {c.status === 'ended' && <span className="text-xs text-ink-3">ended</span>}

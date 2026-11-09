@@ -7370,6 +7370,126 @@ export type Database = {
           },
         ]
       }
+      trusted_devices: {
+        Row: {
+          created_at: string
+          device_hash: string
+          id: string
+          label: string | null
+          last_used_at: string
+          profile_id: string
+          trusted_until: string
+        }
+        Insert: {
+          created_at?: string
+          device_hash: string
+          id?: string
+          label?: string | null
+          last_used_at?: string
+          profile_id: string
+          trusted_until: string
+        }
+        Update: {
+          created_at?: string
+          device_hash?: string
+          id?: string
+          label?: string | null
+          last_used_at?: string
+          profile_id?: string
+          trusted_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trusted_devices_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      two_step_codes: {
+        Row: {
+          attempts: number
+          channel: string
+          code_hash: string | null
+          created_at: string
+          demo_code: string | null
+          destination: string
+          expires_at: string
+          profile_id: string
+          salt: string | null
+          sends: number
+          sent_to: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          code_hash?: string | null
+          created_at?: string
+          demo_code?: string | null
+          destination: string
+          expires_at: string
+          profile_id: string
+          salt?: string | null
+          sends?: number
+          sent_to: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          code_hash?: string | null
+          created_at?: string
+          demo_code?: string | null
+          destination?: string
+          expires_at?: string
+          profile_id?: string
+          salt?: string | null
+          sends?: number
+          sent_to?: string
+          window_started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "two_step_codes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      two_step_passes: {
+        Row: {
+          passed_at: string
+          profile_id: string
+          session_id: string
+          trusted_until: string
+        }
+        Insert: {
+          passed_at?: string
+          profile_id: string
+          session_id: string
+          trusted_until: string
+        }
+        Update: {
+          passed_at?: string
+          profile_id?: string
+          session_id?: string
+          trusted_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "two_step_passes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           compact_lists: boolean
@@ -9411,8 +9531,20 @@ export type Database = {
         Returns: Json
       }
       trial_offers: { Args: { p_program: string }; Returns: Json }
+      two_step_forget_devices: { Args: never; Returns: number }
       two_step_needed: { Args: never; Returns: boolean }
+      two_step_pass: {
+        Args: {
+          p_device?: string
+          p_label?: string
+          p_profile: string
+          p_session: string
+          p_trust?: boolean
+        }
+        Returns: Json
+      }
       two_step_status: { Args: never; Returns: Json }
+      two_step_trust_this_session: { Args: { p_device: string }; Returns: Json }
       undo_last_tick: { Args: { p_event: string }; Returns: Json }
       undo_levy_payment: { Args: { p_payment: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
