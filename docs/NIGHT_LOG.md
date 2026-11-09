@@ -534,8 +534,46 @@ API answered 200 with squadroom-dev the only project visible; `npm run
 db:migrate` then applied 0044a and 0208–0228 to squadroom-dev in one go,
 all 22 clean, in numbered order, each in its own transaction. The types
 were regenerated from the real schema (114 tables, 304 functions) and the
-app type-checks against them. Full run #21, with the demo guard on,
-followed — see the deploy below for its result.
+app type-checks against them.
+
+**Full run #21** (143 suites, 3,007 assertions) was the first time the
+sections that had waited for the token ran against the real database, and
+it found six things, every one now fixed and re-run green:
+- `brand`: its premise — since 0209 a person's Appearance lives in their
+  profile and wins over the phone's copy, so "Black & white" is set on the
+  profile, as Settings does, and put back.
+- `branding` — **a real gap:** tap Black & white, tap Dark, reload at once,
+  and the reload landed before the second save reached the profile; the
+  profile's older copy then overrode the phone's newer one. A choice is
+  now marked *pending* on the phone until its write lands; a pending choice
+  is never overridden, and the controller finishes the sync when a tab
+  closed too soon.
+- `finals-and-modes`: a league broadcast is one notice in the competition's
+  Notices since 0213, not a message per club — the suite asks which world
+  it is in.
+- `notices` — **a real bug:** the league's owner opened their Notices and
+  got no composer. The page asks `public.can_post_in_channel` and the
+  answer was *permission denied*: the public wrapper never had EXECUTE for
+  `authenticated` (chat's own policies use the `app_private` one). **0229**
+  grants it; applied locally and to dev. Two more while there: a club's
+  coach read "From The league" (the organiser's row is withheld from them;
+  the competition carries the name), and the suite typed its second notice
+  while the composer was still busy with the first.
+- `required-email` — **a real bug, in development builds only:** the email
+  gate guarded itself with a ref against asking twice, and React's
+  development double-effect left the first run's answer to a cancelled
+  closure — the gate never showed in `next dev`; production ran the effect
+  once and was fine. The ref is gone; the sessionStorage memo does that job.
+  And because the gate now works, every phone-joined demo account was
+  about to be asked for an email on every screen: `refresh-demo` gives
+  each a demo address (`@squadroom-demo.test`, confirmed); real accounts
+  are never touched.
+- `screens`: Settings' "Confirmed" pill, live for the first time, was text
+  and ground in the same green (1.03:1); it has its own background now.
+
+Also seen, not from this work: a hydration warning on Admin → a squad's
+page in development, and a few 404s for resources there. Not yet looked
+at. Full run #22 followed — see the deploy below.
 
 **13. — decided.** Referee payouts through Stripe are **parked** (Joey, 3
 Nov, evening): no Stripe payouts and no bank files for referees; tracking

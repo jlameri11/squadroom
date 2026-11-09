@@ -265,4 +265,40 @@ for (const l of joinLinks ?? []) {
 say(`${joinLinks?.length ?? 0} join links live for a year`)
 for (const n of named.slice(0, 6)) say(`  ${n}`)
 
+// ---- Every demo account has an email (0214). The seed people sign in
+// through a phone-number placeholder, which the gate rightly refuses — so
+// each gets a demo address nobody can receive, marked confirmed, and the
+// gate (right for a real family) stays out of the demo's way. Real accounts
+// — a real sign-in address, or an email already recorded — are never touched.
+{
+  const { data: members, error } = await admin.from('academy_members').select('profile_id').eq('status', 'active')
+  const ids = [...new Set((members ?? []).map((m) => m.profile_id))]
+  const { data: have, error: tableError } = ids.length ? await admin.from('account_emails').select('profile_id, email').in('profile_id', ids) : { data: [], error: null }
+  if (error || tableError) {
+    say(`demo emails skipped: ${(error ?? tableError).message}`)
+  } else {
+    const { data: profiles } = await admin.from('profiles').select('id, full_name').in('id', ids)
+    const nameOf = new Map((profiles ?? []).map((p) => [p.id, p.full_name]))
+    const haveSet = new Set((have ?? []).map((r) => r.profile_id))
+    const taken = new Set((have ?? []).map((r) => r.email))
+    let added = 0
+    for (const id of ids) {
+      if (haveSet.has(id)) continue
+      const { data: u } = await admin.auth.admin.getUserById(id)
+      const signin = u?.user?.email ?? ''
+      if (!signin.toLowerCase().endsWith('@squadroom.invalid')) continue
+      const base = (nameOf.get(id) ?? 'demo person').toLowerCase().replace(/[^a-z ]/g, '').trim().split(/\s+/).join('.') || 'demo'
+      let email = `${base}@squadroom-demo.test`
+      for (let i = 2; taken.has(email); i++) email = `${base}${i}@squadroom-demo.test`
+      const { error: insertError } = await admin.from('account_emails').insert({ profile_id: id, email, verified_at: new Date().toISOString() })
+      if (!insertError) {
+        taken.add(email)
+        haveSet.add(id)
+        added++
+      }
+    }
+    say(`${added} demo accounts given a demo email (@squadroom-demo.test), confirmed; real accounts untouched`)
+  }
+}
+
 console.log('\nDone. The season now straddles today.\n')

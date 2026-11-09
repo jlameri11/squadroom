@@ -188,7 +188,22 @@ try {
       // The checkout will not take the money twice while it clears. The
       // billing row is stood in and put back exactly as it was.
       const { data: billingBefore } = await admin.from('academy_billing').select('*').eq('academy_id', NRIFA).maybeSingle()
-      await admin.from('academy_billing').upsert({ academy_id: NRIFA, stripe_account_id: billingBefore?.stripe_account_id ?? 'acct_test_squadroom', charges_enabled: true }, { onConflict: 'academy_id' })
+      // The club's Payments page (part 2) asks Stripe for the account's real
+      // state through the Connect read-back and writes it a few seconds
+      // later — which landed after this upsert and undid it. Flush that
+      // read-back first, as the owner, and wait for it; then write and read
+      // back until they agree.
+      await fetch(`${BASE}/api/payments/connect?academyId=${NRIFA}`, { headers: { cookie: `${cookieOf(owner).name}=${cookieOf(owner).value}` } }).catch(() => null)
+      await sleep(1500)
+      let billingErr = null
+      let billingNow = null
+      for (let i = 0; i < 6 && !billingNow?.charges_enabled; i++) {
+        if (i) await sleep(1000)
+        ;({ error: billingErr } = await admin.from('academy_billing').upsert({ academy_id: NRIFA, stripe_account_id: billingBefore?.stripe_account_id ?? 'acct_test_squadroom', charges_enabled: true }, { onConflict: 'academy_id' }))
+        await sleep(300)
+        ;({ data: billingNow } = await admin.from('academy_billing').select('stripe_account_id, charges_enabled').eq('academy_id', NRIFA).maybeSingle())
+      }
+      if (billingErr || !billingNow?.charges_enabled) bad(`the club's card payments could not be switched on for the check: ${billingErr?.message ?? JSON.stringify(billingNow)}`)
       try {
         const res = await fetch(`${BASE}/api/payments/checkout`, {
           method: 'POST',

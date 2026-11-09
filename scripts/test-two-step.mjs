@@ -63,6 +63,10 @@ async function tidy() {
 await tidy()
 const { data: made } = await admin.auth.admin.createUser({ email: EMAIL, email_confirm: true })
 await admin.from('profiles').upsert({ id: made.user.id, full_name: 'Tess Twostep' })
+// Every account has an email (0214): a sign-up records one, and an account
+// without one meets the email gate on every screen — which, once the gate
+// worked in development, sat over the two-step gate and took its taps.
+await admin.from('account_emails').insert({ profile_id: made.user.id, email: 'tess.twostep@squadroom-demo.test', verified_at: new Date().toISOString() }).then(() => null, () => null)
 const { data: org } = await admin.from('academies').insert({ name: 'ZZZ Two Step Club', slug: SLUG, type: 'academy', primary_colour: '#333333' }).select('id').single()
 await admin.from('academy_members').insert({ academy_id: org.id, profile_id: made.user.id, role: 'owner', status: 'active' })
 

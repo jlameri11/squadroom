@@ -624,6 +624,19 @@ one and is meant to reach hundreds of academies.
   first frame, the profile's (0209) follows the person; sign-out clears
   both. `scripts/test-branding.mjs` covers six club colours incl. yellow and
   white, who may change branding, and all of the above in a browser.
+  **The newest choice wins, whichever copy holds it** (9 Nov 2026): a
+  choice saved on the phone is marked *pending* until its profile write
+  lands, a pending choice is never overridden by the profile's older one,
+  and the controller finishes a sync a closed tab left behind.
+- **Grants, and development's double effect** (9 Nov 2026, full run #21).
+  A new `public` wrapper function has no EXECUTE for `authenticated` until a
+  migration grants it; `create or replace` keeps an old ACL, a new function
+  starts with none, and a page that reads "permission denied" as "no"
+  (`can_post_in_channel`, 0229) hides a feature without an error. And an
+  effect guarded by a ref against running twice runs its real work in the
+  closure React cancels in development: the email gate never showed in
+  `next dev`. Guard with the thing you store (the sessionStorage memo), not
+  with a ref.
 - **A suite leaves the demo exactly as it found it** (5 Nov 2026). The
   dev data IS the demo Joey shows people, and suites that passed their own
   checks had been calling off real games and tonight's trainings, parking

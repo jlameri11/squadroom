@@ -119,13 +119,27 @@ const { data: reached, error: be } = await spl.client.rpc('broadcast_to_competit
   p_body: 'Round 12 is off — grounds closed. Details Monday.',
   p_urgent: true,
 })
-be ? bad(be.message) : reached === 2 ? ok(`delivered into ${reached} clubs' own announcement channels`) : bad(`reached ${reached}`)
+be ? bad(be.message) : reached === 2 ? ok(`reaches ${reached} clubs`) : bad(`reached ${reached}`)
 
+// Until 0213 a broadcast landed in each club's own announcement channel.
+// From 0213 (a competition's Notices) it is ONE notice in the competition's
+// Notices channel, to club staff only — the clubs still never share a
+// channel of their own, and no family reads it. The suite asks which world
+// it is in.
+const { data: noticesChannel } = await admin.from('channels').select('id, academy_id').eq('type', 'notices').eq('competition_id', league.id).maybeSingle()
 const { data: nrifaMsgs } = await admin.from('messages')
-  .select('body, is_announcement, academy_id').ilike('body','%grounds closed%')
-nrifaMsgs.length === 2 ? ok('one message per club, in their own channel') : bad(`${nrifaMsgs.length} messages`)
-nrifaMsgs.every(m => m.is_announcement) ? ok('sent as an announcement, so a muted channel still shows it') : bad('not an announcement')
-new Set(nrifaMsgs.map(m=>m.academy_id)).size === 2 ? ok('no shared channel — the clubs never see each other') : bad('clubs share a channel')
+  .select('body, is_announcement, academy_id, channel_id, audience').ilike('body','%grounds closed%')
+if (noticesChannel) {
+  nrifaMsgs.length === 1 && nrifaMsgs[0].channel_id === noticesChannel.id ? ok("one notice, in the competition's Notices (0213)") : bad(`${nrifaMsgs.length} messages, in ${nrifaMsgs.map((m) => m.channel_id).join(',')}`)
+  nrifaMsgs.every(m => m.is_announcement) ? ok('sent as an announcement, so a muted channel still shows it') : bad('not an announcement')
+  nrifaMsgs.every(m => m.audience === 'club_staff') && nrifaMsgs.every(m => m.academy_id === noticesChannel.academy_id)
+    ? ok("to club staff only, owned by the league — no club's own channel, no family reads it")
+    : bad(`audience ${nrifaMsgs.map((m) => m.audience).join(',')}`)
+} else {
+  nrifaMsgs.length === 2 ? ok('one message per club, in their own channel') : bad(`${nrifaMsgs.length} messages`)
+  nrifaMsgs.every(m => m.is_announcement) ? ok('sent as an announcement, so a muted channel still shows it') : bad('not an announcement')
+  new Set(nrifaMsgs.map(m=>m.academy_id)).size === 2 ? ok('no shared channel — the clubs never see each other') : bad('clubs share a channel')
+}
 
 head('9. A parent sees none of it — a league broadcast goes to club staff (0157)')
 const { data: samSees } = await sam.client.from('messages').select('body').ilike('body','%grounds closed%')

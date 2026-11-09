@@ -102,14 +102,33 @@ export function applyTheme(pathname: string) {
   root.dataset.design = a.design
 }
 
+/** The phone's copy, with whether its last choice has reached the profile yet. */
+function readKept(): (Appearance & { pending?: boolean }) | null {
+  try {
+    return JSON.parse(localStorage.getItem(APPEARANCE_KEY) ?? 'null') as (Appearance & { pending?: boolean }) | null
+  } catch {
+    return null
+  }
+}
+
+/** A choice made on this phone that has not reached the profile yet, if any. */
+export function pendingAppearance(): Appearance | null {
+  const kept = readKept()
+  return kept?.pending && isDesign(kept.design) && isMode(kept.mode) ? { design: kept.design, mode: kept.mode } : null
+}
+
 /**
  * Saves the choice on this phone at once, then to the person's profile so it
  * follows them. The profile write is best effort: offline, or before 0209,
- * the phone's copy is the one that counts.
+ * the phone's copy is the one that counts. Until the write lands the phone's
+ * copy is marked PENDING, so a reload in between (the profile still holding
+ * the choice before this one) does not undo it — the newest choice is the
+ * one the person made, whichever copy holds it (found by test-branding the
+ * day 0209 went live).
  */
 export async function saveAppearance(a: Appearance): Promise<{ synced: boolean }> {
   try {
-    localStorage.setItem(APPEARANCE_KEY, JSON.stringify(a))
+    localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ ...a, pending: true }))
     localStorage.removeItem(LEGACY_THEME_KEY)
   } catch {}
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(THEME_EVENT))
@@ -122,6 +141,14 @@ export async function saveAppearance(a: Appearance): Promise<{ synced: boolean }
       .from('profiles')
       .update({ appearance: a.design, colour_mode: a.mode })
       .eq('id', uid)
+    if (!error) {
+      // Landed: the phone's copy is no longer ahead of the profile — unless
+      // a newer choice was made meanwhile, which keeps its own flag.
+      try {
+        const kept = readKept()
+        if (kept && kept.design === a.design && kept.mode === a.mode) localStorage.setItem(APPEARANCE_KEY, JSON.stringify(a))
+      } catch {}
+    }
     return { synced: !error }
   } catch {
     return { synced: false }
@@ -130,11 +157,13 @@ export async function saveAppearance(a: Appearance): Promise<{ synced: boolean }
 
 /**
  * The profile's copy wins over the phone's when the two differ — it is the
- * one the person last set on any device. Returns true when it changed
- * anything. A profile without the columns (before 0209) changes nothing.
+ * one the person last set on any device — unless the phone holds a newer
+ * choice still on its way there. Returns true when it changed anything. A
+ * profile without the columns (before 0209) changes nothing.
  */
 export function adoptProfileAppearance(profile: Record<string, unknown> | null | undefined): boolean {
   if (!profile || !isDesign(profile.appearance) || !isMode(profile.colour_mode)) return false
+  if (pendingAppearance()) return false
   const now = readAppearance()
   if (now.design === profile.appearance && now.mode === profile.colour_mode) return false
   try {

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg, useOrg } from '@/lib/org'
 import { clubThemeCss, normaliseHex } from '@/lib/brand/colour'
-import { THEME_EVENT, adoptProfileAppearance, applyTheme, readClub, writeClub } from '@/lib/brand/appearance'
+import { THEME_EVENT, adoptProfileAppearance, applyTheme, pendingAppearance, readClub, saveAppearance, writeClub } from '@/lib/brand/appearance'
 
 type ClubRow = {
   id: string
@@ -74,7 +74,11 @@ export function ThemeController() {
         supabase.from('academy_members').select('academies(*)').eq('profile_id', uid).eq('status', 'active'),
       ])
       if (!live) return
-      if (adoptProfileAppearance(profile as Record<string, unknown> | null)) applyTheme(window.location.pathname)
+      // A choice made on this phone that never reached the profile (the tab
+      // closed first) is sent now rather than overwritten by the older one.
+      const pending = pendingAppearance()
+      if (pending) void saveAppearance(pending)
+      else if (adoptProfileAppearance(profile as Record<string, unknown> | null)) applyTheme(window.location.pathname)
 
       const clubs = ((rows ?? []) as unknown as { academies: ClubRow | null }[])
         .map((r) => r.academies)

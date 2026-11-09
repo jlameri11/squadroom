@@ -111,6 +111,9 @@ try {
         await page.type('textarea[aria-label="Notice"]', text)
         await page.$eval('[data-post-notice]', (b) => b.click())
         await page.waitForFunction((t) => document.body.innerText.includes(t), { timeout: 15000 }, text).catch(() => null)
+        // The bubble appears before the insert answers; the composer is busy
+        // until it does. Wait for it to be ready again before the next post.
+        await page.waitForFunction(() => { const t = document.querySelector('textarea[aria-label="Notice"]'); return Boolean(t) && !t.disabled && t.value === '' }, { timeout: 15000 }).catch(() => null)
       }
       await post('everyone', `${TAG} Round 12 is off — grounds closed.`)
       await post('club_staff', `${TAG} Team sheets due Monday 9am.`)
@@ -125,7 +128,8 @@ try {
     {
       // Sam: a family in the competition — the first, never the second.
       const { context, page } = await open(parent, '/chat', NRIFA)
-      const listed = await page.evaluate(() => document.body.innerText.includes('Competition notices'))
+      // The heading is an eyebrow, rendered in capitals: read the text as written.
+      const listed = await page.evaluate(() => document.body.textContent?.includes('Competition notices'))
       listed ? ok('Sam\'s chat list has "Competition notices"') : bad('no notices group in Sam\'s list')
       await page.goto(`${BASE}/chat/${ch.id}`, { waitUntil: 'networkidle2' })
       const text = await page.evaluate(() => document.body.innerText)

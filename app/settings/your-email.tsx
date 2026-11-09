@@ -82,7 +82,7 @@ export function YourEmail() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="min-w-0 flex-1 break-all text-sm font-medium">{mine.email ?? 'None yet'}</span>
             {mine.email && (
-              <span className="pill text-xs" style={mine.verified ? { color: 'var(--yes)' } : { color: 'var(--ink-2)' }} data-email-state={mine.verified ? 'confirmed' : 'unconfirmed'}>
+              <span className="pill text-xs" style={mine.verified ? { background: 'var(--yes-bg)', color: 'var(--yes)' } : { background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-email-state={mine.verified ? 'confirmed' : 'unconfirmed'}>
                 {mine.verified ? 'Confirmed' : 'Not confirmed yet'}
               </span>
             )}

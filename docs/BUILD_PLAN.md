@@ -497,5 +497,39 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
    25 ms, the Saturday spike in 5.6 s, 0216 from it, and the launch plan
    (NEEDS JOEY #21).
 
+10. **Joey, 9 Nov 2026 (two briefs, in this order), after the migration
+    day and the deploy:**
+    - **Decisions:** #23 fee split — the club collects the whole fee and the
+      league sees what each club owes it (as entry fees work); #22 two-step
+      sign-in — compulsory for owners, admins and league staff, optional for
+      coaches and parents; #21 launch plan — Supabase Pro, Small compute (no
+      action now; NEEDS JOEY for December).
+    - **Tournament & league organiser groups** (Magic Group runs the SPL and
+      several tournaments): the two-way chats an organiser runs — read with
+      the brief below as the club heads' group per competition, organiser ↔
+      club-head direct chats, and a referees' group per organiser.
+    - **Academy vs league organiser:** (1) demo accounts "Head of academy"
+      (NRIFA owner only) and "League organiser" (SPL staff only), password
+      squadroom-demo, in docs/DEMO.md, each Home showing only that role's
+      jobs (Joey's own account keeps both); (2) each competition gets a
+      "<League> Clubs" group chat — league staff + the head (owner/admin) of
+      every entered academy or club, no parents, coaches or players, members
+      added and removed as clubs enter and leave, two-way and separate from
+      the read-only Notices; (3) a league organiser can start a 1:1 chat
+      with any entered club's head, and a club head with the league's staff
+      — never other clubs' parents or coaches; (4) on an academy's Admin,
+      "Start a competition" becomes "Organise a tournament or league",
+      creating the competition under the academy as now, which then gets the
+      organiser tools for that competition only; (5) tests: a parent or
+      coach never sees the Clubs chat, a club head sees only their
+      competitions' Clubs chats, an organiser cannot DM other clubs' parents.
+
+11. **Big Club Mode** (Joey, 9 Nov 2026) — after the queue above: the
+    whole brief, kept verbatim, with its audit and status, is
+    `docs/BIG_CLUB_MODE.md`. Phase 1 builds; Phase 2 is plan-only (kit
+    loans, a supporter view, a documents library, presentation-day
+    tickets, newsletter templates, notice translation, AGM papers). No
+    deploy until Phase 1 is done.
+
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

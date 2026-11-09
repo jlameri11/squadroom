@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isPublicPage } from '@/lib/routes'
@@ -32,11 +32,14 @@ type Gate =
 export function EmailGate() {
   const pathname = usePathname()
   const [gate, setGate] = useState<Gate | null>(null)
-  const checked = useRef(false)
 
   useEffect(() => {
-    if (checked.current || isPublicPage(pathname)) return
-    checked.current = true
+    if (isPublicPage(pathname)) return
+    // No "asked already" ref here: in development React runs an effect
+    // twice, and a ref that skipped the second run left the first run's
+    // answer to a cancelled closure — so the gate never showed in a dev
+    // build (full run #21, the day 0214 went live). The sessionStorage memo
+    // below is what keeps later pages from asking again.
     let live = true
     ;(async () => {
       const supabase = createClient()

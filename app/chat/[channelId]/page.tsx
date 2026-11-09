@@ -42,13 +42,16 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
   if ((channel.type as string) === 'notices' && competitionId) {
     const [{ data: canPost }, { data: comp }] = await Promise.all([
       supabase.rpc('can_post_in_channel', { p_channel: channelId }),
-      supabase.from('competitions').select('name, organiser_id').eq('id', competitionId).maybeSingle(),
+      supabase.from('competitions').select('name, organiser, organiser_id').eq('id', competitionId).maybeSingle(),
     ])
+    // The organiser's own row is withheld from another club's people; the
+    // competition carries the league's name for exactly this (0213 went live
+    // and a club's coach read "From The league").
     const { data: league } = comp
       ? await supabase.from('academies').select('name').eq('id', comp.organiser_id).maybeSingle()
       : { data: null }
     isHost = canPost === true
-    notices = { competitionId, competition: comp?.name ?? channel.name ?? 'This competition', league: league?.name ?? 'The league' }
+    notices = { competitionId, competition: comp?.name ?? channel.name ?? 'This competition', league: league?.name ?? comp?.organiser ?? 'The league' }
   } else {
     // Academy staff host every channel, whether or not they hold a host row.
     const { data: academyRole } = await supabase
