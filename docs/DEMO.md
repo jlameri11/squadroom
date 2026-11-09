@@ -15,6 +15,8 @@ what is thin before a club does.
 | Who | Email | Password |
 |---|---|---|
 | You — owner of the academy **and** the league | `joeylameri@outlook.com` | yours |
+| **Head of academy** — NRIFA's owner, nothing else (Joey, 9 Nov) | `head@squadroom-demo.test` | `squadroom-demo` |
+| **League organiser** — the Sydney Premier League's staff, nothing else | `organiser@squadroom-demo.test` | `squadroom-demo` |
 | Marcus Obi — coach only, no admin rights | `p61400000002@squadroom.invalid` | `squadroom-demo` |
 | Sam Whitfield — parent of Leo and Zoe | `p61400000011@squadroom.invalid` | `squadroom-demo` |
 

@@ -8103,6 +8103,7 @@ export type Database = {
           won: number
         }[]
       }
+      competition_people: { Args: { p_competition: string }; Returns: Json }
       competition_run_sheet: {
         Args: { p_competition: string; p_division?: string }
         Returns: {
@@ -8484,6 +8485,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      group_channel_info: { Args: { p_channel: string }; Returns: Json }
       help_with: { Args: { p_job: string }; Returns: Json }
       home_jobs: { Args: { p_academy?: string }; Returns: Json }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
@@ -8799,6 +8801,10 @@ export type Database = {
           p_until: string
         }
         Returns: Json
+      }
+      open_competition_direct: {
+        Args: { p_competition: string; p_other: string }
+        Returns: string
       }
       open_direct_channel: {
         Args: { p_academy: string; p_other: string }
@@ -9627,6 +9633,8 @@ export type Database = {
         | "direct"
         | "custom"
         | "notices"
+        | "clubs"
+        | "referees"
       clearance_kind: "wwcc" | "exemption"
       clearance_outcome: "cleared" | "applied" | "barred" | "not_found"
       competition_mode: "managed" | "comms_only"
@@ -9893,6 +9901,8 @@ export const Constants = {
         "direct",
         "custom",
         "notices",
+        "clubs",
+        "referees",
       ],
       clearance_kind: ["wwcc", "exemption"],
       clearance_outcome: ["cleared", "applied", "barred", "not_found"],

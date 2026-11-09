@@ -523,6 +523,12 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
       organiser tools for that competition only; (5) tests: a parent or
       coach never sees the Clubs chat, a club head sees only their
       competitions' Clubs chats, an organiser cannot DM other clubs' parents.
+    - **Status, 9–10 Nov:** the decisions are built (#23 as the player levy,
+      0230; #22 as 0231, then **changed by Joey the same evening to a code
+      by text with trusted devices — 0232–0233, built first as asked**). The
+      organiser groups and the Academy-vs-league items are **done** —
+      0234–0235, spec L-30 and D-7, `test-club-heads`, test-rls 174–177, the
+      two demo accounts made by `scripts/demo-accounts.mjs`.
 
 11. **Big Club Mode** (Joey, 9 Nov 2026) — after the queue above: the
     whole brief, kept verbatim, with its audit and status, is
@@ -530,6 +536,14 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     loans, a supporter view, a documents library, presentation-day
     tickets, newsletter templates, notice translation, AGM papers). No
     deploy until Phase 1 is done.
+
+12. **Full-season simulation — "SPL Season 4"** (Joey, 9 Nov 2026, late) —
+    after Big Club Mode: the whole brief, verbatim, is `docs/SIMULATION.md`,
+    which becomes the report. On the local Postgres only, never on dev or
+    the demo; 300+ teams from ~60 clubs, 14 rounds and finals, every role's
+    jobs and every "must not", peak timings under a second, `docs/BUGS.md`
+    for what breaks, fixes and re-runs until clean, the data deleted after.
+    Commit and push hourly; no deploy.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

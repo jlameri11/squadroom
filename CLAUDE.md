@@ -238,6 +238,22 @@ one and is meant to reach hundreds of academies.
     new that reads messages as its definer must apply `audience` itself
     (channel_messages had to, test-rls 116). A league never sees another
     club's families' email addresses (0214).
+  - **The second exception, at Joey's word (9 Nov 2026): the organiser
+    groups** (0234–0235, L-30, D-7). A competition's "Clubs" room is the
+    league's staff and the head (owner or admin) of every entered club,
+    two-way; "<League> Referees" is the organiser's staff and its referees;
+    a league member and a head may open a direct chat
+    (`open_competition_direct`), never with a family or coach, never head
+    to head. Membership is computed (`clubs_standing`, `referees_standing`,
+    `group_people`), never stored — the 0213 trigger refuses member rows
+    for every computed room — so entering or leaving a competition moves
+    people in and out by itself. Anything that lists a channel's people or
+    recipients must go through `channel_recipients` / `group_people`, not
+    `channel_members`, or a computed room is empty to it (pushes do; read
+    receipts and @mentions deliberately do not). Read state for the three
+    computed kinds lives in `notice_reads`. `public.competition_contacts`
+    is 0048's older list for the invite page and the export; the People
+    card's function is `competition_people`.
   - `fixtures` belong to the competition, so a moved game moves once for
     everyone. A trigger mirrors each fixture into an ordinary `events` row
     per involved club, so RSVPs, reminders and channel cards work unchanged.

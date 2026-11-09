@@ -129,8 +129,9 @@ try {
       // Sam: a family in the competition — the first, never the second.
       const { context, page } = await open(parent, '/chat', NRIFA)
       // The heading is an eyebrow, rendered in capitals: read the text as written.
-      const listed = await page.evaluate(() => document.body.textContent?.includes('Competition notices'))
-      listed ? ok('Sam\'s chat list has "Competition notices"') : bad('no notices group in Sam\'s list')
+      // The group is "Competitions" since 0235: Notices, Clubs and Referees rooms together.
+      const listed = await page.evaluate(() => document.body.textContent?.includes('Competitions') && !!document.querySelector('[data-notices]'))
+      listed ? ok('Sam\'s chat list has the Notices under "Competitions"') : bad('no notices group in Sam\'s list')
       await page.goto(`${BASE}/chat/${ch.id}`, { waitUntil: 'networkidle2' })
       const text = await page.evaluate(() => document.body.innerText)
       text.includes('Round 12 is off') && !text.includes('Team sheets due') ? ok('Sam reads the notice for everyone and not the one for club staff') : bad('Sam reads the wrong notices')

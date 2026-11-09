@@ -67,7 +67,7 @@ try {
   for (const row of ['Teams and players', 'Join requests', 'Programs', 'Import fixtures or players', 'Competitions']) {
     text.includes(row) ? ok(`shown: ${row}`) : bad(`missing for a coach: ${row}`)
   }
-  for (const row of ['New season', 'Venues and pitches', 'Start a competition', 'Collect payments', 'Members', 'Club settings', 'Sponsors']) {
+  for (const row of ['New season', 'Venues and pitches', 'Organise a tournament or league', 'Collect payments', 'Members', 'Club settings', 'Sponsors']) {
     text.includes(row) ? bad(`offered to a coach: ${row}`) : ok(`hidden: ${row}`)
   }
 } finally {

@@ -53,20 +53,22 @@ export function ChannelList({ channels }: { channels: Row[] }) {
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current)
     const q = query.trim()
-    if (q.length < 2) {
-      setFound(null)
-      setSearching(false)
-      return
-    }
-    setSearching(true)
+    // Every state change waits for the timer, even the reset: a setState
+    // straight inside an effect re-renders in a cascade (react-hooks lint).
     timer.current = setTimeout(() => {
+      if (q.length < 2) {
+        setFound(null)
+        setSearching(false)
+        return
+      }
+      setSearching(true)
       createClient()
         .rpc('search_chat', { p_query: q })
         .then(({ data }) => {
           setFound((data ?? null) as unknown as Found | null)
           setSearching(false)
         })
-    }, 280)
+    }, q.length < 2 ? 0 : 280)
     return () => {
       if (timer.current) clearTimeout(timer.current)
     }
@@ -79,8 +81,12 @@ export function ChannelList({ channels }: { channels: Row[] }) {
   //
   // A competition's Notices (0213) sit apart and first: they are the league
   // speaking, read-only, and nobody should mistake one for a team chat.
-  const notices = channels.filter((c) => c.status === 'active' && (c.type as string) === 'notices')
-  const active = channels.filter((c) => c.status === 'active' && c.type !== 'direct' && (c.type as string) !== 'notices')
+  // ...and beside them (0235) the two-way rooms a league runs: each
+  // competition's Clubs chat (league staff and the entered clubs' heads) and
+  // the league's Referees chat. Computed membership, like Notices.
+  const GROUPS = ['notices', 'clubs', 'referees']
+  const notices = channels.filter((c) => c.status === 'active' && GROUPS.includes(c.type as string))
+  const active = channels.filter((c) => c.status === 'active' && c.type !== 'direct' && !GROUPS.includes(c.type as string))
   const direct = channels.filter((c) => c.status === 'active' && c.type === 'direct')
   const archived = channels.filter((c) => c.status === 'archived')
 
@@ -103,7 +109,7 @@ export function ChannelList({ channels }: { channels: Row[] }) {
         </p>
       ) : (
         <>
-          <Group title="Competition notices" rows={notices} />
+          <Group title="Competitions" rows={notices} />
           <Group title="Your channels" rows={active} />
           <Group title="Direct" rows={direct} />
           <Group title={`Archived · past seasons`} rows={archived} />
@@ -301,8 +307,12 @@ function ChannelRow({ c }: { c: Row }) {
       <span
         className={`av ${c.status === 'archived' || c.unread_count === 0 ? 'alt' : ''}`}
         data-notices={(c.type as string) === 'notices' ? '' : undefined}
+        data-group={['clubs', 'referees'].includes(c.type as string) ? (c.type as string) : undefined}
       >
-        {(c.type as string) === 'notices' ? <span aria-hidden>📣</span> : initials(c.name ?? '··')}
+        {(c.type as string) === 'notices' ? <span aria-hidden>📣</span>
+          : (c.type as string) === 'clubs' ? <span aria-hidden>🏟</span>
+          : (c.type as string) === 'referees' ? <span aria-hidden>🟨</span>
+          : initials(c.name ?? '··')}
       </span>
 
       <span className="min-w-0 flex-1">

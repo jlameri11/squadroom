@@ -2796,6 +2796,139 @@ begin
     insert into rls_results values (173, 'a trusted device gives a new session its pass for the device''s 30 days; unknown or lapsed devices nothing; only the hash is kept', r173);
   end;
 
+  -- 0235. A competition's Clubs chat, organiser ↔ club-head chats, a league's
+  -- Referees chat. Rolled back: the competition NRIFA has entered, its
+  -- organiser's owner; HEAD (Hana's parent) made an admin of NRIFA — a club
+  -- head who is not also the league; OUTSIDER made owner of a club that has
+  -- not entered; MARCUS a referee of the league.
+  declare
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    v_c uuid; v_org uuid; v_league uuid; v_ch uuid; v_ref uuid; v_other uuid; v_dm uuid; v_msg uuid;
+    m_league boolean; m_head boolean; m_parent boolean; m_coach boolean; m_other boolean; n_hand integer;
+    p_parent boolean; r_parent int; r_head int; d_bad1 boolean; d_bad2 boolean; d_bad3 boolean; d_members int;
+    f_ref boolean; f_parent boolean; f_host boolean;
+    r174 text; r175 text; r176 text; r177 text;
+  begin
+    begin
+      select cc.competition_id, c.organiser_id into v_c, v_org
+        from public.competition_clubs cc join public.competitions c on c.id = cc.competition_id
+       where cc.academy_id = ACAD_A and cc.status = 'active' order by c.created_at limit 1;
+      if v_c is null then raise exception 'no competition with NRIFA entered to probe'; end if;
+      select am.profile_id into v_league from public.academy_members am
+       where am.academy_id = v_org and am.status = 'active' and am.role = 'owner' and am.profile_id <> COACH order by am.profile_id limit 1;
+      if v_league is null then
+        select am.profile_id into v_league from public.academy_members am
+         where am.academy_id = v_org and am.status = 'active' and am.role in ('owner', 'admin') order by am.profile_id limit 1;
+      end if;
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, HEAD, 'wwcc', 'RLS170', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      update public.academy_members set role = 'admin' where academy_id = ACAD_A and profile_id = HEAD;
+      insert into public.academies (name, slug, type, primary_colour, two_step_required) values ('RLS 174 FC', 'rls-174-fc', 'academy', '#333333', false) returning id into v_other;
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (v_other, OUTSIDER, 'wwcc', 'RLS170B', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      insert into public.academy_members (academy_id, profile_id, role, status) values (v_other, OUTSIDER, 'owner', 'active');
+      insert into public.referees (academy_id, profile_id, full_name, status) values (v_org, MARCUS, 'Marcus Obi', 'active') on conflict do nothing;
+      v_ch := app_private.ensure_clubs_channel(v_c);
+      v_ref := app_private.ensure_referees_channel(v_org);
+
+      -- 174. Who is in the Clubs chat: the league and the entered clubs' heads;
+      -- not a parent, not a coach, not the head of a club that has not entered.
+      perform set_config('request.jwt.claims', json_build_object('sub',v_league,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_league := app_private.is_channel_member(v_ch) and app_private.is_channel_host(v_ch);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_head := app_private.is_channel_member(v_ch) and not app_private.is_channel_host(v_ch);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_parent := app_private.is_channel_member(v_ch);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_coach := app_private.is_channel_member(v_ch);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_other := app_private.is_channel_member(v_ch);
+      execute 'reset role';
+      r174 := case when v_ch is not null and m_league and m_head and not m_parent and not m_coach and not m_other then 'PASS'
+                   else 'FAIL (channel '||coalesce(v_ch::text,'none')||', league '||m_league||', head '||m_head||', parent '||m_parent||', coach '||m_coach||', other club '||m_other||')' end;
+
+      -- 175. Two-way for its members: the head posts and reads; a parent can
+      -- neither read nor write; nobody is added to it by hand.
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      insert into public.messages (academy_id, channel_id, sender_id, body) values (v_org, v_ch, HEAD, 'RLS 175 from a club head') returning id into v_msg;
+      select count(*) into r_head from public.channel_messages(v_ch, null, 50);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      p_parent := false;
+      begin insert into public.messages (academy_id, channel_id, sender_id, body) values (v_org, v_ch, PARENT, 'RLS 175 nope'); exception when others then p_parent := true; end;
+      r_parent := 0;
+      begin select count(*) into r_parent from public.channel_messages(v_ch, null, 50); exception when others then r_parent := 0; end;
+      execute 'reset role';
+      n_hand := 0;
+      begin insert into public.channel_members (academy_id, channel_id, profile_id, role) values (v_org, v_ch, PARENT, 'member'); n_hand := 1; exception when others then null; end;
+      r175 := case when v_msg is not null and r_head >= 1 and p_parent and r_parent = 0 and n_hand = 0 then 'PASS'
+                   else 'FAIL (head posted '||(v_msg is not null)||' and reads '||r_head||', parent refused '||p_parent||' and reads '||r_parent||', added by hand '||n_hand||')' end;
+
+      -- 176. Direct: the league with an entered club's head, and back; never
+      -- a parent, never one head with another, never a club that has not entered.
+      perform set_config('request.jwt.claims', json_build_object('sub',v_league,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_dm := public.open_competition_direct(v_c, HEAD);
+      d_bad1 := false;
+      begin perform public.open_competition_direct(v_c, PARENT); exception when others then d_bad1 := (sqlstate = '42501'); end;
+      execute 'reset role';
+      select count(*) into d_members from public.channel_members where channel_id = v_dm and profile_id in (v_league, HEAD);
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      d_bad2 := false;
+      begin perform public.open_competition_direct(v_c, OUTSIDER); exception when others then d_bad2 := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      d_bad3 := false;
+      begin perform public.open_competition_direct(v_c, v_league); exception when others then d_bad3 := (sqlstate = '42501'); end;
+      execute 'reset role';
+      r176 := case when v_dm is not null and d_members = 2 and d_bad1 and d_bad2 and d_bad3 then 'PASS'
+                   else 'FAIL (dm '||coalesce(v_dm::text,'none')||' members '||d_members||', to a parent refused '||d_bad1||', to a club not entered refused '||d_bad2||', a parent to the league refused '||d_bad3||')' end;
+
+      -- 177. The league's Referees chat: its referees and its staff, nobody else.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      f_ref := app_private.is_channel_member(v_ref);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      f_parent := app_private.is_channel_member(v_ref);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',v_league,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      f_host := app_private.is_channel_host(v_ref);
+      execute 'reset role';
+      r177 := case when v_ref is not null and f_ref and not f_parent and f_host then 'PASS'
+                   else 'FAIL (channel '||coalesce(v_ref::text,'none')||', referee in '||f_ref||', parent in '||f_parent||', league hosts '||f_host||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r174 := coalesce(r174, 'FAIL (stopped: '||sqlerrm||')');
+        r175 := coalesce(r175, 'FAIL (stopped: '||sqlerrm||')');
+        r176 := coalesce(r176, 'FAIL (stopped: '||sqlerrm||')');
+        r177 := coalesce(r177, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (174, 'a competition''s Clubs chat is the league and the entered clubs'' heads — no parent, coach or club that has not entered', r174);
+    insert into rls_results values (175, 'the Clubs chat is two-way for its members, closed to a parent, and nobody is added by hand', r175);
+    insert into rls_results values (176, 'the league and a club''s head may chat directly; never a parent, another club''s head, or a club not entered', r176);
+    insert into rls_results values (177, 'a league''s Referees chat is its referees and its staff, nobody else', r177);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

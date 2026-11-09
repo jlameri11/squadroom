@@ -11,12 +11,27 @@ import { PendingQueue } from './pending-queue'
 import { ScheduledStrip } from './scheduled-strip'
 import { ChannelSettings } from './channel-settings'
 import { NoticeComposer } from './notice-composer'
+import { GroupPeople } from './group-people'
 
 /** A competition's Notices (0213): whose they are, for the header and the footer. */
 export type NoticesInfo = { competitionId: string; competition: string; league: string }
 
+/**
+ * A computed room (0235): a competition's Clubs chat (the league and the
+ * entered clubs' heads) or an organiser's Referees chat. Who is in it is the
+ * database's answer (group_channel_info), never member rows.
+ */
+export type GroupInfo = {
+  kind: 'clubs' | 'referees'
+  standing: string
+  is_host: boolean
+  league: string | null
+  competition: string | null
+  people: { profile_id: string; name: string; standing: string; club: string | null }[]
+}
+
 export function ChannelView({
-  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, restrictions, myId, initialMessages, notices = null,
+  channelId, academyId, teamId, name, postingMode, archived, isHost, muted, restrictions, myId, initialMessages, notices = null, group = null,
 }: {
   channelId: string
   academyId: string
@@ -30,6 +45,7 @@ export function ChannelView({
   myId: string
   initialMessages: ChatMessage[]
   notices?: NoticesInfo | null
+  group?: GroupInfo | null
 }) {
   const { messages, loadOlder, hasMore, loadingOlder, addOptimistic, replaceOptimistic, typing, sayTyping } =
     useChannelMessages(channelId, initialMessages)
@@ -55,7 +71,8 @@ export function ChannelView({
     [messages, myId]
   )
   useEffect(() => {
-    if (!myIdsKey || notices) return
+    // Receipts count member rows; a computed room has none to count.
+    if (!myIdsKey || notices || group) return
     let live = true
     const load = async () => {
       const { data } = await supabase.current.rpc('read_receipts', { p_channel: channelId, p_message_ids: myIdsKey.split(',') })
@@ -74,7 +91,7 @@ export function ChannelView({
       live = false
       clearInterval(timer)
     }
-  }, [channelId, myIdsKey, notices])
+  }, [channelId, myIdsKey, notices, group])
 
   // Notices: how many of the people each was for have opened the channel
   // since — a count, for the league only (0213 notices_reach). The last
@@ -115,6 +132,7 @@ export function ChannelView({
       : `${typingNames[0]} and ${typingNames.length - 1} others are typing…`
   const translations = useTranslations(messages, lang)
   const [showSettings, setShowSettings] = useState(false)
+  const [showPeople, setShowPeople] = useState(false)
   // C-04: bumps when a message is queued for later, so the strip reloads.
   const [scheduledKey, setScheduledKey] = useState(0)
   // C-06: replies to an announcement that is on screen sit under it, folded.
@@ -167,9 +185,11 @@ export function ChannelView({
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="display truncate text-[1.3125rem] leading-tight">{name}</h1>
-          <p className="truncate text-xs opacity-75" data-channel-kind={notices ? 'notices' : undefined}>
+          <p className="truncate text-xs opacity-75" data-channel-kind={notices ? 'notices' : group ? group.kind : undefined}>
             {notices
               ? `From ${notices.league}${archived ? ' · ended' : ' · only the league posts'}`
+              : group
+                ? `${group.league ?? 'The league'} and ${group.kind === 'clubs' ? 'the clubs\u2019 heads' : 'its referees'}${archived ? ' · ended' : ' · everyone can post'}`
               : archived ? 'Past season · read-only'
               : postingMode === 'hosts_only' ? 'Announcements only'
               : postingMode === 'replies_only' ? 'Replies only'
@@ -178,8 +198,20 @@ export function ChannelView({
           </p>
         </div>
         {/* Notices have nothing to set: their reach is the competition's and
-            nobody may open them up (0213). */}
-        {!notices && (
+            nobody may open them up (0213). A computed room shows who is in
+            it instead of settings — its members follow the competition. */}
+        {group && (
+          <button
+            onClick={() => setShowPeople(true)}
+            className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-lg"
+            style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}
+            aria-label="Who is in this chat"
+            data-group-people-button
+          >
+            <span aria-hidden>👥</span>
+          </button>
+        )}
+        {!notices && !group && (
           <button
             onClick={() => setShowSettings(true)}
             className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-lg"
@@ -190,6 +222,8 @@ export function ChannelView({
           </button>
         )}
       </header>
+
+      {showPeople && group && <GroupPeople group={group} onClose={() => setShowPeople(false)} />}
 
       {showSettings && (
         <ChannelSettings

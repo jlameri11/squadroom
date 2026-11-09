@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
-import { ChannelView, type NoticesInfo } from './channel-view'
+import { ChannelView, type GroupInfo, type NoticesInfo } from './channel-view'
 import type { ChatMessage } from '@/lib/hooks/use-channel-messages'
 
 export default async function ChannelPage(props: { params: Promise<{ channelId: string }> }) {
@@ -38,8 +38,16 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
   // competition managers host them without being the organisation's staff.
   const competitionId = (channel as { competition_id?: string | null }).competition_id ?? null
   let notices: NoticesInfo | null = null
+  let group: GroupInfo | null = null
   let isHost: boolean
-  if ((channel.type as string) === 'notices' && competitionId) {
+  const kind = channel.type as string
+  if (kind === 'clubs' || kind === 'referees') {
+    // A computed room (0235): who is in it, and whether I host it (the
+    // league does), are the database's answers — there are no member rows.
+    const { data } = await supabase.rpc('group_channel_info', { p_channel: channelId })
+    group = (data as unknown as GroupInfo | null) ?? null
+    isHost = group?.is_host === true
+  } else if (kind === 'notices' && competitionId) {
     const [{ data: canPost }, { data: comp }] = await Promise.all([
       supabase.rpc('can_post_in_channel', { p_channel: channelId }),
       supabase.from('competitions').select('name, organiser, organiser_id').eq('id', competitionId).maybeSingle(),
@@ -82,6 +90,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
       myId={userId}
       initialMessages={messages}
       notices={notices}
+      group={group}
     />
   )
 }

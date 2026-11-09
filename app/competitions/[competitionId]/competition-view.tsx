@@ -6,6 +6,7 @@ import { RefereesTab } from './referees-tab'
 import { LeagueOfficials } from './league-officials'
 import { ReportsCard } from './reports-card'
 import { EntriesAndFees, ClubFees, ClubLevy } from './entries-and-fees'
+import { CompetitionPeople } from './competition-people'
 import { ChangeRequests, ProposeChange } from './change-requests'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 import { MatchDayDashboard } from './match-day-dashboard'
@@ -176,6 +177,8 @@ export function CompetitionView({
             </Link>
           )}
           {areas.includes('staff') && <LeagueOfficials competitionId={competitionId} />}
+          {/* 0235: the Clubs chat and the people you may message — league staff and the clubs' heads. */}
+          <CompetitionPeople competitionId={competitionId} />
           {isOrganiser && !commsOnly && <EntriesAndFees competitionId={competitionId} divisions={divisions} entriesOpen={entriesOpen} />}
           {/* L-27: clubs propose a division per team; the league sets it. */}
           {isOrganiser && !commsOnly && <Nominations competitionId={competitionId} />}

@@ -172,7 +172,10 @@ export function AdminHub() {
         <h2 className="eyebrow px-1 pb-2">Competitions</h2>
         <ul className="card mb-5 overflow-hidden">
           <Row href="/competitions" label="Competitions" hint="Tournaments, cups and gala days" />
-          {isStaff && <Row href="/competitions/new" label="Start a competition" />}
+          {/* Joey, 9 Nov 2026: an academy organises its own tournament or league;
+              the competition is made under the academy, which then gets the
+              organiser's tools for that competition only (as before). */}
+          {isStaff && <Row href="/competitions/new" label="Organise a tournament or league" />}
         </ul>
 
         {isStaff && (
