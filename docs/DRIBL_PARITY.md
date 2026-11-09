@@ -62,7 +62,7 @@ expect. Same statuses as above.
 | S11 | Live match-day ops dashboard | The match-day list on the run sheet plus the organiser's Home counts | **DONE** (0186 + 0189, 2 Nov) | L-26 |
 | S12 | Nominations: drag into teams, propose division, lock on submit, DOB override | A proposed division and comment per team; the squad locks; the league sets the division and unlocks; a date-of-birth band on the sheet with an exemption | **DONE** (0191, 2 Nov) | L-27 |
 | S13 | Bulk score upload, bulk reschedule, move a competition | Scores in bulk, a round moved or called off; call off a day / ground (L-09) | **DONE** (0191, 2 Nov) — "move a competition" has no equivalent here | L-28 |
-| S14 | Multi-level fee split, each level refunds its share; finance per org | Entry fees owed to the league per entry, paid by bank/cash and ticked off (L-02); the Stripe split (B-09) is key-blocked | PARTIAL | B-10 |
+| S14 | Multi-level fee split, each level refunds its share; finance per org | Entry fees per entry (L-02) and a per-player levy per division (0230): the club collects, the league sees what each club owes it and ticks it off — Joey's 9 Nov decision in place of a Stripe split, which Stripe refuses between connected accounts | DONE for the levy; refunds of a league's share stay the league's own | B-09 done, B-10 |
 | S15 | De-registration approval chain with automatic refunds; voucher carve-outs | Withdraw with refund (R-15) | PARTIAL | B-11 |
 | S16 | Named voucher types with limits and expiry | Government, club, coach, volunteer, scholarship, sibling; uses and an expiry per voucher | **DONE** (0193, 2 Nov) | B-12 |
 | S17 | Direct debit, Afterpay | Card and bank transfer (B-08) | MISSING — and we add **pay instalments early**, which Squadi cannot | B-13 |

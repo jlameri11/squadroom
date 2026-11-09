@@ -2472,6 +2472,125 @@ begin
     insert into rls_results values (163, 'another club reads none of it; only the squad''s own people ask for its table', r163);
   end;
 
+  -- 0230. The league's share of each player. Rolled back: the competition
+  -- NRIFA has entered with a squad, its organiser's owner, a levy of $12 a
+  -- player for one division and $10 for the rest, a $20 payment.
+  declare
+    -- Joey (COACH) also owns the SPL in the demo copy, so the club's side is
+    -- probed as HEAD: Hana's parent, made an admin of NRIFA for the probe.
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    v_c uuid; v_org uuid; v_league uuid; v_div text; v_team uuid; v_players int; v_other int;
+    v_st jsonb; v_mine jsonb; v_club jsonb; v_pay uuid; v_expect bigint;
+    b_set boolean; b_parent boolean; b_rec boolean; b_undo boolean;
+    r164 text; r165 text; r166 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, HEAD, 'wwcc', 'RLS164', 'cleared', current_date + 300, COACH) on conflict do nothing;
+      update public.academy_members set role = 'admin' where academy_id = ACAD_A and profile_id = HEAD;
+      select cc.competition_id, c.organiser_id, ce.division, ce.team_id
+        into v_c, v_org, v_div, v_team
+        from public.competition_clubs cc
+        join public.competitions c on c.id = cc.competition_id
+        join public.competition_entries ce on ce.competition_id = cc.competition_id and ce.academy_id = cc.academy_id and ce.team_id is not null
+       where cc.academy_id = ACAD_A and cc.status = 'active'
+       order by ce.division
+       limit 1;
+      if v_c is null then
+        raise exception 'no competition with an entered NRIFA squad to probe';
+      end if;
+      select am.profile_id into v_league from public.academy_members am
+       where am.academy_id = v_org and am.status = 'active' and am.role = 'owner' and am.profile_id <> COACH
+       order by am.profile_id limit 1;
+      if v_league is null then
+        select am.profile_id into v_league from public.academy_members am
+         where am.academy_id = v_org and am.status = 'active' and am.role in ('owner', 'admin') order by am.profile_id limit 1;
+      end if;
+      select count(*) into v_players from public.players pl where pl.team_id = v_team;
+      -- What NRIFA should owe: its entered squads' players, by division.
+      -- 164. Only the organiser sets a levy; the statement adds up.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b_set := false;
+      begin perform public.set_competition_levy(v_c, '', 1000); exception when others then b_set := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',v_league,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.set_competition_levy(v_c, '', 1000, 'Bank transfer to the league, reference your club');
+      v_st := public.set_competition_levy(v_c, v_div, 1200);
+      execute 'reset role';
+      select sum(case when ce.division = v_div then 1200 else 1000 end * (select count(*) from public.players pl where pl.team_id = ce.team_id))
+        into v_expect
+        from public.competition_entries ce
+       where ce.competition_id = v_c and ce.academy_id = ACAD_A and ce.team_id is not null;
+      select x into v_club from jsonb_array_elements(v_st -> 'clubs') x where (x ->> 'club_id')::uuid = ACAD_A;
+      r164 := case when b_set and v_club is not null and (v_club ->> 'owed_cents')::bigint = v_expect
+                         and exists (select 1 from jsonb_array_elements(v_club -> 'lines') l where l ->> 'division' = v_div and (l ->> 'levy_cents')::int = 1200 and (l ->> 'players')::int = v_players)
+                         and jsonb_array_length(v_st -> 'levies') = 2
+                    then 'PASS'
+                    else 'FAIL (parent refused '||b_set||', NRIFA owes '||coalesce(v_club ->> 'owed_cents', 'none')||' expected '||v_expect||', '||coalesce(v_st::text, 'null')||')' end;
+
+      -- 165. A club's staff see their own statement and nobody else's; a
+      -- family sees nothing of it.
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_mine := public.my_levy_statement(v_c);
+      select count(*) into v_other from public.levy_payments where competition_id = v_c and club_academy_id <> ACAD_A;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b_parent := false;
+      begin perform public.my_levy_statement(v_c); exception when others then b_parent := (sqlstate = '42501'); end;
+      select count(*) into n from public.competition_levies where competition_id = v_c;
+      execute 'reset role';
+      r165 := case when (v_mine ->> 'club_id')::uuid = ACAD_A and (v_mine ->> 'owed_cents')::bigint = v_expect
+                         and v_mine ->> 'instructions' like 'Bank transfer%' and b_parent
+                    then 'PASS'
+                    else 'FAIL (own club '||coalesce(v_mine ->> 'club', 'none')||' owes '||coalesce(v_mine ->> 'owed_cents', 'none')||', parent refused '||b_parent||')' end;
+
+      -- 166. Recording a payment is the organiser's: the club cannot; $20 by
+      -- bank brings the balance down for both views; only the organiser undoes it.
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      b_rec := false;
+      begin perform public.record_levy_payment(v_c, ACAD_A, 2000, 'bank'); exception when others then b_rec := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',v_league,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_st := public.record_levy_payment(v_c, ACAD_A, 2000, 'bank', 'ref SPL-NRIFA');
+      execute 'reset role';
+      select x into v_club from jsonb_array_elements(v_st -> 'clubs') x where (x ->> 'club_id')::uuid = ACAD_A;
+      v_pay := (v_club -> 'payments' -> 0 ->> 'id')::uuid;
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_mine := public.my_levy_statement(v_c);
+      b_undo := false;
+      begin perform public.undo_levy_payment(v_pay); exception when others then b_undo := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',v_league,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_st := public.undo_levy_payment(v_pay);
+      execute 'reset role';
+      r166 := case when b_rec and (v_club ->> 'paid_cents')::int = 2000 and (v_club ->> 'balance_cents')::bigint = v_expect - 2000
+                         and (v_mine ->> 'paid_cents')::int = 2000 and b_undo
+                         and (select (x ->> 'paid_cents')::int from jsonb_array_elements(v_st -> 'clubs') x where (x ->> 'club_id')::uuid = ACAD_A) = 0
+                    then 'PASS'
+                    else 'FAIL (club refused '||b_rec||', paid '||coalesce(v_club ->> 'paid_cents', 'none')||', club sees '||coalesce(v_mine ->> 'paid_cents', 'none')||', undo refused for the club '||b_undo||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r164 := coalesce(r164, 'FAIL (stopped: '||sqlerrm||')');
+        r165 := coalesce(r165, 'FAIL (stopped: '||sqlerrm||')');
+        r166 := coalesce(r166, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (164, 'only the organiser sets the player levy, and what a club owes is its entered players times the division''s rate', r164);
+    insert into rls_results values (165, 'a club''s staff see their own levy statement and nobody else''s; a family sees nothing of it', r165);
+    insert into rls_results values (166, 'only the organiser records or undoes a club''s payment, and both sides see the balance move', r166);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

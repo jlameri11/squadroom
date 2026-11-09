@@ -5,7 +5,7 @@ import { DisciplineTab } from './discipline-tab'
 import { RefereesTab } from './referees-tab'
 import { LeagueOfficials } from './league-officials'
 import { ReportsCard } from './reports-card'
-import { EntriesAndFees, ClubFees } from './entries-and-fees'
+import { EntriesAndFees, ClubFees, ClubLevy } from './entries-and-fees'
 import { ChangeRequests, ProposeChange } from './change-requests'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 import { MatchDayDashboard } from './match-day-dashboard'
@@ -181,6 +181,7 @@ export function CompetitionView({
           {isOrganiser && !commsOnly && <Nominations competitionId={competitionId} />}
           {!isOrganiser && !commsOnly && <MyNominations competitionId={competitionId} />}
           {!isOrganiser && <ClubFees competitionId={competitionId} />}
+          {!isOrganiser && <ClubLevy competitionId={competitionId} />}
           {!commsOnly && <ChangeRequests competitionId={competitionId} />}
           {!commsOnly && <ReportsCard competitionId={competitionId} referees={areas.includes('referees')} />}
           {isOrganiser && publication && (

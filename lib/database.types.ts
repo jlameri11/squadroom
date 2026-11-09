@@ -1026,6 +1026,30 @@ export type Database = {
           },
         ]
       }
+      competition_levies: {
+        Row: {
+          competition_id: string
+          division: string
+          instructions: string | null
+          levy_cents: number
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          division?: string
+          instructions?: string | null
+          levy_cents: number
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          division?: string
+          instructions?: string | null
+          levy_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competition_referee_fees: {
         Row: {
           competition_id: string
@@ -3613,6 +3637,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      levy_payments: {
+        Row: {
+          amount_cents: number
+          club_academy_id: string
+          competition_id: string
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          paid_on: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount_cents: number
+          club_academy_id: string
+          competition_id: string
+          created_at?: string
+          id?: string
+          method: string
+          note?: string | null
+          paid_on?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          club_academy_id?: string
+          competition_id?: string
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          paid_on?: string
+          recorded_by?: string | null
+        }
+        Relationships: []
       }
       link_previews: {
         Row: {
@@ -8305,6 +8365,7 @@ export type Database = {
         Returns: undefined
       }
       league_officials: { Args: { p_competition: string }; Returns: Json }
+      levy_statement: { Args: { p_competition: string }; Returns: Json }
       live_tick: {
         Args: {
           p_assist?: string
@@ -8443,6 +8504,7 @@ export type Database = {
       my_entries: { Args: { p_competition: string }; Returns: Json }
       my_entry_fees: { Args: { p_competition: string }; Returns: Json }
       my_family: { Args: never; Returns: Json }
+      my_levy_statement: { Args: { p_competition: string }; Returns: Json }
       my_matchdays: {
         Args: { p_academy: string; p_limit?: number }
         Returns: Json
@@ -8834,6 +8896,7 @@ export type Database = {
         Args: { p_note?: string; p_occurred_on: string; p_player: string }
         Returns: string
       }
+      record_levy_payment: { Args: { p_amount_cents: number; p_club: string; p_competition: string; p_method?: string; p_note?: string; p_paid_on?: string }; Returns: Json }
       record_match_event: {
         Args: {
           p_code?: string
@@ -9090,6 +9153,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_competition_levy: { Args: { p_competition: string; p_division: string; p_instructions?: string; p_levy_cents: number }; Returns: Json }
       set_consent: {
         Args: { p_accepted: boolean; p_document: string; p_player: string }
         Returns: undefined
@@ -9297,6 +9361,7 @@ export type Database = {
       trial_offers: { Args: { p_program: string }; Returns: Json }
       two_step_needed: { Args: never; Returns: boolean }
       undo_last_tick: { Args: { p_event: string }; Returns: Json }
+      undo_levy_payment: { Args: { p_payment: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
       venue_layout: { Args: { p_venue: string }; Returns: Json }
       void_referee_run: { Args: { p_run: string }; Returns: undefined }

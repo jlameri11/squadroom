@@ -20,6 +20,12 @@ type Request = {
   created_at: string
   token: string | null
 }
+/** B-09 (0230): the league's levy per registered player, and each club's statement. */
+type LevyLine = { division: string; players: number; levy_cents: number | null; owed_cents: number }
+type LevyPayment = { id: string; amount_cents: number; method: string; paid_on: string; note: string | null }
+type ClubLevy = { club_id: string; club: string; players: number; owed_cents: number; paid_cents: number; balance_cents: number; lines: LevyLine[]; payments: LevyPayment[] }
+type Levy = { levies: { division: string; levy_cents: number; instructions: string | null }[]; clubs: ClubLevy[] }
+
 type Fees = {
   fees: { division: string; fee_cents: number; instructions: string | null }[]
   entries: { fee_id: string; entry_id: string; team: string; division: string; club: string | null; claimed: boolean; amount_cents: number; status: 'owed' | 'paid' | 'waived'; paid_at: string | null; method: string | null; note: string | null }[]
@@ -43,16 +49,23 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
   const [copied, setCopied] = useState<string | null>(null)
   const [showFees, setShowFees] = useState(false)
   const [feeDraft, setFeeDraft] = useState({ division: '', dollars: '', instructions: '' })
+  const [levy, setLevy] = useState<Levy | null>(null)
+  const [showLevy, setShowLevy] = useState(false)
+  const [levyDraft, setLevyDraft] = useState({ division: '', dollars: '', instructions: '' })
+  const [payFor, setPayFor] = useState<string | null>(null)
+  const [payDraft, setPayDraft] = useState({ dollars: '', method: 'bank', note: '' })
 
   const load = useCallback(async () => {
     const client = createClient()
-    const [r, f] = await Promise.all([
+    const [r, f, l] = await Promise.all([
       client.rpc('entry_requests', { p_competition: competitionId }),
       client.rpc('competition_fees_view', { p_competition: competitionId }),
+      client.rpc('levy_statement', { p_competition: competitionId }),
     ])
     if (r.error) return setError(r.error.message)
     setRequests((r.data as unknown as Request[] | null) ?? [])
     setFees((f.data as unknown as Fees | null) ?? null)
+    setLevy(l.error ? null : ((l.data as unknown as Levy | null) ?? null))
   }, [competitionId])
 
   useEffect(() => {
@@ -97,6 +110,44 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
     await load()
   }
 
+  // B-09 (0230): the league's share of each player, collected by the club.
+  async function saveLevy() {
+    setBusy('levy')
+    setError(null)
+    const { error } = await createClient().rpc('set_competition_levy', {
+      p_competition: competitionId,
+      p_division: levyDraft.division,
+      p_levy_cents: Math.round(Number(levyDraft.dollars) * 100),
+      p_instructions: levyDraft.instructions || undefined,
+    })
+    setBusy(null)
+    if (error) return setError(error.message)
+    setLevyDraft({ division: '', dollars: '', instructions: '' })
+    await load()
+  }
+  async function recordLevyPayment(clubId: string) {
+    setBusy(`levy:${clubId}`)
+    setError(null)
+    const { error } = await createClient().rpc('record_levy_payment', {
+      p_competition: competitionId,
+      p_club: clubId,
+      p_amount_cents: Math.round(Number(payDraft.dollars) * 100),
+      p_method: payDraft.method,
+      p_note: payDraft.note || undefined,
+    })
+    setBusy(null)
+    if (error) return setError(error.message)
+    setPayFor(null)
+    setPayDraft({ dollars: '', method: 'bank', note: '' })
+    await load()
+  }
+  async function undoLevyPayment(id: string) {
+    setBusy(id)
+    const { error } = await createClient().rpc('undo_levy_payment', { p_payment: id })
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
+  }
   async function mark(feeId: string, status: 'paid' | 'waived' | 'owed') {
     setBusy(feeId)
     const { error } = await createClient().rpc('mark_entry_fee', { p_fee: feeId, p_status: status, p_method: 'bank' })
@@ -224,6 +275,122 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
           </div>
         )}
       </div>
+
+      {/* B-09 (0230): the levy. The club collects the whole fee; the league
+          sees what each club owes it from its registered players, and the
+          treasurer ticks it off — as entry fees work. Squadroom takes nothing. */}
+      <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--line-2)' }} data-levy>
+        <div className="flex items-center gap-3">
+          <span className="min-w-0 flex-1 text-sm">
+            <b>Player levy</b>
+            <span className="block text-ink-3">
+              {levy?.levies.length
+                ? `${levy.levies.map((l) => `${l.division || 'All'} ${money(l.levy_cents)} a player`).join(' · ')} · owed ${money(levy.clubs.reduce((n, c) => n + c.owed_cents, 0))} · paid ${money(levy.clubs.reduce((n, c) => n + c.paid_cents, 0))}`
+                : 'None set — the clubs owe the league nothing per player.'}
+            </span>
+          </span>
+          <button onClick={() => setShowLevy((v) => !v)} className="flex-none rounded-xl px-3.5 py-2 text-sm font-semibold" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-levy-toggle>
+            {showLevy ? 'Hide' : 'Manage'}
+          </button>
+        </div>
+        {showLevy && (
+          <div className="mt-3" data-levy-panel>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <label>
+                <span className="text-ink-2">Division</span>
+                <select value={levyDraft.division} onChange={(e) => setLevyDraft({ ...levyDraft, division: e.target.value })} className="mt-0.5 w-full rounded-lg border bg-transparent px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} aria-label="Levy division">
+                  <option value="">All divisions</option>
+                  {divisions.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </label>
+              <label>
+                <span className="text-ink-2">Per player</span>
+                <span className="mt-0.5 flex items-center gap-1 rounded-lg border px-2" style={{ borderColor: 'var(--line)' }}>
+                  <span className="text-ink-3">$</span>
+                  <input value={levyDraft.dollars} onChange={(e) => setLevyDraft({ ...levyDraft, dollars: e.target.value })} inputMode="decimal" placeholder="0" className="w-full min-w-0 py-1.5 text-sm tabular-nums" aria-label="Levy per player, dollars" />
+                </span>
+              </label>
+              <label className="col-span-2">
+                <span className="text-ink-2">How to pay (shown to clubs)</span>
+                <input value={levyDraft.instructions} onChange={(e) => setLevyDraft({ ...levyDraft, instructions: e.target.value })} placeholder="Bank transfer to SPL Inc, BSB 062-000, acct 1234 5678, reference your club" className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
+              </label>
+              <button onClick={saveLevy} disabled={busy === 'levy' || levyDraft.dollars === ''} className="col-span-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-levy-save>Set the levy</button>
+            </div>
+            <p className="mt-1.5 text-[0.6875rem] text-ink-3">The club collects the whole fee from its families; what it owes you is its registered players today times the levy. You tick it off here when it pays.</p>
+            {levy && levy.clubs.length > 0 && (
+              <ul className="mt-3 divide-y text-xs" style={{ borderColor: 'var(--line-2)' }}>
+                {levy.clubs.map((c) => (
+                  <li key={c.club_id} className="py-2" data-levy-club={c.club_id}>
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{c.club}</span>
+                        <span className="block text-ink-3">
+                          {c.players} {c.players === 1 ? 'player' : 'players'} · owes {money(c.owed_cents)} · paid {money(c.paid_cents)} ·{' '}
+                          <span style={{ color: c.balance_cents > 0 ? 'var(--no)' : 'var(--yes)' }} data-levy-balance>{c.balance_cents > 0 ? `${money(c.balance_cents)} to come` : 'settled'}</span>
+                        </span>
+                      </span>
+                      {payFor !== c.club_id && (
+                        <button onClick={() => { setPayFor(c.club_id); setPayDraft({ dollars: c.balance_cents > 0 ? (c.balance_cents / 100).toFixed(2) : '', method: 'bank', note: '' }) }} className="flex-none rounded-lg px-2 py-1 font-semibold text-brand-ink" style={{ background: 'var(--brand)' }} data-levy-pay={c.club_id}>Paid</button>
+                      )}
+                    </div>
+                    {c.lines.length > 1 && (
+                      <p className="mt-0.5 text-ink-3">{c.lines.map((l) => `${l.division}: ${l.players} × ${l.levy_cents == null ? '—' : money(l.levy_cents)}`).join(' · ')}</p>
+                    )}
+                    {payFor === c.club_id && (
+                      <div className="mt-2 grid grid-cols-[1fr_auto_auto] gap-2" data-levy-pay-form>
+                        <span className="flex items-center gap-1 rounded-lg border px-2" style={{ borderColor: 'var(--line)' }}>
+                          <span className="text-ink-3">$</span>
+                          <input value={payDraft.dollars} onChange={(e) => setPayDraft({ ...payDraft, dollars: e.target.value })} inputMode="decimal" className="w-full min-w-0 py-1.5 tabular-nums" aria-label="Amount paid, dollars" />
+                        </span>
+                        <select value={payDraft.method} onChange={(e) => setPayDraft({ ...payDraft, method: e.target.value })} className="rounded-lg border bg-transparent px-2 py-1.5" style={{ borderColor: 'var(--line)' }} aria-label="Paid how">
+                          <option value="bank">Bank</option>
+                          <option value="cash">Cash</option>
+                        </select>
+                        <button onClick={() => recordLevyPayment(c.club_id)} disabled={busy === `levy:${c.club_id}` || !payDraft.dollars} className="rounded-lg px-3 py-1.5 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-levy-pay-save>Record</button>
+                        <input value={payDraft.note} onChange={(e) => setPayDraft({ ...payDraft, note: e.target.value })} placeholder="Note (reference, who paid)" className="col-span-2 rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--line)' }} aria-label="Note" />
+                        <button onClick={() => setPayFor(null)} className="rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+                      </div>
+                    )}
+                    {c.payments.length > 0 && (
+                      <ul className="mt-1 space-y-0.5 text-ink-3">
+                        {c.payments.map((p) => (
+                          <li key={p.id} className="flex items-center gap-2" data-levy-payment={p.id}>
+                            <span className="min-w-0 flex-1 truncate">{money(p.amount_cents)} by {p.method} · {day(p.paid_on)}{p.note ? ` · ${p.note}` : ''}</span>
+                            <button onClick={() => undoLevyPayment(p.id)} disabled={busy === p.id} className="tap flex-none underline underline-offset-2">undo</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** The club's side of the levy (B-09, 0230): what this club owes the league per player, and how to pay. */
+export function ClubLevy({ competitionId }: { competitionId: string }) {
+  const [s, setS] = useState<(ClubLevy & { league: string; instructions: string | null; levies: { division: string; levy_cents: number }[] }) | null>(null)
+  useEffect(() => {
+    ;(async () => {
+      const { data, error } = await createClient().rpc('my_levy_statement', { p_competition: competitionId })
+      setS(error ? null : ((data as unknown as typeof s) ?? null))
+    })()
+  }, [competitionId])
+  if (!s || s.levies.length === 0) return null
+  return (
+    <div className="m-3.5 rounded-xl border p-3.5 text-sm" style={{ borderColor: 'var(--line)' }} data-club-levy>
+      <b>Player levy to {s.league}</b>
+      <p className="mt-1 text-xs text-ink-2">
+        {s.players} registered {s.players === 1 ? 'player' : 'players'} × {s.levies.map((l) => `${money(l.levy_cents)}${l.division ? ` (${l.division})` : ''}`).join(' / ')} = {money(s.owed_cents)} · paid {money(s.paid_cents)} ·{' '}
+        <span style={{ color: s.balance_cents > 0 ? 'var(--no)' : 'var(--yes)' }} data-club-levy-balance>{s.balance_cents > 0 ? `${money(s.balance_cents)} to pay` : 'settled'}</span>
+      </p>
+      {s.instructions && <p className="mt-1 text-xs text-ink-3">How to pay: {s.instructions}</p>}
+      <p className="mt-1 text-[0.6875rem] text-ink-3">You collect the whole fee from your families; this is the league&apos;s share of each player on your entered squads today. Squadroom takes nothing.</p>
     </div>
   )
 }
