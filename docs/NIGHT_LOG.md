@@ -6,6 +6,36 @@ every item on it is something no amount of building can get past.
 
 ---
 
+## Day summary — 9 Nov 2026 (Mon): the token, migration day, the deploy
+
+- **Token renewed and checked read-only** (200; squadroom-dev the only
+  project visible). **0044a and 0208–0228 applied to squadroom-dev** in one
+  go, all 22 clean; **0229** followed the same afternoon (a grant the first
+  real run found). Types regenerated (114 tables, 304 functions).
+- **Three full runs with the demo guard on.** #21 (143 suites, 3,007
+  assertions) was the first time the sections that had waited for the token
+  ran for real: six things found, two of them real bugs (the league's
+  Notices composer behind a missing grant; the email gate never showing in a
+  development build), one a real gap (an unsynced Appearance choice lost on
+  reload), three test premises. #22 (3,022): two harness-side misses the
+  working gate exposed. #23 (3,026): one timing miss (`push-wake`, a shared
+  15-second window; hardened, green twice on re-run). Everything else green;
+  the demo guard quiet throughout.
+- **Deployed to squadroom-dev** (the Deploys table below): the second
+  deploy under the milestone rule — 0208 → 0229, a Monday, after the runs
+  above. Demo refreshed and demo passwords set, twice (before #22 and after
+  #23). Every phone-joined demo account now has a demo email, because the
+  gate works.
+- **Built today before the token arrived:** R-20 offers to returning
+  players (0221–0222), M5 game photos (0223), S-07's database half (0224),
+  G-07 helpers (0225), B-08 bank payments and pay later (0226–0227), the
+  division table from a league's file (0228).
+- **Joey's decisions (9 Nov):** #23 the club collects the whole fee and the
+  league sees what each club owes it; #22 two-step compulsory for owners,
+  admins and league staff; #21 Supabase Pro, Small compute (December). Then
+  two briefs, in order: the organiser groups and "Academy vs league
+  organiser"; and after those, **Big Club Mode** (`docs/BIG_CLUB_MODE.md`).
+
 ## Day summary — 4 Nov 2026 (after the deploy; migrations blocked all day)
 
 The Supabase access token died on the afternoon of 3 Nov and Joey will
@@ -456,6 +486,7 @@ Exact steps are in NEEDS JOEY below.
 
 | Date | What | Outcome |
 |---|---|---|
+| 9 Nov 2026 (Mon), 3 pm Sydney | Everything since 3/4 Nov: 0208 → 0229 — a coach runs their squad not the club, club colours and Appearance, both sides of a game, a child counted once, a competition's Notices, every account has an email, a teenager's login, Home's jobs asking once, an announcement about a day, a tap counted once, late pushes not sent, referees paid by bank or cash, offers to returning players, a place waiting on Home, the game in pictures, two steps means two steps, helpers wanted, a bank payment clears, pay later by a day, the division table from the league's file, and the migration-day grant. Milestone: the migrations the token had held back since 4 Nov, proven locally first, applied and tested on dev | **DEPLOYED** — `npx netlify-cli deploy --prod --build` with the token from `.env.local` and `NEXT_PUBLIC_SITE_URL` forced to the live address; build 1 m 4 s; 108 files, 4 functions, 3 edge functions (deploy `6af14e89…`). Before it: full runs #21–#23 (see the day summary); #23 143 suites, 3,026 assertions, green bar `push-wake`'s shared-window timing, hardened and green twice on re-run. After it: `/`, `/signin`, `/nrifa`, `/c/nrifa-spring-gala`, `/for-clubs`, `/join`, `/nrifa/register`, `/status`, `/platform`, `/privacy` all 200; the webhook refuses an unsigned POST (400); no `localhost` in any page's HTML; `smoke-demo` against the live site **0 blocking, 5 worth knowing** (no referees in the SPL pool, nobody appointed, Stripe not connected on the live site — NEEDS JOEY #14 — no push devices). Demo refreshed and passwords set after. |
 | 3 Nov 2026 (Tue), deployed in the first minutes of Wed 4 Nov Sydney time | Everything since the last deploy (27 Oct): 0147 → 0207 — M9 league mode, M3, M4, M5 (bar photos), G-01/G-03/G-05/G-08, R-18/R-19, L-29, X-12 Matchdays, the sponsor slots, the Stripe half, referee payouts parked. Joey asked for it with the Netlify token on 3 Nov | **DEPLOYED** — `npx netlify-cli deploy --prod --build` with the token from `.env.local` and `NEXT_PUBLIC_SITE_URL` forced to the live address (a local build would otherwise bake `localhost:3000` from `.env.local`). Build 51 s; 104 files, 4 functions, 3 edge functions. Before it: full run **#12** (121 suites, 2362 assertions; failures were the dead Supabase token (rls), the by-hand Stripe suite mis-read as a crash, and withdrawals expecting the no-key answer — the last two fixed) and **#13** (121 suites, **2382 assertions, green bar test-rls, which cannot run without a working `SUPABASE_ACCESS_TOKEN`** — NEEDS JOEY #12; RLS last ran green in run #11 and 0207 adds no policy); `test-stripe-e2e` green by hand. After it: `/`, `/signin`, `/nrifa`, `/c/nrifa-spring-gala`, `/for-clubs`, `/join`, `/nrifa/register`, `/status` all 200; the new payment routes answer; the removed referee route is 404; no `localhost` in the HTML; `smoke-demo` against the live site: **0 blocking, 8 worth knowing** (no referees in the SPL pool for the demo; Stripe not connected on the live site — NEEDS JOEY #14; no push devices). Demo data refreshed around today first (`refresh-demo`, `demo-passwords`). |
 | 3 Nov 2026 (Tue) | Milestones complete under the new rule: **M9 League mode** (bar Stripe), **M3 WhatsApp feel**, **M4 the Dribl side**, **M5 match centre and stats** (bar photos and sponsor slots), plus G-01, G-05, R-19, L-29 and the money polish (0168 → 0204); full runs #7, #9, #10 green | **NOT DEPLOYED — no `NETLIFY_AUTH_TOKEN` in `.env.local`** (NEEDS JOEY #7). Deploys the first weekday the token exists and the full run is green. |
 | 1 Nov 2026 (Sun, weekly slot) | Everything from 0147 to 0167: M9 league mode, R-18, the two fixes | **NOT DEPLOYED — no Netlify token** (NEEDS JOEY #7). Next slot Sunday 8 Nov. |
@@ -485,8 +516,10 @@ after M7 or M8 instead; nothing else moves.
 academies and leagues, never parents; no billing or plans built yet — is in
 CLAUDE.md.
 
-**12. (3 Nov, afternoon) The Supabase personal access token has stopped
-working.** `SUPABASE_ACCESS_TOKEN` in `.env.local` (an `sbp_…` token) now
+**12. — DONE 9 Nov: the token arrived, checked read-only, and every
+migration it had held back is on dev and deployed (see the day summary).
+The original note:** (3 Nov, afternoon) The Supabase personal access token
+has stopped working. `SUPABASE_ACCESS_TOKEN` in `.env.local` (an `sbp_…` token) now
 gets `401 Invalid access token` from the management API — from
 `scripts/_sql.mjs`, `npx supabase projects list` and a plain
 `GET /v1/profile`. It worked at 20:30; the file is intact (checked line by
@@ -676,8 +709,11 @@ should that route need a guardian's approval too? Also: anyone can make an
 account at /signup and nothing asks their age; that was true before and is
 unchanged.
 
-**21. The Supabase plan for launch — your call, with the numbers in
-`docs/SCALE.md` §5.** At 10,000 parents the database is not the
+**21. — decided (Joey, 9 Nov): Supabase Pro on the Small compute, as
+recommended. No action now; it comes back under NEEDS JOEY for December
+(buying the plan, and point-in-time recovery, before the first real club).
+The original note:** The Supabase plan for launch — your call, with the
+numbers in `docs/SCALE.md` §5. At 10,000 parents the database is not the
 constraint: every family opening the app in the same minute is about two
 cloud vCPUs busy for that minute. My recommendation: the **Pro plan on the
 Small compute** at launch, watching Saturday morning's CPU and moving to
@@ -687,8 +723,11 @@ daily backups alone could lose up to a day of chat and answers. Both cost
 money; the current prices are on supabase.com/pricing, and nothing is
 bought without you.
 
-**22. When does two-step sign-in become compulsory for owners and admins?
-A date, when you are ready (8 Nov).** S-07 asks for it to be mandatory.
+**22. — decided (Joey, 9 Nov): compulsory for owners, admins and league
+staff; optional for coaches and parents.** Built after the migration-day
+deploy (see the build table). The original note:** When does two-step
+sign-in become compulsory for owners and admins? A date, when you are
+ready (8 Nov). S-07 asks for it to be mandatory.
 0224 (written, tested locally, applied with the others on token day) makes
 the database honour it for everyone who has turned it on: a password alone
 gets no staff, coaching, league or platform powers. It does not yet force
@@ -698,8 +737,11 @@ authenticator app). My suggestion: announce it to clubs with a date a few
 weeks out, and keep the Admin hub's "turn it on" card until then; the switch
 is then a one-line migration.
 
-**23. B-09, the league–club fee split, cannot be built as written — which
-way instead? (8 Nov)** The spec says one checkout, two transfers: the
+**23. — decided (Joey, 9 Nov): A — the club collects the whole fee, and
+the league sees what each club owes it, the way entry fees work.** Built
+after the migration-day deploy (see the build table). The original note:**
+B-09, the league–club fee split, cannot be built as written — which way
+instead? (8 Nov) The spec says one checkout, two transfers: the
 league's share to the league's Stripe account, the club's to the club's.
 Stripe refuses that: a family's payment is a *direct charge* on the club's
 account (your 30 Oct rule — Squadroom is never in the flow of funds), and

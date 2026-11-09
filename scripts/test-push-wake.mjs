@@ -80,8 +80,14 @@ await sleep(16000)
 head('1. Something due now wakes Netlify')
 const before = (await netCalls()).length
 const id1 = await enqueue('wake-probe-now', new Date().toISOString())
-await sleep(6000)
-const after = await netCalls()
+// pg_net answers on its own worker; in a busy full run the record of the
+// call can land well after six seconds (full run #23). Look for it, up to
+// twenty seconds, rather than once.
+let after = await netCalls()
+for (let waited = 0; after.length <= before && waited < 20000; waited += 1000) {
+  await sleep(1000)
+  after = await netCalls()
+}
 after.length > before
   ? ok(`the database called out: HTTP ${after[0].status_code}`)
   : bad('no outbound request — the trigger did not fire')
