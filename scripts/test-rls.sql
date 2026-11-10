@@ -3648,6 +3648,74 @@ begin
     insert into rls_results values (201, 'a roster import is a batch: a squad per row, a wrong squad reported, undo removes exactly what it added; club health is the staff''s and not a parent''s; the setup steps name families, grounds and a manager per squad', r201);
   end;
 
+  -- 0249. Trials: ratings are the coaches' own, placements a draft the
+  -- staff publish; a family sees neither and is told once. Rolled back.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_prog uuid; v_board jsonb; v_pub jsonb; v_parent_sees int; v_parent_board jsonb;
+    v_told timestamptz; v_notes int; v_guardians int; v_welcome_before int; v_welcome_after int;
+    v_rate_refused boolean := false;
+    r202 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.programs (academy_id, name, kind, status, season, created_by)
+      values (ACAD_A, 'RLS trial', 'trial', 'open', '2026', COACH) returning id into v_prog;
+      insert into public.program_registrations (academy_id, program_id, player_id, status, submitted_by)
+      values (ACAD_A, v_prog, LEO, 'approved', COACH);
+      select count(*) into v_guardians from public.player_guardians g
+        join public.academy_members am on am.profile_id = g.profile_id and am.academy_id = ACAD_A and am.status = 'active'
+       where g.player_id = LEO;
+      select count(*) into v_welcome_before from public.messages m join public.channels c on c.id = m.channel_id
+       where c.team_id = U12 and c.type = 'team' and m.body like 'Welcome to %';
+      -- Marcus, a coach, rates.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.rate_trial_player(v_prog, LEO, 4, 'quick feet');
+      execute 'reset role';
+      -- The owner rates, reads the board, pencils Leo into U12 and publishes.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.rate_trial_player(v_prog, LEO, 3, null);
+      v_board := public.trial_board(v_prog);
+      perform public.place_trial_player(v_prog, LEO, U12);
+      v_pub := public.publish_teams(ACAD_A, v_prog);
+      execute 'reset role';
+      select count(*) into v_welcome_after from public.messages m join public.channels c on c.id = m.channel_id
+       where c.team_id = U12 and c.type = 'team' and m.body like 'Welcome to %';
+      select count(*) into v_notes from public.notification_queue n
+       where n.kind = 'team_published' and n.academy_id = ACAD_A and (n.payload->>'program_id')::uuid = v_prog;
+      select team_told_at into v_told from public.players where id = LEO;
+      -- A parent: no ratings, no board, no rating of their own.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_parent_sees from public.trial_ratings where program_id = v_prog;
+      v_parent_board := public.trial_board(v_prog);
+      begin
+        perform public.rate_trial_player(v_prog, LEO, 5, null);
+      exception when others then
+        v_rate_refused := true;
+      end;
+      execute 'reset role';
+      r202 := case when (v_board->'players'->0->>'avg')::numeric = 3.5 and (v_board->'players'->0->>'count')::int = 2
+                    and jsonb_array_length(v_board->'players'->0->'ratings') = 2
+                    and (v_pub->>'players')::int = 1 and (v_pub->>'teams')::int = 1 and (v_pub->>'families')::int = v_guardians
+                    and v_welcome_after - v_welcome_before = 1 and v_notes = v_guardians and v_told is not null
+                    and v_parent_sees = 0 and v_parent_board is null and v_rate_refused then 'PASS'
+                   else 'FAIL (board '||coalesce(left((v_board->'players'->0)::text, 140),'null')||'; publish '||coalesce(v_pub::text,'null')
+                        ||'; guardians '||v_guardians||'; welcome +'||(v_welcome_after - v_welcome_before)||'; notes '||v_notes
+                        ||'; told '||coalesce(v_told::text,'null')||'; parent sees '||v_parent_sees||', board '||coalesce(v_parent_board::text,'null')
+                        ||', refused '||v_rate_refused||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r202 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (202, 'a trial''s ratings are the coaches'' own and a parent sees none; the pencilled squads are a draft until published; publishing puts the child on the squad, welcomes the squad and tells each family once', r202);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

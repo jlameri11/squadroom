@@ -31,7 +31,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'referee_self_appoint', label: 'Referee self-appointment', what: 'Referees take open games themselves instead of waiting to be appointed.' },
   { key: 'referee_pay', label: 'Referee pay tracker', what: 'What each referee is owed per game, and marking a run paid. Tracking only.' },
   { key: 'training_slots', label: 'Training-ground slots', what: 'Weeknight slots per pitch, assigned to teams; clashes refused.', builtYet: false },
-  { key: 'trial_ratings', label: 'Trial ratings', what: 'Coaches rate players privately at a trial; the coordinator allocates teams.', builtYet: false },
+  { key: 'trial_ratings', label: 'Trial ratings and grading', what: 'Coaches rate players privately at a trial (1–5 and a note); the coordinator pencils teams and publishes them in one message per family.' },
   { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — a fair rotation across families, with swaps.', builtYet: false },
   { key: 'team_creator', label: 'Team Creator', what: 'A captain registers a team for a social comp and teammates join with a code.', builtYet: false },
   { key: 'blue_cards', label: 'Blue cards (sin bin)', what: 'Recorded on the match sheet with minutes, where the league uses them.', builtYet: false },

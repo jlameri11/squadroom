@@ -2596,6 +2596,7 @@ export type Database = {
           id: string
           kit_colour: string | null
           notes: string | null
+          program_id: string | null
           starts_on: string
           team_id: string | null
           title: string
@@ -2616,6 +2617,7 @@ export type Database = {
           id?: string
           kit_colour?: string | null
           notes?: string | null
+          program_id?: string | null
           starts_on: string
           team_id?: string | null
           title: string
@@ -2636,6 +2638,7 @@ export type Database = {
           id?: string
           kit_colour?: string | null
           notes?: string | null
+          program_id?: string | null
           starts_on?: string
           team_id?: string | null
           title?: string
@@ -2656,6 +2659,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_series_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
           {
@@ -2840,6 +2850,7 @@ export type Database = {
           our_score: number | null
           potm_vote_open: boolean
           private_to: string | null
+          program_id: string | null
           result_note: string | null
           round: string | null
           score_entered_at: string | null
@@ -2879,6 +2890,7 @@ export type Database = {
           our_score?: number | null
           potm_vote_open?: boolean
           private_to?: string | null
+          program_id?: string | null
           result_note?: string | null
           round?: string | null
           score_entered_at?: string | null
@@ -2918,6 +2930,7 @@ export type Database = {
           our_score?: number | null
           potm_vote_open?: boolean
           private_to?: string | null
+          program_id?: string | null
           result_note?: string | null
           round?: string | null
           score_entered_at?: string | null
@@ -2975,6 +2988,13 @@ export type Database = {
             columns: ["private_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
           {
@@ -5897,6 +5917,8 @@ export type Database = {
           shorts_size: Database["public"]["Enums"]["kit_size"] | null
           socks_size: Database["public"]["Enums"]["sock_size"] | null
           team_id: string | null
+          team_since: string | null
+          team_told_at: string | null
           updated_at: string
         }
         Insert: {
@@ -5922,6 +5944,8 @@ export type Database = {
           shorts_size?: Database["public"]["Enums"]["kit_size"] | null
           socks_size?: Database["public"]["Enums"]["sock_size"] | null
           team_id?: string | null
+          team_since?: string | null
+          team_told_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -5947,6 +5971,8 @@ export type Database = {
           shorts_size?: Database["public"]["Enums"]["kit_size"] | null
           socks_size?: Database["public"]["Enums"]["sock_size"] | null
           team_id?: string | null
+          team_since?: string | null
+          team_told_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -7804,6 +7830,140 @@ export type Database = {
           },
         ]
       }
+      trial_placements: {
+        Row: {
+          academy_id: string
+          decided_at: string
+          decided_by: string | null
+          id: string
+          player_id: string
+          program_id: string
+          published_at: string | null
+          team_id: string | null
+        }
+        Insert: {
+          academy_id: string
+          decided_at?: string
+          decided_by?: string | null
+          id?: string
+          player_id: string
+          program_id: string
+          published_at?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          academy_id?: string
+          decided_at?: string
+          decided_by?: string | null
+          id?: string
+          player_id?: string
+          program_id?: string
+          published_at?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_placements_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_placements_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_placements_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "trial_placements_program_fkey"
+            columns: ["program_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "trial_placements_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      trial_ratings: {
+        Row: {
+          academy_id: string
+          coach_id: string
+          created_at: string
+          id: string
+          note: string | null
+          player_id: string
+          program_id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          coach_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          player_id: string
+          program_id: string
+          rating: number
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          coach_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          player_id?: string
+          program_id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_ratings_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_ratings_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trial_ratings_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "trial_ratings_program_fkey"
+            columns: ["program_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       trusted_devices: {
         Row: {
           created_at: string
@@ -8657,6 +8817,18 @@ export type Database = {
         Args: { p_events: Json; p_scan: string }
         Returns: string[]
       }
+      create_trial_sessions: {
+        Args: {
+          p_days: number[]
+          p_duration?: number
+          p_from: string
+          p_program: string
+          p_time: string
+          p_until: string
+          p_venue?: string
+        }
+        Returns: Json
+      }
       cross_group_standings: {
         Args: { p_competition: string; p_division: string; p_position: number }
         Returns: {
@@ -9360,6 +9532,10 @@ export type Database = {
       }
       photo_consent_check: { Args: { p_channel: string }; Returns: Json }
       pitch_size_rules_for: { Args: { p_academy: string }; Returns: Json }
+      place_trial_player: {
+        Args: { p_player: string; p_program: string; p_team: string }
+        Returns: undefined
+      }
       platform_overview: {
         Args: never
         Returns: {
@@ -9476,6 +9652,14 @@ export type Database = {
         Returns: undefined
       }
       publish_scheduled_messages: { Args: never; Returns: number }
+      publish_teams: {
+        Args: { p_academy: string; p_program?: string; p_teams?: string[] }
+        Returns: Json
+      }
+      publish_teams_preview: {
+        Args: { p_academy: string; p_program?: string }
+        Returns: Json
+      }
       pulse_in: {
         Args: { p_event: string; p_mood: number; p_note?: string }
         Returns: Json
@@ -9488,6 +9672,15 @@ export type Database = {
       quote_payment: {
         Args: { p_player?: string; p_request: string }
         Returns: Json
+      }
+      rate_trial_player: {
+        Args: {
+          p_note?: string
+          p_player: string
+          p_program: string
+          p_rating: number
+        }
+        Returns: string
       }
       reaction_counts: {
         Args: { p_message_ids: string[] }
@@ -10041,6 +10234,7 @@ export type Database = {
         Args: { p_lang: string; p_message_ids: string[] }
         Returns: Json
       }
+      trial_board: { Args: { p_program: string }; Returns: Json }
       trial_offers: { Args: { p_program: string }; Returns: Json }
       two_step_forget_devices: { Args: never; Returns: number }
       two_step_needed: { Args: never; Returns: boolean }

@@ -221,8 +221,13 @@ AGM/committee papers.
   current WWCC and a clearance needs a profile, which a join request has
   only once approved — a self-serve coach link needs a pending-coach state
   first (Phase 2). Coaches keep coming in through Invites. Item 5 is
-  otherwise complete. Next: trials (7), grounds and slots (8), game day (9),
-  volunteers (10), safety (11), the demo (14).
+  otherwise complete. **Item 7 done (0249):** trial sessions on the
+  program, `trial_ratings` (coaches only), `trial_placements` as a private
+  pencil, `publish_teams` (the pencil becomes the squads, a welcome in each
+  squad's chat, one message per family; the Season screen publishes moves
+  and rollover the same way), the Grading card with a laptop table;
+  switch `trial_ratings`. test-rls 202; `test-trials`. Next: grounds and
+  slots (8), game day (9), volunteers (10), safety (11), the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

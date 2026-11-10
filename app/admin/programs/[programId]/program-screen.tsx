@@ -9,6 +9,8 @@ import { QuestionsEditor } from './questions-editor'
 import { OfferControl, type TrialOffer } from './offer-control'
 import { WithdrawPolicy } from './withdraw-policy'
 import { OfficialRegoToggle } from './official-rego-toggle'
+import { TrialGrading } from './trial-grading'
+import { WhenOn } from '@/components/when-on'
 
 type Registration = {
   id: string
@@ -238,6 +240,14 @@ export function ProgramScreen({ programId }: { programId: string }) {
               {program.status === 'open' ? 'Close' : 'Open it'}
             </button>
           </div>
+
+          {/* Big Club Mode item 7 (0249): the coaches' ratings, the
+              coordinator's pencil, Publish teams — switchable. */}
+          {program.kind === 'trial' && (
+            <WhenOn feature="trial_ratings">
+              <TrialGrading programId={program.id} academyId={program.academy_id} />
+            </WhenOn>
+          )}
 
           <QuestionsEditor
             programId={program.id}

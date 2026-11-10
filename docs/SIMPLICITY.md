@@ -55,7 +55,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Referee self-appointment | `referee_self_appoint` | the league's referees | the referee's own screens |
 | Referee pay tracker | `referee_pay` | the league's treasurer | the competition's Referees tab |
 | Training-ground slots | `training_slots` | coordinators assign; families see the slot | the team page, the calendar (to build) |
-| Trial ratings | `trial_ratings` | the coaches at a trial; the coordinator | trials (to build) |
+| Trial ratings and grading (0249) | `trial_ratings` | the coaches at a trial rate; owners, admins and coordinators place and publish | the trial program's screen (Grading: ratings, notes, a squad per player, Publish teams) |
 | Team duty rotation | `duty_roster` | team managers and families | the team page (to build) |
 | Team Creator (social comps) | `team_creator` | captains; the organiser approves | registration (Part C) |
 | Blue cards (sin bin) | `blue_cards` | the league's referees and match sheets | the match sheet (Part C) |

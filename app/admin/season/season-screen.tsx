@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { PublishTeams } from './publish-teams'
 
 type PlanPlayer = { id: string; name: string; dob: string | null; number: number | null; clash: boolean; ageing_out: boolean }
 type PlanSquad = {
@@ -639,6 +640,10 @@ export function SeasonScreen() {
           )}
         </div>
       </section>
+
+      {/* 0249: rollover, moves and offers put children on squads; this
+          tells their families, once each. */}
+      <PublishTeams academyId={academyId} />
 
       <section className="card mt-4 p-3.5">
         <div className="flex items-center gap-2">
