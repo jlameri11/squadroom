@@ -12,7 +12,7 @@ import type { GroupInfo } from './channel-view'
 export function GroupPeople({ group, onClose }: { group: GroupInfo; onClose: () => void }) {
   const league = group.people.filter((p) => p.standing === 'league')
   const others = group.people.filter((p) => p.standing !== 'league')
-  const othersTitle = group.kind === 'clubs' ? 'The clubs\u2019 heads' : 'Referees'
+  const othersTitle = group.kind === 'clubs' ? 'The clubs\u2019 heads' : group.kind === 'referees' ? 'Referees' : group.kind === 'committee' ? 'The committee' : 'Team managers'
   return (
     <Sheet onClose={onClose}>
       <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--line)]" />
@@ -20,7 +20,9 @@ export function GroupPeople({ group, onClose }: { group: GroupInfo; onClose: () 
       <p className="mt-0.5 text-sm text-ink-2" data-group-people={group.people.length}>
         {group.kind === 'clubs'
           ? `${group.league ?? 'The league'} and the head of every club in ${group.competition ?? 'the competition'}. Who is in it follows the entries.`
-          : `${group.league ?? 'The league'} and every referee in its pool.`}
+          : group.kind === 'referees' ? `${group.league ?? 'The league'} and every referee in its pool.`
+          : group.kind === 'committee' ? `${group.league ?? 'The club'}\u2019s committee, with its owners and admins. Who is in it follows the roles.`
+          : `Every team manager at ${group.league ?? 'the club'}, with the owners, admins, President and Secretary. Who is in it follows the roles.`}
       </p>
       <section className="mt-4">
         <span className="eyebrow">{group.league ?? 'The league'}</span>

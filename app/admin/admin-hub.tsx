@@ -170,6 +170,13 @@ export function AdminHub() {
           <Row href="/admin/import" label="Import fixtures or players" hint="A Dribl export, a spreadsheet, or a screenshot" />
         </ul>
 
+        {/* Big Club Mode item 4 (0243): write once, pick who, see the reach, send. */}
+        <h2 className="eyebrow px-1 pb-2">Messages</h2>
+        <ul className="card mb-5 overflow-hidden">
+          <Row href="/admin/message" label="Message the club" hint="Whole club, a stream, an age group, a team, staff, the unpaid — with the reach shown before you send" />
+          <Row href="/messages" label="Club messages" hint="What the club has sent you" />
+        </ul>
+
         <h2 className="eyebrow px-1 pb-2">Competitions</h2>
         <ul className="card mb-5 overflow-hidden">
           <Row href="/competitions" label="Competitions" hint="Tournaments, cups and gala days" />

@@ -22,7 +22,7 @@ export type NoticesInfo = { competitionId: string; competition: string; league: 
  * database's answer (group_channel_info), never member rows.
  */
 export type GroupInfo = {
-  kind: 'clubs' | 'referees'
+  kind: 'clubs' | 'referees' | 'committee' | 'managers'
   standing: string
   is_host: boolean
   league: string | null
@@ -158,7 +158,8 @@ export function ChannelView({
   // Opening the channel is what clears the badge, not reading any particular
   // message. Anything cleverer than this lies about what people actually do.
   useEffect(() => {
-    supabase.current.rpc('mark_channel_read', { p_channel: channelId })
+    // A builder sends nothing until it is then'd: this line had never run.
+    void supabase.current.rpc('mark_channel_read', { p_channel: channelId }).then(() => undefined)
   }, [channelId])
 
   const pinned = useMemo(
@@ -189,7 +190,7 @@ export function ChannelView({
             {notices
               ? `From ${notices.league}${archived ? ' · ended' : ' · only the league posts'}`
               : group
-                ? `${group.league ?? 'The league'} and ${group.kind === 'clubs' ? 'the clubs\u2019 heads' : 'its referees'}${archived ? ' · ended' : ' · everyone can post'}`
+                ? `${group.kind === 'committee' ? 'The committee' : group.kind === 'managers' ? 'Every team manager, with the club' : `${group.league ?? 'The league'} and ${group.kind === 'clubs' ? 'the clubs\u2019 heads' : 'its referees'}`}${archived ? ' · ended' : ' · everyone can post'}`
               : archived ? 'Past season · read-only'
               : postingMode === 'hosts_only' ? 'Announcements only'
               : postingMode === 'replies_only' ? 'Replies only'

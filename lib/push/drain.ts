@@ -84,81 +84,89 @@ export async function drainNotificationQueue(): Promise<DrainResult> {
     return { sent: 0 }
   })
 
-  const { data: due, error } = await supabase.rpc('claim_notifications', { p_limit: 200 })
-  if (error) throw new Error(`claim failed: ${error.message}`)
-  if (!due || due.length === 0) {
-    return { claimed: 0, sent: 0, retired: 0, skipped: 0, sms: sms.sent }
+  // In batches until the queue is empty, not one batch per wake (Joey, Big
+  // Club Mode: "Message the club" to 2,000 people delivers in batches). A
+  // pass claims up to 200; a full pass means more may be waiting, so the
+  // next one follows at once — up to ten in a run, a function's worth.
+  const totals = { claimed: 0, sent: 0, retired: 0, skipped: 0 }
+  for (let pass = 0; pass < 10; pass++) {
+    const { data: due, error } = await supabase.rpc('claim_notifications', { p_limit: 200 })
+    if (error) throw new Error(`claim failed: ${error.message}`)
+    if (!due || due.length === 0) break
+    const rows = due as Due[]
+    const batch = await sendBatch(rows)
+    totals.claimed += rows.length
+    totals.sent += batch.sent
+    totals.retired += batch.retired
+    totals.skipped += batch.skipped
+    if (rows.length < 200) break
   }
+  return { ...totals, sms: sms.sent }
 
-  const rows = due as Due[]
-  const sent: string[] = []
-  const deadSubscriptions: string[] = []
-  let skipped = 0
+  async function sendBatch(rows: Due[]): Promise<{ sent: number; retired: number; skipped: number }> {
+    const sent: string[] = []
+    const deadSubscriptions: string[] = []
+    let skipped = 0
 
-  await Promise.all(
-    rows.map(async (row) => {
-      const payload = {
-        title: row.title,
-        body: row.body,
-        url: row.url,
-        // One notification per conversation, replaced as it goes, rather
-        // than a stack of twelve.
-        tag: row.url,
-      }
-      const urgent = URGENT.has(row.kind)
+    await Promise.all(
+      rows.map(async (row) => {
+        const payload = {
+          title: row.title,
+          body: row.body,
+          url: row.url,
+          // One notification per conversation, replaced as it goes, rather
+          // than a stack of twelve.
+          tag: row.url,
+        }
+        const urgent = URGENT.has(row.kind)
 
-      if (row.platform === 'ios') {
-        if (!apns) return void skipped++
-        const result = await sendApns(apns, row.endpoint, payload, urgent)
-        if (result.ok) sent.push(row.id)
-        else if (result.gone) deadSubscriptions.push(row.sub_id)
-        return
-      }
+        if (row.platform === 'ios') {
+          if (!apns) return void skipped++
+          const result = await sendApns(apns, row.endpoint, payload, urgent)
+          if (result.ok) sent.push(row.id)
+          else if (result.gone) deadSubscriptions.push(row.sub_id)
+          return
+        }
 
-      if (row.platform === 'android') {
-        if (!fcm) return void skipped++
-        const result = await sendFcm(fcm, row.endpoint, payload, urgent)
-        if (result.ok) sent.push(row.id)
-        else if (result.gone) deadSubscriptions.push(row.sub_id)
-        return
-      }
+        if (row.platform === 'android') {
+          if (!fcm) return void skipped++
+          const result = await sendFcm(fcm, row.endpoint, payload, urgent)
+          if (result.ok) sent.push(row.id)
+          else if (result.gone) deadSubscriptions.push(row.sub_id)
+          return
+        }
 
-      if (!webPushReady) return void skipped++
-      try {
-        await webpush.sendNotification(
-          { endpoint: row.endpoint, keys: { p256dh: row.p256dh ?? '', auth: row.auth ?? '' } },
-          JSON.stringify(payload)
-        )
-        sent.push(row.id)
-      } catch (err) {
-        const status = (err as { statusCode?: number }).statusCode
-        // 404 and 410 mean the browser threw the subscription away — the app
-        // was uninstalled, or site data cleared. Retrying that forever is how
-        // a queue silts up, so the subscription is retired instead.
-        if (status === 404 || status === 410) deadSubscriptions.push(row.sub_id)
-      }
-    })
-  )
+        if (!webPushReady) return void skipped++
+        try {
+          await webpush.sendNotification(
+            { endpoint: row.endpoint, keys: { p256dh: row.p256dh ?? '', auth: row.auth ?? '' } },
+            JSON.stringify(payload)
+          )
+          sent.push(row.id)
+        } catch (err) {
+          const status = (err as { statusCode?: number }).statusCode
+          // 404 and 410 mean the browser threw the subscription away — the app
+          // was uninstalled, or site data cleared. Retrying that forever is how
+          // a queue silts up, so the subscription is retired instead.
+          if (status === 404 || status === 410) deadSubscriptions.push(row.sub_id)
+        }
+      })
+    )
 
-  if (sent.length > 0) {
-    await supabase
-      .from('notification_queue')
-      .update({ sent_at: new Date().toISOString() })
-      .in('id', sent)
-  }
+    if (sent.length > 0) {
+      await supabase
+        .from('notification_queue')
+        .update({ sent_at: new Date().toISOString() })
+        .in('id', sent)
+    }
 
-  if (deadSubscriptions.length > 0) {
-    await supabase
-      .from('push_subscriptions')
-      .update({ failed_at: new Date().toISOString() })
-      .in('id', deadSubscriptions)
-  }
+    if (deadSubscriptions.length > 0) {
+      await supabase
+        .from('push_subscriptions')
+        .update({ failed_at: new Date().toISOString() })
+        .in('id', deadSubscriptions)
+    }
 
-  return {
-    claimed: rows.length,
-    sent: sent.length,
-    retired: deadSubscriptions.length,
-    skipped,
-    sms: sms.sent,
+    return { sent: sent.length, retired: deadSubscriptions.length, skipped }
   }
 }

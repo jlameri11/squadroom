@@ -556,6 +556,7 @@ export type Database = {
           posting_mode: Database["public"]["Enums"]["posting_mode"]
           restrictions: Json
           status: Database["public"]["Enums"]["channel_status"]
+          stream_id: string | null
           team_id: string | null
           type: Database["public"]["Enums"]["channel_type"]
           updated_at: string
@@ -575,6 +576,7 @@ export type Database = {
           posting_mode?: Database["public"]["Enums"]["posting_mode"]
           restrictions?: Json
           status?: Database["public"]["Enums"]["channel_status"]
+          stream_id?: string | null
           team_id?: string | null
           type: Database["public"]["Enums"]["channel_type"]
           updated_at?: string
@@ -594,6 +596,7 @@ export type Database = {
           posting_mode?: Database["public"]["Enums"]["posting_mode"]
           restrictions?: Json
           status?: Database["public"]["Enums"]["channel_status"]
+          stream_id?: string | null
           team_id?: string | null
           type?: Database["public"]["Enums"]["channel_type"]
           updated_at?: string
@@ -621,11 +624,127 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "channels_stream_fkey"
+            columns: ["stream_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "streams"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
             foreignKeyName: "channels_team_fkey"
             columns: ["team_id", "academy_id"]
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      club_message_recipients: {
+        Row: {
+          academy_id: string
+          message_id: string
+          notified_at: string | null
+          profile_id: string
+          seen_at: string | null
+        }
+        Insert: {
+          academy_id: string
+          message_id: string
+          notified_at?: string | null
+          profile_id: string
+          seen_at?: string | null
+        }
+        Update: {
+          academy_id?: string
+          message_id?: string
+          notified_at?: string | null
+          profile_id?: string
+          seen_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_message_recipients_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_message_recipients_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "club_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_message_recipients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_messages: {
+        Row: {
+          academy_id: string
+          attachments: Json
+          audience: Json
+          body: string
+          created_at: string
+          id: string
+          pinned: boolean
+          recipient_count: number
+          relevant_until: string | null
+          sender_id: string | null
+          sent_at: string | null
+          status: string
+          urgent: boolean
+        }
+        Insert: {
+          academy_id: string
+          attachments?: Json
+          audience?: Json
+          body: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          recipient_count?: number
+          relevant_until?: string | null
+          sender_id?: string | null
+          sent_at?: string | null
+          status?: string
+          urgent?: boolean
+        }
+        Update: {
+          academy_id?: string
+          attachments?: Json
+          audience?: Json
+          body?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          recipient_count?: number
+          relevant_until?: string | null
+          sender_id?: string | null
+          sent_at?: string | null
+          status?: string
+          urgent?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_messages_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8313,6 +8432,7 @@ export type Database = {
         Args: { p_approve: boolean; p_note?: string; p_request: string }
         Returns: undefined
       }
+      club_messages_sent: { Args: { p_academy: string }; Returns: Json }
       club_officials: { Args: { p_academy: string }; Returns: Json }
       competition_appointments: {
         Args: { p_competition: string; p_division?: string }
@@ -8582,6 +8702,7 @@ export type Database = {
       expire_stale_join_requests: { Args: never; Returns: number }
       expire_stale_registrations: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
+      fan_out_club_messages: { Args: never; Returns: number }
       features_off: { Args: { p_academy: string }; Returns: string[] }
       field_impact: {
         Args: {
@@ -8808,6 +8929,10 @@ export type Database = {
         Returns: string
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
+      mark_club_message_seen: {
+        Args: { p_message: string }
+        Returns: undefined
+      }
       mark_entry_fee: {
         Args: {
           p_fee: string
@@ -8915,6 +9040,7 @@ export type Database = {
         }[]
       }
       my_club_access: { Args: { p_academy: string }; Returns: Json }
+      my_club_messages: { Args: { p_academy: string }; Returns: Json }
       my_competition_access: { Args: { p_competition: string }; Returns: Json }
       my_digest_minutes: { Args: never; Returns: number }
       my_email: { Args: never; Returns: Json }
@@ -9216,6 +9342,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      preview_club_message: {
+        Args: { p_academy: string; p_audience: Json }
+        Returns: Json
+      }
       preview_imported_events: {
         Args: { p_academy: string; p_events: Json; p_team: string }
         Returns: Json
@@ -9416,6 +9546,7 @@ export type Database = {
         Args: { p_fixture: string; p_note: string }
         Returns: undefined
       }
+      reping_club_message: { Args: { p_message: string }; Returns: number }
       reping_unread: { Args: { p_message: string }; Returns: Json }
       reply_support: {
         Args: { p_body: string; p_request: string }
@@ -9575,6 +9706,17 @@ export type Database = {
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
       self_appoint: { Args: { p_fixture: string }; Returns: string }
+      send_club_message: {
+        Args: {
+          p_academy: string
+          p_audience?: Json
+          p_body: string
+          p_pinned?: boolean
+          p_until?: string
+          p_urgent?: boolean
+        }
+        Returns: string
+      }
       set_academy_logo: {
         Args: { p_academy: string; p_url: string }
         Returns: undefined
@@ -9911,6 +10053,9 @@ export type Database = {
         | "notices"
         | "clubs"
         | "referees"
+        | "stream"
+        | "committee"
+        | "managers"
       clearance_kind: "wwcc" | "exemption"
       clearance_outcome: "cleared" | "applied" | "barred" | "not_found"
       club_role:
@@ -10189,6 +10334,9 @@ export const Constants = {
         "notices",
         "clubs",
         "referees",
+        "stream",
+        "committee",
+        "managers",
       ],
       clearance_kind: ["wwcc", "exemption"],
       clearance_outcome: ["cleared", "applied", "barred", "not_found"],

@@ -41,7 +41,7 @@ export default async function ChannelPage(props: { params: Promise<{ channelId: 
   let group: GroupInfo | null = null
   let isHost: boolean
   const kind = channel.type as string
-  if (kind === 'clubs' || kind === 'referees') {
+  if (kind === 'clubs' || kind === 'referees' || kind === 'committee' || kind === 'managers') {
     // A computed room (0235): who is in it, and whether I host it (the
     // league does), are the database's answers — there are no member rows.
     const { data } = await supabase.rpc('group_channel_info', { p_channel: channelId })

@@ -3353,10 +3353,11 @@ begin
 
   -- 0242. A feature switch. Rolled back.
   declare
-    f_default boolean; f_off boolean; f_back boolean; p_refused boolean; f_list text[]; l_rows int;
+    f_default boolean; f_off boolean; f_back boolean; p_refused boolean; f_list text[]; l_rows int; l_before int;
     r193 text;
   begin
     begin
+      select count(*) into l_before from public.activity_log where academy_id = ACAD_A and action in ('feature.off', 'feature.on') and subject_name = 'sponsors';
       f_default := app_private.feature_on(ACAD_A, 'sponsors');
       perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
       execute 'set local role authenticated';
@@ -3371,7 +3372,7 @@ begin
       perform public.set_feature(ACAD_A, 'sponsors', true);
       f_back := app_private.feature_on(ACAD_A, 'sponsors');
       execute 'reset role';
-      select count(*) into l_rows from public.activity_log where academy_id = ACAD_A and action in ('feature.off', 'feature.on') and subject_name = 'sponsors';
+      select count(*) - l_before into l_rows from public.activity_log where academy_id = ACAD_A and action in ('feature.off', 'feature.on') and subject_name = 'sponsors';
       r193 := case when f_default and p_refused and not f_off and 'sponsors' = any (f_list) and f_back and l_rows = 2 then 'PASS'
                    else 'FAIL (on by default '||f_default||', parent refused '||p_refused||', off '||(not f_off)||', listed '||coalesce(f_list::text,'null')||', back on '||f_back||', logged '||l_rows||')' end;
       raise exception 'rls-probe-rollback';
@@ -3380,6 +3381,194 @@ begin
     end;
     execute 'reset role';
     insert into rls_results values (193, 'a feature is on until the club''s runners switch it off; a parent cannot; the list and the log say so', r193);
+  end;
+
+  -- 0243. Message the club. Rolled back: MARCUS (cleared for the test) is
+  -- President; HEAD (cleared) Treasurer; Sam a parent.
+  declare
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    v_msg uuid; v_members int; v_recipients int; v_preview jsonb; v_q int; v_told int; v_status text; v_seen int; v_reping int; v_mine jsonb; v_hidden int;
+    p_refused boolean; t_club boolean; t_unpaid jsonb; c_other boolean;
+    r194 text; r195 text; r196 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, MARCUS, 'wwcc', 'RLS194A', 'cleared', current_date + 300, COACH), (ACAD_A, HEAD, 'wwcc', 'RLS194B', 'cleared', current_date + 300, COACH)
+      on conflict do nothing;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.grant_club_role(ACAD_A, MARCUS, 'president');
+      perform public.grant_club_role(ACAD_A, HEAD, 'treasurer');
+      execute 'reset role';
+
+      -- 194. Who may send what: a parent nothing; the Treasurer the unpaid but
+      -- not the club; the President anything, and the reach is every active
+      -- member but themselves.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      p_refused := false;
+      begin perform public.send_club_message(ACAD_A, 'RLS 194 from a parent', '{"kind":"club"}'::jsonb); exception when others then p_refused := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      t_club := (public.preview_club_message(ACAD_A, '{"kind":"club"}'::jsonb)->>'allowed')::boolean;
+      t_unpaid := public.preview_club_message(ACAD_A, '{"kind":"unpaid"}'::jsonb);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_preview := public.preview_club_message(ACAD_A, '{"kind":"club"}'::jsonb);
+      v_msg := public.send_club_message(ACAD_A, 'RLS 194: training is at 6 pm this week', '{"kind":"club"}'::jsonb, true, null, false);
+      execute 'reset role';
+      select count(*) into v_members from public.academy_members m where m.academy_id = ACAD_A and m.status = 'active' and m.profile_id <> MARCUS;
+      select count(*) into v_recipients from public.club_message_recipients r where r.message_id = v_msg;
+      r194 := case when p_refused and not t_club and (t_unpaid->>'allowed')::boolean and (v_preview->>'allowed')::boolean
+                    and (v_preview->>'count')::int = v_members and v_recipients = v_members and v_msg is not null then 'PASS'
+                   else 'FAIL (parent refused '||p_refused||', treasurer club '||t_club||' unpaid '||coalesce(t_unpaid::text,'null')||', president preview '||coalesce(v_preview::text,'null')||', members '||v_members||', recipients '||v_recipients||')' end;
+
+      -- 195. The worker tells them in a batch; a recipient reads and is seen;
+      -- the sender sees the count; the re-ping reaches the unseen only.
+      v_q := public.fan_out_club_messages();
+      select count(*) into v_told from public.notification_queue n where n.payload->>'club_message_id' = v_msg::text;
+      select status into v_status from public.club_messages where id = v_msg;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_mine := public.my_club_messages(ACAD_A);
+      perform public.mark_club_message_seen(v_msg);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select (x->>'seen')::int into v_seen from jsonb_array_elements(public.club_messages_sent(ACAD_A)) x where (x->>'id')::uuid = v_msg;
+      v_reping := public.reping_club_message(v_msg);
+      execute 'reset role';
+      r195 := case when v_q = v_members and v_told = v_members and v_status = 'sent'
+                    and exists (select 1 from jsonb_array_elements(v_mine) x where (x->>'id')::uuid = v_msg and (x->>'pinned')::boolean)
+                    and v_seen = 1 and v_reping = v_members - 1 then 'PASS'
+                   else 'FAIL (worker '||v_q||', told '||v_told||', status '||coalesce(v_status,'null')||', in Sam''s list '||exists (select 1 from jsonb_array_elements(v_mine) x where (x->>'id')::uuid = v_msg)||', seen '||coalesce(v_seen::text,'null')||', re-pinged '||v_reping||' of '||(v_members - 1)||')' end;
+
+      -- 196. A message to the staff is not a parent's to read; a coordinator
+      -- of U8 may message U8 and not the whole club.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_msg := public.send_club_message(ACAD_A, 'RLS 196: staff only', '{"kind":"staff"}'::jsonb);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_hidden from public.club_messages m where m.id = v_msg;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.revoke_club_role((select id from public.club_roles where academy_id = ACAD_A and profile_id = MARCUS and role = 'president'));
+      perform public.grant_club_role(ACAD_A, MARCUS, 'coordinator', 'age_group', null, 'U8', null);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      c_other := not (public.preview_club_message(ACAD_A, '{"kind":"club"}'::jsonb)->>'allowed')::boolean
+                 and (public.preview_club_message(ACAD_A, '{"kind":"age_groups","age_groups":["U8"]}'::jsonb)->>'allowed')::boolean
+                 and not (public.preview_club_message(ACAD_A, '{"kind":"age_groups","age_groups":["U12"]}'::jsonb)->>'allowed')::boolean;
+      execute 'reset role';
+      r196 := case when v_hidden = 0 and c_other then 'PASS'
+                   else 'FAIL (parent reads a staff message '||v_hidden||', coordinator scope right '||c_other||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r194 := coalesce(r194, 'FAIL (stopped: '||sqlerrm||')');
+        r195 := coalesce(r195, 'FAIL (stopped: '||sqlerrm||')');
+        r196 := coalesce(r196, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (194, 'Message the club: a parent cannot, the Treasurer only the unpaid, the President anyone — and the reach is every member but the sender', r194);
+    insert into rls_results values (195, 'the worker tells recipients in a batch; a reader is seen; the sender sees the count; the re-ping reaches the unseen only', r195);
+    insert into rls_results values (196, 'a staff-only message is not a parent''s to read; a coordinator messages their age group and nothing wider', r196);
+  end;
+
+  -- 0245. The club's layers of talk. Rolled back: a club made today (club
+  -- mode), OUTSIDER its owner, HEAD a parent there (and Treasurer, then a
+  -- team manager), PARENT a parent on a team in the Juniors stream.
+  declare
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    v_club uuid; v_wide record; v_committee uuid; v_managers uuid; v_streams int; v_stream_channels int;
+    v_juniors uuid; v_girls uuid; v_team uuid; v_jch uuid; v_gch uuid;
+    in_j1 boolean; in_g1 boolean; in_j2 boolean; in_g2 boolean; in_g3 boolean;
+    c_head boolean; c_parent boolean; c_owner_host boolean; m_head_before boolean; m_head_after boolean; m_parent boolean;
+    r197 text; r198 text; r199 text;
+  begin
+    begin
+      insert into public.academies (name, slug, type, primary_colour, two_step_required) values ('RLS 197 Club', 'rls-197-club', 'club', '#333333', false) returning id into v_club;
+      insert into public.academy_members (academy_id, profile_id, role, status) values (v_club, OUTSIDER, 'owner', 'active'), (v_club, HEAD, 'parent', 'active'), (v_club, PARENT, 'parent', 'active');
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (v_club, HEAD, 'wwcc', 'RLS197', 'cleared', current_date + 300, OUTSIDER) on conflict do nothing;
+
+      -- 197. Club mode's layers exist from the first minute.
+      select c.posting_mode::text as mode, c.name into v_wide from public.channels c where c.academy_id = v_club and c.type = 'academy_wide';
+      select id into v_committee from public.channels where academy_id = v_club and type = 'committee';
+      select id into v_managers from public.channels where academy_id = v_club and type = 'managers';
+      select count(*) into v_streams from public.streams where academy_id = v_club;
+      select count(*) into v_stream_channels from public.channels where academy_id = v_club and type = 'stream' and posting_mode = 'hosts_only';
+      r197 := case when v_wide.mode = 'hosts_only' and v_wide.name = 'Club Notices' and v_committee is not null and v_managers is not null and v_streams = 8 and v_stream_channels = 8 then 'PASS'
+                   else 'FAIL (club-wide '||coalesce(v_wide.mode,'null')||' "'||coalesce(v_wide.name,'')||'", committee '||(v_committee is not null)||', managers '||(v_managers is not null)||', streams '||v_streams||', stream channels '||v_stream_channels||')' end;
+
+      -- 198. Being on a team puts you in its stream's channel; the team
+      -- moving streams moves you; leaving the team takes you out.
+      select id into v_juniors from public.streams where academy_id = v_club and name = 'Juniors';
+      select id into v_girls from public.streams where academy_id = v_club and name = 'Girls';
+      insert into public.teams (academy_id, name, age_group, season, stream_id) values (v_club, 'RLS U9 Lions', 'U9', '2099', v_juniors) returning id into v_team;
+      insert into public.team_members (academy_id, team_id, profile_id, role) values (v_club, v_team, PARENT, 'parent');
+      select id into v_jch from public.channels where academy_id = v_club and type = 'stream' and stream_id = v_juniors;
+      select id into v_gch from public.channels where academy_id = v_club and type = 'stream' and stream_id = v_girls;
+      in_j1 := exists (select 1 from public.channel_members where channel_id = v_jch and profile_id = PARENT);
+      in_g1 := exists (select 1 from public.channel_members where channel_id = v_gch and profile_id = PARENT);
+      update public.teams set stream_id = v_girls where id = v_team;
+      in_j2 := exists (select 1 from public.channel_members where channel_id = v_jch and profile_id = PARENT);
+      in_g2 := exists (select 1 from public.channel_members where channel_id = v_gch and profile_id = PARENT);
+      delete from public.team_members where team_id = v_team and profile_id = PARENT;
+      in_g3 := exists (select 1 from public.channel_members where channel_id = v_gch and profile_id = PARENT);
+      r198 := case when in_j1 and not in_g1 and not in_j2 and in_g2 and not in_g3 then 'PASS'
+                   else 'FAIL (in Juniors '||in_j1||' Girls '||in_g1||'; after the move Juniors '||in_j2||' Girls '||in_g2||'; after leaving '||in_g3||')' end;
+
+      -- 199. The Committee room is the committee's; the managers' room the
+      -- managers'; a plain parent is in neither; the owner hosts both.
+      insert into public.team_members (academy_id, team_id, profile_id, role) values (v_club, v_team, PARENT, 'parent');
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.grant_club_role(v_club, HEAD, 'treasurer');
+      c_owner_host := app_private.is_channel_host(v_committee) and app_private.is_channel_host(v_managers);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      c_head := app_private.is_channel_member(v_committee);
+      m_head_before := app_private.is_channel_member(v_managers);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.grant_club_role(v_club, HEAD, 'team_manager', 'team', null, null, v_team);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_head_after := app_private.is_channel_member(v_managers);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      c_parent := app_private.is_channel_member(v_committee);
+      m_parent := app_private.is_channel_member(v_managers);
+      execute 'reset role';
+      r199 := case when c_owner_host and c_head and not m_head_before and m_head_after and not c_parent and not m_parent then 'PASS'
+                   else 'FAIL (owner hosts both '||c_owner_host||', treasurer in committee '||c_head||', in managers before '||m_head_before||' after '||m_head_after||', parent in committee '||c_parent||' managers '||m_parent||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r197 := coalesce(r197, 'FAIL (stopped: '||sqlerrm||')');
+        r198 := coalesce(r198, 'FAIL (stopped: '||sqlerrm||')');
+        r199 := coalesce(r199, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (197, 'a club in club mode has Club Notices (hosts only), hosts-only age groups, a hosts-only channel per stream, a Committee room and a Team managers'' room from the first minute', r197);
+    insert into rls_results values (198, 'a team''s people are in its stream''s channel; the team moving streams moves them; leaving the team takes them out', r198);
+    insert into rls_results values (199, 'the Committee room is the committee''s and the managers'' room the managers''; a parent is in neither; the owner hosts both', r199);
   end;
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

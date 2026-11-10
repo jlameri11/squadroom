@@ -312,6 +312,9 @@ function ChannelRow({ c }: { c: Row }) {
         {(c.type as string) === 'notices' ? <span aria-hidden>📣</span>
           : (c.type as string) === 'clubs' ? <span aria-hidden>🏟</span>
           : (c.type as string) === 'referees' ? <span aria-hidden>🟨</span>
+          : (c.type as string) === 'committee' ? <span aria-hidden>🏛</span>
+          : (c.type as string) === 'managers' ? <span aria-hidden>📋</span>
+          : (c.type as string) === 'stream' ? <span aria-hidden>📣</span>
           : initials(c.name ?? '··')}
       </span>
 

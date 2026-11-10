@@ -195,8 +195,15 @@ AGM/committee papers.
   0215 guards let an adult through, every reader finds the person's own
   record, a players' link for adult teams, "I'm registering myself" on the
   public form, `team_has_minors` for the rules to come). test-rls 184–188;
-  `test-many-hats` (22), `test-adult-player` (end to end). Fixes 3 and 4
-  next, then Part B.
+  `test-many-hats` (22), `test-adult-player` (end to end); fix 3 **done** —
+  0240 (category, gender, label); fix 4 **done** — 0241 (the Welfare
+  officer). Then the feature switches (0242, `SIMPLICITY.md`) and **Part B
+  began: Message the club (0243)** — item 4's centrepiece — and **the
+  layers (0244–0245)**: Club Notices, hosts-only age groups, a channel per
+  stream following the teams, the Committee and Team managers' rooms. Next:
+  the organiser group, setup and imports (item 5), trials (7), grounds (8),
+  game day (9), volunteers (10), safety (11), Club HQ's health card (12),
+  the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 
