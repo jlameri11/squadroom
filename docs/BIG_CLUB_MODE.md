@@ -226,8 +226,16 @@ AGM/committee papers.
   pencil, `publish_teams` (the pencil becomes the squads, a welcome in each
   squad's chat, one message per family; the Season screen publishes moves
   and rollover the same way), the Grading card with a laptop table;
-  switch `trial_ratings`. test-rls 202; `test-trials`. Next: grounds and
-  slots (8), game day (9), volunteers (10), safety (11), the demo (14).
+  switch `trial_ratings`. test-rls 202; `test-trials`. **Item 8 done
+  (0250):** a slot is a weekly series on a pitch (`create_training_series`,
+  `set_training_slot`; clashes across a pitch, its parent and its halves,
+  and the pitch's hours, refused before anything is made), `team_training`
+  and `ground_slots`, the pitch picker on Add training, the team page's
+  Training line, the ground's week on Venues, and `close_ground` (sessions
+  called off and every family told; the club's own competitions postponed;
+  another league's games named to pass on); switch `training_slots`.
+  test-rls 203; `test-grounds`. Next: game day (9), volunteers (10), safety
+  (11), the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

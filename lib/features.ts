@@ -30,7 +30,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'development', label: 'Player stats and development notes', what: 'Coaches’ notes, ratings and clips on the player card; a family reads what is shared.' },
   { key: 'referee_self_appoint', label: 'Referee self-appointment', what: 'Referees take open games themselves instead of waiting to be appointed.' },
   { key: 'referee_pay', label: 'Referee pay tracker', what: 'What each referee is owed per game, and marking a run paid. Tracking only.' },
-  { key: 'training_slots', label: 'Training-ground slots', what: 'Weeknight slots per pitch, assigned to teams; clashes refused.', builtYet: false },
+  { key: 'training_slots', label: 'Training-ground slots', what: 'Weekly training on a pitch or half-pitch: clashes and closed hours refused, the slot on the team page and in every session.' },
   { key: 'trial_ratings', label: 'Trial ratings and grading', what: 'Coaches rate players privately at a trial (1–5 and a note); the coordinator pencils teams and publishes them in one message per family.' },
   { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — a fair rotation across families, with swaps.', builtYet: false },
   { key: 'team_creator', label: 'Team Creator', what: 'A captain registers a team for a social comp and teammates join with a code.', builtYet: false },

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sheet } from '@/components/sheet'
 import { createClient } from '@/lib/supabase/client'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
+import { WhenOn } from '@/components/when-on'
 
 type Team = { id: string; name: string }
+type Pitch = { id: string; name: string; size: string; parent_id: string | null; venues: { name: string } | { name: string }[] | null }
 
 // 0 = Sunday, matching Postgres's extract(dow).
 const DAYS = [
@@ -47,6 +49,10 @@ export function NewSessions({
   const [duration, setDuration] = useState('60')
   const [arrive, setArrive] = useState('15')
   const [venue, setVenue] = useState('')
+  // 0250: a pitch instead of a typed ground. The slot is checked before a
+  // session is made; a clash or closed hours come back as the database's words.
+  const [pitches, setPitches] = useState<Pitch[]>([])
+  const [pitch, setPitch] = useState('')
   const [from, setFrom] = useState(today())
   const [until, setUntil] = useState(inWeeks(10))
   const [busy, setBusy] = useState(false)
@@ -58,10 +64,23 @@ export function NewSessions({
   // say — this is a preview, not the check.
   const planned = countSessions(from, until, days)
 
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().from('pitches').select('id, name, size, parent_id, venues(name)').eq('academy_id', academyId).order('name')
+      if (live) setPitches((data ?? []) as unknown as Pitch[])
+    })()
+    return () => {
+      live = false
+    }
+  }, [academyId])
+  const venueOf = (p: Pitch) => (Array.isArray(p.venues) ? p.venues[0]?.name : p.venues?.name) ?? ''
+  const grounds = [...new Set(pitches.map(venueOf))].sort()
+
   async function create() {
     setBusy(true)
     setError(null)
-    const { data, error } = await createClient().rpc('create_event_series', {
+    const { data, error } = await createClient().rpc('create_training_series', {
       p_academy: academyId,
       p_title: title.trim() || 'Training',
       p_team: team || undefined,
@@ -69,7 +88,9 @@ export function NewSessions({
       p_time: time,
       p_duration: Number(duration) || 60,
       p_arrive: arrive === '' ? undefined : Number(arrive),
-      p_venue: venue.trim() || undefined,
+      // A pitch names the ground itself; a typed ground is for a place not drawn yet.
+      p_pitch: pitch || undefined,
+      p_venue: pitch ? undefined : venue.trim() || undefined,
       p_from: from,
       p_until: until,
     })
@@ -201,16 +222,40 @@ export function NewSessions({
             </label>
           </div>
 
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="eyebrow">Where</span>
-            <input
-              value={venue}
-              onChange={(e) => setVenue(e.target.value)}
-              placeholder="ELS Hall Park"
-              className="rounded-xl border px-3.5 py-3 text-base"
-              style={{ borderColor: 'var(--line)' }}
-            />
-          </label>
+            <WhenOn feature="training_slots">
+              {pitches.length > 0 && (
+                <select
+                  value={pitch}
+                  onChange={(e) => setPitch(e.target.value)}
+                  className="rounded-xl border px-3 py-3 text-base"
+                  style={{ borderColor: pitch ? 'var(--brand)' : 'var(--line)' }}
+                  aria-label="Pitch"
+                  data-session-pitch
+                >
+                  <option value="">A pitch — or type a ground below</option>
+                  {grounds.map((g) => (
+                    <optgroup key={g} label={g}>
+                      {pitches.filter((p) => venueOf(p) === g).map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}{p.size !== 'full' ? ` (${p.size})` : ''}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              )}
+            </WhenOn>
+            {!pitch && (
+              <input
+                value={venue}
+                onChange={(e) => setVenue(e.target.value)}
+                placeholder="ELS Hall Park"
+                className="rounded-xl border px-3.5 py-3 text-base"
+                style={{ borderColor: 'var(--line)' }}
+                aria-label="Ground"
+              />
+            )}
+          </div>
 
           <div className="flex gap-2">
             <label className="flex min-w-0 flex-1 flex-col gap-1.5">

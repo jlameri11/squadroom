@@ -13,6 +13,7 @@ import { isAdultAgeGroup } from '@/lib/age-group'
 import { AddPlayers } from './add-players'
 import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
+import { TrainingSlot } from './training-slot'
 import { SeasonControl } from './season-control'
 import { LeagueName } from './league-name'
 import { KitSizes } from './kit-sizes'
@@ -94,6 +95,10 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
         qrSvg={qrSvg}
         adult={isAdultAgeGroup(team.age_group)}
       />
+
+      {/* 0250: the squad's weekly training and its pitch, the line the
+          calendar and "Publish teams" carry. */}
+      <TrainingSlot teamId={team.id} academyId={team.academy_id} />
 
       <BulkInvite teamId={team.id} academyId={team.academy_id} />
 

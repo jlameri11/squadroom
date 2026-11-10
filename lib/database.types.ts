@@ -2596,6 +2596,7 @@ export type Database = {
           id: string
           kit_colour: string | null
           notes: string | null
+          pitch_id: string | null
           program_id: string | null
           starts_on: string
           team_id: string | null
@@ -2603,6 +2604,7 @@ export type Database = {
           type: Database["public"]["Enums"]["event_type"]
           updated_at: string
           venue: string | null
+          venue_id: string | null
         }
         Insert: {
           academy_id: string
@@ -2617,6 +2619,7 @@ export type Database = {
           id?: string
           kit_colour?: string | null
           notes?: string | null
+          pitch_id?: string | null
           program_id?: string | null
           starts_on: string
           team_id?: string | null
@@ -2624,6 +2627,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["event_type"]
           updated_at?: string
           venue?: string | null
+          venue_id?: string | null
         }
         Update: {
           academy_id?: string
@@ -2638,6 +2642,7 @@ export type Database = {
           id?: string
           kit_colour?: string | null
           notes?: string | null
+          pitch_id?: string | null
           program_id?: string | null
           starts_on?: string
           team_id?: string | null
@@ -2645,6 +2650,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["event_type"]
           updated_at?: string
           venue?: string | null
+          venue_id?: string | null
         }
         Relationships: [
           {
@@ -2662,6 +2668,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_series_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_series_program_id_fkey"
             columns: ["program_id"]
             isOneToOne: false
@@ -2674,6 +2687,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_series_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2848,6 +2868,7 @@ export type Database = {
           notes: string | null
           opponent: string | null
           our_score: number | null
+          pitch_id: string | null
           potm_vote_open: boolean
           private_to: string | null
           program_id: string | null
@@ -2865,6 +2886,7 @@ export type Database = {
           type: Database["public"]["Enums"]["event_type"]
           updated_at: string
           venue: string | null
+          venue_id: string | null
           was_home: boolean | null
         }
         Insert: {
@@ -2888,6 +2910,7 @@ export type Database = {
           notes?: string | null
           opponent?: string | null
           our_score?: number | null
+          pitch_id?: string | null
           potm_vote_open?: boolean
           private_to?: string | null
           program_id?: string | null
@@ -2905,6 +2928,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["event_type"]
           updated_at?: string
           venue?: string | null
+          venue_id?: string | null
           was_home?: boolean | null
         }
         Update: {
@@ -2928,6 +2952,7 @@ export type Database = {
           notes?: string | null
           opponent?: string | null
           our_score?: number | null
+          pitch_id?: string | null
           potm_vote_open?: boolean
           private_to?: string | null
           program_id?: string | null
@@ -2945,6 +2970,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["event_type"]
           updated_at?: string
           venue?: string | null
+          venue_id?: string | null
           was_home?: boolean | null
         }
         Relationships: [
@@ -2981,6 +3007,13 @@ export type Database = {
             columns: ["fixture_id"]
             isOneToOne: false
             referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitches"
             referencedColumns: ["id"]
           },
           {
@@ -3024,6 +3057,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8657,6 +8697,16 @@ export type Database = {
           verified_by: string
         }[]
       }
+      close_ground: {
+        Args: {
+          p_academy: string
+          p_date: string
+          p_note?: string
+          p_reason?: string
+          p_venue: string
+        }
+        Returns: Json
+      }
       close_support_request: { Args: { p_request: string }; Returns: undefined }
       club_allocate_referee: {
         Args: {
@@ -8816,6 +8866,22 @@ export type Database = {
       create_scanned_events: {
         Args: { p_events: Json; p_scan: string }
         Returns: string[]
+      }
+      create_training_series: {
+        Args: {
+          p_academy: string
+          p_arrive?: number
+          p_days: number[]
+          p_duration?: number
+          p_from: string
+          p_pitch?: string
+          p_team?: string
+          p_time: string
+          p_title: string
+          p_until: string
+          p_venue?: string
+        }
+        Returns: Json
       }
       create_trial_sessions: {
         Args: {
@@ -9117,6 +9183,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      ground_slots: { Args: { p_venue: string }; Returns: Json }
       group_channel_info: { Args: { p_channel: string }; Returns: Json }
       group_overview: { Args: { p_academy: string }; Returns: Json }
       help_with: { Args: { p_job: string }; Returns: Json }
@@ -10152,6 +10219,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_training_slot: {
+        Args: { p_pitch: string; p_series: string }
+        Returns: Json
+      }
       setup_progress: { Args: { p_academy?: string }; Returns: Json }
       share_player_report: {
         Args: { p_report: string; p_share: boolean }
@@ -10218,6 +10289,7 @@ export type Database = {
       }
       team_form: { Args: { p_n?: number; p_team: string }; Returns: Json }
       team_season_stats: { Args: { p_team: string }; Returns: Json }
+      team_training: { Args: { p_team: string }; Returns: Json }
       tick_checklist: {
         Args: { p_done?: boolean; p_event: string; p_item: string }
         Returns: Json

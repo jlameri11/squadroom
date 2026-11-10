@@ -3716,6 +3716,69 @@ begin
     insert into rls_results values (202, 'a trial''s ratings are the coaches'' own and a parent sees none; the pencilled squads are a draft until published; publishing puts the child on the squad, welcomes the squad and tells each family once', r202);
   end;
 
+  -- 0250. Slots: one piece of grass is one piece of grass (a pitch, its
+  -- parent, its halves); hours hold; a parent sets nothing; Close ground
+  -- calls off that ground's sessions and no other's. Rolled back.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    U10 constant uuid := '00000000-0000-0000-0000-0000000d0010';
+    v_venue uuid; v_other uuid; v_pitch uuid; v_half uuid; v_s1 jsonb; v_r jsonb;
+    v_clash boolean := false; v_half_clash boolean := false; v_hours boolean := false; v_parent_refused boolean := false;
+    v_closed jsonb; v_other_left int; v_tue date;
+    r203 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.venues (academy_id, name) values (ACAD_A, 'RLS Ground') returning id into v_venue;
+      insert into public.venues (academy_id, name) values (ACAD_A, 'RLS Other Ground') returning id into v_other;
+      insert into public.pitches (academy_id, venue_id, name, size) values (ACAD_A, v_venue, 'Pitch 1', 'full') returning id into v_pitch;
+      insert into public.pitches (academy_id, venue_id, parent_id, name, size, x, y, w, h) values (ACAD_A, v_venue, v_pitch, 'Pitch 1 North', 'half', 0, 0, 28, 21) returning id into v_half;
+      -- next Tuesday
+      v_tue := current_date + ((9 - extract(dow from current_date)::integer) % 7) + case when (9 - extract(dow from current_date)::integer) % 7 = 0 then 7 else 0 end;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_s1 := public.create_training_series(ACAD_A, 'RLS training', array[2]::smallint[], '17:00', v_tue, v_tue + 28, U12, 60, null, v_pitch, null);
+      begin
+        perform public.create_training_series(ACAD_A, 'RLS clash', array[2]::smallint[], '17:30', v_tue, v_tue + 28, U10, 60, null, v_pitch, null);
+      exception when others then v_clash := sqlerrm like '%is taken Tue%';
+      end;
+      begin
+        perform public.create_training_series(ACAD_A, 'RLS half clash', array[2]::smallint[], '17:00', v_tue, v_tue + 28, U10, 60, null, v_half, null);
+      exception when others then v_half_clash := sqlerrm like '%is taken Tue%';
+      end;
+      -- hours: the pitch opens 16:00–18:30 on Tuesdays; 19:00 is refused on the half too (its parent's hours)
+      insert into public.pitch_availability (academy_id, pitch_id, weekday, opens, closes) values (ACAD_A, v_pitch, 2, '16:00', '18:30');
+      begin
+        perform public.create_training_series(ACAD_A, 'RLS late', array[2]::smallint[], '19:00', v_tue, v_tue + 28, U10, 60, null, v_half, null);
+      exception when others then v_hours := sqlerrm like '%not open then on a Tuesday%';
+      end;
+      -- a session elsewhere the same evening, not at this ground
+      perform public.create_training_series(ACAD_A, 'RLS elsewhere', array[2]::smallint[], '17:00', v_tue, v_tue + 28, U10, 60, null, null, 'RLS Other Ground');
+      v_closed := public.close_ground(ACAD_A, v_venue, v_tue, 'wet_weather', 'rls');
+      select count(*) into v_other_left from public.events e where e.title = 'RLS elsewhere' and e.cancelled_at is null;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.set_training_slot((v_s1->>'series_id')::uuid, v_half);
+      exception when others then v_parent_refused := true;
+      end;
+      execute 'reset role';
+      r203 := case when (v_s1->>'created')::int >= 4 and v_s1->>'pitch' = 'Pitch 1'
+                    and v_clash and v_half_clash and v_hours
+                    and (v_closed->>'sessions')::int = 1 and v_other_left >= 4
+                    and v_parent_refused then 'PASS'
+                   else 'FAIL (series '||coalesce(v_s1::text,'null')||'; clash '||v_clash||'; half '||v_half_clash||'; hours '||v_hours
+                        ||'; closed '||coalesce(v_closed::text,'null')||'; elsewhere left '||v_other_left||'; parent refused '||v_parent_refused||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r203 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (203, 'a training slot is refused on a taken pitch, on its half, and outside the pitch''s hours; a parent sets none; closing a ground calls off that ground''s sessions that day and no other''s', r203);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

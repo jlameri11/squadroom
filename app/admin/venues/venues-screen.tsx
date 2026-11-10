@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { GroundSvg, type Layout, type LayoutPitch } from '@/app/calendar/[eventId]/pitch-map'
+import { GroundWeek } from './ground-week'
 
 type VenueRow = { id: string; name: string; address: string | null; pitches: number }
 type Hours = { weekday: number; opens: string; closes: string }
@@ -257,6 +258,9 @@ export function VenuesScreen() {
       {openId && layout && (
         <>
           <button onClick={() => { setOpenId(null); setLayout(null); setSelected(null) }} className="mb-2 text-sm text-ink-2">‹ All grounds</button>
+
+          {/* 0250: the ground's week of training slots, and Close ground. */}
+          <GroundWeek venueId={openId} academyId={academyId as string} canEdit={Boolean(layout.can_edit)} />
 
           <section className="card p-3.5" data-layout>
             <div className="sect">

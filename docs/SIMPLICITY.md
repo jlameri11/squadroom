@@ -54,7 +54,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Player stats and development notes | `development` | the squad's coaches and club staff write; a family reads what is shared | the player card |
 | Referee self-appointment | `referee_self_appoint` | the league's referees | the referee's own screens |
 | Referee pay tracker | `referee_pay` | the league's treasurer | the competition's Referees tab |
-| Training-ground slots | `training_slots` | coordinators assign; families see the slot | the team page, the calendar (to build) |
+| Training-ground slots (0250) | `training_slots` | coaches and staff put a squad's weekly training on a pitch; everyone sees the slot | Add training (a pitch instead of a typed ground), the team page's Training line, the ground's week on Admin → Venues |
 | Trial ratings and grading (0249) | `trial_ratings` | the coaches at a trial rate; owners, admins and coordinators place and publish | the trial program's screen (Grading: ratings, notes, a squad per player, Publish teams) |
 | Team duty rotation | `duty_roster` | team managers and families | the team page (to build) |
 | Team Creator (social comps) | `team_creator` | captains; the organiser approves | registration (Part C) |
