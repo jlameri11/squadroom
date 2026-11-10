@@ -188,7 +188,7 @@ export function ChannelView({
           <h1 className="display truncate text-[1.3125rem] leading-tight">{name}</h1>
           <p className="truncate text-xs opacity-75" data-channel-kind={notices ? 'notices' : group ? group.kind : undefined}>
             {notices
-              ? `From ${notices.league}${archived ? ' · ended' : ' · only the league posts'}`
+              ? `Run by ${notices.league}${archived ? ' · ended' : ' · only the league posts'}`
               : group
                 ? `${group.kind === 'committee' ? 'The committee' : group.kind === 'managers' ? 'Every team manager, with the club' : `${group.league ?? 'The league'} and ${group.kind === 'clubs' ? 'the clubs\u2019 heads' : 'its referees'}`}${archived ? ' · ended' : ' · everyone can post'}`
               : archived ? 'Past season · read-only'

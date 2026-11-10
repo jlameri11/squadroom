@@ -45,7 +45,7 @@ export function EnterForm({ slug, info }: { slug: string; info: EntryInfo }) {
         <div className="p-5">
           <p className="card p-5 text-center text-sm">
             <b>Sent.</b> {info.organiser} will look at the entry and send {form.contactName.split(' ')[0] || 'you'} a link to join the competition.
-            {fee != null && fee > 0 ? ` The entry fee is ${money(fee)}, paid to the organiser once accepted.` : ''}
+            {fee != null && fee > 0 ? ` The entry fee is ${money(fee)}, paid to ${info.organiser} once accepted.` : ''}
           </p>
         </div>
       ) : (
@@ -77,7 +77,7 @@ export function EnterForm({ slug, info }: { slug: string; info: EntryInfo }) {
             )}
             {fee != null && (
               <p className="mt-2 text-sm text-ink-2">
-                Entry fee <b>{money(fee)}</b>{info.instructions ? ` — ${info.instructions}` : ', paid to the organiser once accepted.'}
+                Entry fee <b>{money(fee)}</b>{info.instructions ? ` — ${info.instructions}` : `, paid to ${info.organiser} once accepted.`}
               </p>
             )}
           </section>

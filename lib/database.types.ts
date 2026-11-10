@@ -8865,6 +8865,7 @@ export type Database = {
         Returns: undefined
       }
       group_channel_info: { Args: { p_channel: string }; Returns: Json }
+      group_overview: { Args: { p_academy: string }; Returns: Json }
       help_with: { Args: { p_job: string }; Returns: Json }
       home_jobs: {
         Args: { p_academy?: string; p_persona?: string }
@@ -9065,6 +9066,7 @@ export type Database = {
           type: Database["public"]["Enums"]["org_type"]
         }[]
       }
+      my_organisations_with_competitions: { Args: never; Returns: Json }
       my_payment_requests: {
         Args: { p_academy: string }
         Returns: {

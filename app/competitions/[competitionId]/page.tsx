@@ -17,11 +17,12 @@ export default async function CompetitionPage(props: {
 
   const { data: comp } = await supabase
     .from('competitions')
-    .select('id, name, type, season, organiser, organiser_id, starts_on, status, mode')
+    .select('id, name, type, season, organiser, organiser_id, starts_on, status, mode, academies!organiser_id(name)')
     .eq('id', competitionId)
     .maybeSingle()
 
   if (!comp) notFound()
+  const runBy = orgName(comp.academies) ?? comp.organiser
 
   const [{ data: sheet }, { data: entries }, { data: access }] = await Promise.all([
     supabase.rpc('competition_run_sheet', { p_competition: competitionId }),
@@ -75,8 +76,12 @@ export default async function CompetitionPage(props: {
         <Link href="/competitions" className="text-sm text-ink-2">← Competitions</Link>
         <h1 className="mt-2 text-2xl font-semibold" style={{ color: 'var(--brand-text)' }}>{comp.name}</h1>
         <p className="mt-0.5 text-sm capitalize text-ink-2">
-          {[comp.type.replace('_', ' '), comp.organiser, comp.season].filter(Boolean).join(' · ')}
+          {[comp.type.replace('_', ' '), comp.season].filter(Boolean).join(' · ')}
         </p>
+        {/* "Run by <Group>" (0246). The organiser's own row is withheld from
+            another club's people by policy; the competition carries the
+            group's name for exactly that. */}
+        {runBy && <p className="text-sm text-ink-2" data-run-by>Run by {runBy}</p>}
       </header>
 
       <CompetitionView
@@ -105,4 +110,9 @@ export default async function CompetitionPage(props: {
       />
     </main>
   )
+}
+
+function orgName(rel: unknown): string | null {
+  const one = Array.isArray(rel) ? rel[0] : rel
+  return (one as { name?: string } | null)?.name ?? null
 }

@@ -3571,6 +3571,35 @@ begin
     insert into rls_results values (199, 'the Committee room is the committee''s and the managers'' room the managers''; a parent is in neither; the owner hosts both', r199);
   end;
 
+  -- 0246. The organiser group. Read-only.
+  declare
+    LEAGUE_OWNER constant uuid := '00000000-0000-0000-0000-0000000000e1';
+    SPL constant uuid := '00000000-0000-0000-0000-0000000a0003';
+    v_over jsonb; v_club_over jsonb; v_orgs jsonb; v_spl_comps int;
+    r200 text;
+  begin
+    begin
+      perform set_config('request.jwt.claims', json_build_object('sub',LEAGUE_OWNER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_over := public.group_overview(SPL);
+      v_orgs := public.my_organisations_with_competitions();
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_club_over := public.group_overview(SPL);
+      execute 'reset role';
+      select jsonb_array_length(o->'competitions') into v_spl_comps from jsonb_array_elements(v_orgs) o where (o->>'id')::uuid = SPL;
+      r200 := case when jsonb_array_length(v_over->'competitions') >= 1
+                    and exists (select 1 from jsonb_array_elements(v_over->'competitions') c where c->>'name' = 'SPL Season 3' and (c->>'clubs')::int >= 1)
+                    and v_club_over is null and coalesce(v_spl_comps, 0) >= 1 then 'PASS'
+                   else 'FAIL (overview '||coalesce(left(v_over::text, 120),'null')||'; a parent gets '||coalesce(v_club_over::text,'null')||'; switcher lists '||coalesce(v_spl_comps::text,'none')||' under the SPL)' end;
+    exception when others then
+      r200 := 'FAIL (stopped: '||sqlerrm||')';
+    end;
+    execute 'reset role';
+    insert into rls_results values (200, 'the organiser group sees everything it runs in one overview, with the clubs entered; a parent sees nothing of it; the switcher lists its competitions under it', r200);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

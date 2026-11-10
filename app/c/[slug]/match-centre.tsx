@@ -130,7 +130,7 @@ export function MatchCentre({
               <img src={brand.logo} alt="" className="h-8 w-8 flex-none rounded-lg bg-white object-contain p-0.5" data-club-logo />
             )}
             <p className="eyebrow" style={{ color: 'inherit', opacity: 0.75 }}>
-              {competition.organiser}
+              Run by {competition.organiser}
             </p>
           </div>
           <h1 className="display mt-1 text-[1.875rem] leading-none">{competition.name}</h1>

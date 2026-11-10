@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { AppShellPage } from '@/components/shell-page'
+import { CompetitionsList, type CompRow } from './competitions-list'
 
 export default async function CompetitionsPage() {
   const supabase = await createClient()
@@ -14,35 +14,18 @@ export default async function CompetitionsPage() {
     .select('id, name, type, season, organiser, starts_on, ends_on, status, organiser_id, academies!organiser_id(name)')
     .order('starts_on', { ascending: false })
 
+  const rows: CompRow[] = (comps ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    season: c.season,
+    status: c.status,
+    runBy: orgName(c.academies) ?? c.organiser,
+  }))
+
   return (
     <AppShellPage title="Competitions">
-      <div className="p-4">
-
-      {(comps ?? []).length === 0 && (
-        <p className="m-5 rounded-xl bg-[var(--surface-2)] p-5 text-center text-sm text-ink-2">
-          Nothing yet. A competition you enter, or one you run, appears here.
-        </p>
-      )}
-
-      {(comps ?? []).map((c) => (
-        <Link
-          key={c.id}
-          href={`/competitions/${c.id}`}
-          className="flex items-center gap-3 border-b border-[var(--line-2)] px-5 py-4"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold">{c.name}</span>
-            <span className="block truncate text-sm capitalize text-ink-2">
-              {/* The organiser's own row is withheld from another club's
-                  people by policy; the competition carries the league's name
-                  for exactly that (0213 went live and a coach read nothing). */}
-              {[c.type.replace('_', ' '), orgName(c.academies) ?? c.organiser, c.season].filter(Boolean).join(' · ')}
-            </span>
-          </span>
-          {c.status === 'ended' && <span className="text-xs text-ink-3">ended</span>}
-        </Link>
-      ))}
-    </div>
+      <CompetitionsList comps={rows} />
     </AppShellPage>
   )
 }

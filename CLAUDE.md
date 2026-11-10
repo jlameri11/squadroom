@@ -698,6 +698,15 @@ one and is meant to reach hundreds of academies.
   closure React cancels in development: the email gate never showed in
   `next dev`. Guard with the thing you store (the sessionStorage memo), not
   with a ref.
+- **Call supabase-js methods on the client, never detached** (10 Nov 2026).
+  `const rpc = createClient().rpc as any; rpc('fn')` loses `this` and
+  throws "Cannot read properties of undefined (reading 'rest')" before the
+  screen renders. The org switcher did this from 24 Oct and was broken for
+  everyone in two organisations — only Joey — and no suite had opened it.
+  When the generated types lack a function, cast the RESULT (`data as
+  unknown as T`), not the method. A screen that only exists in a rare state
+  gets a suite that makes the state (`test-organiser-group` lends the
+  league's owner a throwaway second organisation and removes it after).
 - **A suite leaves the demo exactly as it found it** (5 Nov 2026). The
   dev data IS the demo Joey shows people, and suites that passed their own
   checks had been calling off real games and tonight's trainings, parking

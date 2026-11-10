@@ -200,10 +200,16 @@ AGM/committee papers.
   officer). Then the feature switches (0242, `SIMPLICITY.md`) and **Part B
   began: Message the club (0243)** — item 4's centrepiece — and **the
   layers (0244–0245)**: Club Notices, hosts-only age groups, a channel per
-  stream following the teams, the Committee and Team managers' rooms. Next:
-  the organiser group, setup and imports (item 5), trials (7), grounds (8),
-  game day (9), volunteers (10), safety (11), Club HQ's health card (12),
-  the demo (14).
+  stream following the teams, the Committee and Team managers' rooms. **The
+  organiser group (0246) done, as read above:** `group_overview` (everything
+  the group runs, with this week's numbers, for its staff and league roles),
+  `my_organisations_with_competitions` (the switcher's list), the switcher
+  with the group's competitions underneath, /competitions opening with the
+  overview, "Run by <Group>" on the competition screen, the public match
+  centre, the Notices room and the entry form's fee line. test-rls 200;
+  `test-organiser-group`. Next: setup and imports (item 5), trials (7),
+  grounds (8), game day (9), volunteers (10), safety (11), Club HQ's health
+  card (12), the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 
