@@ -212,10 +212,17 @@ AGM/committee papers.
   `setup_progress` with the brief's steps (a manager per squad, grounds,
   invite families; streams and committee roles in club mode);
   `club_health` and `/admin/health` (item 12's card), switchable. test-rls
-  201; `test-getting-live`. Next: trials (7), grounds and slots (8), game
-  day (9), volunteers (10), safety (11), the demo (14); the claim-from-roster
-  link, the printable sheet and staff links by role are still open from
-  item 5 (see the audit's Invite links note).
+  201; `test-getting-live`. **Claiming a child from the roster (0248)
+  done:** the join form takes each child's name and birthday, approval
+  matches them to the imported roster instead of adding them twice, and a
+  printable sheet (`/join/sheet/<code>`) carries the code, the QR and the
+  steps. `test-claim-child`. **Coach/staff join links by role are NOT
+  built, on purpose:** the clearance gate (0120) refuses a coach without a
+  current WWCC and a clearance needs a profile, which a join request has
+  only once approved — a self-serve coach link needs a pending-coach state
+  first (Phase 2). Coaches keep coming in through Invites. Item 5 is
+  otherwise complete. Next: trials (7), grounds and slots (8), game day (9),
+  volunteers (10), safety (11), the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

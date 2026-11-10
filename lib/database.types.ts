@@ -3806,6 +3806,7 @@ export type Database = {
       join_requests: {
         Row: {
           academy_id: string
+          children: Json
           children_names: string[]
           claimed_at: string | null
           created_at: string
@@ -3827,6 +3828,7 @@ export type Database = {
         }
         Insert: {
           academy_id: string
+          children?: Json
           children_names?: string[]
           claimed_at?: string | null
           created_at?: string
@@ -3848,6 +3850,7 @@ export type Database = {
         }
         Update: {
           academy_id?: string
+          children?: Json
           children_names?: string[]
           claimed_at?: string | null
           created_at?: string

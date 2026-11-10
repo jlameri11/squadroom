@@ -31,7 +31,9 @@ export function JoinForm({
   const [email, setEmail] = useState('')
   // Never pre-ticked, never required (Joey, 5 Nov 2026).
   const [news, setNews] = useState(false)
-  const [children, setChildren] = useState('')
+  // Each child by name and birthday (0248): the birthday is what finds them
+  // on a roster the club has already imported, so nobody is added twice.
+  const [kids, setKids] = useState<{ name: string; dob: string }[]>([{ name: '', dob: '' }])
   const [dob, setDob] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -50,7 +52,7 @@ export function JoinForm({
         phone,
         email,
         news,
-        children: asPlayer ? [] : children.split(',').map((c) => c.trim()).filter(Boolean),
+        children: asPlayer ? [] : kids.filter((k) => k.name.trim()).map((k) => ({ name: k.name.trim(), dob: k.dob || null })),
         dob: asPlayer ? dob : undefined,
       }),
     })
@@ -170,17 +172,45 @@ export function JoinForm({
             <span className="text-xs text-ink-3">You join as a player yourself. Under 18? Ask a parent to join through the family link instead.</span>
           </label>
         ) : (
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+          <fieldset className="flex flex-col gap-2.5" data-join-children>
+            <legend className="text-xs font-semibold uppercase tracking-wide text-ink-2">
               Your children in this team
-            </span>
-            <input
-              value={children}
-              onChange={(e) => setChildren(e.target.value)}
-              className="rounded-xl border border-[var(--line)] px-3 py-3"
-              placeholder="Leo Whitfield, Zoe Whitfield"
-            />
-          </label>
+            </legend>
+            {kids.map((k, i) => (
+              <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,9.5rem)] gap-2">
+                <input
+                  value={k.name}
+                  onChange={(e) => setKids(kids.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                  className="min-w-0 rounded-xl border border-[var(--line)] px-3 py-3"
+                  placeholder={i === 0 ? 'Leo Whitfield' : 'Another child'}
+                  aria-label={`Child ${i + 1}'s name`}
+                  data-join-child-name
+                />
+                <input
+                  type="date"
+                  value={k.dob}
+                  onChange={(e) => setKids(kids.map((x, j) => (j === i ? { ...x, dob: e.target.value } : x)))}
+                  required={Boolean(k.name.trim())}
+                  className="min-w-0 rounded-xl border border-[var(--line)] px-3 py-3"
+                  aria-label={`Child ${i + 1}'s date of birth`}
+                  data-join-child-dob
+                />
+              </div>
+            ))}
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-xs text-ink-3">
+                Name and birthday as the club has them, so they are matched to the roster rather than added twice.
+              </span>
+              <button
+                type="button"
+                onClick={() => setKids([...kids, { name: '', dob: '' }])}
+                className="tap flex-none text-xs font-semibold underline underline-offset-4"
+                data-join-add-child
+              >
+                Add another
+              </button>
+            </div>
+          </fieldset>
         )}
 
         <label className="flex items-start gap-2.5 text-sm text-ink-2">

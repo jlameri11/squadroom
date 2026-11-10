@@ -132,26 +132,53 @@ export async function POST(request: Request) {
     )
   }
 
-  // Children: link to a player already on the roster where the name matches,
-  // otherwise create one. Exact-name matching is crude and will mis-fire on
-  // "Leo" vs "Leo Whitfield" — the coach can fix it on the roster screen, and
-  // a duplicate player is a far smaller problem than silently attaching a
-  // parent to someone else's child.
-  // A request through an academy-wide link carries no team, and matching a
-  // child by name across the whole academy would be reckless: two clubs can
-  // easily both have a Leo. Without a team we create the player unattached
-  // and let a coach put them on a roster.
+  // The rest of the request, read with `*`: the email and news opt-in
+  // (0214) and the children with birthdays (0248) arrive with their
+  // migrations, and naming a column before its migration fails the read.
+  const { data: given } = await admin.from('join_requests').select('*').eq('id', requestId).maybeSingle()
+  const extra = (given ?? {}) as {
+    email?: string | null
+    news_opt_in_at?: string | null
+    children?: { name?: string; dob?: string | null }[] | null
+  }
+
+  // Children (0248): each by name and date of birth. The roster first — a
+  // child already imported with this name and birthday, anywhere in the
+  // club (the same name and birthday in one club is the same child), the
+  // link's squad preferred; a child on no squad yet is put on the link's.
+  // Only a child nobody has is created. Without a birthday (an older
+  // client) the old rule holds: a name within the team, else a new record —
+  // matching a bare name across the whole club would be reckless, two
+  // squads can both have a Leo. A duplicate is a far smaller problem than
+  // silently attaching a parent to someone else's child.
   const teamId = req.team_id
-  for (const childName of asPlayer ? [] : (req.children_names ?? [])) {
+  const kids: { name: string; dob: string | null }[] =
+    Array.isArray(extra.children) && extra.children.length > 0
+      ? extra.children.map((k) => ({ name: (k?.name ?? '').trim(), dob: k?.dob ?? null })).filter((k) => k.name)
+      : (req.children_names ?? []).map((n) => ({ name: n, dob: null }))
+  for (const kid of asPlayer ? [] : kids) {
     let playerId: string | null = null
 
-    if (teamId) {
+    if (kid.dob) {
+      const { data: found } = await admin
+        .from('players')
+        .select('id, team_id')
+        .eq('academy_id', req.academy_id)
+        .eq('dob', kid.dob)
+        .ilike('full_name', kid.name)
+        .is('profile_id', null)
+      const pick = (found ?? []).find((p) => p.team_id === teamId) ?? ((found ?? []).length === 1 ? found![0] : null)
+      if (pick) {
+        playerId = pick.id
+        if (teamId && !pick.team_id) await admin.from('players').update({ team_id: teamId }).eq('id', pick.id)
+      }
+    } else if (teamId) {
       const { data: player } = await admin
         .from('players')
         .select('id')
         .eq('academy_id', req.academy_id)
         .eq('team_id', teamId)
-        .ilike('full_name', childName)
+        .ilike('full_name', kid.name)
         .maybeSingle()
       playerId = player?.id ?? null
     }
@@ -159,7 +186,7 @@ export async function POST(request: Request) {
     if (!playerId) {
       const { data: newPlayer } = await admin
         .from('players')
-        .insert({ academy_id: req.academy_id, team_id: teamId, full_name: childName })
+        .insert({ academy_id: req.academy_id, team_id: teamId, full_name: kid.name, dob: kid.dob })
         .select('id')
         .single()
       playerId = newPlayer?.id ?? null
@@ -174,10 +201,7 @@ export async function POST(request: Request) {
   }
 
   // The email they gave when joining, and their news opt-in if they ticked
-  // it, become the account's (0214). Read with `*`: the columns arrive with
-  // the migration, and naming them before then fails the read.
-  const { data: given } = await admin.from('join_requests').select('*').eq('id', requestId).maybeSingle()
-  const extra = (given ?? {}) as { email?: string | null; news_opt_in_at?: string | null }
+  // it, become the account's (0214).
   await adoptEmail(admin, profileId, extra.email, extra.news_opt_in_at ?? null)
 
   await admin

@@ -31,7 +31,12 @@ export async function POST(request: Request) {
     token?: string
     fullName?: string
     phone?: string
-    children?: string[]
+    /**
+     * The family's children: names, or (0248) names with dates of birth so
+     * approval can find each child already on the roster. Older clients
+     * still send plain names.
+     */
+    children?: (string | { name?: string; dob?: string | null })[]
     /** 0239: an adult team's link — the person's own date of birth. */
     dob?: string
     email?: string
@@ -40,6 +45,20 @@ export async function POST(request: Request) {
 
   if (!token || !fullName?.trim()) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  }
+
+  // One shape for the children, whichever the client sent. A birthday that
+  // cannot be a birthday is refused here, with the child's name, rather
+  // than matched against nothing at approval.
+  const kids: { name: string; dob: string | null }[] = []
+  for (const c of children ?? []) {
+    const name = (typeof c === 'string' ? c : c?.name ?? '').trim()
+    if (!name) continue
+    const kidDob = typeof c === 'string' ? null : (c?.dob ?? null) || null
+    if (kidDob && !isPlausibleDob(kidDob)) {
+      return NextResponse.json({ error: `${name}'s date of birth doesn't look right.` }, { status: 400 })
+    }
+    kids.push({ name, dob: kidDob })
   }
 
   // Every account has an email (Joey, 5 Nov 2026): no joining without one.
@@ -114,7 +133,8 @@ export async function POST(request: Request) {
     join_link_id: link.id,
     full_name: fullName.trim(),
     phone: e164,
-    children_names: link.role === 'player' ? [] : (children ?? []).map((c) => c.trim()).filter(Boolean),
+    children_names: link.role === 'player' ? [] : kids.map((k) => k.name),
+    children: link.role === 'player' ? [] : kids,
     dob: link.role === 'player' ? dob : null,
     secret_hash: hashSecret(secret),
   }

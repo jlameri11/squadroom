@@ -190,6 +190,20 @@ export function JoinLinkPanel({
           </p>
         </div>
       )}
+
+      {/* 0248: the same code and QR as a sheet for the noticeboard, the
+          canteen window or a stack at registration day — with the three
+          steps a family follows, and "your children's names and birthdays
+          as the club has them", which is what matches them to the roster. */}
+      <a
+        href={`/join/sheet/${link.code}`}
+        target="_blank"
+        rel="noreferrer"
+        className="tap mt-3 block text-center text-sm underline underline-offset-4 text-ink-2"
+        data-print-sheet
+      >
+        Print a sheet for the noticeboard
+      </a>
     </section>
   )
 }
