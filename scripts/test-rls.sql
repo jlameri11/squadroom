@@ -2929,6 +2929,140 @@ begin
     insert into rls_results values (177, 'a league''s Referees chat is its referees and its staff, nobody else', r177);
   end;
 
+  -- 0236. Big Club Mode, step 1: club roles with a scope, streams, adult
+  -- age groups, the activity log. Rolled back. At NRIFA: HEAD (Hana's
+  -- parent, cleared) becomes Treasurer; PARENT (Sam, cleared) Registrar;
+  -- MARCUS (coach) coordinator of U8 and manager of U12; RAVENS_PARENT a
+  -- President of Ravens FC (another club). The owner COACH grants.
+  declare
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    v_stream uuid; v_role uuid; v_role2 uuid; v_role3 uuid; v_team uuid; v_pay uuid; v_log_before bigint;
+    t_money boolean; t_regs boolean; t_med int; t_pay int; r_regs boolean; r_money boolean; r_pay int; r_progs int;
+    c_u8 boolean; c_u12 boolean; c_dev boolean; m_u12 boolean; m_u8 boolean; m_dev boolean;
+    g_parent boolean; g_wwcc boolean; w_officer boolean;
+    l_rows int; l_seen int; l_parent int; adult_ok boolean; adult_bad boolean; stream_dup boolean;
+    acc jsonb;
+    r178 text; r179 text; r180 text; r181 text; r182 text; r183 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, HEAD, 'wwcc', 'RLS178A', 'cleared', current_date + 300, COACH),
+             (ACAD_A, PARENT, 'wwcc', 'RLS178B', 'cleared', current_date + 300, COACH)
+      on conflict do nothing;
+      select count(*) into v_log_before from public.activity_log where academy_id = ACAD_A;
+
+      -- 178. Roles are handed out by the owner (not a parent), need a check
+      -- on record (the Treasurer excepted), and are logged.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      g_parent := false;
+      begin perform public.grant_club_role(ACAD_A, HEAD, 'treasurer'); exception when others then g_parent := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      g_wwcc := false;
+      begin perform public.grant_club_role(ACAD_A, OUTSIDER, 'registrar'); exception when others then g_wwcc := true; end;  -- not a member, and no check
+      v_role := public.grant_club_role(ACAD_A, HEAD, 'treasurer');
+      v_role2 := public.grant_club_role(ACAD_A, PARENT, 'registrar');
+      v_role3 := public.grant_club_role(ACAD_A, MARCUS, 'coordinator', 'age_group', null, 'U8', null);
+      perform public.grant_club_role(ACAD_A, MARCUS, 'team_manager', 'team', null, null, U12);
+      perform public.grant_club_role(ACAD_A, HEAD, 'welfare_officer');
+      execute 'reset role';
+      select count(*) into l_rows from public.activity_log where academy_id = ACAD_A and action = 'role.granted';
+      r178 := case when g_parent and g_wwcc and v_role is not null and v_role2 is not null and v_role3 is not null and l_rows >= 5 then 'PASS'
+                   else 'FAIL (parent refused '||g_parent||', no check refused '||g_wwcc||', granted '||coalesce(v_role::text,'none')||', logged '||l_rows||')' end;
+
+      -- 179. The Treasurer: money, never medical. The register, the fees,
+      -- the vouchers, the finance export answer; medical rows do not.
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      t_money := app_private.may_run_club(ACAD_A, 'money');
+      t_regs := app_private.may_run_club(ACAD_A, 'registrations');
+      t_pay := 0;
+      begin perform * from public.outstanding_fees(ACAD_A); t_pay := 1; exception when others then t_pay := 0; end;  -- the who-owes list answers the Treasurer
+      select count(*) into t_med from public.player_medical where academy_id = ACAD_A;
+      execute 'reset role';
+      r179 := case when t_money and not t_regs and t_pay = 1 and t_med = 0 then 'PASS'
+                   else 'FAIL (money '||t_money||', registrations '||t_regs||', who-owes answers '||t_pay||', medical read '||t_med||')' end;
+
+      -- 180. The Registrar: registrations and programs, not money.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      r_regs := app_private.may_run_club(ACAD_A, 'registrations');
+      r_money := app_private.may_run_club(ACAD_A, 'money');
+      select count(*) into r_progs from public.program_registrations where academy_id = ACAD_A;
+      r_pay := 0;
+      begin perform * from public.outstanding_fees(ACAD_A); exception when others then r_pay := case when sqlstate = '42501' then 1 else 0 end; end;  -- the who-owes list refuses the Registrar
+      execute 'reset role';
+      r180 := case when r_regs and not r_money and r_progs >= 1 and r_pay = 1 then 'PASS'
+                   else 'FAIL (registrations '||r_regs||', money '||r_money||', registrations read '||r_progs||', who-owes refused '||r_pay||')' end;
+
+      -- 181. Scope: a coordinator of U8 runs the U8 squad, not the U12; the
+      -- U12's manager runs the U12 (as a coach would) but may not write a
+      -- player's development report.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      c_u8 := app_private.runs_team(U8);
+      c_u12 := app_private.runs_team(U12, false);
+      m_u12 := app_private.runs_team(U12, true);
+      m_dev := coalesce((select app_private.may_develop(p.id) from public.players p where p.team_id = U12 limit 1), false);
+      c_dev := coalesce((select app_private.may_develop(p.id) from public.players p where p.team_id = U8 limit 1), false);
+      execute 'reset role';
+      r181 := case when c_u8 and not c_u12 and m_u12 and not m_dev and c_dev then 'PASS'
+                   else 'FAIL (coordinator U8 '||c_u8||', U12 without manager '||c_u12||', manager U12 '||m_u12||', manager develops '||m_dev||', coordinator develops '||c_dev||')' end;
+
+      -- 182. The Welfare officer is the safeguarding officer, by the same
+      -- name the screens already use; and the log is the committee's.
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      w_officer := app_private.is_safeguarding_officer(ACAD_A);
+      select count(*) into l_parent from public.activity_log where academy_id = ACAD_A;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into l_seen from public.activity_log where academy_id = ACAD_A;
+      acc := public.my_club_access(ACAD_A);
+      execute 'reset role';
+      r182 := case when w_officer and l_parent = 0 and l_seen > v_log_before and (acc->'areas') ? 'club' then 'PASS'
+                   else 'FAIL (officer '||w_officer||', a Treasurer reads the log '||l_parent||', the owner reads '||l_seen||' rows, access '||coalesce(acc::text,'null')||')' end;
+
+      -- 183. Streams and adult age groups: a stream is one per name per
+      -- club; an Over-35s team is a team; a shape nobody uses is refused.
+      insert into public.streams (academy_id, name) values (ACAD_A, 'RLS Seniors') returning id into v_stream;
+      stream_dup := false;
+      begin insert into public.streams (academy_id, name) values (ACAD_A, 'RLS Seniors'); exception when unique_violation then stream_dup := true; end;
+      adult_ok := false;
+      begin
+        insert into public.teams (academy_id, name, age_group, season, stream_id) values (ACAD_A, 'RLS Over-35s', 'Over-35', '2099', v_stream) returning id into v_team;
+        adult_ok := v_team is not null;
+      exception when others then adult_ok := false; end;
+      adult_bad := false;
+      begin insert into public.teams (academy_id, name, age_group, season) values (ACAD_A, 'RLS Odd', 'Teens', '2099'); exception when check_violation then adult_bad := true; end;
+      r183 := case when stream_dup and adult_ok and adult_bad then 'PASS'
+                   else 'FAIL (duplicate stream refused '||stream_dup||', Over-35 team made '||adult_ok||', odd shape refused '||adult_bad||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r178 := coalesce(r178, 'FAIL (stopped: '||sqlerrm||')');
+        r179 := coalesce(r179, 'FAIL (stopped: '||sqlerrm||')');
+        r180 := coalesce(r180, 'FAIL (stopped: '||sqlerrm||')');
+        r181 := coalesce(r181, 'FAIL (stopped: '||sqlerrm||')');
+        r182 := coalesce(r182, 'FAIL (stopped: '||sqlerrm||')');
+        r183 := coalesce(r183, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (178, 'club roles are handed out by those who run the club, need a check on record, and are logged', r178);
+    insert into rls_results values (179, 'the Treasurer reads the money and never a medical record', r179);
+    insert into rls_results values (180, 'the Registrar runs registrations and never the money', r180);
+    insert into rls_results values (181, 'a coordinator runs only the squads in their scope; a team manager runs their team but writes no development report', r181);
+    insert into rls_results values (182, 'the Welfare officer is the safeguarding officer; the activity log is the committee''s to read', r182);
+    insert into rls_results values (183, 'streams are one per name per club; adult age groups are teams; an odd age group is refused', r183);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

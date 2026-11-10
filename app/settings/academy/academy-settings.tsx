@@ -21,6 +21,7 @@ export function AcademySettings({
   overdueGraceDays = 14,
   contactEmail,
   twoStepRequired,
+  clubMode,
 }: {
   academyId: string
   dmPolicy: string
@@ -40,6 +41,8 @@ export function AcademySettings({
   contactEmail?: string | null
   /** 0231: whether the club requires two-step sign-in of its owners and admins; undefined until the column exists. */
   twoStepRequired?: boolean
+  /** 0236: Big Club Mode — streams, committee roles and rosters; undefined until the column exists. */
+  clubMode?: boolean
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -106,6 +109,39 @@ export function AcademySettings({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {error && <p className="text-sm ">{error}</p>}
+      {clubMode !== undefined && (
+        <section data-club-mode={clubMode ? 'on' : 'off'}>
+          <h2 className="font-semibold">Club mode</h2>
+          {clubMode ? (
+            <p className="mt-1 text-sm text-ink-2">
+              On. Streams on teams, several roles per person (President, Registrar, Treasurer, coordinators, team managers, Welfare officer), the activity log. Roles are handed out under Admin → Roles.
+            </p>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-ink-2">
+                For a club with streams, a committee and many teams: club-defined streams (MiniRoos, Juniors, Girls, Women, NPL, Seniors…) on teams, several roles per person with their own scope, and a log of who changed what. An academy loses nothing by leaving it off.
+              </p>
+              <button
+                onClick={async () => {
+                  setBusy(true)
+                  setError(null)
+                  const { error } = await createClient().rpc('enable_club_mode', { p_academy: academyId })
+                  setBusy(false)
+                  if (error) return setError(error.message)
+                  router.refresh()
+                }}
+                disabled={busy}
+                className="mt-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }}
+                data-club-mode-enable
+              >
+                Turn on club mode
+              </button>
+            </>
+          )}
+        </section>
+      )}
+
       {twoStepRequired !== undefined && (
         <section data-two-step-required={twoStepRequired ? 'on' : 'off'}>
           <h2 className="font-semibold">Two-step sign-in for owners and admins</h2>

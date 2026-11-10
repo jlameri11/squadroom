@@ -172,9 +172,16 @@ AGM/committee papers.
 - **9 Nov 2026:** received, after the migration-day deploy, the organiser
   groups and the "Academy vs league organiser" brief.
 - **10 Nov 2026:** the queue ahead of it is done (two-step by text 0232–0233;
-  the organiser groups 0234–0235). **Audit under way** — below, written as
-  the facts come in, with file and migration references so the build reuses
-  rather than rebuilds.
+  the organiser groups 0234–0235). The audit (below) is done. **Step 1 built
+  — 0236, on dev:** club mode and streams, team gender and home ground, age
+  groups past U18, the eight club roles with a scope (`club_roles`,
+  `may_run_club`, `runs_team`; the money policies accept a Treasurer, the
+  registration policies a Registrar, a coordinator and a team manager run
+  their teams through `is_team_coach`, the Welfare officer is the
+  safeguarding officer), the activity log and its triggers, Admin → Roles
+  and Admin → Activity, the new-team form, the club-mode switch in Club
+  settings. test-rls 178–183; `test-club-roles` (23, on dev). Then Joey's
+  10 Nov order (next section): Part A's four fixes first.
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 
@@ -479,6 +486,56 @@ is the one cited.
   the UI says "Safeguarding", never "Welfare"; no officer contact in a
   family's Settings (`member_contact` hides a non-staff officer's number;
   staff-only DMs stop a parent messaging a non-staff officer).
+
+## Joey, 10 Nov 2026 — next steps, in this order (verbatim)
+
+> Next steps (Joey, 10 Nov). Do in this order. Commit and push hourly. No deploy until I say.
+>
+> PART A — THE FOUR AUDIT FIXES (start now, before the rest of Big Club Phase 1)
+> 1. ROLES: one membership per person per club, plus a set of roles on it (a person can be parent + coach + President + team manager at once). Update every RLS helper to ask "does this person hold role X here" instead of reading one role. Migrate existing rows without losing anything. Home shows each hat clearly.
+> 2. ADULTS: remove the under-25 rule. Date of birth must be in the past and under 100 years ago. Adult players are their own member (no guardian). Fix the register form and the importer. Test a 40-year-old over-35s player end to end: join, register, pay, chat, play.
+> 3. TEAM CATEGORIES: replace U5–U18-only age_group with Junior (U5–U18), Open/Seniors, Over-35, Over-45, Over-55, plus a separate gender field (Boys / Girls / Mixed / Men / Women). Clubs can add their own label (e.g. "Women's Premier League"). Existing teams keep their values.
+> 4. WELFARE OFFICER: Admin → People → Roles → "Welfare officer (Member Protection)" — appoint in one tap; shown on every family's Settings as the club's safeguarding contact; reports go to them and the President only.
+> Tests: a person with four roles sees each correctly and nothing extra; an adult player works with no guardian; an over-35s team can enter a league; only the welfare officer and President receive a report.
+>
+> PART B — CONTINUE BIG CLUB PHASE 1 (as briefed on 9 Nov), building on Part A.
+>
+> PART C — DRIBL GAPS (after Big Club Phase 1)
+> 1. Registration photo: families upload a player photo when registering — private bucket, resized, staff-only until approved, then used on the player card and as match-sheet ID for referees. Clubs can make it required.
+> 2. Bans: a club or league can ban a person (parent, spectator, coach or player) for a set period with a reason. While banned they can't RSVP, post, or be on a team sheet. Visible to staff only. Logged in the activity log.
+> 3. Team Creator for social comps and tournaments: a captain registers a team, gets a join code/link, teammates join and either pay their share or the captain pays for all; the organiser approves the team.
+> 4. Blue cards (sin bin): per-league on/off; recorded on the match sheet with minutes.
+> 5. Registrations-only CSV export: who registered for what, with their answers.
+> 6. Ladder breakdown: tap a ladder row to see how every point was earned (results, adjustments, forfeits).
+> Tests for each.
+>
+> NOT NEEDED: best-and-fairest votes.
+>
+> After Part C: run the SPL Season 4 full simulation (as briefed on 9 Nov) on the local database.
+
+> **Also in Part B (Joey, 10 Nov, a little later):** the organiser GROUP from 5 Nov is still missing — a "Tournament & league organiser" account that runs several leagues/tournaments (e.g. Magic Group → SPL + 3 tournaments): group staff get rights on all of them, "Run by <Group>" on public pages/notices/receipts, the org switcher shows the group with its competitions underneath, and a simple group overview. Keep it simple.
+
+Reading of the group item: the organiser organisation IS the group
+(`competitions.organiser_id`), and its owners, admins and league roles
+already run every competition it organises (`may_run`). What is missing is
+the presentation: the organisation type named "Tournament & league
+organiser", "Run by <Group>" wherever a competition is shown publicly, on
+notices and on receipts, the switcher listing the group's competitions
+under it, and one overview screen of everything the group runs. No new
+ownership model.
+
+How Part A maps onto the work already under way: **0236** (streams, the
+scoped club roles beside the membership, the money and registration
+policies re-gated, the activity log, age groups past U18) is the base.
+Then **0237** makes the membership carry a SET of base roles (owner, admin,
+coach, parent, player — several at once) with the helpers asking "holds
+role X here" and Home showing each hat; **0238** the adults; **0239** the
+team categories as Joey named them (Junior U5–U18 · Open/Seniors · Over-35
+· Over-45 · Over-55; gender Boys/Girls/Mixed/Men/Women; a club's own
+label); **0240** the Welfare officer (Member Protection): one tap, the
+family's Settings, reports to them and the President only. Scoped roles
+(a team's manager, an age group's coordinator) stay in `club_roles`
+because each names a team or an age group, which a flat set cannot.
 
 ## Phase 1 plan (10 Nov 2026) — reuse first, in dependency order
 

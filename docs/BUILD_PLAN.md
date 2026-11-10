@@ -523,6 +523,12 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
       organiser tools for that competition only; (5) tests: a parent or
       coach never sees the Clubs chat, a club head sees only their
       competitions' Clubs chats, an organiser cannot DM other clubs' parents.
+    - **Part B addition (Joey, 10 Nov):** the organiser GROUP — a
+      "Tournament & league organiser" that runs several leagues and
+      tournaments (Magic Group → SPL + 3 tournaments): group staff with
+      rights on all of them, "Run by <Group>" on public pages, notices and
+      receipts, the switcher showing the group with its competitions under
+      it, a simple group overview. Keep it simple (`BIG_CLUB_MODE.md`).
     - **Status, 9–10 Nov:** the decisions are built (#23 as the player levy,
       0230; #22 as 0231, then **changed by Joey the same evening to a code
       by text with trusted devices — 0232–0233, built first as asked**). The
@@ -537,8 +543,22 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     tickets, newsletter templates, notice translation, AGM papers). No
     deploy until Phase 1 is done.
 
-12. **Full-season simulation — "SPL Season 4"** (Joey, 9 Nov 2026, late) —
-    after Big Club Mode: the whole brief, verbatim, is `docs/SIMULATION.md`,
+12. **Dribl gaps** (Joey, 10 Nov 2026, Part C — after Big Club Phase 1,
+    before the simulation): (1) a registration photo — private bucket,
+    resized, staff-only until approved, then the player card and the
+    match-sheet ID for referees; a club can require it; (2) bans — a club or
+    league bans a person (parent, spectator, coach or player) for a period
+    with a reason; no RSVP, no posting, no team sheet while banned; staff
+    only; in the activity log; (3) Team Creator for social comps and
+    tournaments — a captain registers a team, a join code, teammates join
+    and pay their share or the captain pays, the organiser approves;
+    (4) blue cards (sin bin) per league, on the match sheet with minutes;
+    (5) a registrations-only CSV with the answers; (6) a ladder breakdown —
+    tap a row to see every point: results, adjustments, forfeits. Tests for
+    each. Not needed: best-and-fairest votes.
+
+13. **Full-season simulation — "SPL Season 4"** (Joey, 9 Nov 2026, late) —
+    after Part C: the whole brief, verbatim, is `docs/SIMULATION.md`,
     which becomes the report. On the local Postgres only, never on dev or
     the demo; 300+ teams from ~60 clubs, 14 rounds and finals, every role's
     jobs and every "must not", peak timings under a second, `docs/BUGS.md`

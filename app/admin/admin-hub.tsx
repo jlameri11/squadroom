@@ -184,6 +184,10 @@ export function AdminHub() {
             <ul className="card mb-5 overflow-hidden">
               <Row href="/admin/payments" label="Collect payments" hint="Fees and entries" />
               <Row href="/admin/members" label="Members" hint="And who invited whom" />
+              {/* Big Club Mode (0236): several roles per person, each with a
+                  scope, and the log of who changed what. */}
+              <Row href="/admin/roles" label="Roles" hint="President, Registrar, Treasurer, coordinators, team managers, Welfare officer" />
+              <Row href="/admin/activity" label="Activity" hint="Who changed what, and when" />
               <Row href="/admin/invites" label="Invites" />
               <Row href="/admin/safeguarding" label="Safeguarding reports" hint="Messages families have reported" />
               {/* Linked from here deliberately. A compliance screen nothing

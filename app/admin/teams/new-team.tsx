@@ -2,11 +2,19 @@
 
 import { Sheet } from '@/components/sheet'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-const AGE_GROUPS = ['U5','U6','U7','U8','U9','U10','U11','U12','U13','U14','U15','U16','U17','U18']
+// Juniors U5–U18 as before; then the age groups a big club has (0236):
+// U19–U23, Open (seniors, women), Over-35s and up.
+const AGE_GROUPS = ['U5','U6','U7','U8','U9','U10','U11','U12','U13','U14','U15','U16','U17','U18','U19','U20','U21','U23','Open','Over-35','Over-40','Over-45']
+const GENDERS: { value: '' | 'female' | 'male' | 'other'; label: string }[] = [
+  { value: '', label: 'Mixed / not set' },
+  { value: 'female', label: 'Girls / women' },
+  { value: 'male', label: 'Boys / men' },
+  { value: 'other', label: 'Other' },
+]
 
 export function NewTeam({
   academyId,
@@ -22,8 +30,23 @@ export function NewTeam({
   const [name, setName] = useState('')
   const [ageGroup, setAgeGroup] = useState('U8')
   const [season, setSeason] = useState(String(new Date().getFullYear()))
+  const [gender, setGender] = useState<'' | 'female' | 'male' | 'other'>('')
+  const [streamId, setStreamId] = useState('')
+  const [streams, setStreams] = useState<{ id: string; name: string }[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // The club's streams (0236), if it has any; an academy with none sees no picker.
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().from('streams').select('id, name').eq('academy_id', academyId).order('sort_order').order('name')
+      if (live) setStreams((data as { id: string; name: string }[] | null) ?? [])
+    })()
+    return () => {
+      live = false
+    }
+  }, [academyId])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,6 +59,8 @@ export function NewTeam({
       name: name.trim(),
       age_group: ageGroup,
       season,
+      gender: gender || null,
+      stream_id: streamId || null,
     })
 
     setBusy(false)
@@ -102,6 +127,24 @@ export function NewTeam({
             className="rounded-xl border border-[var(--line)] px-3 py-3"
           />
         </label>
+      </div>
+
+      <div className="flex gap-3">
+        <label className="flex flex-1 flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Who plays</span>
+          <select value={gender} onChange={(e) => setGender(e.target.value as '' | 'female' | 'male' | 'other')} className="rounded-xl border border-[var(--line)] px-3 py-3" data-team-gender>
+            {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+          </select>
+        </label>
+        {streams.length > 0 && (
+          <label className="flex flex-1 flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Stream</span>
+            <select value={streamId} onChange={(e) => setStreamId(e.target.value)} className="rounded-xl border border-[var(--line)] px-3 py-3" data-team-stream>
+              <option value="">None</option>
+              {streams.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          </label>
+        )}
       </div>
 
       </div>

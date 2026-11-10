@@ -1,7 +1,8 @@
 # Full season simulation — "SPL Season 4"
 
-**Status (9 Nov 2026): queued.** Joey's order: two-step text code (0232) →
-organiser groups → Big Club Mode (`BIG_CLUB_MODE.md`) → this. Commit and push
+**Status (10 Nov 2026): queued.** Joey's order (10 Nov): the four audit
+fixes → the rest of Big Club Phase 1 (`BIG_CLUB_MODE.md`) → the Dribl gaps
+(`BUILD_PLAN.md` item 12) → this. Commit and push
 hourly while it runs. No deploy. This file will become the report (section
 "What ran" onward); until then it holds the brief, verbatim.
 

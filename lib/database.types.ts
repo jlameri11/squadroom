@@ -17,6 +17,7 @@ export type Database = {
       academies: {
         Row: {
           block_rsvp_when_overdue: boolean
+          club_mode: boolean
           contact_email: string | null
           created_at: string
           created_by: string | null
@@ -44,6 +45,7 @@ export type Database = {
         }
         Insert: {
           block_rsvp_when_overdue?: boolean
+          club_mode?: boolean
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
@@ -71,6 +73,7 @@ export type Database = {
         }
         Update: {
           block_rsvp_when_overdue?: boolean
+          club_mode?: boolean
           contact_email?: string | null
           created_at?: string
           created_by?: string | null
@@ -357,6 +360,57 @@ export type Database = {
           },
         ]
       }
+      activity_log: {
+        Row: {
+          academy_id: string
+          action: string
+          actor_id: string | null
+          at: string
+          detail: Json
+          id: number
+          subject_id: string | null
+          subject_kind: string | null
+          subject_name: string | null
+        }
+        Insert: {
+          academy_id: string
+          action: string
+          actor_id?: string | null
+          at?: string
+          detail?: Json
+          id?: number
+          subject_id?: string | null
+          subject_kind?: string | null
+          subject_name?: string | null
+        }
+        Update: {
+          academy_id?: string
+          action?: string
+          actor_id?: string | null
+          at?: string
+          detail?: Json
+          id?: number
+          subject_id?: string | null
+          subject_kind?: string | null
+          subject_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_feeds: {
         Row: {
           created_at: string
@@ -526,6 +580,81 @@ export type Database = {
           },
           {
             foreignKeyName: "channels_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
+      club_roles: {
+        Row: {
+          academy_id: string
+          age_group: string | null
+          created_at: string
+          granted_by: string | null
+          id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["club_role"]
+          scope_kind: string
+          stream_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          academy_id: string
+          age_group?: string | null
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          profile_id: string
+          role: Database["public"]["Enums"]["club_role"]
+          scope_kind?: string
+          stream_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          academy_id?: string
+          age_group?: string | null
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          profile_id?: string
+          role?: Database["public"]["Enums"]["club_role"]
+          scope_kind?: string
+          stream_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_roles_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_roles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_roles_stream_fkey"
+            columns: ["stream_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "streams"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "club_roles_team_fkey"
             columns: ["team_id", "academy_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -6990,6 +7119,38 @@ export type Database = {
           },
         ]
       }
+      streams: {
+        Row: {
+          academy_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streams_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_replies: {
         Row: {
           body: string
@@ -7261,6 +7422,8 @@ export type Database = {
           created_by: string | null
           ended_at: string | null
           external_ref: string | null
+          gender: Database["public"]["Enums"]["player_gender"] | null
+          home_venue_id: string | null
           id: string
           kit_away: string | null
           kit_home: string | null
@@ -7269,6 +7432,7 @@ export type Database = {
           season: string
           skip_import: boolean
           status: Database["public"]["Enums"]["team_status"]
+          stream_id: string | null
           updated_at: string
         }
         Insert: {
@@ -7279,6 +7443,8 @@ export type Database = {
           created_by?: string | null
           ended_at?: string | null
           external_ref?: string | null
+          gender?: Database["public"]["Enums"]["player_gender"] | null
+          home_venue_id?: string | null
           id?: string
           kit_away?: string | null
           kit_home?: string | null
@@ -7287,6 +7453,7 @@ export type Database = {
           season?: string
           skip_import?: boolean
           status?: Database["public"]["Enums"]["team_status"]
+          stream_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -7297,6 +7464,8 @@ export type Database = {
           created_by?: string | null
           ended_at?: string | null
           external_ref?: string | null
+          gender?: Database["public"]["Enums"]["player_gender"] | null
+          home_venue_id?: string | null
           id?: string
           kit_away?: string | null
           kit_home?: string | null
@@ -7305,6 +7474,7 @@ export type Database = {
           season?: string
           skip_import?: boolean
           status?: Database["public"]["Enums"]["team_status"]
+          stream_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -7323,11 +7493,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "teams_home_venue_fkey"
+            columns: ["home_venue_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
             foreignKeyName: "teams_rolled_from_fkey"
             columns: ["rolled_from"]
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_stream_fkey"
+            columns: ["stream_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "streams"
+            referencedColumns: ["id", "academy_id"]
           },
         ]
       }
@@ -8070,6 +8254,7 @@ export type Database = {
         Args: { p_approve: boolean; p_note?: string; p_request: string }
         Returns: undefined
       }
+      club_officials: { Args: { p_academy: string }; Returns: Json }
       competition_appointments: {
         Args: { p_competition: string; p_division?: string }
         Returns: Json
@@ -8255,6 +8440,7 @@ export type Database = {
         Args: { p_competition: string; p_division: string }
         Returns: Json
       }
+      enable_club_mode: { Args: { p_academy: string }; Returns: boolean }
       end_event_series: {
         Args: {
           p_delete?: boolean
@@ -8477,6 +8663,18 @@ export type Database = {
         }
         Returns: string
       }
+      grant_club_role: {
+        Args: {
+          p_academy: string
+          p_age_group?: string
+          p_profile: string
+          p_role: Database["public"]["Enums"]["club_role"]
+          p_scope_kind?: string
+          p_stream?: string
+          p_team?: string
+        }
+        Returns: string
+      }
       grant_league_role: {
         Args: {
           p_competition: string
@@ -8653,6 +8851,7 @@ export type Database = {
           unread_count: number
         }[]
       }
+      my_club_access: { Args: { p_academy: string }; Returns: Json }
       my_competition_access: { Args: { p_competition: string }; Returns: Json }
       my_digest_minutes: { Args: never; Returns: number }
       my_email: { Args: never; Returns: Json }
@@ -9232,6 +9431,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      revoke_club_role: { Args: { p_role_id: string }; Returns: undefined }
       revoke_league_role: {
         Args: {
           p_competition: string
@@ -9637,6 +9837,15 @@ export type Database = {
         | "referees"
       clearance_kind: "wwcc" | "exemption"
       clearance_outcome: "cleared" | "applied" | "barred" | "not_found"
+      club_role:
+        | "president"
+        | "secretary"
+        | "registrar"
+        | "treasurer"
+        | "coordinator"
+        | "team_manager"
+        | "welfare_officer"
+        | "volunteer_coordinator"
       competition_mode: "managed" | "comms_only"
       competition_type:
         | "season"
@@ -9906,6 +10115,16 @@ export const Constants = {
       ],
       clearance_kind: ["wwcc", "exemption"],
       clearance_outcome: ["cleared", "applied", "barred", "not_found"],
+      club_role: [
+        "president",
+        "secretary",
+        "registrar",
+        "treasurer",
+        "coordinator",
+        "team_manager",
+        "welfare_officer",
+        "volunteer_coordinator",
+      ],
       competition_mode: ["managed", "comms_only"],
       competition_type: [
         "season",

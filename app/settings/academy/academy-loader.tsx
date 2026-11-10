@@ -99,6 +99,7 @@ export function AcademyLoader() {
           overdueGraceDays={academy.overdue_grace_days}
           contactEmail={academy.contact_email === undefined ? undefined : academy.contact_email}
           twoStepRequired={(academy as { two_step_required?: boolean }).two_step_required}
+          clubMode={(academy as { club_mode?: boolean }).club_mode}
         />
         </>
       ) : (
