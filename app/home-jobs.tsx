@@ -29,11 +29,13 @@ type Elsewhere = {
   persona: Persona
   primary_colour: string | null
 }
-type Persona = 'parent' | 'coach' | 'owner' | 'league'
+type Persona = 'parent' | 'coach' | 'owner' | 'league' | 'president' | 'treasurer' | 'registrar' | 'coordinator' | 'manager' | 'welfare' | 'volunteers' | 'player'
 type Jobs = {
   academy_id: string
   role: string | null
   persona: Persona
+  /** 0237: every hat this person wears here, biggest first. */
+  hats?: Persona[]
   jobs: Job[]
   today: Today | null
   announcement: Announcement | null
@@ -42,16 +44,42 @@ type Jobs = {
 
 const HEADING: Record<Persona, string> = {
   parent: 'Your jobs',
+  player: 'Your games',
   coach: 'Coaching',
   owner: 'Run the club',
   league: 'Run the league',
+  president: 'Club HQ',
+  treasurer: 'The money',
+  registrar: 'Registrations',
+  coordinator: 'Your age groups',
+  manager: 'Your team',
+  welfare: 'Welfare',
+  volunteers: 'Volunteers',
 }
 
 const PERSONA_WORD: Record<Persona, string> = {
   parent: 'Parent',
+  player: 'Player',
   coach: 'Coach',
   owner: 'Admin',
   league: 'Organiser',
+  president: 'President',
+  treasurer: 'Treasurer',
+  registrar: 'Registrar',
+  coordinator: 'Coordinator',
+  manager: 'Team manager',
+  welfare: 'Welfare officer',
+  volunteers: 'Volunteers',
+}
+
+/** The hat being worn on this organisation's Home, remembered per organisation (0237). */
+const hatKey = (org: string) => `squadroom.hat:${org}`
+function rememberedHat(org: string | null): string | undefined {
+  try {
+    return (org && localStorage.getItem(hatKey(org))) || undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -81,19 +109,20 @@ export const isFreshAnnouncement = (createdAt: string, now = Date.now()) =>
 export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
   const [data, setData] = useState<Jobs | null>(null)
   const [setup, setSetup] = useState<Setup | null>(null)
+  const [hat, setHat] = useState<string | undefined>(() => rememberedHat(getOrg()))
 
   useEffect(() => {
     let live = true
     ;(async () => {
       const supabase = createClient()
       const org = getOrg() ?? undefined
-      const { data } = await takeEarly(`home_jobs:${org ?? ''}`, () => supabase.rpc('home_jobs', { p_academy: org }))
+      const { data } = await takeEarly(`home_jobs:${org ?? ''}:${hat ?? ''}`, () => supabase.rpc('home_jobs', { p_academy: org, p_persona: hat }))
       if (!live) return
       const jobs = (data as unknown as Jobs | null) ?? null
       setData(jobs)
       if (jobs) onJobs?.({ persona: jobs.persona, jobs: jobs.jobs ?? [] })
       // G-01: a club still being set up gets the checklist first.
-      if (jobs?.persona === 'owner') {
+      if (jobs?.persona === 'owner' || jobs?.persona === 'president') {
         const { data: s } = await supabase.rpc('setup_progress', { p_academy: getOrg() ?? undefined })
         if (live) setSetup((s as unknown as Setup | null) ?? null)
       }
@@ -103,7 +132,16 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
     }
     // onJobs is a state setter from Home; stable for the life of the screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [hat])
+
+  function wear(next: string) {
+    try {
+      const org = getOrg()
+      if (org) localStorage.setItem(hatKey(org), next)
+    } catch {}
+    invalidateScreen()
+    setHat(next)
+  }
 
   if (!data || !data.jobs?.length) return null
 
@@ -118,9 +156,29 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
   const ann = data.announcement && isFreshAnnouncement(data.announcement.created_at) ? data.announcement : null
   // A parent's jobs are rows in Needs you, not a strip above it: one list.
   const tiles = data.persona !== 'parent'
+  const hats = (data.hats ?? []).filter((h) => h in PERSONA_WORD)
 
   return (
     <section className="px-3.5 pt-4" data-persona={data.persona}>
+      {/* Several hats here (0237): the one being worn is filled; a tap wears another. */}
+      {hats.length > 1 && (
+        <div className="-mx-3.5 mb-3 flex gap-2 overflow-x-auto px-3.5 pb-0.5" role="group" aria-label="Which hat" data-hats={hats.length}>
+          {hats.map((h) => (
+            <button
+              key={h}
+              data-hat={h}
+              aria-pressed={h === data.persona}
+              onClick={() => h !== data.persona && wear(h)}
+              className="flex-none rounded-full border px-3 py-1.5 text-xs font-semibold"
+              style={h === data.persona
+                ? { background: 'var(--brand)', color: 'var(--brand-ink)', borderColor: 'var(--brand)' }
+                : { borderColor: 'var(--line)', background: 'var(--surface)', color: 'var(--ink-2)' }}
+            >
+              {PERSONA_WORD[h]}
+            </button>
+          ))}
+        </div>
+      )}
       {data.switch.length > 0 && (
         <div className="-mx-3.5 mb-3 flex gap-2 overflow-x-auto px-3.5 pb-0.5" role="group" aria-label="Switch organisation">
           <span
@@ -193,7 +251,7 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
         </>
       )}
 
-      {data.persona === 'parent' && ann && (
+      {(data.persona === 'parent' || data.persona === 'player') && ann && (
         <Link
           href={`/chat/${ann.channel_id}`}
           data-announcement

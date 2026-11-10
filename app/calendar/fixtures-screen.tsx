@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { WhenOn } from '@/components/when-on'
 import { useSearchParams } from 'next/navigation'
 import { CalendarList, type UpcomingEvent } from './calendar-list'
 import { NewSessions } from './new-sessions'
@@ -153,13 +154,15 @@ export function FixturesScreen() {
                 >
                   Import a draw
                 </a>
-                <a
-                  href="/scan"
-                  className="text-sm underline underline-offset-4"
-                  style={{ color: 'var(--brand-text)' }}
-                >
-                  From a screenshot
-                </a>
+                <WhenOn feature="scan">
+                  <a
+                    href="/scan"
+                    className="text-sm underline underline-offset-4"
+                    style={{ color: 'var(--brand-text)' }}
+                  >
+                    From a screenshot
+                  </a>
+                </WhenOn>
                 {/* Wet weather does not arrive one fixture at a time. */}
                 <button
                   onClick={() => setCallingOff(true)}

@@ -93,6 +93,8 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [guardianEmail, setGuardianEmail] = useState('')
   const [childName, setChildName] = useState('')
   const [childDob, setChildDob] = useState('')
+  // 0239: an adult registering themselves — the "child" fields are theirs.
+  const [forSelf, setForSelf] = useState(false)
   // R-18: PlayFootball's ids, so the club can confirm the registration.
   const [childFfa, setChildFfa] = useState('')
   const [childFifa, setChildFifa] = useState('')
@@ -269,6 +271,7 @@ export function RegisterForm({ slug }: { slug: string }) {
         guardianEmail: guardianEmail || undefined,
         childName,
         childDob,
+        forSelf,
         childFfa: childFfa || undefined,
         childFifa: childFifa || undefined,
         childGender: childGender || undefined,
@@ -345,10 +348,23 @@ export function RegisterForm({ slug }: { slug: string }) {
                   )}
 
                   <section className="mt-5">
-                    <span className="eyebrow">Your child</span>
-                    <Field label="Their full name" value={childName} onChange={setChildName} />
+                    <span className="eyebrow">{forSelf ? 'You' : 'Your child'}</span>
+                    <label className="mt-2 flex items-start gap-2.5 text-sm text-ink-2">
+                      <input
+                        type="checkbox"
+                        checked={forSelf}
+                        onChange={(e) => {
+                          setForSelf(e.target.checked)
+                          if (e.target.checked && !childName.trim() && guardianName.trim()) setChildName(guardianName)
+                        }}
+                        className="mt-0.5 h-4 w-4 flex-none"
+                        data-register-for-self
+                      />
+                      <span>I&apos;m registering myself (I&apos;m 18 or over)</span>
+                    </label>
+                    <Field label={forSelf ? 'Your full name' : 'Their full name'} value={childName} onChange={setChildName} />
                     <Field
-                      label="Date of birth"
+                      label={forSelf ? 'Your date of birth' : 'Date of birth'}
                       type="date"
                       value={childDob}
                       onChange={setChildDob}

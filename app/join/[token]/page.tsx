@@ -57,5 +57,5 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
   const academy = firstOf(link.academies)?.name ?? 'this academy'
   const team = firstOf(link.teams)?.name ?? null
 
-  return <JoinForm token={token} academyName={academy} teamName={team} />
+  return <JoinForm token={token} academyName={academy} teamName={team} role={link.role} />
 }

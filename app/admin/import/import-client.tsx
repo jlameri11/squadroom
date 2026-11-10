@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { WhenOn } from '@/components/when-on'
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useScreen } from '@/lib/hooks/use-screen'
@@ -548,10 +549,12 @@ function Importer({
           >
             Your PlayFootball export
           </Link>
-          {' · '}
-          <Link href="/scan" className="underline underline-offset-2" style={{ color: INK }}>
-            A screenshot of the draw
-          </Link>
+          <WhenOn feature="scan">
+            {' · '}
+            <Link href="/scan" className="underline underline-offset-2" style={{ color: INK }}>
+              A screenshot of the draw
+            </Link>
+          </WhenOn>
         </p>
       )}
 

@@ -6,14 +6,25 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-// Juniors U5–U18 as before; then the age groups a big club has (0236):
-// U19–U23, Open (seniors, women), Over-35s and up.
-const AGE_GROUPS = ['U5','U6','U7','U8','U9','U10','U11','U12','U13','U14','U15','U16','U17','U18','U19','U20','U21','U23','Open','Over-35','Over-40','Over-45']
-const GENDERS: { value: '' | 'female' | 'male' | 'other'; label: string }[] = [
-  { value: '', label: 'Mixed / not set' },
-  { value: 'female', label: 'Girls / women' },
-  { value: 'male', label: 'Boys / men' },
-  { value: 'other', label: 'Other' },
+// Joey, 10 Nov 2026 (0240): a category first — Junior (U5–U18), Youth
+// (U19–U23), Open/Seniors, Over-35, Over-45, Over-55 — then the gender in
+// five plain words, and a label of the club's own.
+const CATEGORIES: { id: string; label: string; groups: string[] }[] = [
+  { id: 'junior', label: 'Junior', groups: ['U5','U6','U7','U8','U9','U10','U11','U12','U13','U14','U15','U16','U17','U18'] },
+  { id: 'youth', label: 'Youth', groups: ['U19','U20','U21','U23'] },
+  { id: 'open', label: 'Open / Seniors', groups: ['Open'] },
+  { id: 'over35', label: 'Over-35', groups: ['Over-35'] },
+  { id: 'over45', label: 'Over-45', groups: ['Over-45'] },
+  { id: 'over55', label: 'Over-55', groups: ['Over-55'] },
+]
+type TeamGender = 'boys' | 'girls' | 'mixed' | 'men' | 'women'
+const GENDERS: { value: '' | TeamGender; label: string; adult?: boolean }[] = [
+  { value: '', label: 'Not set' },
+  { value: 'boys', label: 'Boys' },
+  { value: 'girls', label: 'Girls' },
+  { value: 'mixed', label: 'Mixed' },
+  { value: 'men', label: 'Men', adult: true },
+  { value: 'women', label: 'Women', adult: true },
 ]
 
 export function NewTeam({
@@ -28,9 +39,11 @@ export function NewTeam({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
+  const [category, setCategory] = useState('junior')
   const [ageGroup, setAgeGroup] = useState('U8')
+  const [label, setLabel] = useState('')
   const [season, setSeason] = useState(String(new Date().getFullYear()))
-  const [gender, setGender] = useState<'' | 'female' | 'male' | 'other'>('')
+  const [gender, setGender] = useState<'' | TeamGender>('')
   const [streamId, setStreamId] = useState('')
   const [streams, setStreams] = useState<{ id: string; name: string }[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +73,7 @@ export function NewTeam({
       age_group: ageGroup,
       season,
       gender: gender || null,
+      label: label.trim() || null,
       stream_id: streamId || null,
     })
 
@@ -110,15 +124,37 @@ export function NewTeam({
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Age group</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Category</span>
           <select
-            value={ageGroup}
-            onChange={(e) => setAgeGroup(e.target.value)}
+            value={category}
+            onChange={(e) => {
+              const next = CATEGORIES.find((c) => c.id === e.target.value) ?? CATEGORIES[0]
+              setCategory(next.id)
+              setAgeGroup(next.groups[0])
+              if (next.id !== 'junior' && next.id !== 'youth' && (gender === 'boys' || gender === 'girls')) setGender('')
+            }}
             className="rounded-xl border border-[var(--line)] px-3 py-3"
+            data-team-category
           >
-            {AGE_GROUPS.map((g) => <option key={g}>{g}</option>)}
+            {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
         </label>
+        {(CATEGORIES.find((c) => c.id === category)?.groups.length ?? 0) > 1 && (
+          <label className="flex flex-1 flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Age group</span>
+            <select
+              value={ageGroup}
+              onChange={(e) => setAgeGroup(e.target.value)}
+              className="rounded-xl border border-[var(--line)] px-3 py-3"
+              data-team-age-group
+            >
+              {(CATEGORIES.find((c) => c.id === category)?.groups ?? []).map((g) => <option key={g}>{g}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
+
+      <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Season</span>
           <input
@@ -132,8 +168,8 @@ export function NewTeam({
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Who plays</span>
-          <select value={gender} onChange={(e) => setGender(e.target.value as '' | 'female' | 'male' | 'other')} className="rounded-xl border border-[var(--line)] px-3 py-3" data-team-gender>
-            {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+          <select value={gender} onChange={(e) => setGender(e.target.value as '' | TeamGender)} className="rounded-xl border border-[var(--line)] px-3 py-3" data-team-gender>
+            {GENDERS.filter((g) => !g.value || (category === 'junior' || category === 'youth' ? !g.adult : g.value !== 'boys' && g.value !== 'girls')).map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
           </select>
         </label>
         {streams.length > 0 && (
@@ -146,6 +182,17 @@ export function NewTeam({
           </label>
         )}
       </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Your own label <span className="font-normal normal-case text-ink-3">(optional)</span></span>
+        <input
+          value={label}
+          onChange={(e) => setLabel(e.target.value.slice(0, 60))}
+          className="rounded-xl border border-[var(--line)] px-3 py-3"
+          placeholder="Women’s Premier League"
+          data-team-label
+        />
+      </label>
 
       </div>
 

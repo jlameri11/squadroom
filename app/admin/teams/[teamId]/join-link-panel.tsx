@@ -28,11 +28,14 @@ export function JoinLinkPanel({
   academyId,
   link,
   qrSvg,
+  adult = false,
 }: {
   teamId: string
   academyId: string
   link: ActiveLink | null
   qrSvg: string | null
+  /** 0239: an adult team (Open, Over-35, U19+) — players join as themselves, with a date of birth. */
+  adult?: boolean
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
@@ -50,7 +53,7 @@ export function JoinLinkPanel({
     const { error } = await supabase.from('join_links').insert({
       academy_id: academyId,
       team_id: teamId,
-      role: 'parent',
+      role: adult ? 'player' : 'parent',
       created_by: auth.user!.id,
     })
 

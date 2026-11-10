@@ -47,11 +47,14 @@ export async function POST(request: Request) {
   }
 
   // Paying for a child who is not yours is not a thing that should require
-  // imagination to prevent.
+  // imagination to prevent. An adult's own record (0239) is theirs to pay.
   if (children.length > 0) {
-    const { data: mine } = await supabase.from('player_guardians').select('player_id').in('player_id', children).eq('profile_id', auth.user.id)
-    const ok = new Set((mine ?? []).map((m) => m.player_id))
-    if (children.some((c) => !ok.has(c))) return NextResponse.json({ error: 'That is not your child.' }, { status: 403 })
+    const [{ data: mine }, { data: self }] = await Promise.all([
+      supabase.from('player_guardians').select('player_id').in('player_id', children).eq('profile_id', auth.user.id),
+      supabase.from('players').select('id').in('id', children).eq('profile_id', auth.user.id),
+    ])
+    const ok = new Set([...(mine ?? []).map((m) => m.player_id), ...(self ?? []).map((p) => p.id)])
+    if (children.some((c) => !ok.has(c))) return NextResponse.json({ error: 'That is not your child, or you.' }, { status: 403 })
   }
 
   const admin = createAdminClient()

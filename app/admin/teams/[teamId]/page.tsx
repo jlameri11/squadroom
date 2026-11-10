@@ -9,6 +9,7 @@ import { redirect, notFound } from 'next/navigation'
 import QRCode from 'qrcode'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { JoinLinkPanel } from './join-link-panel'
+import { isAdultAgeGroup } from '@/lib/age-group'
 import { AddPlayers } from './add-players'
 import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
@@ -91,6 +92,7 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
         academyId={team.academy_id}
         link={link ? { id: link.id, url: joinUrl!, code: link.code, useCount: link.use_count, maxUses: link.max_uses, expiresAt: link.expires_at } : null}
         qrSvg={qrSvg}
+        adult={isAdultAgeGroup(team.age_group)}
       />
 
       <BulkInvite teamId={team.id} academyId={team.academy_id} />

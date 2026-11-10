@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { WhenOn } from '@/components/when-on'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Development } from './development'
@@ -185,7 +186,7 @@ export function PlayerCard({ playerId }: { playerId: string }) {
       <SeasonStats playerId={card.id} />
 
       {/* G-05: notes, reports and clips — the family sees what is shared. */}
-      <Development playerId={card.id} />
+      <WhenOn feature="development"><Development playerId={card.id} /></WhenOn>
     </div>
   )
 }

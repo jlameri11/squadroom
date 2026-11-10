@@ -297,7 +297,9 @@ head('10. A reported message that is then deleted still shows')
     .update({ deleted_at: new Date().toISOString(), deleted_by: owner.id })
     .eq('id', message.id)
 
-  const { data: queue } = await owner.client.rpc('safeguarding_queue', { p_status: null })
+  // 0241: with an officer appointed, the queue is the officer's and the
+  // President's — the owner no longer reads it (Joey, 10 Nov 2026).
+  const { data: queue } = await other.client.rpc('safeguarding_queue', { p_status: null })
   const row = (queue ?? []).find((r) => r.deleted)
   row
     ? ok('still in the queue, flagged as deleted')

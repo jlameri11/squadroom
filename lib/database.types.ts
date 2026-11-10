@@ -232,6 +232,7 @@ export type Database = {
           profile_id: string
           removed_at: string | null
           role: Database["public"]["Enums"]["academy_role"]
+          roles: Database["public"]["Enums"]["academy_role"][]
           status: Database["public"]["Enums"]["member_status"]
         }
         Insert: {
@@ -242,6 +243,7 @@ export type Database = {
           profile_id: string
           removed_at?: string | null
           role?: Database["public"]["Enums"]["academy_role"]
+          roles?: Database["public"]["Enums"]["academy_role"][]
           status?: Database["public"]["Enums"]["member_status"]
         }
         Update: {
@@ -252,6 +254,7 @@ export type Database = {
           profile_id?: string
           removed_at?: string | null
           role?: Database["public"]["Enums"]["academy_role"]
+          roles?: Database["public"]["Enums"]["academy_role"][]
           status?: Database["public"]["Enums"]["member_status"]
         }
         Relationships: [
@@ -3583,6 +3586,7 @@ export type Database = {
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          dob: string | null
           email: string | null
           expires_at: string
           full_name: string
@@ -3603,6 +3607,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          dob?: string | null
           email?: string | null
           expires_at?: string
           full_name: string
@@ -3623,6 +3628,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          dob?: string | null
           email?: string | null
           expires_at?: string
           full_name?: string
@@ -6733,6 +6739,7 @@ export type Database = {
           expires_at: string
           ffa_number: string | null
           fifa_id: string | null
+          for_self: boolean
           guardian_email: string | null
           guardian_name: string
           guardian_phone: string | null
@@ -6761,6 +6768,7 @@ export type Database = {
           expires_at?: string
           ffa_number?: string | null
           fifa_id?: string | null
+          for_self?: boolean
           guardian_email?: string | null
           guardian_name: string
           guardian_phone?: string | null
@@ -6789,6 +6797,7 @@ export type Database = {
           expires_at?: string
           ffa_number?: string | null
           fifa_id?: string | null
+          for_self?: boolean
           guardian_email?: string | null
           guardian_name?: string
           guardian_phone?: string | null
@@ -7422,11 +7431,12 @@ export type Database = {
           created_by: string | null
           ended_at: string | null
           external_ref: string | null
-          gender: Database["public"]["Enums"]["player_gender"] | null
+          gender: Database["public"]["Enums"]["team_gender"] | null
           home_venue_id: string | null
           id: string
           kit_away: string | null
           kit_home: string | null
+          label: string | null
           name: string
           rolled_from: string | null
           season: string
@@ -7443,11 +7453,12 @@ export type Database = {
           created_by?: string | null
           ended_at?: string | null
           external_ref?: string | null
-          gender?: Database["public"]["Enums"]["player_gender"] | null
+          gender?: Database["public"]["Enums"]["team_gender"] | null
           home_venue_id?: string | null
           id?: string
           kit_away?: string | null
           kit_home?: string | null
+          label?: string | null
           name: string
           rolled_from?: string | null
           season?: string
@@ -7464,11 +7475,12 @@ export type Database = {
           created_by?: string | null
           ended_at?: string | null
           external_ref?: string | null
-          gender?: Database["public"]["Enums"]["player_gender"] | null
+          gender?: Database["public"]["Enums"]["team_gender"] | null
           home_venue_id?: string | null
           id?: string
           kit_away?: string | null
           kit_home?: string | null
+          label?: string | null
           name?: string
           rolled_from?: string | null
           season?: string
@@ -7979,6 +7991,14 @@ export type Database = {
           p_url?: string
         }
         Returns: Json
+      }
+      add_member_role: {
+        Args: {
+          p_academy: string
+          p_profile: string
+          p_role: Database["public"]["Enums"]["academy_role"]
+        }
+        Returns: Database["public"]["Enums"]["academy_role"][]
       }
       add_pitch: { Args: { p_name?: string; p_venue: string }; Returns: string }
       add_player_clip: {
@@ -8685,7 +8705,10 @@ export type Database = {
       }
       group_channel_info: { Args: { p_channel: string }; Returns: Json }
       help_with: { Args: { p_job: string }; Returns: Json }
-      home_jobs: { Args: { p_academy?: string }; Returns: Json }
+      home_jobs: {
+        Args: { p_academy?: string; p_persona?: string }
+        Returns: Json
+      }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
       import_league_draw: {
@@ -9341,6 +9364,14 @@ export type Database = {
       }
       remove_match_photo: { Args: { p_photo: string }; Returns: Json }
       remove_match_video: { Args: { p_video: string }; Returns: Json }
+      remove_member_role: {
+        Args: {
+          p_academy: string
+          p_profile: string
+          p_role: Database["public"]["Enums"]["academy_role"]
+        }
+        Returns: Database["public"]["Enums"]["academy_role"][]
+      }
       reopen_match: {
         Args: { p_fixture: string; p_note: string }
         Returns: undefined
@@ -9760,6 +9791,7 @@ export type Database = {
         Args: { p_event: string; p_player: string }
         Returns: Json
       }
+      welfare_contacts: { Args: { p_academy: string }; Returns: Json }
       whats_on: {
         Args: { p_academy: string; p_date: string }
         Returns: {
@@ -9961,6 +9993,7 @@ export type Database = {
       sheet_status: "submitted" | "confirmed" | "disputed"
       sock_size: "K9-12" | "K13-3" | "2-7" | "7-11" | "11-14"
       suspension_status: "active" | "served" | "overturned"
+      team_gender: "boys" | "girls" | "mixed" | "men" | "women"
       team_status: "active" | "ended"
     }
     CompositeTypes: {
@@ -10251,6 +10284,7 @@ export const Constants = {
       sheet_status: ["submitted", "confirmed", "disputed"],
       sock_size: ["K9-12", "K13-3", "2-7", "7-11", "11-14"],
       suspension_status: ["active", "served", "overturned"],
+      team_gender: ["boys", "girls", "mixed", "men", "women"],
       team_status: ["active", "ended"],
     },
   },

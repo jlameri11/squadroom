@@ -1,6 +1,7 @@
 'use client'
 
 import { DivisionSettings } from './division-settings'
+import { WhenOn } from '@/components/when-on'
 import { DisciplineTab } from './discipline-tab'
 import { RefereesTab } from './referees-tab'
 import { LeagueOfficials } from './league-officials'
@@ -185,7 +186,7 @@ export function CompetitionView({
           {!isOrganiser && !commsOnly && <MyNominations competitionId={competitionId} />}
           {!isOrganiser && <ClubFees competitionId={competitionId} />}
           {!isOrganiser && <ClubLevy competitionId={competitionId} />}
-          {!commsOnly && <ChangeRequests competitionId={competitionId} />}
+          {!commsOnly && <WhenOn feature="fixture_flowing"><ChangeRequests competitionId={competitionId} /></WhenOn>}
           {!commsOnly && <ReportsCard competitionId={competitionId} referees={areas.includes('referees')} />}
           {isOrganiser && publication && (
             <PublishPublicly

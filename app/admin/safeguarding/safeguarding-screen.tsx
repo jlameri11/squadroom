@@ -97,10 +97,10 @@ export function SafeguardingScreen() {
   if (refused) {
     return (
       <>
-        <AppBar title="Safeguarding" back="/admin" />
+        <AppBar title="Welfare" back="/admin" />
         <Screen>
           <p className="card m-4 p-6 text-center text-sm text-ink-2">
-            Only a safeguarding officer or the club owner can read reports. Ask whoever runs the
+            Only the Welfare officer (Member Protection) and the President can read reports. Ask whoever runs the
             club to appoint you in Club settings.
           </p>
         </Screen>
@@ -115,7 +115,7 @@ export function SafeguardingScreen() {
   return (
     <>
       <AppBar
-        title="Safeguarding"
+        title="Welfare"
         meta={open.length > 0 ? `${open.length} to look at` : 'Nothing open'}
         back="/admin"
       />

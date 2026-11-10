@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useSyncExternalStore } from 'react'
+import { WhenOn } from '@/components/when-on'
 import { createClient } from '@/lib/supabase/client'
 import { prepareImage, kindOf, extensionFor, MAX_MEDIA_BYTES, type Attachment, type AttachmentKind } from '@/lib/adapters/images'
 import { canRecord, startRecording, formatDuration, MAX_VOICE_SECONDS, type Recording } from '@/lib/adapters/recorder'
@@ -400,9 +401,9 @@ export function Composer({
           </label>
         )}
         {canPost && !archived && (
-          <button onClick={() => setLaterOpen((v) => !v)} className="tap underline underline-offset-2">
+          <WhenOn feature="scheduled_messages"><button onClick={() => setLaterOpen((v) => !v)} className="tap underline underline-offset-2">
             {laterOpen ? 'Send now instead' : 'Send later…'}
-          </button>
+          </button></WhenOn>
         )}
       </div>
       {laterOpen && (

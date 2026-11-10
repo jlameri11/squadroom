@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { WhenOn } from '@/components/when-on'
 import { Chase } from './chase'
 import { PitchMap } from './pitch-map'
 import { MatchDayChecklist } from './match-day-checklist'
@@ -338,7 +339,7 @@ export function EventDetail({
         </header>
         {details}
         {/* G-07: the jobs the day needs, and who has put their name down. */}
-        {!cancelled && <EventHelpers eventId={event.id} clubWide={!event.team_id} />}
+        {!cancelled && <WhenOn feature="helpers"><EventHelpers eventId={event.id} clubWide={!event.team_id} /></WhenOn>}
         {result}
         {isCoach && <EditOccurrence event={event} tz={tz} />}
         {isCoach && <CallItOff event={event} />}
@@ -402,7 +403,7 @@ export function EventDetail({
           {!cancelled && isCoach && event.type === 'match' && <MatchDayChecklist eventId={event.id} />}
           {details}
           {/* G-07: the canteen, a linesman — before kick-off, where a parent looks. */}
-          {!cancelled && <EventHelpers eventId={event.id} clubWide={!event.team_id} />}
+          {!cancelled && <WhenOn feature="helpers"><EventHelpers eventId={event.id} clubWide={!event.team_id} /></WhenOn>}
           {game && <TeamForm game={game} ourName={ourName} theirName={theirName} />}
           {game && <MiniLadder game={game} onOpen={() => choose('ladder')} />}
           {/* F-05 (0228): the division table from the league's file, for a game outside our own competitions. */}
@@ -423,9 +424,9 @@ export function EventDetail({
           {/* X-02 / X-03: who scored, who starred — after the whistle. */}
           {!cancelled && <EventStats eventId={event.id} />}
           {/* Matchdays: the game video — a link or an upload, the squad's own. */}
-          {!cancelled && <MatchVideo eventId={event.id} />}
+          {!cancelled && <WhenOn feature="match_video"><MatchVideo eventId={event.id} /></WhenOn>}
           {/* M5: the game's photos — the squad's own, and any of them can take one down. */}
-          {!cancelled && <MatchPhotos eventId={event.id} />}
+          {!cancelled && <WhenOn feature="match_photos"><MatchPhotos eventId={event.id} /></WhenOn>}
           {/* X-11: how was today? One tap from the family; the coaches see it. */}
           {!cancelled && <ParentPulse eventId={event.id} />}
           {register}

@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const { data: req } = await supabase
     .from('registration_requests')
     .select(
-      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at'
+      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self'
     )
     .eq('id', requestId)
     .maybeSingle()
@@ -111,18 +111,18 @@ export async function POST(request: Request) {
   // account has one already. Before 0214 this quietly does nothing.
   await adoptEmail(admin, profileId, req.guardian_email)
 
-  // academy_members fires the trigger that puts them in the academy-wide
-  // channel; team_members fires the ones for the team and age-group channels.
-  await admin.from('academy_members').upsert(
-    {
-      academy_id: req.academy_id,
-      profile_id: profileId,
-      role: 'parent',
-      status: 'active',
-      invited_by: auth.user.id,
-    },
-    { onConflict: 'academy_id,profile_id' }
-  )
+  // 0239: an adult registering themselves is the player; a child's
+  // registration makes a parent. Hats, not a single role (0237): someone
+  // already here keeps what they are and gains this.
+  const forSelf = Boolean((req as { for_self?: boolean }).for_self)
+  const hat = forSelf ? 'player' : 'parent'
+  const { data: already } = await admin
+    .from('academy_members')
+    .select('roles')
+    .eq('academy_id', req.academy_id)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  const roles = Array.from(new Set([...(((already as { roles?: string[] } | null)?.roles ?? []) as string[]), hat])) as ('owner' | 'admin' | 'coach' | 'parent' | 'player')[]
 
   // The child. Matched on NAME AND DATE OF BIRTH, which is the point of
   // collecting a date of birth: name alone matches a cousin, and two clubs
@@ -169,6 +169,7 @@ export async function POST(request: Request) {
         team_id: teamId ?? null,
         full_name: req.child_name,
         dob: req.child_dob,
+        profile_id: forSelf ? profileId : null,
         // Constrained on the way in (route and table), so the cast is
         // narrowing a value that is already one of the three.
         gender: req.child_gender as 'male' | 'female' | 'other' | null,
@@ -186,27 +187,44 @@ export async function POST(request: Request) {
     // An existing child. 0098 makes the whole family follow a child into
     // the squad's channels; and a confirmed request carries PlayFootball's
     // ids onto the roster row.
-    const patch: { team_id?: string; ff_number?: string; fifa_id?: string; official_status?: 'registered' } = {}
+    const patch: { team_id?: string; ff_number?: string; fifa_id?: string; official_status?: 'registered'; profile_id?: string } = {}
     if (teamId) patch.team_id = teamId
+    if (forSelf) patch.profile_id = profileId
     if (req.ffa_number) patch.ff_number = req.ffa_number
     if (req.fifa_id) patch.fifa_id = req.fifa_id
     if (req.official_confirmed_at && match?.official_status !== 'not_required') patch.official_status = 'registered'
     if (Object.keys(patch).length > 0) await admin.from('players').update(patch).eq('id', playerId)
   }
 
-  await admin.from('player_guardians').upsert(
+  // The membership after the player record, because the guards that let a
+  // player's own membership through read that record (0239).
+  await admin.from('academy_members').upsert(
     {
       academy_id: req.academy_id,
-      player_id: playerId,
       profile_id: profileId,
-      relationship: 'parent',
+      role: hat,
+      roles,
+      status: 'active',
+      invited_by: auth.user.id,
     },
-    { onConflict: 'player_id,profile_id' }
+    { onConflict: 'academy_id,profile_id' }
   )
+
+  if (!forSelf) {
+    await admin.from('player_guardians').upsert(
+      {
+        academy_id: req.academy_id,
+        player_id: playerId,
+        profile_id: profileId,
+        relationship: 'parent',
+      },
+      { onConflict: 'player_id,profile_id' }
+    )
+  }
 
   if (teamId) {
     await admin.from('team_members').upsert(
-      { academy_id: req.academy_id, team_id: teamId, profile_id: profileId, role: 'parent' },
+      { academy_id: req.academy_id, team_id: teamId, profile_id: profileId, role: hat },
       { onConflict: 'team_id,profile_id' }
     )
   }

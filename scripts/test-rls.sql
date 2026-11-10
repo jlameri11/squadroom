@@ -3063,6 +3063,325 @@ begin
     insert into rls_results values (183, 'streams are one per name per club; adult age groups are teams; an odd age group is refused', r183);
   end;
 
+  -- 0237. One membership, many hats. Rolled back. Sam (PARENT) gains a
+  -- coach's hat; a club made today has OUTSIDER as owner + parent; HEAD
+  -- becomes U12's team manager.
+  declare
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012'; -- Hana's parent is on U8 as a parent already; U12 is a squad she is not on
+    v_new uuid; v_roles public.academy_role[]; v_role public.academy_role; v_personas text[]; v_ch uuid; v_jobs jsonb;
+    c_coach boolean; c_guardian boolean; only_hat boolean; swapped public.academy_role[];
+    o_staff_aal1 boolean; o_roles_aal1 public.academy_role[]; o_staff_aal2 boolean; o_role_aal2 public.academy_role;
+    m_member boolean; m_players int; m_chat boolean; m_gone boolean;
+    r184 text; r185 text; r186 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, PARENT, 'wwcc', 'RLS184', 'cleared', current_date + 300, COACH),
+             (ACAD_A, HEAD, 'wwcc', 'RLS186', 'cleared', current_date + 300, COACH)
+      on conflict do nothing;
+
+      -- 184. A parent gains a coach's hat and keeps the parent's; the strongest
+      -- hat is what one-role readers see; a one-role write swaps that hat and
+      -- keeps the rest; the only hat cannot be removed.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_roles := public.add_member_role(ACAD_A, PARENT, 'coach');
+      execute 'reset role';
+      select m.role into v_role from public.academy_members m where m.academy_id = ACAD_A and m.profile_id = PARENT;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      c_coach := app_private.is_academy_coach(ACAD_A);
+      c_guardian := exists (select 1 from public.players p where p.academy_id = ACAD_A and app_private.is_guardian_of(p.id));
+      v_personas := array(select jsonb_array_elements_text(public.home_jobs(ACAD_A)->'hats'));
+      execute 'reset role';
+      update public.academy_members set role = 'parent' where academy_id = ACAD_A and profile_id = PARENT;
+      select m.roles into swapped from public.academy_members m where m.academy_id = ACAD_A and m.profile_id = PARENT;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      only_hat := false;
+      begin perform public.remove_member_role(ACAD_A, PARENT, 'parent'); exception when others then only_hat := (sqlstate = '22023'); end;
+      execute 'reset role';
+      r184 := case when v_roles @> array['coach','parent']::public.academy_role[] and v_role = 'coach' and c_coach and c_guardian
+                    and v_personas @> array['coach','parent']::text[] and swapped = array['parent']::public.academy_role[] and only_hat then 'PASS'
+                   else 'FAIL (roles '||coalesce(v_roles::text,'null')||', strongest '||coalesce(v_role::text,'null')||', coaches '||c_coach||', still a guardian '||c_guardian||', hats '||coalesce(v_personas::text,'null')||', after a one-role write '||coalesce(swapped::text,'null')||', only hat kept '||only_hat||')' end;
+
+      -- 185. An owner who is also a parent, at a club that requires two-step,
+      -- on a password alone: no owner's powers, still the parent's hat.
+      insert into public.academies (name, slug, type, primary_colour) values ('RLS 185 FC', 'rls-185-fc', 'academy', '#333333') returning id into v_new;
+      insert into public.academy_members (academy_id, profile_id, role, roles, status) values (v_new, OUTSIDER, 'owner', array['owner','parent']::public.academy_role[], 'active');
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal1')::text, true);
+      execute 'set local role authenticated';
+      o_staff_aal1 := app_private.is_academy_staff(v_new);
+      o_roles_aal1 := app_private.member_roles_of(v_new);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated','aal','aal2')::text, true);
+      execute 'set local role authenticated';
+      o_staff_aal2 := app_private.is_academy_staff(v_new);
+      o_role_aal2 := app_private.academy_role_of(v_new);
+      execute 'reset role';
+      r185 := case when not o_staff_aal1 and o_roles_aal1 = array['parent']::public.academy_role[] and o_staff_aal2 and o_role_aal2 = 'owner' then 'PASS'
+                   else 'FAIL (aal1 staff '||o_staff_aal1||' roles '||coalesce(o_roles_aal1::text,'null')||'; aal2 staff '||o_staff_aal2||' role '||coalesce(o_role_aal2::text,'null')||')' end;
+
+      -- 186. A team's manager is on the team: reads its roster, is in its
+      -- chat, has the manager's Home; revoked, the chat row goes.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_ch := public.grant_club_role(ACAD_A, HEAD, 'team_manager', 'team', null, null, U12);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      m_member := app_private.is_team_member(U12);
+      select count(*) into m_players from public.players p where p.team_id = U12;
+      m_chat := coalesce((select app_private.is_channel_member(ch.id) from public.channels ch where ch.team_id = U12 and ch.type = 'team' limit 1), false);
+      v_jobs := public.home_jobs(ACAD_A, 'manager');
+      v_personas := array(select jsonb_array_elements_text(v_jobs->'hats'));
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.revoke_club_role(v_ch);
+      execute 'reset role';
+      m_gone := not exists (select 1 from public.channel_members cm join public.channels ch on ch.id = cm.channel_id
+                             where ch.team_id = U12 and ch.type = 'team' and cm.profile_id = HEAD);
+      r186 := case when m_member and m_players >= 1 and m_chat and 'manager' = any (v_personas)
+                    and v_jobs->>'persona' = 'manager' and jsonb_array_length(v_jobs->'jobs') = 3 and m_gone then 'PASS'
+                   else 'FAIL (on the team '||m_member||', roster rows '||m_players||', in the chat '||m_chat||', hats '||coalesce(v_personas::text,'null')||', home '||coalesce(v_jobs->>'persona','null')||' with '||coalesce(jsonb_array_length(v_jobs->'jobs')::text,'0')||' jobs, chat row gone after '||m_gone||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r184 := coalesce(r184, 'FAIL (stopped: '||sqlerrm||')');
+        r185 := coalesce(r185, 'FAIL (stopped: '||sqlerrm||')');
+        r186 := coalesce(r186, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (184, 'a member wears several hats: a parent gains a coach''s and keeps the parent''s; one-role readers see the strongest; the only hat stays', r184);
+    insert into rls_results values (185, 'an owner who is also a parent keeps the parent''s hat on a password alone where the club requires two-step', r185);
+    insert into rls_results values (186, 'a team''s manager is on the team — roster, chat, the manager''s Home — and leaves the chat when the role goes', r186);
+  end;
+
+  -- 0239. An adult plays for themselves. Rolled back: an Over-35 squad at
+  -- NRIFA, OUTSIDER as a 40-year-old player with their own record and
+  -- membership; a child's account still refused.
+  declare
+    v_team uuid; v_player uuid; v_event uuid; v_child uuid;
+    a_row boolean; a_member boolean; a_place boolean; c_login boolean; c_member boolean; d_old boolean; d_future boolean;
+    f_self boolean; e_mine int; e_replies int; r_ok boolean;
+    r187 text; r188 text;
+  begin
+    begin
+      insert into public.teams (academy_id, name, age_group, season) values (ACAD_A, 'RLS Over-35s', 'Over-35', '2099') returning id into v_team;
+      -- 187. The guards: an adult's own record, membership and squad place
+      -- go through; a child's login is refused; a date of birth over a
+      -- hundred years ago, or in the future, is refused.
+      a_row := false;
+      begin
+        insert into public.players (academy_id, team_id, full_name, dob, profile_id)
+        values (ACAD_A, v_team, 'RLS Forty Year Old', current_date - interval '40 years', OUTSIDER) returning id into v_player;
+        a_row := v_player is not null;
+      exception when others then a_row := false; end;
+      a_member := false;
+      begin
+        insert into public.academy_members (academy_id, profile_id, role, status) values (ACAD_A, OUTSIDER, 'player', 'active');
+        a_member := true;
+      exception when others then a_member := false; end;
+      a_place := false;
+      begin
+        insert into public.team_members (academy_id, team_id, profile_id, role) values (ACAD_A, v_team, OUTSIDER, 'player');
+        a_place := true;
+      exception when others then a_place := false; end;
+      c_login := false;
+      begin
+        insert into public.players (academy_id, team_id, full_name, dob, profile_id)
+        values (ACAD_A, v_team, 'RLS Ten Year Old', current_date - interval '10 years', PARENT);
+      exception when others then c_login := (sqlstate = '42501'); end;
+      d_old := false;
+      begin insert into public.players (academy_id, full_name, dob) values (ACAD_A, 'RLS Too Old', current_date - interval '101 years'); exception when check_violation then d_old := true; end;
+      d_future := false;
+      begin insert into public.players (academy_id, full_name, dob) values (ACAD_A, 'RLS Unborn', current_date + 1); exception when check_violation then d_future := true; end;
+      r187 := case when a_row and a_member and a_place and c_login and d_old and d_future then 'PASS'
+                   else 'FAIL (adult row '||a_row||', membership '||a_member||', squad place '||a_place||', child login refused '||c_login||', 101 years refused '||d_old||', future refused '||d_future||')' end;
+
+      -- 188. The adult reads and answers as themselves: My family lists
+      -- them as "self"; their squad's game counts them; they RSVP for
+      -- themselves.
+      insert into public.events (academy_id, team_id, type, title, starts_at) values (ACAD_A, v_team, 'match', 'RLS Over-35s v Rivals', now() + interval '3 days') returning id into v_event;
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      f_self := exists (select 1 from jsonb_array_elements(public.my_family()) c where (c->>'id')::uuid = v_player and c->>'relationship' = 'self');
+      select e.my_children into e_mine from public.my_upcoming_events(ACAD_A, 30) e where e.id = v_event;
+      r_ok := false;
+      begin
+        insert into public.event_rsvps (academy_id, event_id, player_id, profile_id, status) values (ACAD_A, v_event, v_player, OUTSIDER, 'yes');
+        r_ok := true;
+      exception when others then r_ok := false; end;
+      select e.my_replies into e_replies from public.my_upcoming_events(ACAD_A, 30) e where e.id = v_event;
+      execute 'reset role';
+      r188 := case when f_self and e_mine = 1 and r_ok and e_replies = 1 then 'PASS'
+                   else 'FAIL (self in My family '||f_self||', counted on their game '||coalesce(e_mine::text,'null')||', RSVP '||r_ok||', replies '||coalesce(e_replies::text,'null')||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r187 := coalesce(r187, 'FAIL (stopped: '||sqlerrm||')');
+        r188 := coalesce(r188, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (187, 'an adult''s own player record, membership and squad place go through; a child''s login is refused; a date of birth is in the past and under 100 years', r187);
+    insert into rls_results values (188, 'an adult is listed as self in My family, counted on their own game, and answers for themselves', r188);
+  end;
+
+  -- 0240. A team's category, gender and label; an over-35s team enters a
+  -- league. Rolled back.
+  declare
+    v_team uuid; v_comp uuid; v_entry uuid; v_ch text;
+    cats text[]; g_ok boolean; g_bad boolean; l_bad boolean; e_ok boolean;
+    r189 text; r190 text;
+  begin
+    begin
+      cats := array[app_private.age_category('U9'), app_private.age_category('U18'), app_private.age_category('U21'), app_private.age_category('Open'), app_private.age_category('Over-45')];
+      g_ok := false;
+      begin
+        insert into public.teams (academy_id, name, age_group, season, gender, label) values (ACAD_A, 'RLS Women''s Premier', 'Open', '2099', 'women', 'Women''s Premier League') returning id into v_team;
+        g_ok := v_team is not null;
+      exception when others then g_ok := false; end;
+      g_bad := false;
+      begin insert into public.teams (academy_id, name, age_group, season, gender) values (ACAD_A, 'RLS Odd Gender', 'Open', '2099', 'female'); exception when others then g_bad := (sqlstate in ('22P02', '42804')); end;
+      l_bad := false;
+      begin insert into public.teams (academy_id, name, age_group, season, label) values (ACAD_A, 'RLS Long Label', 'Open', '2099', repeat('x', 61)); exception when check_violation then l_bad := true; end;
+      select ch.name into v_ch from public.channels ch where ch.academy_id = ACAD_A and ch.type = 'age_group' and ch.age_group = 'Open';
+      r189 := case when cats = array['junior','junior','youth','open','over'] and g_ok and g_bad and l_bad and v_ch = 'Open Age Group' then 'PASS'
+                   else 'FAIL (categories '||coalesce(cats::text,'null')||', women''s team '||g_ok||', odd gender refused '||g_bad||', long label refused '||l_bad||', chat '||coalesce(v_ch,'none')||')' end;
+
+      -- 190. The club's owner enters the over-35s team in a league.
+      select cc.competition_id into v_comp from public.competition_clubs cc where cc.academy_id = ACAD_A and cc.status = 'active' limit 1;
+      update public.teams set age_group = 'Over-35', gender = 'men', label = null where id = v_team;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      e_ok := false;
+      begin
+        insert into public.competition_entries (competition_id, academy_id, team_id, division, display_name) values (v_comp, ACAD_A, v_team, 'Over-35 Men', 'NRIFA Over-35s') returning id into v_entry;
+        e_ok := v_entry is not null;
+      exception when others then e_ok := false; r190 := 'FAIL (entry: '||sqlerrm||')';
+      end;
+      execute 'reset role';
+      r190 := coalesce(r190, case when e_ok then 'PASS' else 'FAIL (no entry)' end);
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r189 := coalesce(r189, 'FAIL (stopped: '||sqlerrm||')');
+        r190 := coalesce(r190, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (189, 'a team has a category read from its age group, a gender from five words, a label of the club''s own; the Open age group''s chat reads right', r189);
+    insert into rls_results values (190, 'an over-35s team enters a league like any other', r190);
+  end;
+
+  -- 0241. The Welfare officer (Member Protection). Rolled back: HEAD
+  -- (Hana's parent, cleared) appointed Welfare officer; MARCUS (cleared for
+  -- the test) made President; Sam files a concern.
+  declare
+    HEAD constant uuid := '00000000-0000-0000-0000-0000000000b4';
+    v_report uuid; v_role uuid; v_dm uuid;
+    s_officer int; s_president int; s_owner int; s_reporter int; told_officer int; told_president int; told_reporter int; told_owner int;
+    c_list jsonb; dm_ok boolean;
+    r191 text; r192 text;
+  begin
+    begin
+      insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
+      values (ACAD_A, HEAD, 'wwcc', 'RLS191A', 'cleared', current_date + 300, COACH), (ACAD_A, MARCUS, 'wwcc', 'RLS191B', 'cleared', current_date + 300, COACH)
+      on conflict do nothing;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_role := public.grant_club_role(ACAD_A, HEAD, 'welfare_officer');
+      perform public.grant_club_role(ACAD_A, MARCUS, 'president');
+      execute 'reset role';
+
+      -- 191. Sam reports a concern: the officer and the President read it
+      -- and are told; the owner (an officer is appointed) and Sam's fellow
+      -- parents do not; Sam sees his own.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_report := public.file_conduct_report(ACAD_A, 'concern', 'RLS 191: a concern for the test', current_date, 'RLS Subject', null, true);
+      select count(*) into s_reporter from public.conduct_reports where id = v_report;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into s_officer from public.conduct_reports where id = v_report;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into s_president from public.conduct_reports where id = v_report;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into s_owner from public.conduct_reports where id = v_report;
+      execute 'reset role';
+      select count(*) filter (where profile_id = HEAD), count(*) filter (where profile_id = MARCUS), count(*) filter (where profile_id = PARENT), count(*) filter (where profile_id = COACH)
+        into told_officer, told_president, told_reporter, told_owner
+        from public.notification_queue where kind = 'report_filed' and (payload->>'id')::uuid = v_report;
+      r191 := case when s_reporter = 1 and s_officer = 1 and s_president = 1 and s_owner = 0 and told_officer = 1 and told_president = 1 and told_reporter = 0 and told_owner = 0 then 'PASS'
+                   else 'FAIL (reads: reporter '||s_reporter||', officer '||s_officer||', president '||s_president||', owner '||s_owner||'; told: officer '||told_officer||', president '||told_president||', reporter '||told_reporter||', owner '||told_owner||')' end;
+
+      -- 192. Every family sees who the officer is, and may message them even
+      -- where parents may not message each other.
+      update public.academies set dm_policy = 'staff_only' where id = ACAD_A;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      c_list := public.welfare_contacts(ACAD_A);
+      dm_ok := false;
+      begin v_dm := public.open_direct_channel(ACAD_A, HEAD); dm_ok := v_dm is not null; exception when others then dm_ok := false; end;
+      execute 'reset role';
+      r192 := case when exists (select 1 from jsonb_array_elements(c_list->'officers') o where (o->>'profile_id')::uuid = HEAD) and dm_ok then 'PASS'
+                   else 'FAIL (contacts '||coalesce(c_list::text,'null')||', parent messages the officer '||dm_ok||')' end;
+
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then
+        r191 := coalesce(r191, 'FAIL (stopped: '||sqlerrm||')');
+        r192 := coalesce(r192, 'FAIL (stopped: '||sqlerrm||')');
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (191, 'a report is read by, and told to, the Welfare officer and the President only; the reporter sees their own', r191);
+    insert into rls_results values (192, 'every family sees the Welfare officer in Settings and may message them whatever the club''s direct-message setting', r192);
+  end;
+
+  -- 0242. A feature switch. Rolled back.
+  declare
+    f_default boolean; f_off boolean; f_back boolean; p_refused boolean; f_list text[]; l_rows int;
+    r193 text;
+  begin
+    begin
+      f_default := app_private.feature_on(ACAD_A, 'sponsors');
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      p_refused := false;
+      begin perform public.set_feature(ACAD_A, 'sponsors', false); exception when others then p_refused := (sqlstate = '42501'); end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.set_feature(ACAD_A, 'sponsors', false);
+      f_off := app_private.feature_on(ACAD_A, 'sponsors');
+      f_list := public.features_off(ACAD_A);
+      perform public.set_feature(ACAD_A, 'sponsors', true);
+      f_back := app_private.feature_on(ACAD_A, 'sponsors');
+      execute 'reset role';
+      select count(*) into l_rows from public.activity_log where academy_id = ACAD_A and action in ('feature.off', 'feature.on') and subject_name = 'sponsors';
+      r193 := case when f_default and p_refused and not f_off and 'sponsors' = any (f_list) and f_back and l_rows = 2 then 'PASS'
+                   else 'FAIL (on by default '||f_default||', parent refused '||p_refused||', off '||(not f_off)||', listed '||coalesce(f_list::text,'null')||', back on '||f_back||', logged '||l_rows||')' end;
+      raise exception 'rls-probe-rollback';
+    exception when others then
+      if sqlerrm <> 'rls-probe-rollback' then r193 := coalesce(r193, 'FAIL (stopped: '||sqlerrm||')'); end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (193, 'a feature is on until the club''s runners switch it off; a parent cannot; the list and the log say so', r193);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

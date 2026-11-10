@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   // If RLS hides the row, this coach has no business deciding it.
   const { data: req } = await supabase
     .from('join_requests')
-    .select('id, academy_id, team_id, full_name, phone, children_names, status')
+    .select('id, academy_id, team_id, full_name, phone, children_names, status, dob, join_link_id')
     .eq('id', requestId)
     .maybeSingle()
 
@@ -80,6 +80,36 @@ export async function POST(request: Request) {
     profileId = created.user.id
   }
 
+  // 0239: a players' link (an adult team) — the person joins as themselves.
+  // Their own player record comes first, because the guards that let a
+  // player's membership and squad place through read it.
+  const { data: link } = req.join_link_id
+    ? await admin.from('join_links').select('role').eq('id', req.join_link_id).maybeSingle()
+    : { data: null }
+  const asPlayer = link?.role === 'player' && Boolean(req.dob)
+
+  // Hats, not a single role (0237): someone already here as a coach or a
+  // parent keeps that and gains the player's hat.
+  const { data: already } = await admin
+    .from('academy_members')
+    .select('roles')
+    .eq('academy_id', req.academy_id)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  const hat = asPlayer ? 'player' : 'parent'
+  const roles = Array.from(new Set([...(((already as { roles?: string[] } | null)?.roles ?? []) as string[]), hat]))
+
+  if (asPlayer) {
+    const { data: ownPlayer, error: ownErr } = await admin
+      .from('players')
+      .insert({ academy_id: req.academy_id, team_id: req.team_id ?? null, full_name: req.full_name, dob: req.dob, profile_id: profileId })
+      .select('id')
+      .single()
+    if (ownErr || !ownPlayer) {
+      return NextResponse.json({ error: `Could not add the player: ${ownErr?.message ?? 'no row'}` }, { status: 500 })
+    }
+  }
+
   // academy_members fires the trigger that puts them in the academy-wide
   // channel; team_members fires the one that puts them in the team channel
   // and the age-group channel. Membership cascades from these two rows.
@@ -87,7 +117,8 @@ export async function POST(request: Request) {
     {
       academy_id: req.academy_id,
       profile_id: profileId,
-      role: 'parent',
+      role: hat,
+      roles: roles as ('owner' | 'admin' | 'coach' | 'parent' | 'player')[],
       status: 'active',
       invited_by: auth.user.id,
     },
@@ -96,7 +127,7 @@ export async function POST(request: Request) {
 
   if (req.team_id) {
     await admin.from('team_members').upsert(
-      { academy_id: req.academy_id, team_id: req.team_id, profile_id: profileId, role: 'parent' },
+      { academy_id: req.academy_id, team_id: req.team_id, profile_id: profileId, role: hat },
       { onConflict: 'team_id,profile_id' }
     )
   }
@@ -111,7 +142,7 @@ export async function POST(request: Request) {
   // easily both have a Leo. Without a team we create the player unattached
   // and let a coach put them on a roster.
   const teamId = req.team_id
-  for (const childName of req.children_names ?? []) {
+  for (const childName of asPlayer ? [] : (req.children_names ?? [])) {
     let playerId: string | null = null
 
     if (teamId) {

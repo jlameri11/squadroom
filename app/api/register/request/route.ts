@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { isAdult } from '@/lib/age-group'
 import { checkEmail } from '@/lib/email'
 import { cleanAnswers } from '@/lib/registration/answers'
 import type { Question } from '@/components/question-field'
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     childGender,
     answers,
     consents,
+    forSelf,
   } = body as {
     slug?: string
     programId?: string
@@ -58,6 +60,8 @@ export async function POST(request: Request) {
     guardianPhone?: string
     guardianEmail?: string
     childName?: string
+    /** 0239: the registrant is the player (an adult). */
+    forSelf?: boolean
     childDob?: string
     childFfa?: string
     childFifa?: string
@@ -162,6 +166,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'An FFA number or FIFA ID is digits only.' }, { status: 400 })
   }
 
+  // 0239: registering yourself means being an adult; a child's registration
+  // is a parent's, as before.
+  if (forSelf === true && !(childDob && isAdult(childDob))) {
+    return NextResponse.json({ error: 'Registering yourself needs you to be 18 or over. A parent registers a child.' }, { status: 400 })
+  }
+
   const secret = generateSecret()
 
   const { data: created, error } = await admin
@@ -174,6 +184,7 @@ export async function POST(request: Request) {
       guardian_email: mail.email,
       child_name: childName.trim(),
       child_dob: childDob,
+      for_self: forSelf === true,
       child_gender: (gender as Gender) || null,
       ffa_number: ffa || null,
       fifa_id: fifa || null,

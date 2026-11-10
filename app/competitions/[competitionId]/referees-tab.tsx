@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { WhenOn } from '@/components/when-on'
 import { createClient } from '@/lib/supabase/client'
 import { RefereePayments } from './referee-payments'
 import { RefereeAuto } from './referee-auto'
@@ -354,7 +355,7 @@ export function RefereesTab({
         </ul>
       )}
 
-      {isOrganiser && <RefereePayments competitionId={competitionId} />}
+      {isOrganiser && <WhenOn feature="referee_pay"><RefereePayments competitionId={competitionId} /></WhenOn>}
 
       {isOrganiser && summary.length > 0 && (
         <>

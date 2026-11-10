@@ -15,11 +15,15 @@ export function JoinForm({
   token,
   academyName,
   teamName,
+  role = 'parent',
 }: {
   token: string
   academyName: string
   teamName: string | null
+  /** The link's role (0239): 'player' is an adult team's link — the person joins as themselves. */
+  role?: string
 }) {
+  const asPlayer = role === 'player'
   const router = useRouter()
   const [stage, setStage] = useState<Stage>('form')
   const [fullName, setFullName] = useState('')
@@ -28,6 +32,7 @@ export function JoinForm({
   // Never pre-ticked, never required (Joey, 5 Nov 2026).
   const [news, setNews] = useState(false)
   const [children, setChildren] = useState('')
+  const [dob, setDob] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -45,7 +50,8 @@ export function JoinForm({
         phone,
         email,
         news,
-        children: children.split(',').map((c) => c.trim()).filter(Boolean),
+        children: asPlayer ? [] : children.split(',').map((c) => c.trim()).filter(Boolean),
+        dob: asPlayer ? dob : undefined,
       }),
     })
     const data = await res.json()
@@ -149,17 +155,33 @@ export function JoinForm({
           <span className="text-xs text-ink-3">Any email you read — it doesn&apos;t have to match PlayFootball.</span>
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
-            Your children in this team
-          </span>
-          <input
-            value={children}
-            onChange={(e) => setChildren(e.target.value)}
-            className="rounded-xl border border-[var(--line)] px-3 py-3"
-            placeholder="Leo Whitfield, Zoe Whitfield"
-          />
-        </label>
+        {asPlayer ? (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Your date of birth</span>
+            <input
+              required
+              type="date"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              className="rounded-xl border border-[var(--line)] px-3 py-3"
+              autoComplete="bday"
+              data-join-dob
+            />
+            <span className="text-xs text-ink-3">You join as a player yourself. Under 18? Ask a parent to join through the family link instead.</span>
+          </label>
+        ) : (
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">
+              Your children in this team
+            </span>
+            <input
+              value={children}
+              onChange={(e) => setChildren(e.target.value)}
+              className="rounded-xl border border-[var(--line)] px-3 py-3"
+              placeholder="Leo Whitfield, Zoe Whitfield"
+            />
+          </label>
+        )}
 
         <label className="flex items-start gap-2.5 text-sm text-ink-2">
           <input

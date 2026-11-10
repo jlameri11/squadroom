@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { isAdult, isPlausibleDob } from '@/lib/age-group'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSecret, hashSecret, toE164, joinLinkFilter } from '@/lib/join'
 import { checkEmail } from '@/lib/email'
@@ -26,11 +27,13 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
 
-  const { token, fullName, phone, children, email, news } = body as {
+  const { token, fullName, phone, children, email, news, dob } = body as {
     token?: string
     fullName?: string
     phone?: string
     children?: string[]
+    /** 0239: an adult team's link — the person's own date of birth. */
+    dob?: string
     email?: string
     news?: boolean
   }
@@ -94,13 +97,25 @@ export async function POST(request: Request) {
 
   const secret = generateSecret()
 
+  // 0239: a players' link is an adult's own door. Under 18 join through a
+  // parent, as before; the date of birth is kept for the player record.
+  if (link.role === 'player') {
+    if (!dob || !isPlausibleDob(dob)) {
+      return NextResponse.json({ error: 'Your date of birth, please.' }, { status: 400 })
+    }
+    if (!isAdult(dob)) {
+      return NextResponse.json({ error: 'Players under 18 join through a parent — ask your coach for the family link.' }, { status: 400 })
+    }
+  }
+
   const row = {
     academy_id: link.academy_id,
     team_id: link.team_id,
     join_link_id: link.id,
     full_name: fullName.trim(),
     phone: e164,
-    children_names: (children ?? []).map((c) => c.trim()).filter(Boolean),
+    children_names: link.role === 'player' ? [] : (children ?? []).map((c) => c.trim()).filter(Boolean),
+    dob: link.role === 'player' ? dob : null,
     secret_hash: hashSecret(secret),
   }
   // The email and the news opt-in (unticked unless ticked, with its time)

@@ -555,10 +555,29 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     (4) blue cards (sin bin) per league, on the match sheet with minutes;
     (5) a registrations-only CSV with the answers; (6) a ladder breakdown —
     tap a row to see every point: results, adjustments, forfeits. Tests for
-    each. Not needed: best-and-fairest votes.
+    each. Not needed: best-and-fairest votes. (Joey, later on 10 Nov: the
+    registration photo, item 1, moves into the registration brief, item 13.)
 
-13. **Full-season simulation — "SPL Season 4"** (Joey, 9 Nov 2026, late) —
-    after Part C: the whole brief, verbatim, is `docs/SIMULATION.md`,
+    - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
+      every non-core feature gets an on/off switch in Settings → Features
+      (club or league level) with a one-line description; off means nothing
+      of it appears anywhere; all ON in the demo for now; `docs/SIMPLICITY.md`
+      lists every feature, its switch, who sees it and the taps. Built right
+      after Part A fix 2 so Part B's features arrive with their switches.
+
+13. **Registration, as close to Dribl as possible** (Joey, 10 Nov 2026) —
+    after Part C, with Part C's registration photo folded in: the brief,
+    verbatim, is `docs/REGISTRATION_BRIEF.md`. Pay now or after approval per
+    program (pay-now rejects refund in full); the photo step; the Active &
+    Creative Kids voucher with the Treasurer's redeem list; a family's My
+    registrations; a public Find a club page; register as player, coach,
+    manager, volunteer or referee; the club's review with Needs info, bulk
+    approve, team and jersey on approval; drafts saved to the account;
+    receipts; an optional card-fee pass-through, default off. Tests as
+    listed in the brief.
+
+14. **Full-season simulation — "SPL Season 4"** (Joey, 9 Nov 2026, late) —
+    after the registration work: the whole brief, verbatim, is `docs/SIMULATION.md`,
     which becomes the report. On the local Postgres only, never on dev or
     the demo; 300+ teams from ~60 clubs, 14 rounds and finals, every role's
     jobs and every "must not", peak timings under a second, `docs/BUGS.md`

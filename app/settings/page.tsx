@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { WhenOn } from '@/components/when-on'
 import Link from 'next/link'
 import { SetPassword } from './set-password'
 import { SignOut } from '@/components/sign-out'
@@ -7,6 +8,7 @@ import { ProfileForm } from './profile-form'
 import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
 import { TwoStep } from './two-step'
+import { WelfareContact } from '@/components/welfare-contact'
 import { MyData } from './my-data'
 import { ChatLanguage } from './chat-language'
 import { NotificationPrefs } from './notification-prefs'
@@ -50,7 +52,7 @@ export default async function SettingsPage() {
         <YourEmail />
       </Suspense>
       <ChatLanguage initial={langRow?.chat_language ?? null} />
-      <NotificationPrefs initialDigest={(digest as number | null) ?? 0} />
+      <WhenOn feature="digest"><NotificationPrefs initialDigest={(digest as number | null) ?? 0} /></WhenOn>
       <AppearanceSettings />
       {/*
         A permanent way to reach these two.
@@ -91,7 +93,7 @@ export default async function SettingsPage() {
             <span className="min-w-0">
               <span className="block truncate font-medium">Report a concern</span>
               <span className="block truncate text-sm text-ink-3">
-                About an adult&apos;s conduct — seen only by the club&apos;s safeguarding officers
+                About an adult&apos;s conduct — seen only by the Welfare officer and the President
               </span>
             </span>
             <span className="flex-none text-lg text-ink-3">›</span>
@@ -134,6 +136,9 @@ export default async function SettingsPage() {
 
       {/* Before push and the calendar feed, because somebody who has just
           arrived by emailed link has no way back in until they do this. */}
+      {/* Part A fix 4 (0241): the club's Welfare officer, and one tap to message them. */}
+      <WelfareContact />
+
       <SetPassword />
       {/* S-07. Next to the password, because it is the other half of it. */}
       <TwoStep />

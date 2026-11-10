@@ -182,6 +182,21 @@ AGM/committee papers.
   and Admin → Activity, the new-team form, the club-mode switch in Club
   settings. test-rls 178–183; `test-club-roles` (23, on dev). Then Joey's
   10 Nov order (next section): Part A's four fixes first.
+- **10 Nov 2026, Part A:** fix 1 **done** — 0237 (one membership, a set of
+  hats: `academy_members.roles`, `role` the strongest for every older
+  reader, `member_roles_of` / `holds_role` behind `academy_role_of`,
+  `is_academy_staff` and `is_academy_coach`; `add_member_role` /
+  `remove_member_role`; a team's manager is on the team and in its chat;
+  `home_personas` and `home_jobs(p_academy, p_persona)` with Homes for the
+  President, Treasurer, Registrar, coordinator, team manager, Welfare
+  officer and Volunteer coordinator; hat chips on Home; the Roles screen's
+  "Everyone's hats") and 0238 (the sync trigger as its owner — found by the
+  first dev run); fix 2 **done** — 0239 (the hundred-year rule, the three
+  0215 guards let an adult through, every reader finds the person's own
+  record, a players' link for adult teams, "I'm registering myself" on the
+  public form, `team_has_minors` for the rules to come). test-rls 184–188;
+  `test-many-hats` (22), `test-adult-player` (end to end). Fixes 3 and 4
+  next, then Part B.
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

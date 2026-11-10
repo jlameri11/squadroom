@@ -590,6 +590,28 @@ one and is meant to reach hundreds of academies.
   texts nothing until the Twilio variables are in Netlify's environment.
   The role helpers are PL/pgSQL on purpose (SQL ones are re-planned on
   every call; 0224 measured 44 µs vs 6 µs a staff check).
+- **One membership, many hats** (Big Club Mode Part A, 10 Nov 2026;
+  0236–0241). `academy_members.roles` is the set of base hats (owner, admin,
+  coach, parent, player — several at once); `role` is the STRONGEST of them,
+  kept by a trigger, so a function that still reads `role` sees what it
+  always saw; a write to `role` alone swaps that hat and keeps the rest.
+  Ask the helpers, never the column: `holds_role`, `member_roles_of`,
+  `is_academy_staff`, `is_academy_coach`, `is_team_coach` (true for a
+  team's manager and the coordinator over it), `may_run_club(area)` for the
+  committee roles in `club_roles` (President, Secretary, Registrar,
+  Treasurer, coordinator of a stream or age group, team manager, Welfare
+  officer, Volunteer coordinator — scoped, so they are a table, not hats).
+  A Treasurer is not staff and never reads a medical record; a Registrar
+  never the money. Home takes a hat (`home_jobs(p_academy, p_persona)`).
+  Adults: a player 18+ by date of birth is their own member — no guardian;
+  anything that finds a child through `player_guardians` must also find
+  `players.profile_id = auth.uid()` (`is_guardian_of` does). A team's
+  category is `age_category(age_group)`; gender is `team_gender`'s five
+  words. The Welfare officer is `safeguarding_officers` + the club role;
+  reports reach them and the President only. A trigger function that calls
+  an `app_private` helper is `security definer`, or every app write fails
+  (0238). The activity log is written by triggers; `log_activity` skips an
+  organisation that is being deleted.
 - **Every control can be read aloud and hit with a thumb** (X-10, 4 Nov
   2026): an icon button carries `aria-label`, a field has a `<label>` or
   `aria-label` (a placeholder is not a label), an image has `alt`, a

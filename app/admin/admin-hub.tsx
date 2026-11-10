@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { WhenOn } from '@/components/when-on'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrentOrg } from '@/lib/use-current-org'
@@ -189,7 +190,7 @@ export function AdminHub() {
               <Row href="/admin/roles" label="Roles" hint="President, Registrar, Treasurer, coordinators, team managers, Welfare officer" />
               <Row href="/admin/activity" label="Activity" hint="Who changed what, and when" />
               <Row href="/admin/invites" label="Invites" />
-              <Row href="/admin/safeguarding" label="Safeguarding reports" hint="Messages families have reported" />
+              <Row href="/admin/safeguarding" label="Welfare reports" hint="Messages and concerns families have reported — for the Welfare officer and the President" />
               {/* Linked from here deliberately. A compliance screen nothing
                   points at is a compliance screen nobody opens — /programs
                   and /payments were both built and reachable from nowhere. */}
@@ -203,8 +204,8 @@ export function AdminHub() {
                 label="Sign-ups from your register link"
                 hint={pendingSignups ? `${pendingSignups} waiting to hear from you` : 'Families who found you themselves'}
               />
-              <Row href="/admin/kit" label="Kit list" hint="What to order, and who has not been asked" />
-              <Row href="/admin/sponsors" label="Sponsors" hint="Your sponsors on the match centre and the share cards; Squadroom takes nothing" />
+              <WhenOn feature="kit"><Row href="/admin/kit" label="Kit list" hint="What to order, and who has not been asked" /></WhenOn>
+              <WhenOn feature="sponsors"><Row href="/admin/sponsors" label="Sponsors" hint="Your sponsors on the match centre and the share cards; Squadroom takes nothing" /></WhenOn>
               <Row href="/settings/academy" label="Club settings" hint="Colours, privacy, safeguarding" />
             </ul>
           </>

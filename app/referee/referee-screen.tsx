@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { WhenOn } from '@/components/when-on'
 import { createClient } from '@/lib/supabase/client'
 import { MarksPicker, type Marks } from '@/components/respect-marks'
 
@@ -265,7 +266,7 @@ export function RefereeScreen() {
       )}
 
       {(mine.open_games ?? []).length > 0 && (
-        <>
+        <WhenOn feature="referee_self_appoint">
           <h3 className="eyebrow px-1 pb-1.5">Open games — take one</h3>
           <ul className="card mb-4 divide-y overflow-hidden" style={{ borderColor: 'var(--line-2)' }} data-open-games>
             {(mine.open_games ?? []).map((g) => (
@@ -284,7 +285,7 @@ export function RefereeScreen() {
               </li>
             ))}
           </ul>
-        </>
+        </WhenOn>
       )}
 
       <h3 className="eyebrow px-1 pb-1.5">Your games</h3>

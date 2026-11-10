@@ -109,6 +109,14 @@ export function AcademySettings({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {error && <p className="text-sm ">{error}</p>}
+      <section data-features-link>
+        <h2 className="font-semibold">Features</h2>
+        <p className="mt-1 text-sm text-ink-2">Every feature that is not core, with a switch. Off means it appears nowhere.</p>
+        <a href="/settings/features" className="mt-2 inline-block rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }} data-features-open>
+          Features
+        </a>
+      </section>
+
       {clubMode !== undefined && (
         <section data-club-mode={clubMode ? 'on' : 'off'}>
           <h2 className="font-semibold">Club mode</h2>

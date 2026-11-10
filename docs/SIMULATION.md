@@ -2,7 +2,8 @@
 
 **Status (10 Nov 2026): queued.** Joey's order (10 Nov): the four audit
 fixes → the rest of Big Club Phase 1 (`BIG_CLUB_MODE.md`) → the Dribl gaps
-(`BUILD_PLAN.md` item 12) → this. Commit and push
+(`BUILD_PLAN.md` item 12) → registration as close to Dribl as possible
+(`REGISTRATION_BRIEF.md`) → this. Commit and push
 hourly while it runs. No deploy. This file will become the report (section
 "What ran" onward); until then it holds the brief, verbatim.
 
