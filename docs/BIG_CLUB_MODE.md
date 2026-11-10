@@ -394,3 +394,197 @@ is the one cited.
   official-rego, circular-26-02, vouchers, withdrawals, trial-offers,
   returning-offers, regrading, lineup, match-day-list, live, pitches,
   call-off-day, helpers, draw-and-ops.
+
+### C. Club structure, roles, adult players, safety (items 1, 2, 3, 11)
+
+**Exists**
+- `teams`: id, academy_id, name, `age_group` (text, **check `'^U([5-9]|1[0-8])$'`**),
+  season, status (active/ended), ended_at, + `external_ref`, `capacity`,
+  `kit_home/away`, `skip_import` (0121), `rolled_from` (0139). Coaches are
+  `team_members.role = 'coach'` rows; division lives on
+  `competition_entries` / `competition_divisions` (the organiser's free
+  text — "do not build a divisions table"); gender only on players and
+  programs (`player_gender`). Age groups are plain `U<n>` text
+  (`next_age_group`, `age_number`); `channels.age_group` and
+  `pitch_size_rules.age_group` carry the same shape; the new-team picker
+  hard-codes U5–U18. Training is `event_series` (days, time, duration,
+  free-text venue) making real `events`. `org_type` has `'club'` but
+  nothing behaves differently for it. Team screens: list, new (name, age
+  group, season), league name, season control; no editor for a team after
+  creation and no way to put a coach on it from its page.
+- Roles: `academy_role` owner/admin/coach/parent/player (never altered);
+  `academy_members` unique per (academy, profile) — **one role per person
+  per club**; `team_members.role` and `join_links.role` check
+  coach/parent/player. Helpers: `academy_role_of` (two-step aware),
+  `is_academy_staff` (owner/admin), `is_academy_coach` (+coach, not
+  lapsed), `is_team_coach` (coach of the team or staff, not lapsed),
+  `is_guardian_of` (also a self-linked player). The league's pattern to
+  copy: `league_role` enum, `league_roles` (several per person, `granted_by`),
+  `may_run(p_competition, p_area)`, `grant_/revoke_league_role`,
+  `league_officials`, and a UI with a plain description per role
+  (`league-officials.tsx`) — keyed by competition, so not usable for a club
+  as is. `safeguarding_officers` (0108) is a table, not a role;
+  `is_safeguarding_officer` = appointed or the owner; **no screen appoints
+  one** (the safeguarding screen tells people to be appointed "in Club
+  settings", which has no such control; the hub row is staff-only).
+  "Manager" in code means coach (`entry_managers`, the F-07 checklist,
+  `may_manage_helpers`). Role UI: Directory "Add contact" (parent/coach),
+  members tree (remove only), team links always parent. Making a coach or
+  admin needs a current WWCC (0120). Staff rights are all or nothing: any
+  admin reads `player_medical` and `payments`. ~44 places in 21 migrations
+  compare `academy_members.role` directly; 10 app files read it.
+- Adult players: `players` (team_id, profile_id, full_name, dob, …,
+  official status, kit, fifa_id), `player_guardians`; teen logins
+  `player_logins` (invite → claim → decide → end; 0215) with triggers
+  `refuse_player_accounts`, `refuse_player_logins`,
+  `refuse_squad_player_places` refusing every other route. A linked player
+  may already RSVP and register for themselves (`is_guardian_of`) and joins
+  the team chats. Child checks: **`players.dob` must be under 25 years
+  ago** (0003, never relaxed — so no player over 25 can be stored, and the
+  roster import's 100-year DOB passes the mapper then fails the insert);
+  `is_thirteen`; `is_minor_profile` (under 18, no DOB, or a player role
+  without a proven adult record — used only by the DM/custom-chat guardian
+  triggers); the public register refuses a child over 25.
+- Safety: `staff_clearances` (kinds `wwcc`/`exemption`; outcomes cleared/
+  applied/barred/not_found; one current record per person per club, no
+  history), `record_clearance`, `clearance_board`, `clearance_lapsed`
+  (removes coaching rights and posting, not membership or staff powers),
+  `queue_clearance_warnings` (60 days out, every 14, **to owners and admins
+  only**, cron 19:15). Reports: `message_reports` (reasons incl.
+  safeguarding; `report_message`, `safeguarding_queue`, `review_report`) and
+  `conduct_reports` (disclosure/allegation/concern/boundary_breach/other;
+  `file_conduct_report`, `conduct_register`, `review_conduct_report`), readable
+  by officers, the owner and the reporter; `player_concussions` (readable by
+  every coach; locks the sheet); `player_medical.first_aid_consent`; the
+  checklist's first-aid-bag item; Settings "Report a concern".
+
+**Gaps**
+- No stream anywhere; no age-group entity; `teams` lacks stream, gender,
+  home ground, training slot and manager; no team editor.
+- None of President, Secretary, Registrar, Treasurer, coordinator, Team
+  manager, Welfare officer (as a role name), Volunteer coordinator; no
+  club-side `may_run`; no right scoped to an age group or stream; one role
+  per person per club; no screen to promote, demote, make an admin or
+  appoint an officer.
+- An adult cannot be their own member: the 25-year DOB check, no self route
+  (only a guardian's invitation), one role per club, and every reader finds
+  a player only through `player_guardians` (`my_upcoming_events`,
+  `my_rsvps_for_event`, `my_family`, checkout "That is not your child",
+  fee quotes). No adult team can exist and nothing knows whether a team
+  has under-18s.
+- No coaching accreditation (W-03 "training lapses are not tracked"); no
+  30-day reminder and nothing to the person whose check lapses; a lapsed
+  check removes rights, not roles; no incident/injury report (who, what,
+  when, first aid); nobody is told when a report or concussion is filed;
+  the UI says "Safeguarding", never "Welfare"; no officer contact in a
+  family's Settings (`member_contact` hides a non-staff officer's number;
+  staff-only DMs stop a parent messaging a non-staff officer).
+
+## Phase 1 plan (10 Nov 2026) — reuse first, in dependency order
+
+Each step is a migration proved locally on the demo copy, then on dev, with
+test-rls checks and a suite; screens at 375px light/dark and admin tables
+at laptop width (a new `--wide` pass in the screen suites). Nothing here is
+club-only: a club gets it switched on by the big-club setup, an academy can
+switch any of it on in Settings (`academies.club_mode`).
+
+1. **0236 Structure, roles, the log (items 1, 2, 13).** `streams`
+   (club-defined, ordered; `teams.stream_id`); `teams.gender`,
+   `teams.home_venue_id`; the age-group checks widened everywhere to
+   `U5…U99 | Open | Over-NN` (`age_number` learns the adult groups;
+   rollover keeps them). `club_role` enum (president, secretary, registrar,
+   treasurer, coordinator, team_manager, welfare_officer,
+   volunteer_coordinator) and `club_roles` (several per person; a scope:
+   the whole club, a stream, an age group, a team; `granted_by`;
+   `grant_club_role` / `revoke_club_role` / `club_officials`, owner or
+   President/Secretary grants; WWCC rule as for coaches). Rights through
+   the existing helpers, not new comparisons: `may_run_club(p_academy,
+   p_area)` with areas club · registrations · money · people · teams ·
+   volunteers · welfare · comms; `is_team_coach` true for a team's manager
+   and for a coordinator whose scope covers the team (so every team tool
+   follows), `may_develop` stays coach/staff; the money policies accept a
+   Treasurer and never show a Treasurer medical; the registration policies
+   accept a Registrar and refuse them money; `welfare_officer` writes
+   `safeguarding_officers` (kept as the store). `activity_log` (academy,
+   actor, action, subject, detail, at) written by triggers on members,
+   roles, teams, payments' status, refunds, club messages, call-offs; read
+   by the owner, President and Secretary. Admin → People → **Roles** screen
+   with a plain description of each role. Then `home_persona` /
+   `home_jobs` grow personas for President/Secretary (Club HQ: needs a
+   decision · this weekend · money · messages · club health), Treasurer,
+   Registrar, coordinator, manager, with a role lens for people holding
+   several (the switch gains roles within the organisation).
+2. **0237 Adult players (item 3).** The DOB check becomes "after 1900"; the
+   three 0215 guards let an adult (18+ by DOB) be their own member and
+   player without a guardian; an adult-team join link (role player) and
+   the approve route make the `players` row for the person; every reader
+   that finds a child through `player_guardians` also finds the person's
+   own record (`my_upcoming_events`, `my_rsvps_for_event`, `my_family`,
+   checkout, quotes, helpers); `team_has_minors(team)` decides the chat
+   and DM rules per team; Home shows parent, player and coach parts
+   clearly.
+3. **0238–0239 Communication layers (item 4).** In club mode:
+   Announcements becomes **Club Notices** (hosts only), age-group channels
+   become notices too, **stream** channels (computed from team membership,
+   hosts only), **Committee** and **Team managers** rooms (computed from
+   `club_roles`, two-way, like the Clubs room). **Message the club**:
+   `club_messages` (audience = whole club · streams · age groups · teams ·
+   staff · unpaid · not re-registered · PlayFootball not done; pin, until,
+   attachments, urgent for safety only), `preview_club_message` ("this will
+   reach 1,240 people" before sending), fan-out **queued in batches** by a
+   worker (`fan_out_club_messages`, pg_cron each minute, 500 recipients a
+   pass; never in the sender's transaction), `club_message_recipients`
+   with seen_at for "Seen by X of Y" and one-tap re-ping of the unseen,
+   push + in-app (a Messages screen and Home's club news) + email through
+   the existing Resend hook; who may send by role. The push drain learns to
+   loop until the queue is empty. Settings gets quiet hours and the
+   notify toggles.
+4. **0240 Getting live (item 5).** Setup steps grow to the brief's eight
+   (streams & age groups, teams/coaches/managers, committee roles, grounds
+   & slots, invite families); the roster importer takes a team column,
+   1,500+ rows in batches, an `import_batches` id with **undo**; guardians
+   stay out of bulk import (the contacts rule) — instead a per-team claim
+   link + QR + printable sheet (`@media print`) with "claim your child"
+   from the roster (name + DOB); staff invite links by role; **Club health**
+   (`club_health`: % families joined per team, teams without a manager,
+   staff with WWCC missing/expiring, PlayFootball not done).
+5. **0241 Registration (item 6):** the PlayFootball importer's count bug;
+   code of conduct asked on the team-link join; an admin consent-document
+   editor; the Registrar's chase through Message the club.
+6. **0242 Trials, grading, publish (item 7):** trial sessions per age
+   group (programs of kind trial + sessions as events), private 1–5
+   ratings with a note (reuse `player_reports`), a coordinator's allocation
+   screen (phone list, laptop table), **Publish teams** → one message per
+   family (team, coach, manager, slot, ground) and the chats follow.
+7. **0243 Grounds & slots (item 8):** `training_slots` per pitch or
+   half-pitch (weekday, time, team), clash refusal across parent and child
+   pitches and pitch hours, the slot on the team page and in the calendar
+   (through `event_series`), **Close ground** on a venue for a date →
+   `call_off_day` by venue id, events and fixtures, one message.
+8. **0244 Game day (item 9):** the President's **Saturday** view (every
+   game today by ground, call-offs, missing managers, roster gaps, results),
+   MiniRoos default (no scores or ladder for U6–U11 club events: `live_tick`
+   lines, results lists, share cards, `division_table`), results posted to
+   the team chat by `set_event_result`, "Submit your Dribl team sheet" to
+   managers the evening before.
+9. **0245 Volunteers (item 10):** club rosters per ground per Saturday
+   (extend `event_jobs` to a venue-day), team duty rosters with fair
+   rotation, swap requests and reminders, the Volunteer coordinator's gaps
+   view and targeted ask.
+10. **0246 Safety (item 11):** `clearance_kind` gains `accreditation`
+    (with expiry), reminders 30 days out to the person and the club,
+    expired staff flagged and removed from coaching children until renewed,
+    **incident reports** (who, what, when, first aid) to the Welfare
+    officer and President only, the officer's contact in every family's
+    Settings, "Welfare" in the UI.
+11. **Demo — Inner West FC (item 14):** a seed built on the scale tooling
+    (local first), then on dev at the brief's size; ten demo logins; the
+    10-minute walkthrough in `docs/DEMO.md`.
+12. **Definition of done:** the role suites (each role its job and nothing
+    more; coordinators and managers scoped; the Treasurer never medical;
+    incident reports to two people; parents cannot send notices; MiniRoos
+    hidden; the log records every admin change), Homes screenshotted at
+    375px light/dark and admin screens at laptop width, "Message the club"
+    to 2,000 on the local big dataset. **No deploy until then.**
+
+Phase 2 (plan only) is written into `BUILD_PLAN.md` item 11.
