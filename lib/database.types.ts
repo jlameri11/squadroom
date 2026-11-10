@@ -3418,6 +3418,73 @@ export type Database = {
           },
         ]
       }
+      import_batches: {
+        Row: {
+          academy_id: string
+          created_at: string
+          created_by: string
+          created_players: number
+          file_name: string | null
+          id: string
+          kind: string
+          matched_players: number
+          removed_players: number | null
+          rows_sent: number
+          undone_at: string | null
+          undone_by: string | null
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          created_by: string
+          created_players?: number
+          file_name?: string | null
+          id?: string
+          kind?: string
+          matched_players?: number
+          removed_players?: number | null
+          rows_sent?: number
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          created_by?: string
+          created_players?: number
+          file_name?: string | null
+          id?: string
+          kind?: string
+          matched_players?: number
+          removed_players?: number | null
+          rows_sent?: number
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_undone_by_fkey"
+            columns: ["undone_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       imported_games: {
         Row: {
           academy_id: string
@@ -5813,6 +5880,7 @@ export type Database = {
           full_name: string
           gender: Database["public"]["Enums"]["player_gender"] | null
           id: string
+          import_batch_id: string | null
           notes: string | null
           official_status: Database["public"]["Enums"]["official_rego_status"]
           official_status_at: string | null
@@ -5837,6 +5905,7 @@ export type Database = {
           full_name: string
           gender?: Database["public"]["Enums"]["player_gender"] | null
           id?: string
+          import_batch_id?: string | null
           notes?: string | null
           official_status?: Database["public"]["Enums"]["official_rego_status"]
           official_status_at?: string | null
@@ -5861,6 +5930,7 @@ export type Database = {
           full_name?: string
           gender?: Database["public"]["Enums"]["player_gender"] | null
           id?: string
+          import_batch_id?: string | null
           notes?: string | null
           official_status?: Database["public"]["Enums"]["official_rego_status"]
           official_status_at?: string | null
@@ -5882,6 +5952,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
           {
@@ -8432,6 +8509,7 @@ export type Database = {
         Args: { p_approve: boolean; p_note?: string; p_request: string }
         Returns: undefined
       }
+      club_health: { Args: { p_academy?: string }; Returns: Json }
       club_messages_sent: { Args: { p_academy: string }; Returns: Json }
       club_officials: { Args: { p_academy: string }; Returns: Json }
       competition_appointments: {
@@ -8884,6 +8962,7 @@ export type Database = {
       import_players: {
         Args: {
           p_academy: string
+          p_batch?: string
           p_rows: Json
           p_season?: string
           p_team: string
@@ -9897,6 +9976,10 @@ export type Database = {
         Args: { p_into: number; p_pitch: string }
         Returns: number
       }
+      start_import_batch: {
+        Args: { p_academy: string; p_file?: string; p_kind?: string }
+        Returns: string
+      }
       stop_helping: {
         Args: { p_job: string; p_profile?: string }
         Returns: Json
@@ -9970,6 +10053,7 @@ export type Database = {
       }
       two_step_status: { Args: never; Returns: Json }
       two_step_trust_this_session: { Args: { p_device: string }; Returns: Json }
+      undo_import_batch: { Args: { p_batch: string }; Returns: Json }
       undo_last_tick: { Args: { p_event: string }; Returns: Json }
       undo_levy_payment: { Args: { p_payment: string }; Returns: Json }
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }

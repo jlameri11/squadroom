@@ -190,6 +190,9 @@ export function AdminHub() {
           <>
             <h2 className="eyebrow px-1 pb-2">The club</h2>
             <ul className="card mb-5 overflow-hidden">
+              {/* Big Club Mode item 5/12 (0247): the club's health in one
+                  card — switchable, for a small academy that does not need it. */}
+              <WhenOn feature="club_health"><Row href="/admin/health" label="Club health" hint="Families joined per squad, squads with nobody in front of them, checks running out, PlayFootball not done" /></WhenOn>
               <Row href="/admin/payments" label="Collect payments" hint="Fees and entries" />
               <Row href="/admin/members" label="Members" hint="And who invited whom" />
               {/* Big Club Mode (0236): several roles per person, each with a

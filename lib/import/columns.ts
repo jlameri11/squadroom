@@ -422,6 +422,17 @@ export const PLAYER_FIELDS: FieldSpec[] = [
     matches: ['gender', 'sex'],
   },
   {
+    // 0247: a whole club's roster in one file, each row naming its squad.
+    // Matched to the club's squads by name on the screen; a name that
+    // matches nothing is a problem on that row, never a guess.
+    key: 'team',
+    label: 'Squad',
+    hint: 'Each row can name its own squad — matched to yours by name',
+    required: false,
+    matches: ['squad', 'team', 'age group', 'agegroup', 'group', 'division'],
+    excludes: ['opponent', 'manager', 'coach'],
+  },
+  {
     key: 'preferred_name',
     label: 'Goes by',
     hint: 'What the child is actually called',

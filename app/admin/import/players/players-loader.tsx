@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrentOrg } from '@/lib/use-current-org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
-import { PlayersImport } from './players-import'
-
-type Team = { id: string; name: string; season: string | null }
+import { PlayersImport, type Team } from './players-import'
 
 /** The roster importer for the organisation the browser is showing, with its active squads. */
 export function PlayersImportLoader() {
@@ -17,7 +15,14 @@ export function PlayersImportLoader() {
     if (!org) return
     let live = true
     ;(async () => {
-      const { data } = await createClient().from('teams').select('id, name, season').eq('academy_id', org.id).eq('status', 'active').order('name')
+      // age_group and label too: a file's "Squad" column says "U12 Red" or
+      // "Under 12s", and the match is made against every name a squad goes by.
+      const { data } = await createClient()
+        .from('teams')
+        .select('id, name, season, age_group, label')
+        .eq('academy_id', org.id)
+        .eq('status', 'active')
+        .order('name')
       if (live) setTeams((data ?? []) as Team[])
     })()
     return () => {

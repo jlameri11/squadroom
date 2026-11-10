@@ -3600,6 +3600,54 @@ begin
     insert into rls_results values (200, 'the organiser group sees everything it runs in one overview, with the clubs entered; a parent sees nothing of it; the switcher lists its competitions under it', r200);
   end;
 
+  -- 0247. Getting live: an import is a batch with a squad per row and undo;
+  -- club health is the staff's; the setup steps grew. Everything the check
+  -- writes is rolled back on purpose at the end of the block.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    v_batch uuid; v_res jsonb; v_undo jsonb; v_stamped int; v_left int;
+    v_health jsonb; v_parent_health jsonb; v_steps text[];
+    r201 text := 'FAIL (never ran)';
+  begin
+    begin
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_batch := public.start_import_batch(ACAD_A, 'players', 'rls-check.xlsx');
+      v_res := public.import_players(ACAD_A, null, jsonb_build_array(
+                 jsonb_build_object('full_name', 'Rls Import One', 'dob', '2014-03-03', 'team_id', U12),
+                 jsonb_build_object('full_name', 'Rls Import Two', 'dob', '2014-04-04', 'team_id', U12),
+                 jsonb_build_object('full_name', 'Rls Import Three', 'dob', '2014-05-05', 'team_id', '00000000-0000-0000-0000-00000000dead')),
+               null, v_batch);
+      select count(*) into v_stamped from public.players where import_batch_id = v_batch and team_id = U12;
+      v_health := public.club_health(ACAD_A);
+      select array_agg(t.s->>'id' order by t.ord) into v_steps
+        from jsonb_array_elements(public.setup_progress(ACAD_A)->'steps') with ordinality as t(s, ord);
+      v_undo := public.undo_import_batch(v_batch);
+      select count(*) into v_left from public.players where import_batch_id = v_batch;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_parent_health := public.club_health(ACAD_A);
+      execute 'reset role';
+      r201 := case when (v_res->>'created')::int = 2 and jsonb_array_length(v_res->'problems') = 1 and v_stamped = 2
+                    and (v_undo->>'removed')::int = 2 and v_left = 0
+                    and v_health ? 'families' and v_health ? 'teams_without_manager' and v_health ? 'checks'
+                    and (v_health->'families'->>'players') is not null and v_parent_health is null
+                    and 'families' = any(v_steps) and 'grounds' = any(v_steps) and 'managers' = any(v_steps) then 'PASS'
+                   else 'FAIL (created '||coalesce(v_res->>'created','?')||', problems '||coalesce(jsonb_array_length(v_res->'problems')::text,'?')
+                        ||', stamped '||v_stamped||', removed '||coalesce(v_undo->>'removed','?')||', left '||v_left
+                        ||', health '||coalesce(left(v_health::text,80),'null')||', parent '||coalesce(v_parent_health::text,'null')
+                        ||', steps '||coalesce(array_to_string(v_steps, ','),'none')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r201 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (201, 'a roster import is a batch: a squad per row, a wrong squad reported, undo removes exactly what it added; club health is the staff''s and not a parent''s; the setup steps name families, grounds and a manager per squad', r201);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

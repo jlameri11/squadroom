@@ -65,7 +65,11 @@ foundErr ? bad(`found: ${foundErr.message}`) : ok('a stranger founds a club and 
 const progress = async () => (await me.rpc('setup_progress', { p_academy: academyId })).data
 {
   const p = await progress()
-  p && p.done === 0 && p.total === 6 && !p.complete ? ok(`six steps, none done, clock at ${p.minutes} min`) : bad(JSON.stringify(p))
+  // 0247: the checklist grew (a manager per squad, grounds, invite families;
+  // streams and committee roles in club mode). A new club has done none of
+  // it — bar Streams, which club mode seeds on day one.
+  const doneAtBirth = (p?.steps ?? []).filter((s) => s.done).map((s) => s.id)
+  p && p.total >= 9 && !p.complete && doneAtBirth.every((id) => id === 'streams') ? ok(`${p.total} steps, none done${doneAtBirth.length ? ' but the seeded streams' : ''}, clock at ${p.minutes} min`) : bad(JSON.stringify(p))
   const { data: pp } = await parent.rpc('setup_progress', { p_academy: academyId })
   pp === null ? ok('a parent of another club gets nothing') : bad('a stranger read the checklist')
 }
@@ -107,14 +111,16 @@ let teamId
   const { error: jl } = await me.from('join_links').insert({ academy_id: academyId, team_id: teamId, role: 'coach', created_by: FOUNDER })
   jl ? bad(`coach link: ${jl.message}`) : ok('a join link for coaches')
   let p = await progress()
-  p?.done === 5 && p.complete && p.completed_at ? ok(`five core steps done — the club counts as set up at ${p.minutes} min`) : bad(JSON.stringify({ done: p?.done, complete: p?.complete, completed_at: p?.completed_at }))
+  const core = ['brand', 'squads', 'roster', 'programs', 'coaches']
+  const coreDone = core.every((id) => p?.steps?.find((s) => s.id === id)?.done)
+  coreDone && p.complete && p.completed_at ? ok(`the five core steps done — the club counts as set up at ${p.minutes} min`) : bad(JSON.stringify({ done: p?.done, complete: p?.complete, completed_at: p?.completed_at, steps: p?.steps?.map((s) => `${s.id}:${s.done ? 1 : 0}`) }))
   const { data: series, error: se } = await me.rpc('create_event_series', {
     p_academy: academyId, p_title: 'Training', p_team: teamId, p_days: [2], p_time: '17:00',
     p_from: new Date().toISOString().slice(0, 10), p_until: new Date(Date.now() + 28 * 864e5).toISOString().slice(0, 10),
   })
   se ? bad(`training: ${se.message}`) : ok(`weekly training (${series?.created} sessions)`)
   p = await progress()
-  p?.done === 6 ? ok('all six') : bad(`done ${p?.done}`)
+  p?.steps?.find((s) => s.id === 'session')?.done ? ok('and the first training') : bad(`session step: ${JSON.stringify(p?.steps?.find((s) => s.id === 'session'))}`)
   const { data: a } = await admin.from('academies').select('setup_completed_at, setup_started_at').eq('id', academyId).single()
   const mins = (new Date(a.setup_completed_at).getTime() - new Date(a.setup_started_at).getTime()) / 60000
   mins < 30 ? ok(`recorded on the club: set up in ${mins.toFixed(1)} min (this test took ${((Date.now() - started) / 1000).toFixed(0)} s)`) : bad(`${mins} min`)

@@ -207,9 +207,15 @@ AGM/committee papers.
   with the group's competitions underneath, /competitions opening with the
   overview, "Run by <Group>" on the competition screen, the public match
   centre, the Notices room and the entry form's fee line. test-rls 200;
-  `test-organiser-group`. Next: setup and imports (item 5), trials (7),
-  grounds (8), game day (9), volunteers (10), safety (11), Club HQ's health
-  card (12), the demo (14).
+  `test-organiser-group`. **Getting live (0247) done:** `import_batches`
+  with undo, a squad per row and chunked uploads in the roster importer;
+  `setup_progress` with the brief's steps (a manager per squad, grounds,
+  invite families; streams and committee roles in club mode);
+  `club_health` and `/admin/health` (item 12's card), switchable. test-rls
+  201; `test-getting-live`. Next: trials (7), grounds and slots (8), game
+  day (9), volunteers (10), safety (11), the demo (14); the claim-from-roster
+  link, the printable sheet and staff links by role are still open from
+  item 5 (see the audit's Invite links note).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

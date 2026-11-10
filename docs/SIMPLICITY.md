@@ -68,6 +68,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Helpers wanted (G-07) | `helpers` | the squad's coach asks; families help | the game page |
 | Game photos (M5) | `match_photos` | the squad's coach adds; the squad sees | the game page |
 | Kit list | `kit` | staff | Admin → Kit list |
+| Club health (0247) | `club_health` | owners, admins, President, Secretary | Admin → Club health (families joined per squad, squads with nobody in front of them, checks running out, PlayFootball not done) |
 | Game video (Matchdays) | `match_video` | the squad's coach adds; the squad sees | Fixtures → Matchdays |
 | Respect marks (W-01) | `respect_marks` | managers and referees mark; the league's dashboard | the match page |
 | Polls | `polls` | hosts post; members vote | the composer |
