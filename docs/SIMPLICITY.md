@@ -17,7 +17,7 @@ is ON in the demo** so everything can be tested.
 > 4. Keep docs/SIMPLICITY.md: every feature, its switch, which roles see it, taps for each role's top 3 jobs. After the Season 4 simulation and real testing, Joey decides which switches default OFF.
 > Commit and push hourly.
 
-## How the switches work (to build, right after Part A fix 2)
+## How the switches work (built 10 Nov 2026, 0242)
 
 - `academy_features (academy_id, feature, enabled, changed_by, changed_at)`,
   one row per switched-off feature (absent = on, so a new feature is on
@@ -31,6 +31,12 @@ is ON in the demo** so everything can be tested.
   staff for a league); each switch with its one line; the activity log
   records every flip.
 - A feature built from now arrives with its switch and its row below.
+- **Gated so far (10 Nov):** kit, sponsors, helpers, match_photos,
+  match_video, development, digest, referee_pay, fixture_flowing,
+  referee_self_appoint, scheduled_messages, scan. Still to gate among what
+  exists: player_of_match (the pick lives on the game's stats), polls (the
+  composer's poll form), respect_marks (the match sheet and the referee's
+  report), kit's order list. The "to come" rows are gated as they are built.
 
 ## Core (no switch)
 

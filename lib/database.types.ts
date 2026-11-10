@@ -159,6 +159,45 @@ export type Database = {
           },
         ]
       }
+      academy_features: {
+        Row: {
+          academy_id: string
+          changed_at: string
+          changed_by: string | null
+          enabled: boolean
+          feature: string
+        }
+        Insert: {
+          academy_id: string
+          changed_at?: string
+          changed_by?: string | null
+          enabled: boolean
+          feature: string
+        }
+        Update: {
+          academy_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          enabled?: boolean
+          feature?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_features_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_features_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_invites: {
         Row: {
           academy_name_hint: string | null
@@ -8543,6 +8582,7 @@ export type Database = {
       expire_stale_join_requests: { Args: never; Returns: number }
       expire_stale_registrations: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
+      features_off: { Args: { p_academy: string }; Returns: string[] }
       field_impact: {
         Args: {
           p_competition: string
@@ -9582,6 +9622,10 @@ export type Database = {
           p_theirs?: number
         }
         Returns: undefined
+      }
+      set_feature: {
+        Args: { p_academy: string; p_enabled: boolean; p_feature: string }
+        Returns: boolean
       }
       set_fixture_flowing: {
         Args: { p_competition: string; p_days?: number; p_until: string }
