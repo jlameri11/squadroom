@@ -6,6 +6,8 @@ build/
 *.pem
 .env
 .env*.local
+# Where scripts/deploy.mjs parks the env files while a deploy build runs.
+.deploy-hidden/
 .vercel
 .netlify
 next-env.d.ts

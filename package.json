@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:prod": "node scripts/deploy.mjs --deploy",
+    "deploy:check-bundle": "node scripts/check-bundle-secrets.mjs",
     "start": "next start",
     "serve:test": "DIST_DIR=.next-test next build && DIST_DIR=.next-test next start -p 3100",
     "lint": "eslint",

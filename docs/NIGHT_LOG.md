@@ -6,6 +6,16 @@ every item on it is something no amount of building can get past.
 
 ---
 
+**Session log.** 10 Nov 2026, about 21:30 Sydney: stopped to tell Joey the
+deploy-hygiene fix is in and two tokens need rotating (NEEDS JOEY #25).
+Built today: 0246 the organiser group, 0247 getting live (imports with undo,
+setup steps, Club health), 0248 claiming a child from the roster, the deploy
+script and bundle scanner. Next in the queue: Big Club item 7 (trial sessions,
+private 1–5 ratings, the coordinator's allocation screen, "Publish teams" —
+one message per family; design ready, nothing written), then grounds and
+slots (8), game day (9), volunteers (10), safety (11), the demo (14), Part C,
+the registration brief, the simulation. No deploy (Joey: not until he says).
+
 ## Day summary — 9 Nov 2026 (Mon): the token, migration day, the deploy
 
 - **Token renewed and checked read-only** (200; squadroom-dev the only
@@ -542,6 +552,7 @@ Exact steps are in NEEDS JOEY below.
 | **The organiser group** (10 Nov; 0246, applied to dev) | **Done** (Part B, Joey's 5 Nov item, kept simple). The organiser organisation IS the group (`competitions.organiser_id`), and its owners, admins and league-role holders already run every competition it organises (`may_run`, 0164) — nothing new in ownership. What was missing was the presentation: `group_overview(p_academy)` — everything the group runs in one answer, per competition the clubs and teams entered, this weekend's games, games without a referee, disputed scores and missing team sheets, for the group's staff and league roles only (a parent gets null); `my_organisations_with_competitions()` — the switcher's list, each organisation with the competitions it runs underneath (owners, admins, league roles; empty for everyone else). The switcher shows the group with its leagues and tournaments beneath it (tap one and the app switches to the group and opens it); /competitions opens with the overview card ("<Group> runs": one row per competition, orange where something needs the organiser) and then what the organisation has entered, as rows — the rows moved out of the page into `competitions-list.tsx` (pages stay thin); "Run by <Group>" on the competition screen, the public match centre's eyebrow, the Notices room's header (was "From") and the entry form's fee line ("paid to <Group> once accepted" — what a club is told it will pay). The organiser's own row is withheld from another club's people by policy, so every screen falls back to the competition's own `organiser` text. **Found on the way, a real bug:** the switcher had thrown for anyone in two organisations since 24 Oct — it pulled `rpc` off the Supabase client before calling it (`const rpc = createClient().rpc as any`), which loses `this` ("Cannot read properties of undefined (reading 'rest')"), so the sheet never rendered; only Joey has two organisations and no suite had ever opened it. Fixed (the call is made on the client); the new suite lends the league's owner a second organisation so the switcher exists to be tested. | test-rls 200 (the group sees everything it runs with the clubs counted; a parent gets null; the switcher lists its competitions); `scripts/test-organiser-group.mjs` (the RPCs as the SPL's owner and as a parent; /competitions with the overview at 375px, light and dark; the switcher with the SPL's competitions underneath and a tap that opens one — the owner is lent a throwaway second organisation for the run and it is removed after; "Run by" on the competition screen, the Notices room and the public match centre; a parent's plain list) on dev; competitions-list and club-heads green |
 | **Getting live: imports in batches with undo, a squad per row, the setup steps, Club health** (10 Nov; 0247, applied to dev) | **Done** (Big Club Mode item 5, and item 12's card). `import_batches` — one import however many calls it took; `start_import_batch`, `import_players` takes `p_batch` and a `team_id` per row (the screen resolves a "Squad" column to the club's squads by every name a squad goes by — name, label, age group + name — and a name that matches nothing is a problem on that row, never a guess; the function checks the id is the club's all the same); 1,500 rows go up 400 at a time with progress; `undo_import_batch` removes exactly the players the import ADDED (stamped `players.import_batch_id`), leaves the ones it matched, and keeps — and names — any child a family has since claimed, who has registered or paid, or whom anything else refers to; the last five imports on the import screen, each undoable until it has been; both logged in the activity log. Guardians stay out of the import (the contacts rule). `setup_progress` grows to the brief's steps: Someone in front of every squad (a coach or a team manager; "2 of 14 squads with nobody yet"), Grounds, Invite families ("38 of 120 players have a family in the app"), and in club mode Streams and age groups and Committee roles; the five that mark setup complete are unchanged. `club_health(p_academy)` — families joined per squad (worst first), squads with nobody in front of them, Working With Children Checks by state (the board's words, counted), PlayFootball not done, the setup count — for owners, admins and whoever `may_run_club('club')` (President, Secretary); a parent and a coach get null. `/admin/health` (four numbers, then a card per line, each a tap from the screen that fixes it); a Club health row on the hub behind the `club_health` switch (SIMPLICITY.md). | test-rls 201 (a batch with a squad per row, a wrong squad reported, undo removes exactly what it added, health is the staff's not a parent's, the new steps — all rolled back on purpose); `scripts/test-getting-live.mjs` (1,200 rows in three calls on one batch into two throwaway squads, 600 each; the same ten again matched not doubled; another club's squad a problem; health with the two squads listed as nobody's and worst-first; a parent and a coach get nothing; the setup steps; undo keeps the one child a family claimed and removes 1,199, refuses a second undo and a parent; the screens at 375px light/dark incl. a CSV through the real importer — Squad suggested, "Nowhere FC" a problem, ten added, Undo this import; the demo as it was) on dev |
 | **A family claims their child from the roster** (10 Nov; 0248, applied to dev) | **Done** (the last of Big Club Mode item 5 that keeps the contacts rule: guardians never come in by import — 1,500 families come in one at a time through the squad's code, and must not add 1,500 duplicate children doing it). The join form asks for each child's name AND birthday (one row per child, "Add another"; "as the club has them, so they are matched to the roster rather than added twice"); the request keeps them as `join_requests.children` jsonb beside `children_names` (older clients still send bare names; a birthday that cannot be one is refused with the child's name); approval finds the child already on the roster by name and birthday — anywhere in the club, the link's squad preferred, a child on no squad put on the link's — and only then makes a new record, with the birthday. Without a birthday the old rule holds (a name within the squad). **Printable sheet** `/join/sheet/<code>`: the squad, the code large, the QR, the three steps (incl. the birthdays line), black on white for paper, "Print a sheet for the noticeboard" on the team's link panel. **Not built, on purpose: coach/staff join links by role.** The clearance gate (0120) refuses a coach membership or squad place without a current WWCC, and a clearance needs a profile that a join request does not have until it is approved — so a self-serve coach link needs a pending-coach state first (noted under Phase 2). Coaches keep coming in through Invites. | `scripts/test-claim-child.mjs` (over HTTP: a wrong birthday refused naming the child; three children — one on the squad spelt differently, one on no squad, one new — approved: guardian of three, no duplicate, the squadless child put on the squad, the new one made with the birthday; an older client's bare names still match within the squad; the join form's rows and Add another at 375px light/dark; the sheet with code, QR and the birthdays step); join-flow, adult-player, self-onboarding green on dev |
+| **Deploy hygiene** (Joey, 10 Nov) | **Done on our side; two tokens for Joey to rotate (NEEDS JOEY #25).** Confirmed: the 9 Nov deploy's local artefact held `.netlify/functions-internal/___netlify-server-handler/.env.local` with the tools-only `SUPABASE_ACCESS_TOKEN` and `NETLIFY_AUTH_TOKEN` and every runtime secret — Next's standalone output copies the project's env files so the server can read them at runtime, and the Netlify runtime ships that output. Netlify's own environment held only the four public variables and `NODE_VERSION`, so the live site was reading its secrets out of the copied file. Removed the artefact. **`scripts/deploy.mjs`** (`npm run deploy` builds and scans, uploads nothing; `npm run deploy:prod` uploads): audits Netlify's production environment against the allow-list of variables the app reads (abort on a missing required one or a tools-only one present), refuses while the dev server holds :3000 (the build shares `.next`), cleans the old output, moves every env file into `.deploy-hidden/` for the build (restored in `finally` and on SIGINT), runs `netlify build --context production` with a minimal process environment (PATH, HOME, the token, the site id), then **`scripts/check-bundle-secrets.mjs`** fails on any `.env*` file in `.netlify`/`.next`, any value of a non-public local variable (12+ chars), or any tools-only `NAME=` assignment — only then `netlify deploy --prod --no-build`. `--sync-env` copies the runtime allow-list from `.env.local` into Netlify (`--secret --context production`; `NEXT_PUBLIC_SITE_URL` set to the site, never localhost; tools-only never): run once today — 11 variables set. The three `TWILIO_*` lines are empty locally (#24). CLAUDE.md Deployment rule gains "Deploy hygiene"; `.deploy-hidden/` gitignored. | the scanner on the 9 Nov artefact: both tokens' values and the env file found (before removal); on the current tree: clean. A dry run of the whole script (10 Nov, 21:25 Sydney): Netlify has every required and runtime variable; `.env.local` and `.env.before-restore.local` hidden; `netlify build --context production` 17 s; the scan of `.netlify` and `.next` found no env file, none of 9 secret values, no tools-only assignment; nothing uploaded. The server handler built this way has no `.env*` file. Negative test: a planted `.env.local` carrying the token under `.netlify/functions-internal` fails the scanner (exit 1, named by file and variable) |
 
 ### Deploys
 
@@ -828,6 +839,45 @@ payouts hit on 3 Nov). Three ways round it:
   It works with Stripe, but it puts Squadroom in the flow of funds and on
   the hook for disputes — the opposite of the 30 Oct rule.
 Say A, B or C (or "not yet"). Nothing is built until you do.
+
+**24. Twilio Verify on the live site (9 Nov, written up 10 Nov).** The
+three `TWILIO_*` lines in `.env.local` are empty, so the texted two-step
+code is never sent anywhere (demo and placeholder accounts show it on
+screen; a real owner who turns two-step on gets the emailed code, which
+waits on Resend, #19). When you have them: fill `TWILIO_ACCOUNT_SID`,
+`TWILIO_AUTH_TOKEN` and `TWILIO_VERIFY_SERVICE_SID` in `.env.local` and run
+`node scripts/deploy.mjs --sync-env` so Netlify has them (secret, production
+context) before the next deploy.
+
+**25. Rotate two tokens — the 9 Nov deploy carried `.env.local` (10 Nov).**
+The 9 Nov deploy bundled `.env.local` into `.netlify/functions-internal`
+(Next's standalone output copies the project's env files; the Netlify
+runtime ships them), so every secret on this laptop went up with the app,
+including the two only our tools use. Fixed on our side on 10 Nov
+(`scripts/deploy.mjs` + `scripts/check-bundle-secrets.mjs`, CLAUDE.md
+"Deploy hygiene"): the build now runs with the env files hidden, the bundle
+is scanned for any env file, any local secret value and any tools-only
+assignment, and nothing uploads on a hit; the runtime variables now live in
+Netlify's environment (secret, production context). Please:
+
+1. **Rotate `SUPABASE_ACCESS_TOKEN`** (Supabase → Account → Access tokens:
+   revoke the current one, make a new one) and put it in `.env.local`.
+2. **Rotate `NETLIFY_AUTH_TOKEN`** (Netlify → User settings → Applications →
+   Personal access tokens: delete the current one, make a new one) and put
+   it in `.env.local`.
+3. Your call, same reason: the runtime secrets were in that bundle too —
+   `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project settings → API keys),
+   `ANTHROPIC_API_KEY`, the Stripe **test** keys, `PUSH_WAKE_SECRET`,
+   `VAPID_PRIVATE_KEY`. The bundle was only ever readable by someone with
+   access to the Netlify account, not by the public. If you rotate any of
+   them, put the new value in `.env.local` and run
+   `node scripts/deploy.mjs --sync-env` so Netlify has it too
+   (`PUSH_WAKE_SECRET` also needs `node scripts/configure-push-wake.mjs`).
+4. One question: is `STRIPE_WEBHOOK_SECRET` in `.env.local` the secret of the
+   dashboard endpoint for `squadroom-dev.netlify.app`, or the local
+   `stripe listen` one? The live site has been using whatever is in the
+   file; if it is the listener's, live webhooks have been failing their
+   signature check.
 
 **1. Stripe test key — DONE 3 Nov.** Joey pasted the key into chat rather
 than the file; it is in `.env.local` now and nowhere else, but a key that

@@ -81,6 +81,22 @@ one and is meant to reach hundreds of academies.
   NEEDS JOEY and the milestone's deploy waits.
   - Pushing to GitHub is not deploying. The remote is a backup; production
     moves only by the rule above.
+  - **Deploy hygiene (Joey, 10 Nov 2026).** The 9 Nov deploy bundled
+    `.env.local` into `.netlify/functions-internal` — Next's standalone
+    output copies the project's env files for the server to read at runtime
+    and the Netlify runtime ships them — so every secret on the laptop,
+    including the tools-only `SUPABASE_ACCESS_TOKEN` and
+    `NETLIFY_AUTH_TOKEN`, went up with the app. **Deploy only through
+    `npm run deploy` (build + scan, uploads nothing) and `npm run
+    deploy:prod` (`scripts/deploy.mjs`).** It hides every env file for the
+    build so the only variables are Netlify's, scans the bundle for any env
+    file, any local secret value and any tools-only assignment
+    (`scripts/check-bundle-secrets.mjs`), and refuses to upload on a hit.
+    The app's runtime variables live in Netlify's environment settings
+    (`node scripts/deploy.mjs --sync-env` copies the allow-list from
+    `.env.local`, with `NEXT_PUBLIC_SITE_URL` set to the site, never
+    localhost); tools-only secrets are never set there and never in a
+    build. Never run `netlify deploy --build` by hand.
 
 - **Session logging (Joey, 2 Nov 2026).** Whenever a session stops, record
   in `docs/NIGHT_LOG.md` **when it stopped and why**: finished, waiting on
