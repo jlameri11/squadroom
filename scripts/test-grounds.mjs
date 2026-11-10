@@ -179,8 +179,8 @@ try {
       const { context, page } = await open(headOf, '/admin/venues', `[data-venue="${venue.id}"]`, 1280, 900)
       await page.$eval(`[data-venue="${venue.id}"]`, (b) => b.click())
       await page.waitForSelector('[data-ground-slots]', { timeout: 30000 }).catch(() => null)
-      const grid = await page.$eval('[data-ground-slots] .lg\\:block', (e) => getComputedStyle(e).display !== 'none').catch(() => false)
-      grid ? ok('at laptop width: pitches down, the week across') : bad('no week grid at 1280px')
+      const wide = await page.$eval('[data-ground-slots]', (e) => e.innerText.replace(/\s+/g, ' ')).catch(() => '')
+      wide.includes('Zz Slots U12') && wide.includes('Zz Slots U13') ? ok('at laptop width the same list, both squads') : bad(`week at 1280px: ${wide.slice(0, 160)}`)
       if (SHOTS) await page.screenshot({ path: '.shots/grounds-week-laptop.png', fullPage: true })
       await context.close()
     }

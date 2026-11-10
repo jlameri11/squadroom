@@ -10,23 +10,16 @@ type Week = { venue: { id: string; name: string }; pitches: Pitch[] }
 type Closed = { sessions: number; titles: string[]; games: number; could_not: { competition: string; why: string }[]; ask_the_league: { competition: string; organiser: string; games: number }[] }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 function clock(t: string) {
   const [h, m] = t.split(':').map(Number)
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
 }
-function plus(t: string, mins: number) {
-  const [h, m] = t.split(':').map(Number)
-  const total = h * 60 + m + mins
-  return clock(`${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`)
-}
 
 /**
  * A ground's week (Big Club Mode item 8; 0250): which squad trains on
- * which pitch when — the slots every weekly series on this ground holds.
- * On a phone, a list per pitch; on a laptop, pitches down and the week
- * across. And "Close ground": one date, one reason, every session here
+ * which pitch when — the slots every weekly series on this ground holds,
+ * a list per pitch. And "Close ground": one date, one reason, every session here
  * called off and every family told through the cancellation trigger; games
  * in competitions the club runs postponed; games another league holds
  * here named for the club to tell them.
@@ -83,8 +76,9 @@ export function GroundWeek({ venueId, academyId, canEdit }: { venueId: string; a
             <p className="mt-2 text-sm text-ink-2">No weekly training on this ground yet. Add training from Fixtures and pick a pitch.</p>
           ) : (
             <>
-              {/* Phone: a list per pitch. */}
-              <ul className="mt-2 flex flex-col gap-2 lg:hidden">
+              {/* A list per pitch, at every width: the admin shell is a phone's
+                  width on a laptop too, and seven columns in it only scroll. */}
+              <ul className="mt-2 flex flex-col gap-2">
                 {week.pitches.map((p) => (
                   <li key={p.id} className="text-sm">
                     <span className="font-semibold">{p.name}</span>
@@ -94,7 +88,7 @@ export function GroundWeek({ venueId, academyId, canEdit }: { venueId: string; a
                     ) : (
                       <span className="mt-1 flex flex-wrap gap-1.5">
                         {p.slots.map((s) => (
-                          <span key={s.series_id} className="pill" data-slot-chip>
+                          <span key={s.series_id} className="pill" style={{ background: 'var(--surface-2)', color: 'var(--ink)' }} data-slot-chip>
                             {s.days.map((d) => DAYS[d]).join('/')} {clock(s.at_time)} · {s.team ?? s.title}
                           </span>
                         ))}
@@ -103,35 +97,6 @@ export function GroundWeek({ venueId, academyId, canEdit }: { venueId: string; a
                   </li>
                 ))}
               </ul>
-              {/* Laptop: pitches down, the week across. */}
-              <div className="mt-2 hidden overflow-x-auto lg:block">
-                <div className="grid min-w-[56rem] text-xs" style={{ gridTemplateColumns: '9rem repeat(7, minmax(0, 1fr))' }}>
-                  <span className="pb-1 text-ink-3">Pitch</span>
-                  {ORDER.map((d) => <span key={d} className="pb-1 text-ink-3">{DAYS[d]}</span>)}
-                  {week.pitches.map((p) => (
-                    <div key={p.id} className="contents">
-                      <span className="border-t py-2 pr-2 font-semibold" style={{ borderColor: 'var(--line-2)' }}>
-                        {p.name}{p.size !== 'full' && <span className="block font-normal text-ink-3">{p.size}</span>}
-                      </span>
-                      {ORDER.map((d) => {
-                        const here = p.slots.filter((s) => s.days.includes(d)).sort((a, b) => a.at_time.localeCompare(b.at_time))
-                        const hours = p.hours.find((h) => h.weekday === d)
-                        return (
-                          <span key={d} className="border-t py-2 pr-1" style={{ borderColor: 'var(--line-2)' }}>
-                            {here.map((s) => (
-                              <span key={s.series_id} className="mb-1 block rounded-md px-1.5 py-1" style={{ background: 'var(--surface-2)' }}>
-                                <b>{clock(s.at_time)}–{plus(s.at_time, s.duration_mins)}</b>
-                                <span className="block truncate">{s.team ?? s.title}</span>
-                              </span>
-                            ))}
-                            {hours && <span className="block text-ink-3">open {clock(hours.opens)}–{clock(hours.closes)}</span>}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
             </>
           )}
         </section>
