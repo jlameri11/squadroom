@@ -101,6 +101,7 @@ export function AcademyLoader() {
           twoStepRequired={(academy as { two_step_required?: boolean }).two_step_required}
           clubMode={(academy as { club_mode?: boolean }).club_mode}
           miniroosScores={(academy as { miniroos_scores?: boolean }).miniroos_scores}
+          photoRequired={(academy as { photo_required?: boolean }).photo_required}
         />
         </>
       ) : (

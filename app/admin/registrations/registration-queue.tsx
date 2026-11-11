@@ -26,6 +26,8 @@ type Row = {
   decision_note: string | null
   existing_player_id: string | null
   spots_left: number | null
+  /** 0263: the registration photo, in the private bucket, until approved. */
+  photo_path?: string | null
   // R-18
   ffa_number: string | null
   fifa_id: string | null
@@ -65,6 +67,23 @@ export function RegistrationQueue() {
   const [tab, setTab] = useState<'pending' | 'decided'>('pending')
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([])
   const [open, setOpen] = useState<string | null>(null)
+  // 0263: the open request's photo, by a short signed link the bucket's
+  // rules allow the club's staff and nobody else.
+  const [photos, setPhotos] = useState<Record<string, string>>({})
+  useEffect(() => {
+    if (!open) return
+    const row = (rows ?? []).find((r) => r.request_id === open)
+    if (!row?.photo_path || photos[open]) return
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().storage.from('player-photos').createSignedUrl(row.photo_path!, 600)
+      if (live && data?.signedUrl) setPhotos((p) => ({ ...p, [open]: data.signedUrl }))
+    })()
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
   const [team, setTeam] = useState<Record<string, string>>({})
   const [note, setNote] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
@@ -512,6 +531,17 @@ export function RegistrationQueue() {
                       )}
                     </dl>
 
+                    {r.photo_path && (
+                      <div className="mt-2 flex items-center gap-3" data-request-photo={photos[r.request_id] ? 'shown' : 'loading'}>
+                        {photos[r.request_id] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={photos[r.request_id]} alt="" className="h-24 w-[72px] rounded-md object-cover" style={{ border: '1px solid var(--line)' }} />
+                        ) : (
+                          <div className="h-24 w-[72px] rounded-md" style={{ background: 'var(--surface-2)' }} />
+                        )}
+                        <span className="text-xs text-ink-3">The photo for the card and the referee&apos;s sheet. Only the club sees it until you accept.</span>
+                      </div>
+                    )}
                     {Object.entries(r.answers ?? {}).length > 0 && (
                       <ul className="mt-2 flex flex-col gap-0.5 text-sm">
                         {Object.entries(r.answers ?? {}).map(([k, v]) => (

@@ -7,8 +7,8 @@ hourly; Joey says when the next deploy is.
 | Gap | State |
 |---|---|
 | 1. Pay timing per program | **Done** — 0262, `/api/register/pay`, `lib/stripe/refund.ts`; test-rls 214, `test-pay-now` (Stripe test mode) |
-| 2. Photo step | next |
-| 3. Active & Creative Kids voucher | queued |
+| 2. Photo step | **Done** — 0263, `/api/register/photo`, `academies.photo_required` (Settings → Club); test-rls 215, `test-registration-photo` |
+| 3. Active & Creative Kids voucher | next |
 | 4. Family dashboard | queued |
 | 5. Find a club | queued |
 | 6. Register as | queued |

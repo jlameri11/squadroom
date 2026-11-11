@@ -29,6 +29,7 @@ export type Database = {
           miniroos_scores: boolean
           name: string
           overdue_grace_days: number
+          photo_required: boolean
           plan: string
           playfootball_fees_disclosed_at: string | null
           playfootball_fees_disclosed_season: string | null
@@ -58,6 +59,7 @@ export type Database = {
           miniroos_scores?: boolean
           name: string
           overdue_grace_days?: number
+          photo_required?: boolean
           plan?: string
           playfootball_fees_disclosed_at?: string | null
           playfootball_fees_disclosed_season?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           miniroos_scores?: boolean
           name?: string
           overdue_grace_days?: number
+          photo_required?: boolean
           plan?: string
           playfootball_fees_disclosed_at?: string | null
           playfootball_fees_disclosed_season?: string | null
@@ -7360,6 +7363,7 @@ export type Database = {
           id: string
           official_confirmed_at: string | null
           official_confirmed_by: string | null
+          photo_path: string | null
           player_id: string | null
           profile_id: string | null
           program_id: string
@@ -7389,6 +7393,7 @@ export type Database = {
           id?: string
           official_confirmed_at?: string | null
           official_confirmed_by?: string | null
+          photo_path?: string | null
           player_id?: string | null
           profile_id?: string | null
           program_id: string
@@ -7418,6 +7423,7 @@ export type Database = {
           id?: string
           official_confirmed_at?: string | null
           official_confirmed_by?: string | null
+          photo_path?: string | null
           player_id?: string | null
           profile_id?: string | null
           program_id?: string
@@ -10430,6 +10436,7 @@ export type Database = {
           guardian_name: string
           guardian_phone: string
           official_confirmed_at: string
+          photo_path: string
           program_id: string
           program_name: string
           request_id: string

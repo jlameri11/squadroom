@@ -23,6 +23,7 @@ export function AcademySettings({
   twoStepRequired,
   clubMode,
   miniroosScores = false,
+  photoRequired = false,
 }: {
   academyId: string
   dmPolicy: string
@@ -46,6 +47,8 @@ export function AcademySettings({
   clubMode?: boolean
   /** 0251: MiniRoos (U5–U11) keep no score and no ladder unless the club turns this on. */
   miniroosScores?: boolean
+  /** 0263: a passport-style photo with every registration. */
+  photoRequired?: boolean
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -60,6 +63,7 @@ export function AcademySettings({
   const [feesSeason, setFeesSeason] = useState(feesDisclosedSeason)
   const [blockOverdue, setBlockOverdue] = useState(blockRsvpWhenOverdue)
   const [miniroos, setMiniroos] = useState(miniroosScores)
+  const [photoReq, setPhotoReq] = useState(photoRequired)
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
@@ -367,6 +371,29 @@ export function AcademySettings({
             data-miniroos-scores
           />
           Show scores for MiniRoos (U5–U11) club games
+        </label>
+      </section>
+
+      {/* 0263: the registration photo. */}
+      <section data-photo-required-section>
+        <h2 className="font-semibold">Registration photo</h2>
+        <p className="mt-0.5 text-sm text-ink-2">
+          The form asks for a passport-style photo (face in view, no hat or sunglasses, recent). It stays private to the
+          club until you accept the registration; then it is on the player card and the referee&apos;s team sheet. Off,
+          the photo is optional.
+        </p>
+        <label className="mt-2 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={photoReq}
+            disabled={busy}
+            onChange={async (e) => {
+              setPhotoReq(e.target.checked)
+              await update({ photo_required: e.target.checked } as unknown as Patch)
+            }}
+            data-photo-required
+          />
+          A photo is required to register
         </label>
       </section>
 

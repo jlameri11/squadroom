@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   const { data: req } = await supabase
     .from('registration_requests')
     .select(
-      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self'
+      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path'
     )
     .eq('id', requestId)
     .maybeSingle()
@@ -56,6 +56,15 @@ export async function POST(request: Request) {
   const admin = createAdminClient()
   const now = new Date().toISOString()
 
+  // 0263: a club that requires a photo does not approve without one — the
+  // family adds it from the same page on their phone.
+  if (decision === 'approve' && !req.photo_path) {
+    const { data: club } = await admin.from('academies').select('photo_required').eq('id', req.academy_id).maybeSingle()
+    if (club?.photo_required) {
+      return NextResponse.json({ error: `${req.child_name} has no photo yet, and the club requires one. Ask the family to add it from their registration page, then approve.` }, { status: 422 })
+    }
+  }
+
   if (decision === 'decline') {
     // Declining creates nothing. A family who was turned away must not be
     // left with an account at a club that said no.
@@ -66,8 +75,11 @@ export async function POST(request: Request) {
         decided_by: auth.user.id,
         decided_at: now,
         decision_note: note?.trim() || null,
+        // 0263: a photo the club will not use is not kept.
+        photo_path: null,
       })
       .eq('id', requestId)
+    if (req.photo_path) await admin.storage.from('player-photos').remove([req.photo_path])
     // 0262: a pay-now registration that was paid is refunded in full, now,
     // without anyone tapping. The row is written first, so a Stripe that is
     // down leaves a refund the Treasurer sees as "requested", never nothing.
@@ -227,6 +239,16 @@ export async function POST(request: Request) {
       },
       { onConflict: 'player_id,profile_id' }
     )
+  }
+
+  // 0263: the photo moves to the player's own folder, where 0146's rules
+  // apply — the family, the club, the league for the season, the opposition
+  // and the referee on match day.
+  if (req.photo_path && playerId) {
+    const ext = req.photo_path.split('.').pop() ?? 'jpg'
+    const dest = `${req.academy_id}/${playerId}/registration.${ext}`
+    const { error: moveErr } = await admin.storage.from('player-photos').move(req.photo_path, dest)
+    if (!moveErr) await admin.from('players').update({ photo_url: dest }).eq('id', playerId)
   }
 
   // 0262: a payment made on submit now belongs to the player it was for and

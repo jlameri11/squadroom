@@ -4587,6 +4587,65 @@ begin
     insert into rls_results values (214, 'pay timing: once accepted unless the club says now; on the public page; a parent cannot change it and the owner can; a lapsed paid pay-now request asks for its refund with no player', r214);
   end;
 
+  -- 0263. The photo: the public page says whether the club requires one; a
+  -- pending photo is the club's coaches' to see and not a parent's; the
+  -- referee of today's game sees the card of a player on its sheet and an
+  -- outsider sees nobody's. Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_slug text; v_off text; v_on text; v_path text; v_coach boolean; v_parent boolean;
+    v_comp uuid; v_home uuid; v_away uuid; v_fx uuid; v_ref uuid; v_sees boolean; v_outsider boolean;
+    r215 text := 'FAIL (never ran)';
+  begin
+    begin
+      select slug into v_slug from public.academies where id = ACAD_A;
+      v_off := public.public_programs(v_slug)->'academy'->>'photo_required';
+      update public.academies set photo_required = true where id = ACAD_A;
+      v_on := public.public_programs(v_slug)->'academy'->>'photo_required';
+      v_path := ACAD_A::text || '/pending/' || gen_random_uuid()::text || '.jpg';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      v_coach := app_private.may_see_photo(v_path);
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      v_parent := app_private.may_see_photo(v_path);
+      -- Today's game, Leo on the sheet, the parent appointed to referee it.
+      insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by)
+      values (ACAD_A, 'RLS Photo Gala', 'season', '2026', 'active', 'managed', 'participants', COACH) returning id into v_comp;
+      insert into public.competition_clubs (competition_id, academy_id, status, joined_at) values (v_comp, ACAD_A, 'active', now());
+      insert into public.competition_entries (competition_id, academy_id, team_id, display_name, division) values (v_comp, ACAD_A, U8, 'NRIFA U8', 'U8') returning id into v_home;
+      insert into public.competition_entries (competition_id, display_name, division) values (v_comp, 'Ravens U8', 'U8') returning id into v_away;
+      insert into public.fixtures (competition_id, division, round, home_entry_id, away_entry_id, starts_at, status, stage)
+      values (v_comp, 'U8', 'Round 1', v_home, v_away, now() + interval '2 hours', 'scheduled', 'group') returning id into v_fx;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.seed_entry_squad(v_home);
+      perform public.submit_match_sheet(v_fx, v_home,
+        (select jsonb_agg(jsonb_build_object('player_id', q.player_id, 'number', q.n, 'starting', true))
+           from (select s.player_id, row_number() over (order by s.player_id) as n from public.entry_squads s where s.entry_id = v_home) q));
+      execute 'reset role';
+      insert into public.referees (academy_id, profile_id, full_name, status) values (ACAD_A, PARENT, 'RLS Ref', 'active') returning id into v_ref;
+      insert into public.referee_appointments (academy_id, competition_id, fixture_id, referee_id, role, status, offered_at)
+      values (ACAD_A, v_comp, v_fx, v_ref, enum_first(null::public.referee_role), 'accepted', now());
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      v_sees := app_private.may_see_card(LEO);
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      v_outsider := app_private.may_see_card(LEO);
+      execute 'reset role';
+      r215 := case when v_off = 'false' and v_on = 'true' and v_coach and not v_parent
+                    and exists (select 1 from public.match_sheet_players sp join public.match_sheets s on s.id = sp.sheet_id where s.fixture_id = v_fx and sp.player_id = LEO)
+                    and v_sees and not v_outsider then 'PASS'
+                   else 'FAIL (public '||coalesce(v_off,'null')||'/'||coalesce(v_on,'null')||'; pending coach '||v_coach||' parent '||v_parent
+                        ||'; referee sees '||coalesce(v_sees::text,'null')||', outsider '||coalesce(v_outsider::text,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r215 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (215, 'the registration photo: the public page says whether it is required; a pending photo is the club''s to see and not a parent''s; the referee of today''s game sees the card of a player on its sheet, an outsider nobody''s', r215);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

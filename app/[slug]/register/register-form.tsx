@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ProgramSummary, money, type PublicProgram } from '../program-card'
 import { QuestionField, unanswered } from '@/components/question-field'
 import { clubThemeCss } from '@/lib/brand/colour'
+import { prepareImage } from '@/lib/adapters/images'
 
 type Program = PublicProgram
 
@@ -25,6 +26,8 @@ type Data = {
     primary_colour: string
     logo_url: string | null
     timezone: string
+    /** 0263: the club wants a passport-style photo with every registration. */
+    photo_required?: boolean
   }
   programs: Program[]
   consents: Consent[]
@@ -86,6 +89,10 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [chosen, setChosen] = useState<string | null>(null)
   const [sent, setSent] = useState<{ requestId: string; secret: string } | null>(null)
   const [status, setStatus] = useState<'pending' | 'approved' | 'declined' | null>(null)
+  // 0263: the photo, cropped and resized in the browser, sent once the
+  // request exists (it needs the request's secret), kept until then.
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [photoNote, setPhotoNote] = useState<string | null>(null)
   // 0262: back from Stripe with ?paid=1 — read after mount, so the server and
   // the first paint agree.
   const [paid, setPaid] = useState(false)
@@ -298,7 +305,8 @@ export function RegisterForm({ slug }: { slug: string }) {
     Boolean(guardianName.trim()) &&
     EMAIL_SHAPE.test(guardianEmail.trim()) &&
     missing.length === 0 &&
-    unansweredQs.length === 0
+    unansweredQs.length === 0 &&
+    (!data.academy.photo_required || Boolean(photo))
 
   async function submit() {
     if (!program) return
@@ -332,6 +340,11 @@ export function RegisterForm({ slug }: { slug: string }) {
     // The program too (0262), so a parent who comes back sees the right
     // "Pay now" for it.
     const saved = { requestId: body.requestId, secret: body.secret, programId: program.id }
+    // 0263: the photo rides after the request, with its secret.
+    if (photo) {
+      const up = await fetch('/api/register/photo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: saved.requestId, secret: saved.secret, image: photo }) })
+      if (!up.ok) setPhotoNote((await up.json().catch(() => ({}))).error ?? 'The photo did not go through — add it again below.')
+    }
     try {
       localStorage.setItem(KEY(slug), JSON.stringify(saved))
       localStorage.removeItem(DRAFT(slug))
@@ -499,6 +512,14 @@ export function RegisterForm({ slug }: { slug: string }) {
                 />
               </section>
 
+              {/* 0263: a passport-style photo — the player card and the referee's ID. */}
+              <section className="mt-5" data-photo-step={photo ? 'picked' : data.academy.photo_required ? 'required' : 'optional'}>
+                <span className="eyebrow">A photo of {forSelf ? 'you' : childName.split(' ')[0] || 'the child'}{data.academy.photo_required ? '' : ' (optional)'}</span>
+                <p className="mt-1.5 text-sm text-ink-2">Like a passport photo: face in full view, no hat or sunglasses, plain background, taken in the last six months. Only the club sees it until they accept; then it is on the player card and the referee&apos;s team sheet.</p>
+                <PhotoPicker value={photo} onChange={(v) => { setPhoto(v); setPhotoNote(null) }} tint={tint} ink={ink} />
+                {photoNote && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{photoNote}</p>}
+              </section>
+
               {(program.questions ?? []).length > 0 && (
                 <section className="mt-5">
                   <span className="eyebrow">{data.academy.name} asks</span>
@@ -605,6 +626,13 @@ export function RegisterForm({ slug }: { slug: string }) {
                     {childName}
                     {childDob ? `, born ${new Date(childDob + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
                   </dd>
+                  {photo && (
+                    <>
+                      <dt className="text-ink-3">Photo</dt>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <dd><img src={photo} alt="" className="h-20 w-[60px] rounded-md object-cover" style={{ border: '1px solid var(--line)' }} data-photo-review /></dd>
+                    </>
+                  )}
                   <dt className="text-ink-3">You</dt>
                   <dd>
                     {guardianName}
@@ -734,6 +762,54 @@ function Frame({
       )}
       <div className="p-5">{children}</div>
     </main>
+  )
+}
+
+/**
+ * 0263: the photo picker. Cropped to portrait and resized in the browser
+ * (lib/adapters/images.ts does the resize), so what goes up is small and
+ * the shape a card wants; the family sees exactly what the club will.
+ */
+function PhotoPicker({ value, onChange, tint, ink }: { value: string | null; onChange: (v: string | null) => void; tint: string; ink: string }) {
+  const [busy, setBusy] = useState(false)
+  async function pick(file: File | undefined) {
+    if (!file) return
+    setBusy(true)
+    try {
+      const { blob } = await prepareImage(file, { maxEdge: 900, quality: 0.82 })
+      const bitmap = await createImageBitmap(blob)
+      // Portrait, 3:4, from the middle — a passport crop.
+      const w = Math.min(bitmap.width, Math.round(bitmap.height * 0.75))
+      const h = Math.min(bitmap.height, Math.round(w / 0.75))
+      const canvas = document.createElement('canvas')
+      canvas.width = 600
+      canvas.height = 800
+      canvas.getContext('2d')!.drawImage(bitmap, (bitmap.width - w) / 2, (bitmap.height - h) / 2, w, h, 0, 0, 600, 800)
+      onChange(canvas.toDataURL('image/jpeg', 0.85))
+    } catch {
+      onChange(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="mt-2 flex items-center gap-3">
+      {value ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={value} alt="" className="h-28 w-[84px] flex-none rounded-lg object-cover" style={{ border: '1px solid var(--line)' }} data-photo-preview />
+      ) : (
+        <div className="grid h-28 w-[84px] flex-none place-items-center rounded-lg text-xs text-ink-3" style={{ border: '1px dashed var(--line)' }}>3:4</div>
+      )}
+      <div className="flex min-w-0 flex-col gap-2">
+        <label className="inline-block cursor-pointer rounded-xl px-4 py-2.5 text-center text-sm font-semibold" style={{ background: tint, color: ink }}>
+          {busy ? 'Reading…' : value ? 'Change photo' : 'Add a photo'}
+          <input type="file" accept="image/*" capture="user" className="sr-only" onChange={(e) => void pick(e.target.files?.[0])} data-photo-input />
+        </label>
+        {value && (
+          <button type="button" onClick={() => onChange(null)} className="text-left text-xs underline underline-offset-4 text-ink-2" data-photo-remove>Remove</button>
+        )}
+      </div>
+    </div>
   )
 }
 
