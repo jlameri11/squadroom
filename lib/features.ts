@@ -38,7 +38,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'trial_ratings', label: 'Trial ratings and grading', what: 'Coaches rate players privately at a trial (1–5 and a note); the coordinator pencils teams and publishes them in one message per family.' },
   { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — one family per duty per game, the fewest turns first, with swaps asked for in the chat.' },
   { key: 'team_creator', label: 'Team Creator', what: 'A captain registers a team for a social comp and teammates join with a code.', builtYet: false },
-  { key: 'blue_cards', label: 'Blue cards (sin bin)', what: 'Recorded on the match sheet with minutes, where the league uses them.', builtYet: false },
+  { key: 'blue_cards', label: 'Blue cards (sin bin)', what: 'Recorded on the match sheet with the minute shown and the minute back on, where a league turns them on in its discipline rules.' },
   { key: 'ladder_breakdown', label: 'Ladder breakdown', what: 'Tap a ladder row to see how every point was earned.', builtYet: false },
   { key: 'find_a_club', label: 'Find a club', what: 'A public page to search clubs by name or suburb and see their open programs.', builtYet: false },
   { key: 'card_fee_passthrough', label: 'Card-fee pass-through', what: 'Families pay the card processing fee, shown clearly before paying. Off by default.', builtYet: false },

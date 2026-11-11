@@ -7,6 +7,7 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { RespectPanel } from '@/components/respect-marks'
 import Link from 'next/link'
 import { DEFAULT_TZ } from '@/lib/time'
+import { useFeatures } from '@/lib/features'
 
 type SquadPlayer = { player_id: string; number: number | null; name: string; ineligible: string | null }
 type SheetPlayer = { player_id: string; number: number | null; starting: boolean; name: string }
@@ -91,9 +92,15 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
   const [view, setView] = useState<View | null | undefined>(undefined)
   const [side, setSide] = useState<'home' | 'away'>('home')
   const [error, setError] = useState<string | null>(null)
+  // 0258: blue cards where this league turned them on and its switch is on.
+  const [blueRule, setBlueRule] = useState<{ on: boolean; minutes: number }>({ on: false, minutes: 10 })
+  const [organiser, setOrganiser] = useState<string | null>(null)
+  const features = useFeatures(organiser)
+  const blue = { on: blueRule.on && features.on('blue_cards'), minutes: blueRule.minutes }
 
   const load = useCallback(async () => {
-    const { data, error } = await createClient().rpc('match_sheet_view', { p_fixture: fixtureId })
+    const supabase = createClient()
+    const { data, error } = await supabase.rpc('match_sheet_view', { p_fixture: fixtureId })
     if (error) {
       setView(null)
       return setError(error.message)
@@ -102,7 +109,14 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
     setView(v)
     // Open on the side this person manages.
     if (v.can_manage_away && !v.can_manage_home) setSide('away')
-  }, [fixtureId])
+    const [{ data: rules }, { data: comp }] = await Promise.all([
+      supabase.from('competition_discipline_rules').select('blue_cards, blue_minutes').eq('competition_id', competitionId).maybeSingle(),
+      supabase.from('competitions').select('organiser_id').eq('id', competitionId).maybeSingle(),
+    ])
+    const r = rules as unknown as { blue_cards?: boolean; blue_minutes?: number } | null
+    setBlueRule({ on: Boolean(r?.blue_cards), minutes: r?.blue_minutes ?? 10 })
+    setOrganiser(comp?.organiser_id ?? null)
+  }, [fixtureId, competitionId])
 
   useEffect(() => {
     ;(async () => {
@@ -224,6 +238,7 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
         sheet={sheet}
         events={view.events.filter((e) => e.entry_id === entryId)}
         canRecord={(canManage || canConfirm || official) && !closed}
+        blue={blue}
         onChanged={load}
         onError={setError}
       />
@@ -437,11 +452,13 @@ function SheetPanel({
 }
 
 function EventsPanel({
-  fixtureId, entryId, sheet, events, canRecord, onChanged, onError,
+  fixtureId, entryId, sheet, events, canRecord, onChanged, onError, blue,
 }: {
   fixtureId: string; entryId: string; sheet: Sheet | undefined
   events: View['events']; canRecord: boolean
   onChanged: () => Promise<void>; onError: (m: string | null) => void
+  /** 0258: whether this league uses blue cards, and how long the sin bin runs. */
+  blue: { on: boolean; minutes: number }
 }) {
   const [kind, setKind] = useState('goal')
   const [player, setPlayer] = useState('')
@@ -473,18 +490,21 @@ function EventsPanel({
         ) : (
           <ul className="flex flex-col gap-0.5 text-sm">
             {events.map((e) => (
-              <li key={e.id} className="flex items-center gap-2">
+              <li key={e.id} className="flex items-center gap-2" data-match-event={e.kind}>
                 <span className="w-8 flex-none tabular-nums text-ink-3">{e.minute != null ? `${e.minute}'` : ''}</span>
                 <span className="flex-none">{KIND_LABEL[e.kind] ?? e.kind}{e.code ? ` ${e.code}` : ''}</span>
                 <span className="min-w-0 flex-1 truncate">{e.name ?? ''}</span>
+                {e.kind === 'blue' && e.minute != null && (
+                  <span className="flex-none text-xs tabular-nums text-ink-3" data-blue-back>back {e.minute + blue.minutes}&apos;</span>
+                )}
               </li>
             ))}
           </ul>
         )}
         {canRecord && sheet && (
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="Event">
-              {Object.entries(KIND_LABEL).map(([k, l]) => (<option key={k} value={k}>{l}</option>))}
+            <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="Event" data-event-kind>
+              {Object.entries(KIND_LABEL).filter(([k]) => k !== 'blue' || blue.on).map(([k, l]) => (<option key={k} value={k}>{k === 'blue' ? `${l} (${blue.minutes} min)` : l}</option>))}
             </select>
             <select value={player} onChange={(e) => setPlayer(e.target.value)} className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }} aria-label="Player">
               <option value="">Player…</option>
@@ -497,9 +517,10 @@ function EventsPanel({
                 {SANCTION_CODES[kind].map(([c, l]) => (<option key={c} value={c}>{c} · {l}</option>))}
               </select>
             )}
-            <button onClick={add} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
+            <button onClick={add} disabled={busy || (kind === 'blue' && !minute)} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-event-add>
               {busy ? '…' : 'Add'}
             </button>
+            {kind === 'blue' && !minute && <span className="basis-full text-xs text-ink-3">A blue card takes the minute it was shown — the sin bin runs from it.</span>}
           </div>
         )}
         {canRecord && !sheet && <p className="mt-2 text-xs text-ink-3">Submit the sheet first — events are recorded against players on it.</p>}

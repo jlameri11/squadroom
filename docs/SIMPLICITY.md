@@ -60,7 +60,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Trial ratings and grading (0249) | `trial_ratings` | the coaches at a trial rate; owners, admins and coordinators place and publish | the trial program's screen (Grading: ratings, notes, a squad per player, Publish teams) |
 | Team duty rotation (0252) | `duty_roster` | the squad's coach or manager rosters; families see their turn and ask for swaps | the team page (Duties), the game page (Duties), Admin → Rosters |
 | Team Creator (social comps) | `team_creator` | captains; the organiser approves | registration (Part C) |
-| Blue cards (sin bin) | `blue_cards` | the league's referees and match sheets | the match sheet (Part C) |
+| Blue cards (sin bin) (0258) | `blue_cards` | a league that turns them on in its discipline rules (with the minutes off); the teams, the referee and the organiser record them | the match sheet's events (🟦 Blue with the minute shown and "back 33'"; refused without a minute, and anywhere the league does not use them); the Discipline tab's rules and report |
 | Ladder breakdown | `ladder_breakdown` | anyone who sees the ladder | the ladder (Part C) |
 | Find a club | `find_a_club` | the public | `/clubs` (registration brief) |
 | Card-fee pass-through | `card_fee_passthrough` | families, shown before paying | checkout (registration brief) |

@@ -4248,6 +4248,78 @@ begin
     insert into rls_results values (209, 'a ban by the club: a parent cannot ban; the banned parent answers no training and posts nothing; a banned player is ineligible for the league''s sheet and refused from the lineup; a spectator is banned by name; the parent reads their own ban and their child''s, not the spectator''s; lifted, they answer again; logged and told', r209);
   end;
 
+  -- 0258. Blue cards: a league of NRIFA's own, a game with the U8s' sheet
+  -- in; a blue is refused while the league does not use them, refused
+  -- without a minute once it does, recorded with one; the report counts it
+  -- and carries the rule; the organiser's switch off refuses again.
+  -- Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    v_comp uuid; v_home uuid; v_away uuid; v_fx uuid; v_kid uuid; v_ev uuid;
+    v_off_refused boolean := false; v_off_msg text; v_no_minute boolean := false; v_report jsonb; v_view jsonb; v_switch_refused boolean := false;
+    r210 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by)
+      values (ACAD_A, 'RLS Blue Gala', 'season', '2026', 'active', 'managed', 'participants', COACH) returning id into v_comp;
+      insert into public.competition_clubs (competition_id, academy_id, status, joined_at) values (v_comp, ACAD_A, 'active', now()), (v_comp, ACAD_B, 'active', now());
+      insert into public.competition_entries (competition_id, academy_id, team_id, display_name, division) values (v_comp, ACAD_A, U8, 'NRIFA U8', 'U8') returning id into v_home;
+      insert into public.competition_entries (competition_id, academy_id, display_name, division) values (v_comp, ACAD_B, 'Ravens U8', 'U8') returning id into v_away;
+      insert into public.fixtures (competition_id, division, round, home_entry_id, away_entry_id, starts_at, status, stage)
+      values (v_comp, 'U8', 'Round 1', v_home, v_away, now() + interval '2 days', 'scheduled', 'group') returning id into v_fx;
+
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.seed_entry_squad(v_home);
+      select s.player_id into v_kid from public.entry_squads s where s.entry_id = v_home order by s.player_id limit 1;
+      perform public.submit_match_sheet(v_fx, v_home,
+        (select jsonb_agg(jsonb_build_object('player_id', q.player_id, 'number', q.n, 'starting', true))
+           from (select s.player_id, row_number() over (order by s.player_id) as n from public.entry_squads s where s.entry_id = v_home) q));
+      begin
+        perform public.record_match_event(v_fx, v_home, 'blue', v_kid, 23, null, null);
+      exception when others then v_off_refused := true; v_off_msg := sqlerrm;
+      end;
+      insert into public.competition_discipline_rules (competition_id, blue_cards, blue_minutes) values (v_comp, true, 10)
+      on conflict (competition_id) do update set blue_cards = true, blue_minutes = 10;
+      begin
+        perform public.record_match_event(v_fx, v_home, 'blue', v_kid, null, null, null);
+      exception when others then v_no_minute := true;
+      end;
+      v_ev := public.record_match_event(v_fx, v_home, 'blue', v_kid, 23, null, null);
+      v_report := public.discipline_report(v_comp);
+      v_view := public.match_sheet_view(v_fx);
+      execute 'reset role';
+      -- The organiser's switch off: no blue cards anywhere in its leagues.
+      insert into public.academy_features (academy_id, feature, enabled) values (ACAD_A, 'blue_cards', false)
+      on conflict (academy_id, feature) do update set enabled = false;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.record_match_event(v_fx, v_home, 'blue', v_kid, 40, null, null);
+      exception when others then v_switch_refused := true;
+      end;
+      execute 'reset role';
+
+      r210 := case when v_kid is not null and v_off_refused and v_off_msg like '%does not use blue cards%'
+                    and v_no_minute and v_ev is not null
+                    and (v_report->'rules'->>'blue_cards')::boolean and (v_report->'rules'->>'blue_minutes')::int = 10
+                    and exists (select 1 from jsonb_array_elements(v_report->'players') p where (p->>'player_id')::uuid = v_kid and (p->>'blues')::int = 1)
+                    and exists (select 1 from jsonb_array_elements(v_view->'events') e where e->>'kind' = 'blue' and (e->>'minute')::int = 23)
+                    and v_switch_refused then 'PASS'
+                   else 'FAIL (kid '||coalesce(v_kid::text,'null')||'; off refused '||v_off_refused||' ('||coalesce(left(v_off_msg,50),'')||'), no minute '||v_no_minute
+                        ||', ev '||coalesce(v_ev::text,'null')||'; rules '||coalesce(left((v_report->'rules')::text,120),'null')
+                        ||'; players '||coalesce(left((v_report->'players')::text,160),'null')
+                        ||'; events '||coalesce(left((v_view->'events')::text,120),'null')||'; switch refused '||v_switch_refused||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r210 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (210, 'blue cards: refused where the league does not use them, refused without the minute, recorded with it, counted by the report with the rule carried, and refused again with the organiser''s switch off', r210);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

@@ -644,8 +644,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     registration photo, item 1, moves into the registration brief, item 13.)
 
     **Progress (11 Nov 2026):** (2) bans — done, 0257, switch `bans`,
-    test-rls 209, `test-bans`. Next: (4) blue cards, (5) the registrations
-    CSV, (6) the ladder breakdown, then (3) Team Creator.
+    test-rls 209, `test-bans`. (4) blue cards — done, 0258, switch
+    `blue_cards`, test-rls 210, `test-blue-cards`. Next: (5) the
+    registrations CSV, (6) the ladder breakdown, then (3) Team Creator.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features

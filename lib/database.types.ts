@@ -1012,6 +1012,8 @@ export type Database = {
       }
       competition_discipline_rules: {
         Row: {
+          blue_cards: boolean
+          blue_minutes: number
           competition_id: string
           games_per_red: number
           games_per_yellow_suspension: number
@@ -1019,6 +1021,8 @@ export type Database = {
           yellows_per_suspension: number
         }
         Insert: {
+          blue_cards?: boolean
+          blue_minutes?: number
           competition_id: string
           games_per_red?: number
           games_per_yellow_suspension?: number
@@ -1026,6 +1030,8 @@ export type Database = {
           yellows_per_suspension?: number
         }
         Update: {
+          blue_cards?: boolean
+          blue_minutes?: number
           competition_id?: string
           games_per_red?: number
           games_per_yellow_suspension?: number

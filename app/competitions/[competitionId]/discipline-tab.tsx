@@ -30,8 +30,9 @@ type Row = {
   cards?: { kind: string; code: string | null; minute: number | null; fixture_id: string; game: string | null }[]
   suspensions: Suspension[]
 }
+type Rules = { yellows_per_suspension: number; games_per_yellow_suspension: number; games_per_red: number; blue_cards: boolean; blue_minutes: number }
 type Report = {
-  rules: { yellows_per_suspension: number; games_per_yellow_suspension: number; games_per_red: number }
+  rules: Rules
   players: Row[]
 }
 
@@ -51,7 +52,7 @@ export function DisciplineTab({
   const [report, setReport] = useState<Report | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editingRules, setEditingRules] = useState(false)
-  const [rules, setRules] = useState({ yellows_per_suspension: 5, games_per_yellow_suspension: 1, games_per_red: 1 })
+  const [rules, setRules] = useState<Rules>({ yellows_per_suspension: 5, games_per_yellow_suspension: 1, games_per_red: 1, blue_cards: false, blue_minutes: 10 })
   const [busy, setBusy] = useState<string | null>(null)
   const [overturning, setOverturning] = useState<string | null>(null)
   const [note, setNote] = useState('')
@@ -105,6 +106,7 @@ export function DisciplineTab({
               {report.rules.yellows_per_suspension} yellows → {report.rules.games_per_yellow_suspension}{' '}
               {report.rules.games_per_yellow_suspension === 1 ? 'game' : 'games'} · a red → {report.rules.games_per_red}{' '}
               {report.rules.games_per_red === 1 ? 'game' : 'games'}
+              {report.rules.blue_cards ? ` · blue cards: a ${report.rules.blue_minutes}-minute sin bin` : ' · no blue cards'}
             </span>
           </span>
           {isOrganiser && !editingRules && (
@@ -127,8 +129,17 @@ export function DisciplineTab({
                 <input type="number" min={1} max={20} value={rules[k]} onChange={(e) => setRules({ ...rules, [k]: Number(e.target.value) })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
               </label>
             ))}
+            {/* 0258: the sin bin, where this league uses it. */}
+            <label className="col-span-2 flex items-center gap-2">
+              <input type="checkbox" checked={rules.blue_cards} onChange={(e) => setRules({ ...rules, blue_cards: e.target.checked })} className="h-4 w-4" data-rule-blue-cards />
+              <span className="text-ink-2">Blue cards (a sin bin), recorded on the sheet with the minute</span>
+            </label>
+            <label>
+              <span className="text-ink-2">Minutes off</span>
+              <input type="number" min={2} max={30} value={rules.blue_minutes} disabled={!rules.blue_cards} onChange={(e) => setRules({ ...rules, blue_minutes: Number(e.target.value) })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums disabled:opacity-50" style={{ borderColor: 'var(--line)' }} data-rule-blue-minutes />
+            </label>
             <div className="col-span-3 flex gap-2">
-              <button onClick={saveRules} disabled={busy === 'rules'} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
+              <button onClick={saveRules} disabled={busy === 'rules'} className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-rules-save>Save</button>
               <button onClick={() => setEditingRules(false)} className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
             </div>
           </div>
