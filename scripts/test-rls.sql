@@ -2429,6 +2429,8 @@ begin
       -- 162. The U8 table, for Sam: the four U8 sides and not the U9s; the
       -- scores add up (NRFA 6 on +4, Hornsby 3, then Manly over Mosman on
       -- goals for with 1 point and −3 each); ours is marked.
+      -- 0251: U8 is MiniRoos, which keeps no table; the probe's club keeps scores (rolled back with the rest).
+      update public.academies set miniroos_scores = true where id = ACAD_A;
       perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
       execute 'set local role authenticated';
       v_t := public.division_table(U8);
@@ -3777,6 +3779,84 @@ begin
     end;
     execute 'reset role';
     insert into rls_results values (203, 'a training slot is refused on a taken pitch, on its half, and outside the pitch''s hours; a parent sets none; closing a ground calls off that ground''s sessions that day and no other''s', r203);
+  end;
+
+  -- 0251. Game day: MiniRoos keep no score in any reader; a recorded result
+  -- reaches the squad's chat; the team sheet is asked for the evening
+  -- before; the Saturday view is the club's runners' and not a parent's.
+  -- Rolled back on purpose.
+  declare
+    U8  constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    v_tz text; v_today date; v_e8 uuid; v_e12 uuid; v_tomorrow uuid;
+    v_res8 int; v_res12 int; v_refused boolean := false; v_msg int; v_ar jsonb; v_shown8 text; v_shown12 text;
+    v_sat jsonb; v_parent_sat jsonb; v_queued int; v_again int; v_res8_on int;
+    r204 text := 'FAIL (never ran)';
+  begin
+    begin
+      -- The demo club keeps MiniRoos scores (its U8 SPL results are part of the demo); the probe is of the default.
+      update public.academies set miniroos_scores = false where id = ACAD_A;
+      select coalesce(timezone, 'Australia/Sydney') into v_tz from public.academies where id = ACAD_A;
+      v_today := (now() at time zone v_tz)::date;
+      -- Two games this morning, played; one tomorrow for the sheet.
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at, venue, source)
+      values (ACAD_A, U8, 'match', 'RLS U8 game', 'Rls Rovers', now() - interval '2 hours', now() - interval '1 hour', 'RLS Park', 'manual') returning id into v_e8;
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at, venue, source)
+      values (ACAD_A, U12, 'match', 'RLS U12 game', 'Rls United', now() - interval '2 hours', now() - interval '1 hour', 'RLS Park', 'manual') returning id into v_e12;
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at, venue, source)
+      values (ACAD_A, U12, 'match', 'RLS tomorrow', 'Rls City', ((v_today + 1)::timestamp + time '09:00') at time zone v_tz, ((v_today + 1)::timestamp + time '10:00') at time zone v_tz, 'RLS Park', 'import') returning id into v_tomorrow;
+      update public.events set our_score = 2, their_score = 1 where id = v_e8; -- a score that got in somehow
+
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_res8 from public.event_result(v_e8);
+      begin
+        perform public.set_event_result(v_e8, 3, 0, null, null);
+      exception when others then v_refused := sqlerrm like '%MiniRoos%';
+      end;
+      perform public.set_event_result(v_e12, 3, 1, 'A good one', null);
+      select count(*) into v_res12 from public.event_result(v_e12);
+      select count(*) into v_msg from public.messages m join public.channels c on c.id = m.channel_id
+       where c.team_id = U12 and c.type = 'team' and m.event_id = v_e12 and m.body like '🏁 Full time: 3–1%';
+      v_ar := public.academy_results(ACAD_A);
+      select x->>'scores_shown' into v_shown8 from jsonb_array_elements(v_ar) x where (x->>'team_id')::uuid = U8;
+      select x->>'scores_shown' into v_shown12 from jsonb_array_elements(v_ar) x where (x->>'team_id')::uuid = U12;
+      v_sat := public.saturday_view(ACAD_A, v_today);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_parent_sat := public.saturday_view(ACAD_A, v_today);
+      execute 'reset role';
+      -- The sheet, the evening before: at six tonight, once.
+      v_queued := public.queue_team_sheet_reminders((v_today::timestamp + time '18:00') at time zone v_tz);
+      v_again := public.queue_team_sheet_reminders((v_today::timestamp + time '19:00') at time zone v_tz);
+      -- The club turns MiniRoos scores on: the U8 result is readable.
+      update public.academies set miniroos_scores = true where id = ACAD_A;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_res8_on from public.event_result(v_e8);
+      execute 'reset role';
+      r204 := case when v_res8 = 0 and v_refused and v_res12 = 1 and v_msg = 1
+                    and v_shown8 = 'false' and v_shown12 = 'true'
+                    and (v_sat->'counts'->>'games')::int >= 2
+                    and exists (select 1 from jsonb_array_elements(v_sat->'games') g where (g->>'event_id')::uuid = v_e8 and (g->>'scores_shown')::boolean = false and g->>'ours' is null)
+                    and exists (select 1 from jsonb_array_elements(v_sat->'games') g where (g->>'event_id')::uuid = v_e12 and (g->>'ours')::int = 3 and (g->>'finished')::boolean)
+                    and v_parent_sat is null
+                    and v_queued >= 1 and v_again = 0
+                    and exists (select 1 from public.notification_queue n where n.kind = 'team_sheet_due' and (n.payload->>'event_id')::uuid = v_tomorrow and n.body like '%Dribl%')
+                    and v_res8_on = 1 then 'PASS'
+                   else 'FAIL (u8 result rows '||v_res8||', refused '||v_refused||', u12 rows '||v_res12||', chat '||v_msg
+                        ||', shown8 '||coalesce(v_shown8,'null')||', shown12 '||coalesce(v_shown12,'null')
+                        ||', saturday '||coalesce(left(v_sat::text, 160),'null')||', parent '||coalesce(v_parent_sat::text,'null')
+                        ||', queued '||v_queued||'/'||v_again||', u8 on '||v_res8_on||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r204 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (204, 'MiniRoos keep no score in any reader until the club turns scores on; a result reaches the squad''s chat; the team sheet is asked for once the evening before; the Saturday view is the runners'' and not a parent''s', r204);
   end;
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the

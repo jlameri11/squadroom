@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { EventDetail } from './event-detail'
+import { isMiniRoos } from '@/lib/age-group'
 
 export default async function EventPage(props: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await props.params
@@ -28,10 +29,10 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
       .eq('event_id', eventId),
     // The venue's timezone (the club's — every time on the page is in it,
     // never the server's UTC or the phone's), and our side for the hero.
-    supabase.from('academies').select('name, logo_url, timezone').eq('id', event.academy_id).maybeSingle(),
+    supabase.from('academies').select('name, logo_url, timezone, miniroos_scores').eq('id', event.academy_id).maybeSingle(),
     event.team_id
-      ? supabase.from('teams').select('name').eq('id', event.team_id).maybeSingle()
-      : Promise.resolve({ data: null as { name: string } | null }),
+      ? supabase.from('teams').select('name, age_group').eq('id', event.team_id).maybeSingle()
+      : Promise.resolve({ data: null as { name: string; age_group: string } | null }),
   ])
 
   const isCoach = Boolean(summary?.[0])
@@ -48,6 +49,8 @@ export default async function EventPage(props: { params: Promise<{ eventId: stri
           note: r.note,
         }))}
         isCoach={isCoach}
+        // 0251: a competition game keeps its score; a club game in MiniRoos (U5–U11) keeps none unless the club says so.
+        scoresShown={Boolean(event.fixture_id) || !team || !isMiniRoos(team.age_group) || Boolean(club?.miniroos_scores)}
         tz={club?.timezone || 'Australia/Sydney'}
         us={{ club: club?.name ?? 'Us', team: team?.name ?? null, logo: club?.logo_url ?? null }}
         summary={summary?.[0] ?? null}

@@ -20,9 +20,10 @@ export type FeatureKey =
   | 'training_slots' | 'trial_ratings' | 'duty_roster' | 'team_creator' | 'blue_cards' | 'ladder_breakdown'
   | 'find_a_club' | 'card_fee_passthrough' | 'active_kids' | 'scheduled_messages' | 'digest'
   | 'helpers' | 'match_photos' | 'kit' | 'match_video' | 'respect_marks' | 'polls' | 'scan'
-  | 'club_health'
+  | 'club_health' | 'game_day'
 
 export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?: false }[] = [
+  { key: 'game_day', label: 'Game day (the Saturday view)', what: 'Every game today across the club by ground: called off, live, finished, squads short, nobody in charge, referees and team sheets missing.' },
   { key: 'club_health', label: 'Club health', what: 'One card for the committee: families joined per squad, squads with nobody in front of them, checks running out, PlayFootball not done.' },
   { key: 'player_of_match', label: 'Player of the Match', what: 'The coach picks one after a game; the squad’s families see it.' },
   { key: 'sponsors', label: 'Sponsors', what: 'Your sponsors on the match centre and the share cards. Squadroom takes nothing.' },

@@ -25,3 +25,16 @@ export function isPlausibleDob(dob: string): boolean {
   const hundred = new Date(now.getFullYear() - 100, now.getMonth(), now.getDate())
   return d <= now && d > hundred
 }
+
+/**
+ * MiniRoos (U5–U11): the small-sided years. A club game in these age groups
+ * keeps no score and no ladder unless the club turns scores on (0251,
+ * academies.miniroos_scores); the database applies the rule, this is for
+ * the screens that decide what to offer.
+ */
+export function isMiniRoos(ageGroup: string | null | undefined): boolean {
+  const m = (ageGroup ?? '').match(/^U(\d{1,2})$/)
+  if (!m) return false
+  const n = Number(m[1])
+  return n >= 5 && n <= 11
+}

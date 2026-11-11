@@ -96,7 +96,8 @@ export function LiveScore({ eventId }: { eventId: string }) {
   const shown = withWaiting(live, taps)
   const kickedOff = shown.kicked_off
   const finished = shown.finished
-  const score = shown.score
+  // 0251: MiniRoos keep no score — the database sends null; the goals are still cheered.
+  const score = (shown.score ?? null) as { ours: number; theirs: number } | null
   // Full names, as the database's ticker gives them, so a tap does not
   // change its name when the signal comes back.
   const nameOf = (id: string | null) => (id ? live.players.find((x) => x.id === id)?.name ?? null : null)
@@ -191,7 +192,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
       <div className="card p-3">
         <div className="flex items-center justify-center gap-4" data-live-score>
           <span className="display text-4xl tabular-nums" style={{ color: finished ? 'var(--ink)' : 'var(--brand-text)' }}>
-            {score.ours} – {score.theirs}
+            {score ? `${score.ours} – ${score.theirs}` : 'No score kept'}
           </span>
           {kickedOff && !finished && <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-no-ink" style={{ background: 'var(--no)' }}>Live</span>}
         </div>
@@ -253,7 +254,7 @@ export function LiveScore({ eventId }: { eventId: string }) {
             <span className="eyebrow">{picking === 'goal' ? 'Who scored?' : picking === 'yellow' ? 'A card' : picking === 'note' ? 'From the sideline' : 'Full time?'}</span>
             {picking === 'full_time' ? (
               <>
-                <h3 className="display text-lg leading-tight">{score.ours} – {score.theirs}{live.opponent ? ` v ${live.opponent}` : ''}</h3>
+                <h3 className="display text-lg leading-tight">{score ? `${score.ours} – ${score.theirs}` : 'Full time'}{live.opponent ? ` v ${live.opponent}` : ''}</h3>
                 <p className="mt-1 text-sm text-ink-2">{live.in_competition ? 'Posts full time to the chat. The official score goes on the match sheet.' : 'Posts full time to the chat, writes the result on the game and the goals into the stats.'}</p>
                 <div className="mt-4 flex gap-2">
                   <button onClick={() => tap('full_time')} disabled={busy} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-confirm-full-time>🏁 Full time</button>

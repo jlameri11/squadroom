@@ -234,8 +234,12 @@ AGM/committee papers.
   Training line, the ground's week on Venues, and `close_ground` (sessions
   called off and every family told; the club's own competitions postponed;
   another league's games named to pass on); switch `training_slots`.
-  test-rls 203; `test-grounds`. Next: game day (9), volunteers (10), safety
-  (11), the demo (14).
+  test-rls 203; `test-grounds`. **Item 9 done (0251):** MiniRoos keep no
+  score in any reader (`scores_shown`, a club setting to turn them on), a
+  result reaches the squad's chat, the team sheet is asked for the evening
+  before (Squadroom's or Dribl's, honestly), and `saturday_view` with
+  `/admin/saturday`; switch `game_day`. test-rls 204; `test-game-day`.
+  Next: volunteers (10), safety (11), the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

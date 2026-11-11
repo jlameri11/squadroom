@@ -59,6 +59,15 @@ console.log('\nRefreshing the demo\n')
   }
 }
 
+// --- MiniRoos scores -------------------------------------------------------
+// 0251: a club game in U5–U11 keeps no score unless the club turns scores
+// on. The demo is shown with the U8 SPL's results, so the demo club keeps
+// them on; a new club starts with them off.
+{
+  const { error } = await admin.from('academies').update({ miniroos_scores: true }).eq('id', NRIFA)
+  say(error ? `could not keep MiniRoos scores on: ${error.message}` : 'NRIFA keeps MiniRoos scores (the U8 SPL results are part of the demo)')
+}
+
 // --- families --------------------------------------------------------------
 // Restored first, because everything else depends on them. A parent with no
 // guardian link has no children, and therefore no RSVP buttons, no payment

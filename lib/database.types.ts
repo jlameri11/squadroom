@@ -26,6 +26,7 @@ export type Database = {
           fee_reminders: boolean
           id: string
           logo_url: string | null
+          miniroos_scores: boolean
           name: string
           overdue_grace_days: number
           plan: string
@@ -54,6 +55,7 @@ export type Database = {
           fee_reminders?: boolean
           id?: string
           logo_url?: string | null
+          miniroos_scores?: boolean
           name: string
           overdue_grace_days?: number
           plan?: string
@@ -82,6 +84,7 @@ export type Database = {
           fee_reminders?: boolean
           id?: string
           logo_url?: string | null
+          miniroos_scores?: boolean
           name?: string
           overdue_grace_days?: number
           plan?: string
@@ -9736,6 +9739,7 @@ export type Database = {
       queue_fee_reminders: { Args: never; Returns: number }
       queue_match_day_pushes: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
+      queue_team_sheet_reminders: { Args: { p_now?: string }; Returns: number }
       quote_payment: {
         Args: { p_player?: string; p_request: string }
         Returns: Json
@@ -10028,6 +10032,10 @@ export type Database = {
           status: Database["public"]["Enums"]["report_status"]
         }[]
       }
+      saturday_view: {
+        Args: { p_academy: string; p_date?: string }
+        Returns: Json
+      }
       scans_due_for_purge: {
         Args: never
         Returns: {
@@ -10044,6 +10052,7 @@ export type Database = {
         }
         Returns: string
       }
+      scores_shown: { Args: { p_team: string }; Returns: boolean }
       search_chat: {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
         Returns: Json

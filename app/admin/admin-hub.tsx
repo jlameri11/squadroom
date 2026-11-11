@@ -193,6 +193,8 @@ export function AdminHub() {
               {/* Big Club Mode item 5/12 (0247): the club's health in one
                   card — switchable, for a small academy that does not need it. */}
               <WhenOn feature="club_health"><Row href="/admin/health" label="Club health" hint="Families joined per squad, squads with nobody in front of them, checks running out, PlayFootball not done" /></WhenOn>
+              {/* Big Club Mode item 9 (0251): the club's Saturday in one place. */}
+              <WhenOn feature="game_day"><Row href="/admin/saturday" label="Game day" hint="Every game today by ground: called off, live, results, squads short, nobody in charge" /></WhenOn>
               <Row href="/admin/payments" label="Collect payments" hint="Fees and entries" />
               <Row href="/admin/members" label="Members" hint="And who invited whom" />
               {/* Big Club Mode (0236): several roles per person, each with a

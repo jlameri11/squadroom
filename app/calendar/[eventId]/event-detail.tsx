@@ -51,7 +51,7 @@ const CHOICES = [
  * page is the venue's (lib/time.ts), never the phone's or the server's.
  */
 export function EventDetail({
-  event, mine, isCoach, summary, roster, tz, us,
+  event, mine, isCoach, summary, roster, tz, us, scoresShown = true,
 }: {
   event: {
     id: string; academy_id: string; team_id: string | null; series_id: string | null; type: string; title: string
@@ -64,6 +64,8 @@ export function EventDetail({
   }
   mine: Mine[]
   isCoach: boolean
+  /** 0251: MiniRoos (U5–U11) keep no score unless the club turns scores on; the page decides from the squad and the club. */
+  scoresShown?: boolean
   summary: { going: number; maybe: number; out_count: number; no_reply: number } | null
   roster: RosterRow[]
   /** The venue's timezone: the club's (academies.timezone). */
@@ -314,14 +316,21 @@ export function EventDetail({
 
   const register = isCoach && <Register eventId={event.id} started={new Date(event.starts_at) <= new Date()} />
 
+  // 0251: MiniRoos keep no score — no result box, a line that says so.
   const result = !cancelled && (
-    <Result
-      eventId={event.id}
-      opponent={event.opponent}
-      isCoach={isCoach}
-      played={new Date(event.starts_at) <= new Date()}
-      inCompetition={Boolean(event.fixture_id)}
-    />
+    scoresShown ? (
+      <Result
+        eventId={event.id}
+        opponent={event.opponent}
+        isCoach={isCoach}
+        played={new Date(event.starts_at) <= new Date()}
+        inCompetition={Boolean(event.fixture_id)}
+      />
+    ) : (
+      <p className="mt-3 rounded-xl p-3 text-sm text-ink-2" style={{ background: 'var(--surface-2)' }} data-miniroos-note>
+        MiniRoos: no score is kept for this age group. The game, the goals and the photos still are.
+      </p>
+    )
   )
 
   if (!isGame) {

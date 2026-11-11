@@ -22,6 +22,7 @@ export function AcademySettings({
   contactEmail,
   twoStepRequired,
   clubMode,
+  miniroosScores = false,
 }: {
   academyId: string
   dmPolicy: string
@@ -43,6 +44,8 @@ export function AcademySettings({
   twoStepRequired?: boolean
   /** 0236: Big Club Mode — streams, committee roles and rosters; undefined until the column exists. */
   clubMode?: boolean
+  /** 0251: MiniRoos (U5–U11) keep no score and no ladder unless the club turns this on. */
+  miniroosScores?: boolean
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -56,6 +59,7 @@ export function AcademySettings({
   const thisSeason = String(new Date().getFullYear())
   const [feesSeason, setFeesSeason] = useState(feesDisclosedSeason)
   const [blockOverdue, setBlockOverdue] = useState(blockRsvpWhenOverdue)
+  const [miniroos, setMiniroos] = useState(miniroosScores)
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
@@ -342,6 +346,28 @@ export function AcademySettings({
             {ladder.length === 0 ? 'Turn discounts off' : 'Save discounts'}
           </button>
         )}
+      </section>
+
+      <section data-miniroos-section>
+        <h2 className="font-semibold">MiniRoos scores</h2>
+        <p className="mt-0.5 text-sm text-ink-2">
+          Off by default: a club game in U5–U11 keeps no score and no ladder — the goals are cheered in the chat,
+          the tally is not kept on screen. Competition games keep their own rule. Turn it on if your club keeps
+          MiniRoos scores.
+        </p>
+        <label className="mt-2 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={miniroos}
+            disabled={busy}
+            onChange={async (e) => {
+              setMiniroos(e.target.checked)
+              await update({ miniroos_scores: e.target.checked } as unknown as Patch)
+            }}
+            data-miniroos-scores
+          />
+          Show scores for MiniRoos (U5–U11) club games
+        </label>
       </section>
 
       <section>
