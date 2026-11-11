@@ -56,7 +56,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Referee pay tracker | `referee_pay` | the league's treasurer | the competition's Referees tab |
 | Training-ground slots (0250) | `training_slots` | coaches and staff put a squad's weekly training on a pitch; everyone sees the slot | Add training (a pitch instead of a typed ground), the team page's Training line, the ground's week on Admin → Venues |
 | Trial ratings and grading (0249) | `trial_ratings` | the coaches at a trial rate; owners, admins and coordinators place and publish | the trial program's screen (Grading: ratings, notes, a squad per player, Publish teams) |
-| Team duty rotation | `duty_roster` | team managers and families | the team page (to build) |
+| Team duty rotation (0252) | `duty_roster` | the squad's coach or manager rosters; families see their turn and ask for swaps | the team page (Duties), the game page (Duties), Admin → Rosters |
 | Team Creator (social comps) | `team_creator` | captains; the organiser approves | registration (Part C) |
 | Blue cards (sin bin) | `blue_cards` | the league's referees and match sheets | the match sheet (Part C) |
 | Ladder breakdown | `ladder_breakdown` | anyone who sees the ladder | the ladder (Part C) |
@@ -65,7 +65,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Active Kids vouchers | `active_kids` | families at checkout; the Treasurer's redeem list | checkout, Admin → Payments (registration brief) |
 | Scheduled messages | `scheduled_messages` | anyone who may post | the composer's "Send later" |
 | Digest | `digest` | everyone, in Settings | Settings → Notifications |
-| Helpers wanted (G-07) | `helpers` | the squad's coach asks; families help | the game page |
+| Helpers wanted (G-07) | `helpers` | the squad's coach asks; families help | the game page; a ground's day with its own jobs seen from every game there, and Admin → Rosters (0252) |
 | Game photos (M5) | `match_photos` | the squad's coach adds; the squad sees | the game page |
 | Kit list | `kit` | staff | Admin → Kit list |
 | Game day (0251) | `game_day` | owners, admins, President, Secretary, coordinators | Admin → Game day (every game today by ground, with call-offs, live, results, squads short, nobody in charge, referees and sheets missing) |

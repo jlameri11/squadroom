@@ -239,7 +239,13 @@ AGM/committee papers.
   result reaches the squad's chat, the team sheet is asked for the evening
   before (Squadroom's or Dribl's, honestly), and `saturday_view` with
   `/admin/saturday`; switch `game_day`. test-rls 204; `test-game-day`.
-  Next: volunteers (10), safety (11), the demo (14).
+  **Item 10 done (0252):** a ground's Saturday is a club-wide event with the
+  0225 jobs (`create_ground_day`, seen from every game there), squad duties
+  by turns (`team_duties`, `event_duties`, `roster_team_duties`, swaps asked
+  and taken in the chat, the reminder the evening before), and the
+  coordinator's `volunteer_gaps` with `/admin/rosters`; switches `helpers`
+  and `duty_roster`. test-rls 205; `test-volunteers`. Next: safety (11),
+  the demo (14).
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

@@ -14,7 +14,7 @@ type Job = {
   note: string | null
   helpers: Helper[]
 }
-type Data = { can_manage: boolean; can_help: boolean; jobs: Job[] }
+type Data = { can_manage: boolean; can_help: boolean; jobs: Job[]; ground?: { event_id: string; title: string; jobs: Job[] } | null }
 type Draft = { id?: string; title: string; start_time: string; end_time: string; spots: string; helpers: Helper[] }
 
 const SUGGESTED = ['Canteen', 'BBQ', 'Linesman', 'Gate', 'Set-up', 'Pack-down', 'First aid', 'Scorer', 'Field marshal']
@@ -48,7 +48,8 @@ export function EventHelpers({ eventId, clubWide }: { eventId: string; clubWide:
   }, [load])
 
   if (!d) return null
-  if (d.jobs.length === 0 && !(d.can_manage && d.can_help)) return null
+  const groundJobs = d.ground?.jobs ?? []
+  if (d.jobs.length === 0 && groundJobs.length === 0 && !(d.can_manage && d.can_help)) return null
 
   const spots = d.jobs.reduce((n, j) => n + j.spots, 0)
   const filled = d.jobs.reduce((n, j) => n + Math.min(j.helpers.length, j.spots), 0)
@@ -96,6 +97,24 @@ export function EventHelpers({ eventId, clubWide }: { eventId: string; clubWide:
     setD(next)
     // Keep the editor's names in step with what the database now says.
     if (profile) setDrafts((ds) => ds.map((x) => ({ ...x, helpers: next.jobs.find((j) => j.id === x.id)?.helpers ?? x.helpers })))
+  }
+  // 0252: the ground's jobs are another event's; the sign-up returns that
+  // event's helpers, so this game's view is read again instead.
+  async function helpGround(job: Job) {
+    setBusy(job.id)
+    setError(null)
+    const { error } = await createClient().rpc('help_with', { p_job: job.id })
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
+  }
+  async function stopGround(job: Job) {
+    setBusy(job.id)
+    setError(null)
+    const { error } = await createClient().rpc('stop_helping', { p_job: job.id })
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
   }
   async function ask() {
     setBusy('ask')
@@ -201,7 +220,7 @@ export function EventHelpers({ eventId, clubWide }: { eventId: string; clubWide:
               </button>
             </div>
           </div>
-        ) : d.jobs.length === 0 ? (
+        ) : d.jobs.length === 0 && groundJobs.length === 0 ? (
           <p className="p-3 text-sm text-ink-3">Need a hand on the day? Add the jobs and {clubWide ? 'the club' : 'the squad'} can put their names down.</p>
         ) : (
           <>
@@ -247,6 +266,42 @@ export function EventHelpers({ eventId, clubWide }: { eventId: string; clubWide:
                 )
               })}
             </ul>
+            {/* 0252: the ground's day — canteen, BBQ, set-up — beside the squad's own jobs. */}
+            {groundJobs.length > 0 && (
+              <div className={d.jobs.length ? 'border-t p-3' : 'p-3'} style={{ borderColor: 'var(--line-2)' }} data-ground-jobs={groundJobs.length}>
+                <p className="text-xs text-ink-3">At the ground that day · {d.ground!.title}</p>
+                <ul className="mt-1">
+                  {groundJobs.map((j) => {
+                    const mine = j.helpers.some((h) => h.me)
+                    const full = j.helpers.length >= j.spots
+                    return (
+                      <li key={j.id} className="flex items-center gap-3 py-1.5 text-sm" data-ground-job={j.id}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-medium">
+                            {j.title}
+                            {j.time && <span className="ml-1.5 text-xs font-normal text-ink-3">{j.time}</span>}
+                          </span>
+                          <span className="block text-xs text-ink-3">
+                            {j.helpers.length ? j.helpers.map((h) => (h.me ? 'You' : h.name)).join(', ') : 'Nobody yet'} · {j.helpers.length} of {j.spots}
+                          </span>
+                        </span>
+                        {mine ? (
+                          <button onClick={() => stopGround(j)} disabled={busy !== null || !d.can_help} className="tap flex-none text-xs underline underline-offset-2" style={{ color: 'var(--ink-2)' }} aria-label={`I can't do ${j.title} now`}>
+                            {busy === j.id ? '…' : "Can't now"}
+                          </button>
+                        ) : full ? (
+                          <span className="flex-none text-xs text-ink-3">Full</span>
+                        ) : d.can_help ? (
+                          <button onClick={() => helpGround(j)} disabled={busy !== null} className="min-w-fit flex-none rounded-lg px-3 py-1.5 text-sm font-semibold text-yes-ink disabled:opacity-50" style={{ background: 'var(--yes)' }} data-ground-take={j.id}>
+                            {busy === j.id ? '…' : 'I can help'}
+                          </button>
+                        ) : null}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
             {d.can_manage && d.can_help && open > 0 && (
               <div className="border-t p-3" style={{ borderColor: 'var(--line-2)' }}>
                 <button

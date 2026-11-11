@@ -3859,6 +3859,73 @@ begin
     insert into rls_results values (204, 'MiniRoos keep no score in any reader until the club turns scores on; a result reaches the squad''s chat; the team sheet is asked for once the evening before; the Saturday view is the runners'' and not a parent''s', r204);
   end;
 
+  -- 0252. Volunteers: a ground's day with its jobs, seen from every game
+  -- there; a squad's duties rostered by turns; a swap asked for in the chat;
+  -- the coordinator's gaps are the runners' and not a parent's. Rolled back.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    v_tz text; v_sat date; v_venue uuid; v_day uuid; v_day2 uuid; v_game uuid; v_helpers jsonb; v_job uuid; v_took jsonb;
+    v_duties jsonb; v_rostered jsonb; v_swap jsonb; v_msgs int; v_gaps jsonb; v_parent_gaps jsonb; v_queued int; v_again int;
+    v_parent_take boolean := false;
+    r205 text := 'FAIL (never ran)';
+  begin
+    begin
+      select coalesce(timezone, 'Australia/Sydney') into v_tz from public.academies where id = ACAD_A;
+      v_sat := (now() at time zone v_tz)::date + ((6 - extract(dow from (now() at time zone v_tz))::integer + 7) % 7) + 7; -- a Saturday, a week or more out
+      insert into public.venues (academy_id, name) values (ACAD_A, 'RLS Rosters Park') returning id into v_venue;
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at, venue, venue_id, source)
+      values (ACAD_A, U12, 'match', 'RLS U12 v Rovers', 'Rls Rovers', (v_sat::timestamp + time '09:00') at time zone v_tz, (v_sat::timestamp + time '10:00') at time zone v_tz, 'RLS Rosters Park', v_venue, 'manual')
+      returning id into v_game;
+
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_day := public.create_ground_day(ACAD_A, v_venue, v_sat);
+      v_day2 := public.create_ground_day(ACAD_A, v_venue, v_sat);
+      v_helpers := public.event_helpers(v_game);
+      v_job := (v_helpers->'ground'->'jobs'->0->>'id')::uuid;
+      perform public.set_team_duties(U12, array['Oranges', 'Linesperson']);
+      v_rostered := public.roster_team_duties(U12, 3);
+      v_duties := public.event_duties(v_game);
+      v_swap := public.request_duty_swap((v_duties->'duties'->0->>'id')::uuid, 'away that weekend');
+      select count(*) into v_msgs from public.messages m join public.channels c on c.id = m.channel_id
+       where c.team_id = U12 and c.type = 'team' and m.event_id = v_game and m.body like '%can''t do Oranges%';
+      v_gaps := public.volunteer_gaps(ACAD_A);
+      execute 'reset role';
+      -- A parent of another squad: helps at the ground, takes no duty, reads no gaps.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_took := public.help_with(v_job);
+      begin
+        perform public.take_duty((v_duties->'duties'->0->>'id')::uuid);
+      exception when others then v_parent_take := true;
+      end;
+      v_parent_gaps := public.volunteer_gaps(ACAD_A);
+      execute 'reset role';
+      v_queued := public.queue_duty_reminders(((v_sat - 1)::timestamp + time '18:00') at time zone v_tz);
+      v_again := public.queue_duty_reminders(((v_sat - 1)::timestamp + time '19:00') at time zone v_tz);
+      r205 := case when v_day = v_day2 and v_job is not null and jsonb_array_length(v_helpers->'ground'->'jobs') = 5
+                    and (v_rostered->>'assigned')::int = 2 and jsonb_array_length(v_duties->'duties') = 2
+                    and (v_duties->'duties'->0->>'player_id') <> (v_duties->'duties'->1->>'player_id')
+                    and (v_swap->'duties'->0->>'requested_swap_at') is not null and v_msgs = 1
+                    and jsonb_array_length(v_gaps->'ground_days') >= 1 and (v_gaps->'ground_days'->0->>'open')::int = 9
+                    and (v_took->'jobs'->0->'helpers'->0->>'me')::boolean
+                    and v_parent_take and v_parent_gaps is null
+                    and v_queued >= 0 and v_again = 0 then 'PASS'
+                   else 'FAIL (day '||coalesce(v_day::text,'null')||'/'||coalesce(v_day2::text,'null')||'; ground jobs '||coalesce(jsonb_array_length(v_helpers->'ground'->'jobs')::text,'none')
+                        ||'; rostered '||coalesce(v_rostered::text,'null')||'; duties '||coalesce(left(v_duties::text,120),'null')
+                        ||'; swap '||coalesce((v_swap->'duties'->0->>'requested_swap_at'),'null')||'; msgs '||v_msgs
+                        ||'; gaps '||coalesce(left(v_gaps::text,120),'null')||'; took '||coalesce(left(v_took::text,80),'null')
+                        ||'; parent take refused '||v_parent_take||'; parent gaps '||coalesce(v_parent_gaps::text,'null')||'; queued '||v_queued||'/'||v_again||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r205 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (205, 'a ground''s day is made once with its jobs and seen from every game there; a squad''s duties are rostered by turns, a swap is asked for in the chat; a parent helps at the ground, takes no duty and reads no gaps; the duty reminder goes once', r205);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

@@ -2036,6 +2036,71 @@ export type Database = {
           },
         ]
       }
+      event_duties: {
+        Row: {
+          academy_id: string
+          created_at: string
+          event_id: string
+          id: string
+          player_id: string
+          requested_swap_at: string | null
+          swap_note: string | null
+          team_id: string
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          player_id: string
+          requested_swap_at?: string | null
+          swap_note?: string | null
+          team_id: string
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          player_id?: string
+          requested_swap_at?: string | null
+          swap_note?: string | null
+          team_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_duties_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_duties_event_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_duties_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "event_duties_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       event_job_helpers: {
         Row: {
           academy_id: string
@@ -2866,6 +2931,7 @@ export type Database = {
           ends_at: string | null
           external_ref: string | null
           fixture_id: string | null
+          ground_day: boolean
           id: string
           kit_colour: string | null
           notes: string | null
@@ -2908,6 +2974,7 @@ export type Database = {
           ends_at?: string | null
           external_ref?: string | null
           fixture_id?: string | null
+          ground_day?: boolean
           id?: string
           kit_colour?: string | null
           notes?: string | null
@@ -2950,6 +3017,7 @@ export type Database = {
           ends_at?: string | null
           external_ref?: string | null
           fixture_id?: string | null
+          ground_day?: boolean
           id?: string
           kit_colour?: string | null
           notes?: string | null
@@ -7680,6 +7748,48 @@ export type Database = {
           },
         ]
       }
+      team_duties: {
+        Row: {
+          academy_id: string
+          created_at: string
+          id: string
+          position: number
+          team_id: string
+          title: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          team_id: string
+          title: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          team_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_duties_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_duties_team_fkey"
+            columns: ["team_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id", "academy_id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           academy_id: string
@@ -8852,6 +8962,15 @@ export type Database = {
         }
         Returns: number
       }
+      create_ground_day: {
+        Args: {
+          p_academy: string
+          p_date: string
+          p_jobs?: Json
+          p_venue: string
+        }
+        Returns: string
+      }
       create_imported_events: {
         Args: {
           p_academy: string
@@ -8979,6 +9098,7 @@ export type Database = {
       entry_requests: { Args: { p_competition: string }; Returns: Json }
       erase_me: { Args: never; Returns: Json }
       event_checklist: { Args: { p_event: string }; Returns: Json }
+      event_duties: { Args: { p_event: string }; Returns: Json }
       event_helpers: { Args: { p_event: string }; Returns: Json }
       event_lineup: { Args: { p_event: string }; Returns: Json }
       event_live: { Args: { p_event: string }; Returns: Json }
@@ -9736,6 +9856,7 @@ export type Database = {
       }
       purge_expired_message_archive: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
+      queue_duty_reminders: { Args: { p_now?: string }; Returns: number }
       queue_fee_reminders: { Args: never; Returns: number }
       queue_match_day_pushes: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
@@ -9922,6 +10043,10 @@ export type Database = {
         }
         Returns: string
       }
+      request_duty_swap: {
+        Args: { p_duty: string; p_note?: string }
+        Returns: Json
+      }
       request_forfeit: {
         Args: { p_entry: string; p_fixture: string; p_reason: string }
         Returns: string
@@ -10000,6 +10125,10 @@ export type Database = {
       }
       rollover_report: {
         Args: { p_academy: string; p_season: string }
+        Returns: Json
+      }
+      roster_team_duties: {
+        Args: { p_games?: number; p_team: string }
         Returns: Json
       }
       rule_on_score: {
@@ -10228,6 +10357,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_team_duties: {
+        Args: { p_team: string; p_titles: string[] }
+        Returns: Json
+      }
       set_training_slot: {
         Args: { p_pitch: string; p_series: string }
         Returns: Json
@@ -10284,6 +10417,7 @@ export type Database = {
       }
       support_threads: { Args: { p_inbox?: boolean }; Returns: Json }
       take_down_match_photo: { Args: { p_photo: string }; Returns: Json }
+      take_duty: { Args: { p_duty: string }; Returns: Json }
       take_register: {
         Args: { p_event: string; p_marks: Json }
         Returns: number
@@ -10337,6 +10471,7 @@ export type Database = {
       undo_referee_allocation: { Args: { p_batch: string }; Returns: Json }
       venue_layout: { Args: { p_venue: string }; Returns: Json }
       void_referee_run: { Args: { p_run: string }; Returns: undefined }
+      volunteer_gaps: { Args: { p_academy: string }; Returns: Json }
       vote_player_of_match: {
         Args: { p_event: string; p_player: string }
         Returns: Json

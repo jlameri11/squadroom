@@ -33,7 +33,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'referee_pay', label: 'Referee pay tracker', what: 'What each referee is owed per game, and marking a run paid. Tracking only.' },
   { key: 'training_slots', label: 'Training-ground slots', what: 'Weekly training on a pitch or half-pitch: clashes and closed hours refused, the slot on the team page and in every session.' },
   { key: 'trial_ratings', label: 'Trial ratings and grading', what: 'Coaches rate players privately at a trial (1–5 and a note); the coordinator pencils teams and publishes them in one message per family.' },
-  { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — a fair rotation across families, with swaps.', builtYet: false },
+  { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — one family per duty per game, the fewest turns first, with swaps asked for in the chat.' },
   { key: 'team_creator', label: 'Team Creator', what: 'A captain registers a team for a social comp and teammates join with a code.', builtYet: false },
   { key: 'blue_cards', label: 'Blue cards (sin bin)', what: 'Recorded on the match sheet with minutes, where the league uses them.', builtYet: false },
   { key: 'ladder_breakdown', label: 'Ladder breakdown', what: 'Tap a ladder row to see how every point was earned.', builtYet: false },

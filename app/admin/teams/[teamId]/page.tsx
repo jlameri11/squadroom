@@ -14,6 +14,8 @@ import { AddPlayers } from './add-players'
 import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
 import { TrainingSlot } from './training-slot'
+import { DutiesPanel } from './duties-panel'
+import { WhenOn } from '@/components/when-on'
 import { SeasonControl } from './season-control'
 import { LeagueName } from './league-name'
 import { KitSizes } from './kit-sizes'
@@ -99,6 +101,9 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
       {/* 0250: the squad's weekly training and its pitch, the line the
           calendar and "Publish teams" carry. */}
       <TrainingSlot teamId={team.id} academyId={team.academy_id} />
+
+      {/* 0252: the squad's duty roster — oranges, linesperson, kit wash, by turns. */}
+      <WhenOn feature="duty_roster"><DutiesPanel teamId={team.id} /></WhenOn>
 
       <BulkInvite teamId={team.id} academyId={team.academy_id} />
 
