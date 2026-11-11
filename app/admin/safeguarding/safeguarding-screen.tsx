@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import { ConductRegister } from './conduct-register'
 import { Incidents } from './incidents'
+import { Bans } from '@/components/bans'
+import { WhenOn } from '@/components/when-on'
 
 type Report = {
   report_id: string
@@ -245,6 +247,8 @@ export function SafeguardingScreen() {
         <ConductRegister />
         {/* 0253: incidents and injuries from the ground. */}
         <Incidents />
+        {/* 0257: a ban by the club — no answering, no posting, no team sheet while it runs. */}
+        {getOrg() && <WhenOn feature="bans"><Bans academyId={getOrg()!} /></WhenOn>}
       </Screen>
     </>
   )

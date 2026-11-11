@@ -4142,6 +4142,112 @@ begin
     insert into rls_results values (208, 'a role request opens nothing while pending; a coordinator decides inside their group only and never a committee seat; a coach, and a volunteer with a children''s squad, need a check first ("waiting on WWCC"), then are; the owner seats a Treasurer; every step logged and told', r208);
   end;
 
+  -- 0257. Bans: a parent cannot ban; the owner bans the U8 parent for a week
+  -- and the U12 player Leo; the parent answers no training and posts nothing
+  -- (the gate says no and the table refuses); Leo is ineligible for the
+  -- league's sheet and refused from the club's lineup; a spectator is banned
+  -- by name; the parent reads their own ban and nobody else's; lifted, the
+  -- parent answers again; the log and the queue have it. Rolled back.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_u8 uuid; v_chan uuid; v_ev uuid; v_game uuid; v_entry uuid; v_fx uuid; v_u12coach uuid;
+    v_ban uuid; v_ban2 uuid; v_ban3 uuid; v_parent_refused boolean := false;
+    v_rsvp_refused boolean := false; v_rsvp_msg text; v_post boolean; v_msg_refused boolean := false;
+    v_why text; v_lineup_refused boolean := false; v_lineup_msg text; v_mine int; v_list jsonb;
+    v_after boolean := false; v_log int; v_told int;
+    r209 text := 'FAIL (never ran)';
+  begin
+    begin
+      select t.id into v_u8 from public.teams t where t.academy_id = ACAD_A and t.age_group = 'U8' and t.status = 'active'
+        and exists (select 1 from public.team_members tm where tm.team_id = t.id and tm.profile_id = PARENT) order by t.name limit 1;
+      select c.id into v_chan from public.channels c where c.team_id = v_u8 and c.type = 'team' limit 1;
+      insert into public.events (academy_id, team_id, type, title, starts_at, ends_at, source)
+      values (ACAD_A, v_u8, 'training', 'RLS ban training', now() + interval '2 days', now() + interval '2 days 1 hour', 'manual') returning id into v_ev;
+      -- Leo is a U8: his own squad's game for the lineup, the U12's entry for the league's sheet.
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at, source)
+      values (ACAD_A, v_u8, 'match', 'RLS ban game', 'Rls Rovers', now() + interval '3 days', now() + interval '3 days 1 hour', 'manual') returning id into v_game;
+      select e.id into v_entry from public.competition_entries e where e.academy_id = ACAD_A and e.team_id = U12 limit 1;
+      select f.id into v_fx from public.fixtures f where v_entry is not null and (f.home_entry_id = v_entry or f.away_entry_id = v_entry) limit 1;
+      select tm.profile_id into v_u12coach from public.team_members tm where tm.team_id = v_u8 and tm.role = 'coach' limit 1;
+
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.ban_person(ACAD_A, 'rls parent banning', COACH);
+      exception when others then v_parent_refused := true;
+      end;
+      execute 'reset role';
+
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_ban := public.ban_person(ACAD_A, 'Abuse of the referee at the U8s', PARENT, null, null, current_date + 7, 'RLS');
+      v_ban2 := public.ban_person(ACAD_A, 'RLS: a player ban', null, LEO, null, current_date + 7, null);
+      v_ban3 := public.ban_person(ACAD_A, 'RLS: a spectator', null, null, 'A Spectator In A Blue Cap', null, null);
+      v_list := public.bans_list(ACAD_A);
+      execute 'reset role';
+
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        insert into public.event_rsvps (academy_id, event_id, profile_id, status) values (ACAD_A, v_ev, PARENT, 'yes');
+      exception when others then v_rsvp_refused := true; v_rsvp_msg := sqlerrm;
+      end;
+      v_post := public.can_post_in_channel(v_chan);
+      begin
+        insert into public.messages (academy_id, channel_id, sender_id, body) values (ACAD_A, v_chan, PARENT, 'rls banned post');
+      exception when others then v_msg_refused := true;
+      end;
+      select count(*) into v_mine from public.bans;
+      execute 'reset role';
+
+      v_why := case when v_entry is not null then app_private.ineligibility(v_entry, LEO, current_date, v_fx) else 'no entry: is banned (untested)' end;
+      perform set_config('request.jwt.claims', json_build_object('sub',coalesce(v_u12coach, COACH),'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.set_lineup(v_game, jsonb_build_array(jsonb_build_object('player_id', LEO)), null, null);
+      exception when others then v_lineup_refused := true; v_lineup_msg := sqlerrm;
+      end;
+      execute 'reset role';
+
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.lift_ban(v_ban, 'RLS: apologised');
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        insert into public.event_rsvps (academy_id, event_id, profile_id, status) values (ACAD_A, v_ev, PARENT, 'yes');
+        v_after := true;
+      exception when others then v_after := false;
+      end;
+      execute 'reset role';
+      select count(*) into v_log from public.activity_log l where l.academy_id = ACAD_A and l.subject_kind = 'ban' and l.action in ('ban.issued', 'ban.lifted');
+      select count(*) into v_told from public.notification_queue n where n.kind = 'ban' and n.profile_id = PARENT and (n.payload->>'ban_id')::uuid = v_ban;
+
+      r209 := case when v_u8 is not null and v_chan is not null and v_parent_refused
+                    and v_ban is not null and v_ban2 is not null and v_ban3 is not null
+                    and v_rsvp_refused and v_rsvp_msg like 'no answer while banned until%'
+                    and v_post = false and v_msg_refused
+                    and v_why like '% is banned until %' and v_lineup_refused and v_lineup_msg like '% is banned%'
+                    and v_mine = 2 and jsonb_array_length(v_list) >= 3
+                    and v_after and v_log = 4 and v_told = 2 then 'PASS'
+                   else 'FAIL (u8 '||coalesce(v_u8::text,'null')||', chan '||coalesce(v_chan::text,'null')||', parent refused '||v_parent_refused
+                        ||'; bans '||coalesce(v_ban::text,'null')||'/'||coalesce(v_ban2::text,'null')||'/'||coalesce(v_ban3::text,'null')
+                        ||'; rsvp refused '||v_rsvp_refused||' ('||coalesce(left(v_rsvp_msg,60),'')||'), post '||coalesce(v_post::text,'null')||', msg refused '||v_msg_refused
+                        ||'; why '||coalesce(v_why,'null')||'; lineup refused '||v_lineup_refused||' ('||coalesce(left(v_lineup_msg,60),'')||')'
+                        ||'; mine '||v_mine||', list '||coalesce(jsonb_array_length(v_list)::text,'null')
+                        ||'; after '||v_after||', log '||v_log||', told '||v_told||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r209 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (209, 'a ban by the club: a parent cannot ban; the banned parent answers no training and posts nothing; a banned player is ineligible for the league''s sheet and refused from the lineup; a spectator is banned by name; the parent reads their own ban and their child''s, not the spectator''s; lifted, they answer again; logged and told', r209);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { RespectDashboard } from '@/components/respect-marks'
+import { Bans } from '@/components/bans'
+import { WhenOn } from '@/components/when-on'
 
 type Suspension = {
   id: string
@@ -201,6 +203,24 @@ export function DisciplineTab({
         </ul>
       )}
       <RespectDashboard competitionId={competitionId} isOrganiser={isOrganiser} />
+      {/* 0257: a ban by the league — on its organiser, so it holds in every competition it runs. */}
+      {isOrganiser && <LeagueBans competitionId={competitionId} />}
     </div>
   )
+}
+
+function LeagueBans({ competitionId }: { competitionId: string }) {
+  const [organiser, setOrganiser] = useState<string | null>(null)
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().from('competitions').select('organiser_id').eq('id', competitionId).maybeSingle()
+      if (live) setOrganiser(data?.organiser_id ?? null)
+    })()
+    return () => {
+      live = false
+    }
+  }, [competitionId])
+  if (!organiser) return null
+  return <WhenOn feature="bans" orgId={organiser}><Bans academyId={organiser} who="the league" /></WhenOn>
 }

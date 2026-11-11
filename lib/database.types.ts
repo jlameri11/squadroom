@@ -456,6 +456,93 @@ export type Database = {
           },
         ]
       }
+      bans: {
+        Row: {
+          academy_id: string
+          ends_on: string | null
+          id: string
+          issued_at: string
+          issued_by: string | null
+          lift_note: string | null
+          lifted_at: string | null
+          lifted_by: string | null
+          note: string | null
+          person_name: string | null
+          player_id: string | null
+          profile_id: string | null
+          reason: string
+          starts_on: string
+        }
+        Insert: {
+          academy_id: string
+          ends_on?: string | null
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          lift_note?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
+          note?: string | null
+          person_name?: string | null
+          player_id?: string | null
+          profile_id?: string | null
+          reason: string
+          starts_on?: string
+        }
+        Update: {
+          academy_id?: string
+          ends_on?: string | null
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          lift_note?: string | null
+          lifted_at?: string | null
+          lifted_by?: string | null
+          note?: string | null
+          person_name?: string | null
+          player_id?: string | null
+          profile_id?: string | null
+          reason?: string
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bans_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bans_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bans_lifted_by_fkey"
+            columns: ["lifted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bans_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bans_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_feeds: {
         Row: {
           created_at: string
@@ -8866,6 +8953,19 @@ export type Database = {
         Args: { p_past?: number; p_team: string; p_upcoming?: number }
         Returns: Json
       }
+      ban_person: {
+        Args: {
+          p_academy: string
+          p_ends_on?: string
+          p_name?: string
+          p_note?: string
+          p_player?: string
+          p_profile?: string
+          p_reason: string
+        }
+        Returns: string
+      }
+      bans_list: { Args: { p_academy: string }; Returns: Json }
       broadcast_to_competition: {
         Args: { p_body: string; p_competition: string; p_urgent?: boolean }
         Returns: number
@@ -9601,6 +9701,7 @@ export type Database = {
       }
       league_officials: { Args: { p_competition: string }; Returns: Json }
       levy_statement: { Args: { p_competition: string }; Returns: Json }
+      lift_ban: { Args: { p_ban: string; p_note?: string }; Returns: boolean }
       live_tick: {
         Args: {
           p_assist?: string

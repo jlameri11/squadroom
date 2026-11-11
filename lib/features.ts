@@ -20,9 +20,10 @@ export type FeatureKey =
   | 'training_slots' | 'trial_ratings' | 'duty_roster' | 'team_creator' | 'blue_cards' | 'ladder_breakdown'
   | 'find_a_club' | 'card_fee_passthrough' | 'active_kids' | 'scheduled_messages' | 'digest'
   | 'helpers' | 'match_photos' | 'kit' | 'match_video' | 'respect_marks' | 'polls' | 'scan'
-  | 'club_health' | 'game_day' | 'accreditations' | 'role_requests'
+  | 'club_health' | 'game_day' | 'accreditations' | 'role_requests' | 'bans'
 
 export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?: false }[] = [
+  { key: 'bans', label: 'Bans', what: 'The club or the league bans a person for a period with a reason: no answering for games, no posting, no team sheet while it runs. On the Welfare screen and the league’s Discipline tab.' },
   { key: 'role_requests', label: 'Role requests', what: 'A member asks to be a coach, manager, volunteer, referee or committee member from Settings; the committee approves or declines under Requests. Nothing opens until they do.' },
   { key: 'accreditations', label: 'Coaching accreditation', what: 'Course certificates with dates on the Checks screen; the person and the club reminded thirty days out.' },
   { key: 'game_day', label: 'Game day (the Saturday view)', what: 'Every game today across the club by ground: called off, live, finished, squads short, nobody in charge, referees and team sheets missing.' },

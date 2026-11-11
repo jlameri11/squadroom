@@ -48,6 +48,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 
 | Feature | Switch | Who sees it when on | Where |
 |---|---|---|---|
+| Bans (0257) | `bans` | the club's staff, President and Welfare officer; the league's staff, competition manager and discipline officer; the banned person sees their own | Admin → Welfare → Bans (ban a member, a player or a name; a reason, until a date or until lifted; lift with a note); the league's Discipline tab → Bans; the refusals themselves ("no answer while banned until 18 Nov — …") |
 | Role requests (0256) | `role_requests` | every member asks; owners, admins, President, Secretary decide (coordinators inside their age groups; committee seats the owner or President only) | Settings → "Request a role" (a sheet: the role, the squads, a note; your requests with their state); Admin → Requests (Approve / Decline with a note, "waiting on WWCC"); Club HQ's "Needs a decision" counts them |
 | Player of the Match | `player_of_match` | the squad's coach picks; the squad's families see | the game page, the team chat |
 | Sponsors | `sponsors` | staff manage; everyone sees on the match centre and share cards | Admin → Sponsors, `/c/{slug}` |
