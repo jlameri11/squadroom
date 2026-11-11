@@ -1137,47 +1137,59 @@ export type Database = {
       competition_entries: {
         Row: {
           academy_id: string | null
+          captain_id: string | null
           competition_id: string
           created_at: string
           display_name: string
           division: string
           group_label: string | null
           id: string
+          join_code: string | null
           nominated_at: string | null
           nomination_note: string | null
+          pay_mode: string | null
           proposed_division: string | null
           seed: number | null
           squad_locked_at: string | null
+          squad_size: number | null
           team_id: string | null
         }
         Insert: {
           academy_id?: string | null
+          captain_id?: string | null
           competition_id: string
           created_at?: string
           display_name: string
           division: string
           group_label?: string | null
           id?: string
+          join_code?: string | null
           nominated_at?: string | null
           nomination_note?: string | null
+          pay_mode?: string | null
           proposed_division?: string | null
           seed?: number | null
           squad_locked_at?: string | null
+          squad_size?: number | null
           team_id?: string | null
         }
         Update: {
           academy_id?: string | null
+          captain_id?: string | null
           competition_id?: string
           created_at?: string
           display_name?: string
           division?: string
           group_label?: string | null
           id?: string
+          join_code?: string | null
           nominated_at?: string | null
           nomination_note?: string | null
+          pay_mode?: string | null
           proposed_division?: string | null
           seed?: number | null
           squad_locked_at?: string | null
+          squad_size?: number | null
           team_id?: string | null
         }
         Relationships: [
@@ -1186,6 +1198,13 @@ export type Database = {
             columns: ["academy_id"]
             isOneToOne: false
             referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entries_captain_id_fkey"
+            columns: ["captain_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1206,6 +1225,7 @@ export type Database = {
       }
       competition_entry_requests: {
         Row: {
+          captain: boolean
           club_name: string
           competition_id: string
           contact_email: string | null
@@ -1221,10 +1241,13 @@ export type Database = {
           invite_id: string | null
           ip_hash: string | null
           note: string | null
+          pay_mode: string | null
+          squad_size: number | null
           status: string
           team_name: string
         }
         Insert: {
+          captain?: boolean
           club_name: string
           competition_id: string
           contact_email?: string | null
@@ -1240,10 +1263,13 @@ export type Database = {
           invite_id?: string | null
           ip_hash?: string | null
           note?: string | null
+          pay_mode?: string | null
+          squad_size?: number | null
           status?: string
           team_name: string
         }
         Update: {
+          captain?: boolean
           club_name?: string
           competition_id?: string
           contact_email?: string | null
@@ -1259,6 +1285,8 @@ export type Database = {
           invite_id?: string | null
           ip_hash?: string | null
           note?: string | null
+          pay_mode?: string | null
+          squad_size?: number | null
           status?: string
           team_name?: string
         }
@@ -9044,6 +9072,7 @@ export type Database = {
         Args: { p_message: string }
         Returns: undefined
       }
+      captain_teams: { Args: { p_competition: string }; Returns: Json }
       card_sponsors: { Args: { p_academy: string }; Returns: Json }
       cast_poll_vote: {
         Args: {
@@ -9704,6 +9733,15 @@ export type Database = {
       }
       is_academy_coach: { Args: { p_academy: string }; Returns: boolean }
       is_team_coach: { Args: { p_team: string }; Returns: boolean }
+      join_captain_team: {
+        Args: {
+          p_code: string
+          p_dob: string
+          p_full_name: string
+          p_profile: string
+        }
+        Returns: Json
+      }
       kit_list: { Args: { p_academy?: string; p_team?: string }; Returns: Json }
       league_decide_forfeit: {
         Args: { p_approve: boolean; p_note?: string; p_request: string }
@@ -10197,6 +10235,10 @@ export type Database = {
       }
       public_academy: { Args: { p_slug: string }; Returns: Json }
       public_brand: { Args: { p_kind?: string; p_slug: string }; Returns: Json }
+      public_captain_team: {
+        Args: { p_code: string; p_slug: string }
+        Returns: Json
+      }
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
       public_ladder_breakdown: {
         Args: { p_entry: string; p_slug: string }
@@ -10445,6 +10487,7 @@ export type Database = {
       }
       request_competition_entry: {
         Args: {
+          p_captain?: boolean
           p_club_name: string
           p_contact_email: string
           p_contact_name: string
@@ -10452,7 +10495,9 @@ export type Database = {
           p_division: string
           p_ip_hash: string
           p_note: string
+          p_pay_mode?: string
           p_slug: string
+          p_squad_size?: number
           p_team_name: string
         }
         Returns: string
@@ -10860,6 +10905,7 @@ export type Database = {
         }[]
       }
       team_form: { Args: { p_n?: number; p_team: string }; Returns: Json }
+      team_join_code: { Args: { p_team: string }; Returns: Json }
       team_season_stats: { Args: { p_team: string }; Returns: Json }
       team_training: { Args: { p_team: string }; Returns: Json }
       tick_checklist: {

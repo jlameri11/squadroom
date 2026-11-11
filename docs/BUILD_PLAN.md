@@ -648,8 +648,10 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     `blue_cards`, test-rls 210, `test-blue-cards`. (5) the registrations
     CSV — done, 0259, switch `registrations_csv`, test-rls 211,
     `test-registrations-csv`. (6) the ladder breakdown — done, 0260, switch
-    `ladder_breakdown`, test-rls 212, `test-ladder-breakdown`. Next: (3)
-    Team Creator.
+    `ladder_breakdown`, test-rls 212, `test-ladder-breakdown`. (3) Team
+    Creator — done, 0261, switch `team_creator`, test-rls 213,
+    `test-team-creator`. **Part C is complete** (item 1, the photo, is in
+    13). Next: item 13, the registration brief.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features

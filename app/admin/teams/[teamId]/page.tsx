@@ -14,6 +14,7 @@ import { AddPlayers } from './add-players'
 import { AppShellPage } from '@/components/shell-page'
 import { BulkInvite } from './bulk-invite'
 import { TrainingSlot } from './training-slot'
+import { JoinCodePanel } from './join-code-panel'
 import { DutiesPanel } from './duties-panel'
 import { WhenOn } from '@/components/when-on'
 import { SeasonControl } from './season-control'
@@ -97,6 +98,9 @@ export default async function TeamPage(props: { params: Promise<{ teamId: string
         qrSvg={qrSvg}
         adult={isAdultAgeGroup(team.age_group)}
       />
+
+      {/* 0261: a captain's team's code — only a team entered by a captain has one. */}
+      <WhenOn feature="team_creator"><JoinCodePanel teamId={team.id} /></WhenOn>
 
       {/* 0250: the squad's weekly training and its pitch, the line the
           calendar and "Publish teams" carry. */}

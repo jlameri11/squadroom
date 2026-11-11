@@ -4457,6 +4457,89 @@ begin
     insert into rls_results values (212, 'the ladder breakdown: every game with its points, the forfeit named, the deduction with its reason, the total the ladder shows; a stranger gets nothing; the public door answers for a published competition and names no one; the organiser''s switch off closes both doors', r212);
   end;
 
+  -- 0261. Team Creator: a captain asks to enter a team of their own (eight
+  -- players, the fee split); the organiser accepts and a team with a join
+  -- code appears in its own organisation; the join page names the team and
+  -- the share; the parent whose mobile is on the request joins as an adult
+  -- and is the captain — on the organiser's books as a player, on the squad,
+  -- on the season squad, the team's manager — and the share is raised once
+  -- as a fee per player; a child is refused; the switch off refuses a
+  -- captain's request. Rolled back.
+  declare
+    v_comp uuid; v_req uuid; v_decision jsonb; v_code text; v_team uuid; v_entry uuid; v_phone text;
+    v_page jsonb; v_join jsonb; v_hat boolean; v_player int; v_squad int; v_manager int; v_fee record; v_minor boolean := false; v_minor_msg text;
+    v_off boolean := false; v_again jsonb;
+    r213 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by, public_slug, published_at, entries_open)
+      values (ACAD_A, 'RLS Summer Sixes', 'season', '2026', 'active', 'managed', 'participants', COACH, 'rls-summer-sixes', now(), true) returning id into v_comp;
+      insert into public.competition_fees (competition_id, division, fee_cents) values (v_comp, '', 24000);
+      select p.phone into v_phone from public.profiles p where p.id = PARENT;
+      -- The public form, as the route sends it (the service role): a captain.
+      v_req := public.request_competition_entry('rls-summer-sixes', '', 'RLS Dad Bods', 'Open', 'Pat Parent', v_phone, null, null, 'rls-ip', true, 8, 'split');
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_decision := public.decide_entry_request(v_req, true, 'Open', null);
+      execute 'reset role';
+      v_code := v_decision->>'join_code';
+      v_team := (v_decision->>'team_id')::uuid;
+      v_entry := (v_decision->>'entry_id')::uuid;
+      perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+      execute 'set local role anon';
+      v_page := public.public_captain_team('rls-summer-sixes', v_code);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_join := public.join_captain_team(v_code, PARENT, 'Pat Parent', '1990-01-01');
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.join_captain_team(v_code, MARCUS, 'A Child', '2012-01-01');
+      exception when others then v_minor := true; v_minor_msg := sqlerrm;
+      end;
+      execute 'reset role';
+      select ('player' = any (m.roles)) and ('parent' = any (m.roles)) into v_hat from public.academy_members m where m.academy_id = ACAD_A and m.profile_id = PARENT;
+      select count(*) into v_player from public.players pl where pl.team_id = v_team and pl.profile_id = PARENT;
+      select count(*) into v_squad from public.entry_squads s where s.entry_id = v_entry;
+      select count(*) into v_manager from public.club_roles r where r.academy_id = ACAD_A and r.profile_id = PARENT and r.role = 'team_manager' and r.team_id = v_team;
+      select pr.amount_cents, pr.per_player, pr.team_id into v_fee from public.payment_requests pr where pr.competition_id = v_comp and pr.team_id = v_team;
+      -- The switch off: no captain's request.
+      insert into public.academy_features (academy_id, feature, enabled) values (ACAD_A, 'team_creator', false)
+      on conflict (academy_id, feature) do update set enabled = false;
+      begin
+        perform public.request_competition_entry('rls-summer-sixes', '', 'RLS Second Team', 'Open', 'Someone', null, 'someone@squadroom.invalid', null, 'rls-ip', true, 6, 'captain');
+      exception when others then v_off := true;
+      end;
+      perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+      execute 'set local role anon';
+      v_again := public.public_captain_team('rls-summer-sixes', v_code);
+      execute 'reset role';
+
+      r213 := case when v_req is not null and v_decision->>'status' = 'accepted' and v_code ~ '^[A-Z2-9]{6}$' and v_team is not null
+                    and exists (select 1 from public.teams t where t.id = v_team and t.academy_id = ACAD_A and t.name = 'RLS Dad Bods')
+                    and v_page->>'team_name' = 'RLS Dad Bods' and (v_page->>'squad_size')::int = 8 and (v_page->>'share_cents')::int = 3000 and (v_page->>'members')::int = 0
+                    and (v_join->>'captain')::boolean and v_join->>'join_code' = v_code
+                    and v_hat and v_player = 1 and v_squad = 1 and v_manager = 1
+                    and v_fee.amount_cents = 3000 and v_fee.per_player
+                    and v_minor and v_minor_msg like '%adults%'
+                    and v_off and v_again is null then 'PASS'
+                   else 'FAIL (req '||coalesce(v_req::text,'null')||', decision '||coalesce(v_decision::text,'null')
+                        ||'; page '||coalesce(v_page::text,'null')||'; join '||coalesce(v_join::text,'null')
+                        ||'; hat '||coalesce(v_hat::text,'null')||', player '||v_player||', squad '||v_squad||', manager '||v_manager
+                        ||'; fee '||coalesce(v_fee.amount_cents::text,'null')||'/'||coalesce(v_fee.per_player::text,'null')
+                        ||'; minor '||v_minor||' ('||coalesce(left(v_minor_msg,50),'')||'); off '||v_off||', again '||coalesce(v_again::text,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r213 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (213, 'Team Creator: a captain''s request, accepted into a team with a join code in the organiser''s organisation; the join page names the team and the share; the request''s contact joins as an adult and is the captain, on the books, the squad and the season squad, with the share raised once per player; a child is refused; the switch off refuses captains'' teams', r213);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

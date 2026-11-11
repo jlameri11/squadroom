@@ -19,7 +19,12 @@ type Request = {
   status: 'pending' | 'accepted' | 'declined'
   created_at: string
   token: string | null
+  /** 0261: a captain's team — no club; how many; who pays. */
+  captain?: boolean
+  squad_size?: number | null
+  pay_mode?: 'split' | 'captain' | null
 }
+type CaptainTeam = { entry_id: string; team_id: string; team_name: string; division: string; join_code: string; pay_mode: string | null; squad_size: number | null; members: number; captain: string | null; contact: string | null }
 /** B-09 (0230): the league's levy per registered player, and each club's statement. */
 type LevyLine = { division: string; players: number; levy_cents: number | null; owed_cents: number }
 type LevyPayment = { id: string; amount_cents: number; method: string; paid_on: string; note: string | null }
@@ -55,17 +60,24 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
   const [payFor, setPayFor] = useState<string | null>(null)
   const [payDraft, setPayDraft] = useState({ dollars: '', method: 'bank', note: '' })
 
+  const [captainTeams, setCaptainTeams] = useState<CaptainTeam[]>([])
+  const [slug, setSlug] = useState<string | null>(null)
+
   const load = useCallback(async () => {
     const client = createClient()
-    const [r, f, l] = await Promise.all([
+    const [r, f, l, ct, c] = await Promise.all([
       client.rpc('entry_requests', { p_competition: competitionId }),
       client.rpc('competition_fees_view', { p_competition: competitionId }),
       client.rpc('levy_statement', { p_competition: competitionId }),
+      client.rpc('captain_teams', { p_competition: competitionId }),
+      client.from('competitions').select('public_slug').eq('id', competitionId).maybeSingle(),
     ])
     if (r.error) return setError(r.error.message)
     setRequests((r.data as unknown as Request[] | null) ?? [])
     setFees((f.data as unknown as Fees | null) ?? null)
     setLevy(l.error ? null : ((l.data as unknown as Levy | null) ?? null))
+    setCaptainTeams((ct.data as unknown as CaptainTeam[] | null) ?? [])
+    setSlug(c.data?.public_slug ?? null)
   }, [competitionId])
 
   useEffect(() => {
@@ -187,7 +199,12 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
         <ul className="mt-3 divide-y text-sm" style={{ borderColor: 'var(--line-2)' }}>
           {pending.map((r) => (
             <li key={r.id} className="py-2.5">
-              <span className="block font-medium">{r.team_name} <span className="font-normal text-ink-3">· {r.club_name}</span></span>
+              <span className="block font-medium">
+                {r.team_name}{' '}
+                {r.captain
+                  ? <span className="rounded-full px-1.5 py-0.5 text-[0.6875rem] font-semibold" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-captain-request>captain&apos;s team · {r.squad_size} players · {r.pay_mode === 'split' ? 'split the fee' : 'captain pays'}</span>
+                  : <span className="font-normal text-ink-3">· {r.club_name}</span>}
+              </span>
               <span className="block text-xs text-ink-3">
                 {r.contact_name}{r.contact_phone ? ` · ${r.contact_phone}` : ''}{r.contact_email ? ` · ${r.contact_email}` : ''} · asked {day(r.created_at)}
               </span>
@@ -211,6 +228,26 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
             <li key={r.id} className="flex items-center gap-2">
               <span className="min-w-0 flex-1 truncate">{r.team_name} — accepted; send {r.contact_name.split(' ')[0]} their link</span>
               <button onClick={() => copy(r.token!, r.id)} className="flex-none rounded-lg border px-2 py-1" style={{ borderColor: 'var(--line)' }}>{copied === r.id ? 'Copied' : 'Copy link'}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {/* 0261: captains' teams — the code and the link each captain shares. */}
+      {captainTeams.length > 0 && (
+        <ul className="mt-3 space-y-1.5 text-xs" data-captain-teams={captainTeams.length}>
+          {captainTeams.map((t) => (
+            <li key={t.entry_id} className="flex items-center gap-2" data-captain-team={t.join_code}>
+              <span className="min-w-0 flex-1 truncate">
+                <b className="tracking-widest">{t.join_code}</b> · {t.team_name} · {t.members}{t.squad_size ? ` of ${t.squad_size}` : ''} in{t.captain ? ` · captain ${t.captain}` : ` · send to ${t.contact ?? 'the captain'}`}
+              </span>
+              <button
+                onClick={async () => { await navigator.clipboard.writeText(`${window.location.origin}/c/${slug ?? ''}/team/${t.join_code}`).catch(() => {}); setCopied(t.entry_id); setTimeout(() => setCopied(null), 1500) }}
+                className="flex-none rounded-lg border px-2 py-1"
+                style={{ borderColor: 'var(--line)' }}
+                data-copy-join-code={t.join_code}
+              >
+                {copied === t.entry_id ? 'Copied' : 'Copy link'}
+              </button>
             </li>
           ))}
         </ul>

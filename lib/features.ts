@@ -38,7 +38,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'training_slots', label: 'Training-ground slots', what: 'Weekly training on a pitch or half-pitch: clashes and closed hours refused, the slot on the team page and in every session.' },
   { key: 'trial_ratings', label: 'Trial ratings and grading', what: 'Coaches rate players privately at a trial (1–5 and a note); the coordinator pencils teams and publishes them in one message per family.' },
   { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — one family per duty per game, the fewest turns first, with swaps asked for in the chat.' },
-  { key: 'team_creator', label: 'Team Creator', what: 'A captain registers a team for a social comp and teammates join with a code.', builtYet: false },
+  { key: 'team_creator', label: 'Team Creator', what: 'A captain enters a team of their own from the public page; once accepted they get a code, teammates join with it and pay their share (or the captain pays), and the team lives with the organiser.' },
   { key: 'blue_cards', label: 'Blue cards (sin bin)', what: 'Recorded on the match sheet with the minute shown and the minute back on, where a league turns them on in its discipline rules.' },
   { key: 'ladder_breakdown', label: 'Ladder breakdown', what: 'Tap a ladder row to see how every point was earned: each game with its points, forfeits named, the league’s adjustments with their reasons — on the league’s page and the public match centre.' },
   { key: 'find_a_club', label: 'Find a club', what: 'A public page to search clubs by name or suburb and see their open programs.', builtYet: false },
