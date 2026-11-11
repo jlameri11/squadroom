@@ -68,6 +68,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Helpers wanted (G-07) | `helpers` | the squad's coach asks; families help | the game page; a ground's day with its own jobs seen from every game there, and Admin → Rosters (0252) |
 | Game photos (M5) | `match_photos` | the squad's coach adds; the squad sees | the game page |
 | Kit list | `kit` | staff | Admin → Kit list |
+| Coaching accreditation (0253) | `accreditations` | owners and admins record; the person and the club are reminded | Admin → Checks (Coaching accreditation) |
 | Game day (0251) | `game_day` | owners, admins, President, Secretary, coordinators | Admin → Game day (every game today by ground, with call-offs, live, results, squads short, nobody in charge, referees and sheets missing) |
 | Club health (0247) | `club_health` | owners, admins, President, Secretary | Admin → Club health (families joined per squad, squads with nobody in front of them, checks running out, PlayFootball not done) |
 | Game video (Matchdays) | `match_video` | the squad's coach adds; the squad sees | Fixtures → Matchdays |

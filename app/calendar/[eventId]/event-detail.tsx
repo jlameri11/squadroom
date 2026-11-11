@@ -12,6 +12,7 @@ import { MatchVideo } from './video'
 import { MatchPhotos } from './photos'
 import { EventHelpers } from './helpers'
 import { EventDuties } from './duties'
+import { ReportIncident } from './incident'
 import { DivisionTable } from '@/app/admin/teams/[teamId]/division-table'
 import { WhyOut } from '@/components/why-out'
 import { Register } from './register'
@@ -316,6 +317,8 @@ export function EventDetail({
   )
 
   const register = isCoach && <Register eventId={event.id} started={new Date(event.starts_at) <= new Date()} />
+  // 0253: an incident or injury, reported from the ground by the squad's coach or manager.
+  const incident = isCoach && !cancelled && <ReportIncident eventId={event.id} academyId={event.academy_id} teamId={event.team_id} />
 
   // 0251: MiniRoos keep no score — no result box, a line that says so.
   const result = !cancelled && (
@@ -359,6 +362,7 @@ export function EventDetail({
             what a coach came here to do — the RSVP summary is what they looked
             at beforehand. */}
         {register}
+        {incident}
         {whosComing}
       </>
     )
@@ -442,6 +446,7 @@ export function EventDetail({
           {/* X-11: how was today? One tap from the family; the coaches see it. */}
           {!cancelled && <ParentPulse eventId={event.id} />}
           {register}
+          {incident}
         </div>
       )}
 

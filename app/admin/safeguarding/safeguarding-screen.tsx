@@ -6,6 +6,7 @@ import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
 import { ConductRegister } from './conduct-register'
+import { Incidents } from './incidents'
 
 type Report = {
   report_id: string
@@ -242,6 +243,8 @@ export function SafeguardingScreen() {
           )}
         </div>
         <ConductRegister />
+        {/* 0253: incidents and injuries from the ground. */}
+        <Incidents />
       </Screen>
     </>
   )

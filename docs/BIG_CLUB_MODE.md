@@ -244,8 +244,14 @@ AGM/committee papers.
   by turns (`team_duties`, `event_duties`, `roster_team_duties`, swaps asked
   and taken in the chat, the reminder the evening before), and the
   coordinator's `volunteer_gaps` with `/admin/rosters`; switches `helpers`
-  and `duty_roster`. test-rls 205; `test-volunteers`. Next: safety (11),
-  the demo (14).
+  and `duty_roster`. test-rls 205; `test-volunteers`. **Item 11 done
+  (0253):** `staff_accreditations` with `record_accreditation`,
+  `accreditation_board` and warnings thirty days out to the person and the
+  club (a lapsed accreditation is flagged, not a loss of rights — the WWCC
+  is what does that, 0169); `incident_reports` filed from the game page,
+  told to the welfare people at once, reviewed with a note; switch
+  `accreditations`. test-rls 206; `test-safety`. Next: the Inner West FC
+  demo (14), then the definition of done (12) and Phase 2 planning.
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 

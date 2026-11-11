@@ -5,6 +5,8 @@ import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
+import { WhenOn } from '@/components/when-on'
+import { Accreditations } from './accreditations'
 
 type Row = {
   profile_id: string
@@ -158,6 +160,8 @@ export function ClearanceBoard() {
             </div>
           ))}
         </div>
+        {/* 0253: coaching accreditation, with dates, beside the checks. */}
+        <WhenOn feature="accreditations"><Accreditations /></WhenOn>
       </Screen>
     </div>
   )

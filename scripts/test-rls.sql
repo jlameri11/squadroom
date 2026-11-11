@@ -3926,6 +3926,83 @@ begin
     insert into rls_results values (205, 'a ground''s day is made once with its jobs and seen from every game there; a squad''s duties are rostered by turns, a swap is asked for in the chat; a parent helps at the ground, takes no duty and reads no gaps; the duty reminder goes once', r205);
   end;
 
+  -- 0253. Safety: an accreditation is recorded by the staff for someone else,
+  -- read by the staff and its owner, warned of thirty days out to both;
+  -- an incident is filed from the ground, read by the welfare people and
+  -- the filer, told to the welfare people at once. Rolled back.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_acc uuid; v_self_refused boolean := false; v_board jsonb; v_parent_board jsonb; v_own int; v_warned int; v_again int;
+    v_mine_warning int; v_game uuid; v_inc uuid; v_parent_refused boolean := false; v_parent_sees int; v_filer_sees int; v_told int;
+    v_welfare int;
+    r206 text := 'FAIL (never ran)';
+  begin
+    begin
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_acc := public.record_accreditation(ACAD_A, MARCUS, 'RLS Foundation of Football', current_date + 20, 'FFA-RLS-1', null);
+      begin
+        perform public.record_accreditation(ACAD_A, COACH, 'RLS own certificate', current_date + 400, null, null);
+      exception when others then v_self_refused := true;
+      end;
+      v_board := public.accreditation_board(ACAD_A);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_parent_board := public.accreditation_board(ACAD_A);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_own from public.staff_accreditations where id = v_acc;
+      execute 'reset role';
+      v_warned := public.queue_accreditation_warnings();
+      v_again := public.queue_accreditation_warnings();
+      select count(*) into v_mine_warning from public.notification_queue n
+       where n.kind = 'accreditation_expiring' and n.profile_id = MARCUS and (n.payload->>'accreditation_id')::uuid = v_acc and n.title like 'Your %';
+
+      -- The incident, from a game this morning.
+      insert into public.events (academy_id, team_id, type, title, opponent, starts_at, ends_at, venue, source)
+      values (ACAD_A, U12, 'match', 'RLS U12 game', 'Rls Rovers', now() - interval '2 hours', now() - interval '1 hour', 'RLS Park', 'manual') returning id into v_game;
+      select count(*) into v_welfare from app_private.welfare_people(ACAD_A) w where w.profile_id <> COACH;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.file_incident_report(ACAD_A, 'rls parent filing', v_game, LEO, null, null, null, false, false);
+      exception when others then v_parent_refused := true;
+      end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_inc := public.file_incident_report(ACAD_A, 'Twisted ankle in the second half', v_game, LEO, null, null, 'Ice, elevated, walked off', false, true);
+      select count(*) into v_filer_sees from public.incident_reports where id = v_inc;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_parent_sees from public.incident_reports where id = v_inc;
+      execute 'reset role';
+      select count(*) into v_told from public.notification_queue n
+       where n.kind = 'report_filed' and n.payload->>'report' = 'incident_reports' and (n.payload->>'id')::uuid = v_inc;
+      r206 := case when v_acc is not null and v_self_refused
+                    and exists (select 1 from jsonb_array_elements(v_board) as acc_row(acc) where (acc->>'profile_id')::uuid = MARCUS and acc->'accreditations'->0->>'state' = 'expiring')
+                    and v_parent_board is null and v_own = 1
+                    and v_warned >= 2 and v_again = 0 and v_mine_warning = 1
+                    and v_parent_refused and v_inc is not null and v_filer_sees = 1 and v_parent_sees = 0
+                    and v_told = v_welfare then 'PASS'
+                   else 'FAIL (acc '||coalesce(v_acc::text,'null')||', self refused '||v_self_refused||', board '||coalesce(left(v_board::text,120),'null')
+                        ||', parent board '||coalesce(v_parent_board::text,'null')||', own '||v_own||', warned '||v_warned||'/'||v_again||', mine '||v_mine_warning
+                        ||'; parent refused '||v_parent_refused||', inc '||coalesce(v_inc::text,'null')||', filer '||v_filer_sees||', parent sees '||v_parent_sees
+                        ||', told '||v_told||' of '||v_welfare||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r206 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (206, 'an accreditation is recorded by the staff for someone else, read by the staff and its owner, never a parent, and warned of to both thirty days out, once; an incident is filed from the ground by a coach, never a parent, read by the filer and told to the welfare people at once', r206);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

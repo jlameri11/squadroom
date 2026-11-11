@@ -3679,6 +3679,102 @@ export type Database = {
           },
         ]
       }
+      incident_reports: {
+        Row: {
+          academy_id: string
+          ambulance: boolean
+          created_at: string
+          event_id: string | null
+          first_aid: string | null
+          id: string
+          occurred_at: string
+          outcome: string | null
+          parent_told: boolean
+          player_id: string | null
+          reported_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["incident_status"]
+          team_id: string | null
+          what: string
+          who: string | null
+        }
+        Insert: {
+          academy_id: string
+          ambulance?: boolean
+          created_at?: string
+          event_id?: string | null
+          first_aid?: string | null
+          id?: string
+          occurred_at?: string
+          outcome?: string | null
+          parent_told?: boolean
+          player_id?: string | null
+          reported_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["incident_status"]
+          team_id?: string | null
+          what: string
+          who?: string | null
+        }
+        Update: {
+          academy_id?: string
+          ambulance?: boolean
+          created_at?: string
+          event_id?: string | null
+          first_aid?: string | null
+          id?: string
+          occurred_at?: string
+          outcome?: string | null
+          parent_told?: boolean
+          player_id?: string | null
+          reported_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["incident_status"]
+          team_id?: string | null
+          what?: string
+          who?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_reports_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reports_event_fkey"
+            columns: ["event_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "incident_reports_player_fkey"
+            columns: ["player_id", "academy_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "incident_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_teams: {
         Row: {
           academy_id: string
@@ -7436,6 +7532,67 @@ export type Database = {
           },
         ]
       }
+      staff_accreditations: {
+        Row: {
+          academy_id: string
+          created_at: string
+          expires_on: string
+          id: string
+          note: string | null
+          number: string | null
+          profile_id: string
+          title: string
+          verified_at: string
+          verified_by: string
+        }
+        Insert: {
+          academy_id: string
+          created_at?: string
+          expires_on: string
+          id?: string
+          note?: string | null
+          number?: string | null
+          profile_id: string
+          title: string
+          verified_at?: string
+          verified_by: string
+        }
+        Update: {
+          academy_id?: string
+          created_at?: string
+          expires_on?: string
+          id?: string
+          note?: string | null
+          number?: string | null
+          profile_id?: string
+          title?: string
+          verified_at?: string
+          verified_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_accreditations_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_accreditations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_accreditations_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_clearances: {
         Row: {
           academy_id: string
@@ -8525,6 +8682,7 @@ export type Database = {
       }
       academy_results: { Args: { p_academy: string }; Returns: Json }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
+      accreditation_board: { Args: { p_academy?: string }; Returns: Json }
       add_fixture_change_note: {
         Args: { p_body: string; p_request: string }
         Returns: string
@@ -9167,6 +9325,20 @@ export type Database = {
         }
         Returns: string
       }
+      file_incident_report: {
+        Args: {
+          p_academy: string
+          p_ambulance?: boolean
+          p_event?: string
+          p_first_aid?: string
+          p_occurred_at?: string
+          p_parent_told?: boolean
+          p_player?: string
+          p_what: string
+          p_who?: string
+        }
+        Returns: string
+      }
       finance_export: {
         Args: { p_academy: string }
         Returns: {
@@ -9335,6 +9507,7 @@ export type Database = {
         Returns: Json
       }
       import_screen: { Args: { p_academy?: string }; Returns: Json }
+      incident_register: { Args: { p_academy?: string }; Returns: Json }
       invite_player_login: {
         Args: { p_email: string; p_player: string }
         Returns: Json
@@ -9855,6 +10028,7 @@ export type Database = {
         Returns: Json
       }
       purge_expired_message_archive: { Args: never; Returns: number }
+      queue_accreditation_warnings: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       queue_duty_reminders: { Args: { p_now?: string }; Returns: number }
       queue_fee_reminders: { Args: never; Returns: number }
@@ -9899,6 +10073,17 @@ export type Database = {
           ms: number
           status_code: number
         }[]
+      }
+      record_accreditation: {
+        Args: {
+          p_academy: string
+          p_expires_on: string
+          p_note?: string
+          p_number?: string
+          p_profile: string
+          p_title: string
+        }
+        Returns: string
       }
       record_clearance: {
         Args: {
@@ -10001,6 +10186,10 @@ export type Database = {
           status: string
         }[]
       }
+      remove_accreditation: {
+        Args: { p_accreditation: string }
+        Returns: undefined
+      }
       remove_match_photo: { Args: { p_photo: string }; Returns: Json }
       remove_match_video: { Args: { p_video: string }; Returns: Json }
       remove_member_role: {
@@ -10096,6 +10285,10 @@ export type Database = {
           p_report: string
           p_status: Database["public"]["Enums"]["conduct_status"]
         }
+        Returns: undefined
+      }
+      review_incident: {
+        Args: { p_outcome: string; p_report: string }
         Returns: undefined
       }
       review_report: {
@@ -10601,6 +10794,7 @@ export type Database = {
         | "bye"
         | "postponed"
         | "cancelled"
+      incident_status: "open" | "reviewed"
       invite_status: "pending" | "accepted" | "declined" | "revoked" | "expired"
       join_request_status: "pending" | "approved" | "declined" | "expired"
       kit_size:
@@ -10888,6 +11082,7 @@ export const Constants = {
         "postponed",
         "cancelled",
       ],
+      incident_status: ["open", "reviewed"],
       invite_status: ["pending", "accepted", "declined", "revoked", "expired"],
       join_request_status: ["pending", "approved", "declined", "expired"],
       kit_size: [
