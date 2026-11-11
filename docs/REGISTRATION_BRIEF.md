@@ -1,10 +1,21 @@
 # Registration — as close to Dribl as possible (Joey, 10 Nov 2026)
 
-**Status: queued.** Joey's order: Part A (the four audit fixes) → Part B
-(the rest of Big Club Phase 1, with the organiser group) → Part C (the
-Dribl gaps, *without* the registration photo, which belongs here) → **this**
-→ the SPL Season 4 simulation (`SIMULATION.md`). Commit and push hourly. No
-deploy until Joey says.
+**Status: in progress (11 Nov 2026).** Part C is done; this is the queue
+now, then the SPL Season 4 simulation (`SIMULATION.md`). Commit and push
+hourly; Joey says when the next deploy is.
+
+| Gap | State |
+|---|---|
+| 1. Pay timing per program | **Done** — 0262, `/api/register/pay`, `lib/stripe/refund.ts`; test-rls 214, `test-pay-now` (Stripe test mode) |
+| 2. Photo step | next |
+| 3. Active & Creative Kids voucher | queued |
+| 4. Family dashboard | queued |
+| 5. Find a club | queued |
+| 6. Register as | queued |
+| 7. Club review | queued |
+| 8. Save and resume | queued |
+| 9. Receipts | queued |
+| 10. Card fee pass-through | queued |
 
 ## The brief, verbatim
 

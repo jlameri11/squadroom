@@ -31,6 +31,8 @@ export type PublicProgram = {
   /** R-18: PlayFootball first. */
   requires_official_rego?: boolean
   payment_required: boolean
+  /** 0262: 'now' charges on submit (refunded in full on a decline); 'after_approval' asks once accepted. */
+  pay_timing?: 'now' | 'after_approval'
   amount_cents: number | null
   spots_left: number | null
   waitlist_enabled: boolean
@@ -47,7 +49,7 @@ export function ProgramSummary({ program: p }: { program: PublicProgram }) {
               p.born_to_year && p.born_to_year !== p.born_from_year ? `–${p.born_to_year}` : ''
             }`,
           p.starts_on && `From ${shortDate(p.starts_on)}`,
-          p.amount_cents != null && money(p.amount_cents),
+          p.amount_cents != null && `${money(p.amount_cents)}${p.pay_timing === 'now' && p.payment_required ? ', paid on registration' : ''}`,
         ]
           .filter(Boolean)
           .join(' · ')}

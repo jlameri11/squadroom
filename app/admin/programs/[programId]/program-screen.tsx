@@ -9,6 +9,7 @@ import { QuestionsEditor } from './questions-editor'
 import { OfferControl, type TrialOffer } from './offer-control'
 import { WithdrawPolicy } from './withdraw-policy'
 import { OfficialRegoToggle } from './official-rego-toggle'
+import { PayTimingToggle } from './pay-timing-toggle'
 import { TrialGrading } from './trial-grading'
 import { WhenOn } from '@/components/when-on'
 
@@ -37,6 +38,9 @@ type Program = {
   withdraw_until: string | null
   refund_bps_after: number
   requires_official_rego: boolean
+  payment_required: boolean
+  /** 0262: 'now' charges on submit, 'after_approval' asks once accepted. */
+  pay_timing: 'now' | 'after_approval'
 }
 
 /**
@@ -70,7 +74,7 @@ export function ProgramScreen({ programId }: { programId: string }) {
     const supabase = createClient()
     const { data: p } = await supabase
       .from('programs')
-      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions, withdraw_until, refund_bps_after, requires_official_rego')
+      .select('id, academy_id, name, kind, status, capacity, born_from_year, born_to_year, team_id, closes_at, questions, withdraw_until, refund_bps_after, requires_official_rego, payment_required, pay_timing')
       .eq('id', programId)
       .maybeSingle()
     if (!p) return setProgram(null)
@@ -266,6 +270,14 @@ export function ProgramScreen({ programId }: { programId: string }) {
             programId={program.id}
             value={program.requires_official_rego}
             onSaved={(requires_official_rego) => setProgram({ ...program, requires_official_rego })}
+          />
+
+          {/* 0262: pay now (refunded in full on a decline) or once accepted. */}
+          <PayTimingToggle
+            programId={program.id}
+            value={program.pay_timing ?? 'after_approval'}
+            paymentRequired={Boolean(program.payment_required)}
+            onSaved={(pay_timing) => setProgram({ ...program, pay_timing })}
           />
 
           {error && (

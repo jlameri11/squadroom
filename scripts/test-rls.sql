@@ -4540,6 +4540,53 @@ begin
     insert into rls_results values (213, 'Team Creator: a captain''s request, accepted into a team with a join code in the organiser''s organisation; the join page names the team and the share; the request''s contact joins as an adult and is the captain, on the books, the squad and the season squad, with the share raised once per player; a child is refused; the switch off refuses captains'' teams', r213);
   end;
 
+  -- 0262. Pay timing: a program is "once accepted" unless the club says
+  -- "now"; the public page carries the choice; a parent cannot change it,
+  -- the owner can; a lapsed pay-now request that was paid asks for its
+  -- refund with no player to point at. Rolled back.
+  declare
+    v_prog uuid; v_fee uuid; v_req uuid; v_pay uuid; v_default text; v_public text; v_parent_changed boolean := false; v_owner text; v_refund record; v_expired int;
+    r214 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.payment_requests (academy_id, title, amount_cents, per_player) values (ACAD_A, 'RLS Pay-now fee', 12000, true) returning id into v_fee;
+      insert into public.programs (academy_id, name, kind, status, season, created_by, payment_required, payment_request_id)
+      values (ACAD_A, 'RLS Pay-now Squad', 'squad', 'open', '2026', COACH, true, v_fee) returning id into v_prog;
+      select p.pay_timing into v_default from public.programs p where p.id = v_prog;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      update public.programs set pay_timing = 'now' where id = v_prog;
+      select (p.pay_timing = 'now') into v_parent_changed from public.programs p where p.id = v_prog;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      update public.programs set pay_timing = 'now' where id = v_prog;
+      select p.pay_timing into v_owner from public.programs p where p.id = v_prog;
+      execute 'reset role';
+      select x->>'pay_timing' into v_public
+        from jsonb_array_elements(public.public_programs((select slug from public.academies where id = ACAD_A))->'programs') x
+       where (x->>'id')::uuid = v_prog;
+      -- A paid pay-now request that lapses.
+      insert into public.registration_requests (academy_id, program_id, guardian_name, guardian_phone, child_name, child_dob, secret_hash, expires_at)
+      values (ACAD_A, v_prog, 'RLS Guardian', '+61400009931', 'RLS Paid Child', '2016-02-02', 'rls', now() - interval '1 minute') returning id into v_req;
+      insert into public.payments (academy_id, request_id, profile_id, player_id, registration_request_id, amount_cents, currency, status, instalment_seq, paid_at, stripe_payment_intent)
+      values (ACAD_A, v_fee, PARENT, null, v_req, 12000, 'aud', 'paid', 1, now(), 'pi_rls') returning id into v_pay;
+      v_expired := public.expire_stale_registrations();
+      select r.amount_cents, r.status, r.reason, r.player_id into v_refund from public.refunds r where r.payment_id = v_pay;
+      r214 := case when v_default = 'after_approval' and not coalesce(v_parent_changed, false) and v_owner = 'now' and v_public = 'now'
+                    and v_expired >= 1 and v_refund.amount_cents = 12000 and v_refund.status = 'requested' and v_refund.reason = 'expired' and v_refund.player_id is null then 'PASS'
+                   else 'FAIL (default '||coalesce(v_default,'null')||', parent changed '||coalesce(v_parent_changed::text,'null')||', owner '||coalesce(v_owner,'null')
+                        ||', public '||coalesce(v_public,'null')||', expired '||v_expired||', refund '||coalesce(v_refund.amount_cents::text,'null')||'/'||coalesce(v_refund.status::text,'null')||'/'||coalesce(v_refund.reason,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r214 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (214, 'pay timing: once accepted unless the club says now; on the public page; a parent cannot change it and the owner can; a lapsed paid pay-now request asks for its refund with no player', r214);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

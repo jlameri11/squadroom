@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { adoptEmail } from '@/lib/account-email'
 import { syntheticEmail } from '@/lib/join'
 import { addHat, joinTeam } from '@/lib/membership'
+import { issueRefund } from '@/lib/stripe/refund'
 
 /**
  * A club decides on a family it has never met.
@@ -67,7 +68,27 @@ export async function POST(request: Request) {
         decision_note: note?.trim() || null,
       })
       .eq('id', requestId)
-    return NextResponse.json({ ok: true })
+    // 0262: a pay-now registration that was paid is refunded in full, now,
+    // without anyone tapping. The row is written first, so a Stripe that is
+    // down leaves a refund the Treasurer sees as "requested", never nothing.
+    const { data: paidRows } = await admin
+      .from('payments')
+      .select('id, amount_cents')
+      .eq('registration_request_id', requestId)
+      .eq('status', 'paid')
+      .is('refunded_at', null)
+    const refunds: { id: string; ok: boolean; error?: string }[] = []
+    for (const p of paidRows ?? []) {
+      const { data: row } = await admin
+        .from('refunds')
+        .insert({ academy_id: req.academy_id, amount_cents: p.amount_cents, payment_id: p.id, reason: 'declined', note: `Declined registration for ${req.child_name}`, status: 'requested' })
+        .select('id')
+        .single()
+      if (!row) continue
+      const issued = await issueRefund(admin, row.id, auth.user.id)
+      refunds.push({ id: row.id, ok: issued.ok, error: issued.ok ? undefined : issued.error })
+    }
+    return NextResponse.json({ ok: true, refunds })
   }
 
   if (!req.guardian_phone) {
@@ -206,6 +227,21 @@ export async function POST(request: Request) {
       },
       { onConflict: 'player_id,profile_id' }
     )
+  }
+
+  // 0262: a payment made on submit now belongs to the player it was for and
+  // moves onto the program's own fee, so it reads as paid everywhere a
+  // family's or the club's money is read; the registration's stand-in fee
+  // is closed.
+  const { data: paidProgram } = await admin.from('programs').select('payment_request_id').eq('id', req.program_id).maybeSingle()
+  const { data: guestPays } = await admin.from('payments').select('id, request_id').eq('registration_request_id', requestId).is('player_id', null)
+  for (const gp of guestPays ?? []) {
+    const patch: { player_id: string; profile_id: string; request_id?: string } = { player_id: playerId, profile_id: profileId }
+    if (paidProgram?.payment_request_id) patch.request_id = paidProgram.payment_request_id
+    const { error: moveErr } = await admin.from('payments').update(patch).eq('id', gp.id)
+    if (!moveErr && paidProgram?.payment_request_id && gp.request_id !== paidProgram.payment_request_id) {
+      await admin.from('payment_requests').update({ archived_at: now }).eq('id', gp.request_id)
+    }
   }
 
   if (teamId) {

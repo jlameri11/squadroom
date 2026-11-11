@@ -86,6 +86,16 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [chosen, setChosen] = useState<string | null>(null)
   const [sent, setSent] = useState<{ requestId: string; secret: string } | null>(null)
   const [status, setStatus] = useState<'pending' | 'approved' | 'declined' | null>(null)
+  // 0262: back from Stripe with ?paid=1 — read after mount, so the server and
+  // the first paint agree.
+  const [paid, setPaid] = useState(false)
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get('paid') === '1') setPaid(true)
+    } catch {
+      /* no URL to read */
+    }
+  }, [])
   const [resumed, setResumed] = useState(false)
 
   const [guardianName, setGuardianName] = useState('')
@@ -115,7 +125,11 @@ export function RegisterForm({ slug }: { slug: string }) {
     // again and creating a second request.
     try {
       const saved = localStorage.getItem(KEY(slug))
-      if (saved) setSent(JSON.parse(saved))
+      if (saved) {
+        const s = JSON.parse(saved) as { requestId: string; secret: string; programId?: string }
+        setSent(s)
+        if (s.programId) setChosen(s.programId)
+      }
       // And a form half filled in. Picked up where they left off.
       const draft = localStorage.getItem(DRAFT(slug))
       if (draft && !saved) {
@@ -202,16 +216,46 @@ export function RegisterForm({ slug }: { slug: string }) {
   const logo = data.academy.logo_url
 
   if (sent) {
+    const sentProgram = data.programs.find((p) => p.id === chosen) ?? null
+    const payNow = sentProgram?.pay_timing === 'now' && sentProgram.payment_required && (sentProgram.amount_cents ?? 0) > 0 && status !== 'declined'
     return (
       <Frame css={clubCss} logo={logo} academy={data.academy.name}>
         <h1 className="display text-xl">
-          {status === 'declined' ? 'Not this time' : 'Sent to the club'}
+          {status === 'declined' ? 'Not this time' : paid ? 'Paid and sent' : 'Sent to the club'}
         </h1>
         <p className="mt-2 text-sm text-ink-2">
           {status === 'declined'
             ? `${data.academy.name} could not take this registration. They may be in touch.`
-            : `${data.academy.name} will look at this and come back to you. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`}
+            : paid
+              ? `Stripe has your payment. ${data.academy.name} confirms the place; if they cannot take it, the fee comes back in full. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`
+              : `${data.academy.name} will look at this and come back to you. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`}
         </p>
+        {/* 0262: a program that charges on submit — one tap to Stripe, refunded in full on a decline. */}
+        {payNow && !paid && (
+          <div className="mt-4 rounded-xl border p-3.5" style={{ borderColor: 'var(--brand)' }} data-pay-now>
+            <p className="text-sm">
+              <b>{sentProgram.name}</b> is paid on registration: <b>{`$${((sentProgram.amount_cents ?? 0) / 100).toFixed(2)}`}</b>, refunded in full if the club cannot take the place.
+            </p>
+            <button
+              onClick={async () => {
+                setBusy(true)
+                setError(null)
+                const res = await fetch('/api/register/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: sent.requestId, secret: sent.secret }) })
+                const body = await res.json().catch(() => ({}))
+                setBusy(false)
+                if (!res.ok || !body.url) return setError(body.error ?? 'Could not start the payment.')
+                window.location.href = body.url
+              }}
+              disabled={busy}
+              className="mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-50"
+              style={{ background: tint, color: ink }}
+              data-pay-now-button
+            >
+              {busy ? 'Opening Stripe…' : 'Pay now'}
+            </button>
+            {error && <p className="mt-2 text-sm" style={{ color: 'var(--no)' }}>{error}</p>}
+          </div>
+        )}
         {status !== 'declined' && (
           <p className="mt-3 text-xs text-ink-3">
             It has to be this phone. The link only works on the device that registered.
@@ -285,7 +329,9 @@ export function RegisterForm({ slug }: { slug: string }) {
     const body = await res.json().catch(() => ({}))
     if (!res.ok) return setError(body.error ?? 'Could not send your registration.')
 
-    const saved = { requestId: body.requestId, secret: body.secret }
+    // The program too (0262), so a parent who comes back sees the right
+    // "Pay now" for it.
+    const saved = { requestId: body.requestId, secret: body.secret, programId: program.id }
     try {
       localStorage.setItem(KEY(slug), JSON.stringify(saved))
       localStorage.removeItem(DRAFT(slug))

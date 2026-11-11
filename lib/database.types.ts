@@ -5523,6 +5523,7 @@ export type Database = {
           player_id: string | null
           profile_id: string
           refunded_at: string | null
+          registration_request_id: string | null
           request_id: string
           status: string
           stripe_payment_intent: string | null
@@ -5540,6 +5541,7 @@ export type Database = {
           player_id?: string | null
           profile_id: string
           refunded_at?: string | null
+          registration_request_id?: string | null
           request_id: string
           status?: string
           stripe_payment_intent?: string | null
@@ -5557,6 +5559,7 @@ export type Database = {
           player_id?: string | null
           profile_id?: string
           refunded_at?: string | null
+          registration_request_id?: string | null
           request_id?: string
           status?: string
           stripe_payment_intent?: string | null
@@ -5583,6 +5586,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_registration_request_id_fkey"
+            columns: ["registration_request_id"]
+            isOneToOne: false
+            referencedRelation: "registration_requests"
             referencedColumns: ["id"]
           },
           {
@@ -6700,6 +6710,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["program_kind"]
           name: string
           opens_at: string | null
+          pay_timing: string
           payment_request_id: string | null
           payment_required: boolean
           questions: Json
@@ -6728,6 +6739,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["program_kind"]
           name: string
           opens_at?: string | null
+          pay_timing?: string
           payment_request_id?: string | null
           payment_required?: boolean
           questions?: Json
@@ -6756,6 +6768,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["program_kind"]
           name?: string
           opens_at?: string | null
+          pay_timing?: string
           payment_request_id?: string | null
           payment_required?: boolean
           questions?: Json
@@ -7218,9 +7231,9 @@ export type Database = {
           issued_by: string | null
           note: string | null
           payment_id: string
-          player_id: string
+          player_id: string | null
           reason: string | null
-          registration_id: string
+          registration_id: string | null
           requested_at: string
           requested_by: string | null
           status: Database["public"]["Enums"]["refund_status"]
@@ -7234,9 +7247,9 @@ export type Database = {
           issued_by?: string | null
           note?: string | null
           payment_id: string
-          player_id: string
+          player_id?: string | null
           reason?: string | null
-          registration_id: string
+          registration_id?: string | null
           requested_at?: string
           requested_by?: string | null
           status?: Database["public"]["Enums"]["refund_status"]
@@ -7250,9 +7263,9 @@ export type Database = {
           issued_by?: string | null
           note?: string | null
           payment_id?: string
-          player_id?: string
+          player_id?: string | null
           reason?: string | null
-          registration_id?: string
+          registration_id?: string | null
           requested_at?: string
           requested_by?: string | null
           status?: Database["public"]["Enums"]["refund_status"]

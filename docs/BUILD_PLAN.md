@@ -651,7 +651,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     `ladder_breakdown`, test-rls 212, `test-ladder-breakdown`. (3) Team
     Creator — done, 0261, switch `team_creator`, test-rls 213,
     `test-team-creator`. **Part C is complete** (item 1, the photo, is in
-    13). Next: item 13, the registration brief.
+    13). Next: item 13, the registration brief — gap 1 (pay timing) done
+    the same night, 0262; the table of the rest is in
+    `REGISTRATION_BRIEF.md`.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features
@@ -703,6 +705,24 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     >    Treasurer request can't be approved by a coordinator; no WWCC = no
     >    coach role.
     > Do after Big Club Phase 1 checks, before the deploy. Commit and push.
+
+16. **"Feels instant" pass** (Joey, 11 Nov 2026) — **after the registration
+    brief (13), before the Season 4 simulation (14).** The brief, verbatim:
+
+    > "Feels instant" pass (Joey, 11 Nov) — goal: no perceived lag on a phone on 4G.
+    > 1. Stale-while-revalidate: every main screen (Home, Chat list, a chat, Fixtures, a game, Admin) shows the last-known data instantly from cache, then refreshes quietly.
+    > 2. Optimistic updates everywhere a person taps: RSVP, send message, react, live score tap, approve, mark paid — show the result at once, roll back with a clear message if it fails.
+    > 3. Prefetch: from Home, preload the four tabs and the next game; prefetch a chat when its row is in view.
+    > 4. Region: check where Netlify runs our server code. If it isn't Sydney, move server-side work to Sydney (or to the browser talking to Supabase Sydney directly) — no page should cross the Pacific.
+    > 5. Skeletons that match the real layout (no jumping), and no spinner longer than 300 ms without content.
+    > 6. Measure: time-screens on a throttled "Fast 4G" phone profile, cold and warm; tap-to-response time for RSVP/send/score. Targets: tap feedback < 100 ms, first content < 1 s cold, < 300 ms warm. Report before/after in docs/SCALE.md.
+    > Do after the registration brief, before the Season 4 simulation. Commit and push hourly.
+
+    Already known for item 4 (11 Nov, from `scripts/check-live.mjs`):
+    `/api/probe` on the live site reports the Netlify function running in
+    **us-east-2**, with database round trips of 250–700 ms — every
+    server-rendered page crosses the Pacific twice. The browser's own calls
+    go to Supabase (Sydney) directly.
 
     **Done (11 Nov 2026; 0255–0256):** `role_requests` with
     `request_role`, `decide_role_request`, `role_requests_pending`,
