@@ -9211,6 +9211,10 @@ export type Database = {
           won: number
         }[]
       }
+      competition_ladder_breakdown: {
+        Args: { p_competition: string; p_division: string; p_entry: string }
+        Returns: Json
+      }
       competition_people: { Args: { p_competition: string }; Returns: Json }
       competition_run_sheet: {
         Args: { p_competition: string; p_division?: string }
@@ -10194,10 +10198,15 @@ export type Database = {
       public_academy: { Args: { p_slug: string }; Returns: Json }
       public_brand: { Args: { p_kind?: string; p_slug: string }; Returns: Json }
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
+      public_ladder_breakdown: {
+        Args: { p_entry: string; p_slug: string }
+        Returns: Json
+      }
       public_match_centre: { Args: { p_slug: string }; Returns: Json }
       public_programs: { Args: { p_slug: string }; Returns: Json }
       public_sponsors: { Args: { p_slug: string }; Returns: Json }
       public_status: { Args: never; Returns: Json }
+      public_switches: { Args: { p_slug: string }; Returns: Json }
       publish_lineup: {
         Args: { p_event: string; p_published?: boolean; p_tell_out?: boolean }
         Returns: undefined
@@ -10372,6 +10381,34 @@ export type Database = {
           requires_official: boolean
           spots_left: number
           status: string
+        }[]
+      }
+      registrations_export: {
+        Args: { p_academy: string; p_program?: string }
+        Returns: {
+          answers: Json
+          child_dob: string
+          child_gender: string
+          child_name: string
+          consents: Json
+          created_at: string
+          decided_at: string
+          decision_note: string
+          ffa_number: string
+          fifa_id: string
+          for_self: boolean
+          guardian_email: string
+          guardian_name: string
+          guardian_phone: string
+          official_confirmed_at: string
+          player_id: string
+          program_id: string
+          program_name: string
+          questions: Json
+          request_id: string
+          season: string
+          status: string
+          team_name: string
         }[]
       }
       remove_accreditation: {

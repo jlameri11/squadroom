@@ -48,6 +48,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 
 | Feature | Switch | Who sees it when on | Where |
 |---|---|---|---|
+| Registrations spreadsheet (0259) | `registrations_csv` | the club's staff and its Registrar | Admin → Registrations → "Download the spreadsheet" (`/api/export/registrations?academyId=…[&programId=…]`: one row per request, the child, guardian, program, status, PlayFootball ids, squad, consents, and a column per question headed by its label) |
 | Bans (0257) | `bans` | the club's staff, President and Welfare officer; the league's staff, competition manager and discipline officer; the banned person sees their own | Admin → Welfare → Bans (ban a member, a player or a name; a reason, until a date or until lifted; lift with a note); the league's Discipline tab → Bans; the refusals themselves ("no answer while banned until 18 Nov — …") |
 | Role requests (0256) | `role_requests` | every member asks; owners, admins, President, Secretary decide (coordinators inside their age groups; committee seats the owner or President only) | Settings → "Request a role" (a sheet: the role, the squads, a note; your requests with their state); Admin → Requests (Approve / Decline with a note, "waiting on WWCC"); Club HQ's "Needs a decision" counts them |
 | Player of the Match | `player_of_match` | the squad's coach picks; the squad's families see | the game page, the team chat |
@@ -61,7 +62,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Team duty rotation (0252) | `duty_roster` | the squad's coach or manager rosters; families see their turn and ask for swaps | the team page (Duties), the game page (Duties), Admin → Rosters |
 | Team Creator (social comps) | `team_creator` | captains; the organiser approves | registration (Part C) |
 | Blue cards (sin bin) (0258) | `blue_cards` | a league that turns them on in its discipline rules (with the minutes off); the teams, the referee and the organiser record them | the match sheet's events (🟦 Blue with the minute shown and "back 33'"; refused without a minute, and anywhere the league does not use them); the Discipline tab's rules and report |
-| Ladder breakdown | `ladder_breakdown` | anyone who sees the ladder | the ladder (Part C) |
+| Ladder breakdown (0260) | `ladder_breakdown` | anyone who sees the ladder: the competition's participants on its Ladder tab, anyone on the public match centre | tap a ladder row: a sheet with every game (score, result, the points the division gives, forfeits named), the league's adjustments with their reasons, and the sum the row shows; off, the rows are not tappable and both readers answer null |
 | Find a club | `find_a_club` | the public | `/clubs` (registration brief) |
 | Card-fee pass-through | `card_fee_passthrough` | families, shown before paying | checkout (registration brief) |
 | Active Kids vouchers | `active_kids` | families at checkout; the Treasurer's redeem list | checkout, Admin → Payments (registration brief) |

@@ -5,6 +5,7 @@ import { AppBar, Screen } from '@/components/app-shell'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { getOrg } from '@/lib/org'
+import { WhenOn } from '@/components/when-on'
 
 type Row = {
   request_id: string
@@ -237,6 +238,17 @@ export function RegistrationQueue() {
         back="/admin"
       />
       <Screen>
+        {/* 0259: the registrations as a spreadsheet, a column per question. */}
+        {getOrg() && (
+          <WhenOn feature="registrations_csv">
+            <div className="border-b px-4 py-2.5 text-xs" style={{ borderColor: 'var(--line-2)' }}>
+              <a href={`/api/export/registrations?academyId=${getOrg()}`} className="tap font-semibold underline underline-offset-4" data-registrations-csv>
+                Download the spreadsheet
+              </a>
+              <span className="text-ink-3"> — every request, with a column per question (CSV)</span>
+            </div>
+          </WhenOn>
+        )}
         {/* The club's own link, where the club will look for it. A public
             page nobody can find is a public page that does nothing — the
             same reason /programs and /payments were built and reachable

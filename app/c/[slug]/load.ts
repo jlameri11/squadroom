@@ -32,6 +32,18 @@ export async function loadBrand(slug: string): Promise<Brand | null> {
 }
 
 /** X-08: the organiser's sponsors for the strip — a name, a logo, a link. */
+/** 0260: what the organiser's switches let this page offer (the ladder breakdown). */
+export type PublicSwitches = { ladder_breakdown?: boolean }
+export async function loadSwitches(slug: string): Promise<PublicSwitches> {
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const { data } = await anon.rpc('public_switches', { p_slug: slug })
+  return (data as unknown as PublicSwitches) ?? {}
+}
+
 export async function loadSponsors(slug: string): Promise<PublicSponsor[]> {
   const anon = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

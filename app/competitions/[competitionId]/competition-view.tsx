@@ -16,8 +16,10 @@ import { Nominations, MyNominations } from './nominations'
 import { RoundTools } from './round-tools'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useFeatures } from '@/lib/features'
+import { LadderBreakdownSheet, type Breakdown } from '@/components/ladder-breakdown'
 import { createClient } from '@/lib/supabase/client'
 
 export type Fixture = {
@@ -767,16 +769,26 @@ function Ladder({
   const [busy, setBusy] = useState(false)
   const [adjError, setAdjError] = useState<string | null>(null)
   const [notes, setNotes] = useState<{ entry_id: string; points: number; reason: string }[]>([])
+  // 0260: tap a row, see every point — where the organiser's switch is on.
+  const [organiser, setOrganiser] = useState<string | null>(null)
+  const features = useFeatures(organiser)
+  const breakdownOn = Boolean(organiser) && features.on('ladder_breakdown')
+  const [open, setOpen] = useState<LadderRow | null>(null)
+  const fetchBreakdown = useCallback(async () => {
+    if (!open) return null
+    const { data } = await createClient().rpc('competition_ladder_breakdown', { p_competition: competitionId, p_division: division, p_entry: open.entry_id })
+    return (data as unknown as Breakdown | null) ?? null
+  }, [competitionId, division, open])
 
   useEffect(() => {
     ;(async () => {
-      const { data } = await createClient()
-        .from('ladder_adjustments')
-        .select('entry_id, points, reason')
-        .eq('competition_id', competitionId)
-        .eq('division', division)
-        .order('made_at')
+      const supabase = createClient()
+      const [{ data }, { data: comp }] = await Promise.all([
+        supabase.from('ladder_adjustments').select('entry_id, points, reason').eq('competition_id', competitionId).eq('division', division).order('made_at'),
+        supabase.from('competitions').select('organiser_id').eq('id', competitionId).maybeSingle(),
+      ])
       setNotes(data ?? [])
+      setOrganiser(comp?.organiser_id ?? null)
     })()
   }, [competitionId, division, rows])
 
@@ -803,6 +815,7 @@ function Ladder({
 
   return (
     <div>
+      {open && <LadderBreakdownSheet teamName={open.team_name} fetchBreakdown={fetchBreakdown} onClose={() => setOpen(null)} />}
       {notes.length > 0 && (
         <ul className="border-b px-4 py-2 text-xs text-ink-2" style={{ borderColor: 'var(--line-2)' }}>
           {notes.map((n, i) => (
@@ -843,10 +856,12 @@ function Ladder({
             </thead>
             <tbody>
               {list.map((r, i) => (
-                <tr key={r.entry_id} className="border-b border-[var(--line-2)]">
+                <tr key={r.entry_id} className="border-b border-[var(--line-2)]" data-ladder-row={r.entry_id}>
                   <td className="truncate p-2">
                     <span className="mr-1.5 text-xs text-ink-3">{i + 1}</span>
-                    {r.team_name}
+                    {breakdownOn ? (
+                      <button onClick={() => setOpen(r)} className="tap text-left underline decoration-dotted underline-offset-4" data-ladder-breakdown-open={r.entry_id}>{r.team_name}</button>
+                    ) : r.team_name}
                   </td>
                   <td className="p-1 text-center tabular-nums">{r.played}</td>
                   <td className="p-1 text-center tabular-nums">{r.won}</td>

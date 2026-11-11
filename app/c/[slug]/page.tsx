@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { MatchCentre } from './match-centre'
-import { load, loadBrand, loadSponsors } from './load'
+import { load, loadBrand, loadSponsors, loadSwitches } from './load'
 import { siteUrl } from '@/lib/site'
 
 /**
@@ -78,6 +78,6 @@ export default async function PublicCompetitionPage(ctx: {
     )
   }
 
-  const [sponsors, brand] = await Promise.all([loadSponsors(slug), loadBrand(slug)])
-  return <MatchCentre centre={centre} shareUrl={`${siteUrl()}/c/${slug}`} sponsors={sponsors} brand={brand} />
+  const [sponsors, brand, switches] = await Promise.all([loadSponsors(slug), loadBrand(slug), loadSwitches(slug)])
+  return <MatchCentre centre={centre} shareUrl={`${siteUrl()}/c/${slug}`} sponsors={sponsors} brand={brand} switches={switches} />
 }

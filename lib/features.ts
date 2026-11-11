@@ -20,9 +20,10 @@ export type FeatureKey =
   | 'training_slots' | 'trial_ratings' | 'duty_roster' | 'team_creator' | 'blue_cards' | 'ladder_breakdown'
   | 'find_a_club' | 'card_fee_passthrough' | 'active_kids' | 'scheduled_messages' | 'digest'
   | 'helpers' | 'match_photos' | 'kit' | 'match_video' | 'respect_marks' | 'polls' | 'scan'
-  | 'club_health' | 'game_day' | 'accreditations' | 'role_requests' | 'bans'
+  | 'club_health' | 'game_day' | 'accreditations' | 'role_requests' | 'bans' | 'registrations_csv'
 
 export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?: false }[] = [
+  { key: 'registrations_csv', label: 'Registrations spreadsheet', what: 'Download the registrations as a CSV with a column per question — the whole club or one program. For the staff and the Registrar.' },
   { key: 'bans', label: 'Bans', what: 'The club or the league bans a person for a period with a reason: no answering for games, no posting, no team sheet while it runs. On the Welfare screen and the league’s Discipline tab.' },
   { key: 'role_requests', label: 'Role requests', what: 'A member asks to be a coach, manager, volunteer, referee or committee member from Settings; the committee approves or declines under Requests. Nothing opens until they do.' },
   { key: 'accreditations', label: 'Coaching accreditation', what: 'Course certificates with dates on the Checks screen; the person and the club reminded thirty days out.' },
@@ -39,7 +40,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'duty_roster', label: 'Team duty rotation', what: 'Oranges, linesperson, kit wash — one family per duty per game, the fewest turns first, with swaps asked for in the chat.' },
   { key: 'team_creator', label: 'Team Creator', what: 'A captain registers a team for a social comp and teammates join with a code.', builtYet: false },
   { key: 'blue_cards', label: 'Blue cards (sin bin)', what: 'Recorded on the match sheet with the minute shown and the minute back on, where a league turns them on in its discipline rules.' },
-  { key: 'ladder_breakdown', label: 'Ladder breakdown', what: 'Tap a ladder row to see how every point was earned.', builtYet: false },
+  { key: 'ladder_breakdown', label: 'Ladder breakdown', what: 'Tap a ladder row to see how every point was earned: each game with its points, forfeits named, the league’s adjustments with their reasons — on the league’s page and the public match centre.' },
   { key: 'find_a_club', label: 'Find a club', what: 'A public page to search clubs by name or suburb and see their open programs.', builtYet: false },
   { key: 'card_fee_passthrough', label: 'Card-fee pass-through', what: 'Families pay the card processing fee, shown clearly before paying. Off by default.', builtYet: false },
   { key: 'active_kids', label: 'Active & Creative Kids vouchers', what: 'The NSW voucher at checkout, and the Treasurer’s list to redeem.', builtYet: false },

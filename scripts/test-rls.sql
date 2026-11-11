@@ -4320,6 +4320,143 @@ begin
     insert into rls_results values (210, 'blue cards: refused where the league does not use them, refused without the minute, recorded with it, counted by the report with the rule carried, and refused again with the organiser''s switch off', r210);
   end;
 
+  -- 0259. The registrations export: a parent is refused; the owner reads
+  -- the request with its answers and the program's questions; the program
+  -- filter keeps to one program. Rolled back.
+  declare
+    v_prog uuid; v_prog2 uuid; v_req uuid; v_parent_refused boolean := false; v_all int; v_one int; v_row record;
+    r211 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.programs (academy_id, name, kind, status, season, created_by, questions)
+      values (ACAD_A, 'RLS Export Camp', 'camp', 'open', '2026', COACH,
+              '[{"id":"school","label":"Which school?","type":"text"},{"id":"swim","label":"Can they swim?","type":"yesno"}]'::jsonb)
+      returning id into v_prog;
+      insert into public.programs (academy_id, name, kind, status, season, created_by)
+      values (ACAD_A, 'RLS Export Other', 'camp', 'open', '2026', COACH) returning id into v_prog2;
+      insert into public.registration_requests (academy_id, program_id, guardian_name, guardian_phone, child_name, child_dob, answers, consents, secret_hash, expires_at)
+      values (ACAD_A, v_prog, 'RLS Guardian', '+61400009901', 'RLS Export Child', '2017-03-03',
+              '{"school":"Summer Hill PS","swim":true}'::jsonb, '[{"id":"code_of_conduct","accepted_at":"2026-11-11T00:00:00Z"}]'::jsonb, 'rls', now() + interval '7 days')
+      returning id into v_req;
+      insert into public.registration_requests (academy_id, program_id, guardian_name, child_name, child_dob, secret_hash, expires_at)
+      values (ACAD_A, v_prog2, 'RLS Guardian Two', 'RLS Export Other Child', '2016-04-04', 'rls2', now() + interval '7 days');
+
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform * from public.registrations_export(ACAD_A, null);
+      exception when others then v_parent_refused := true;
+      end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_all from public.registrations_export(ACAD_A, null) e where e.child_name like 'RLS Export %';
+      select count(*) into v_one from public.registrations_export(ACAD_A, v_prog) e;
+      select * into v_row from public.registrations_export(ACAD_A, v_prog) e where e.request_id = v_req;
+      execute 'reset role';
+
+      r211 := case when v_parent_refused and v_all = 2 and v_one = 1
+                    and v_row.answers->>'school' = 'Summer Hill PS' and (v_row.answers->>'swim')::boolean
+                    and jsonb_array_length(v_row.questions) = 2 and v_row.questions->0->>'label' = 'Which school?'
+                    and v_row.guardian_phone = '+61400009901' and v_row.program_name = 'RLS Export Camp'
+                    and v_row.consents->0->>'id' = 'code_of_conduct' then 'PASS'
+                   else 'FAIL (parent refused '||v_parent_refused||', all '||v_all||', one '||v_one
+                        ||', answers '||coalesce(v_row.answers::text,'null')||', questions '||coalesce(left(v_row.questions::text,80),'null')
+                        ||', phone '||coalesce(v_row.guardian_phone,'null')||', program '||coalesce(v_row.program_name,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r211 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (211, 'the registrations export: a parent refused; the owner reads each request with its answers, consents and the program''s questions; one program at a time when asked', r211);
+  end;
+
+  -- 0260. The ladder breakdown: a league of NRIFA's own with a win, a loss
+  -- by forfeit and a deduction; the breakdown's games, adjustment and total
+  -- agree with the ladder row; a stranger gets nothing; the public door
+  -- answers for a published competition and names no one; the organiser's
+  -- switch off closes both doors. Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    v_comp uuid; v_home uuid; v_away uuid; v_fx1 uuid; v_fx2 uuid;
+    v_bd jsonb; v_ladder_pts integer; v_stranger jsonb; v_public jsonb; v_switch jsonb; v_off jsonb; v_off_public jsonb;
+    r212 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by)
+      values (ACAD_A, 'RLS Ladder Gala', 'season', '2026', 'active', 'managed', 'participants', COACH) returning id into v_comp;
+      -- Only NRIFA is in this competition; the other side is an unclaimed entry,
+      -- so the outsider (another club's member) is a stranger to it.
+      insert into public.competition_clubs (competition_id, academy_id, status, joined_at) values (v_comp, ACAD_A, 'active', now());
+      insert into public.competition_entries (competition_id, academy_id, team_id, display_name, division) values (v_comp, ACAD_A, U8, 'NRIFA U8', 'U8') returning id into v_home;
+      insert into public.competition_entries (competition_id, display_name, division) values (v_comp, 'Ravens U8', 'U8') returning id into v_away;
+      insert into public.fixtures (competition_id, division, round, home_entry_id, away_entry_id, starts_at, status, stage, home_score, away_score)
+      values (v_comp, 'U8', 'Round 1', v_home, v_away, now() - interval '14 days', 'final', 'group', 3, 1) returning id into v_fx1;
+      insert into public.fixtures (competition_id, division, round, home_entry_id, away_entry_id, starts_at, status, stage, home_score, away_score)
+      values (v_comp, 'U8', 'Round 2', v_away, v_home, now() - interval '7 days', 'forfeit', 'group', 3, 0) returning id into v_fx2;
+      insert into public.ladder_adjustments (competition_id, division, entry_id, points, reason, made_by)
+      values (v_comp, 'U8', v_home, -3, 'RLS: an ineligible player in Round 1', COACH);
+
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_bd := public.competition_ladder_breakdown(v_comp, 'U8', v_home);
+      select l.points into v_ladder_pts from public.competition_ladder(v_comp, 'U8') l where l.entry_id = v_home;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_stranger := public.competition_ladder_breakdown(v_comp, 'U8', v_home);
+      execute 'reset role';
+      -- Published, the competition is everyone's to read — the public door opens.
+      update public.competitions set public_slug = 'rls-ladder-gala', published_at = now() where id = v_comp;
+      perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+      execute 'set local role anon';
+      v_public := public.public_ladder_breakdown('rls-ladder-gala', v_home);
+      v_switch := public.public_switches('rls-ladder-gala');
+      execute 'reset role';
+      insert into public.academy_features (academy_id, feature, enabled) values (ACAD_A, 'ladder_breakdown', false)
+      on conflict (academy_id, feature) do update set enabled = false;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_off := public.competition_ladder_breakdown(v_comp, 'U8', v_home);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+      execute 'set local role anon';
+      v_off_public := public.public_ladder_breakdown('rls-ladder-gala', v_home);
+      execute 'reset role';
+
+      r212 := case when v_bd is not null
+                    and jsonb_array_length(v_bd->'games') = 2
+                    and (v_bd->'games'->0->>'result') = 'W' and (v_bd->'games'->0->>'points')::int = 3 and not (v_bd->'games'->0->>'forfeit')::boolean
+                    and (v_bd->'games'->1->>'result') = 'L' and (v_bd->'games'->1->>'forfeit')::boolean and (v_bd->'games'->1->>'opponent') = 'Ravens U8'
+                    and (v_bd->'totals'->>'from_games')::int = 3 and (v_bd->'totals'->>'from_adjustments')::int = -3 and (v_bd->'totals'->>'points')::int = 0
+                    and v_ladder_pts = 0
+                    and v_stranger is null
+                    and v_public is not null and (v_public->'totals'->>'points')::int = 0 and v_public::text not like '%player_id%' and v_public::text not like '%full_name%'
+                    and (v_switch->>'ladder_breakdown')::boolean
+                    and v_off is null and v_off_public is null then 'PASS'
+                   else 'FAIL (checks '||concat_ws(',',
+                          (v_bd is not null)::text, (jsonb_array_length(v_bd->'games') = 2)::text,
+                          ((v_bd->'games'->0->>'result') = 'W')::text, ((v_bd->'games'->0->>'points')::int = 3)::text, (not (v_bd->'games'->0->>'forfeit')::boolean)::text,
+                          ((v_bd->'games'->1->>'result') = 'L')::text, ((v_bd->'games'->1->>'forfeit')::boolean)::text, ((v_bd->'games'->1->>'opponent') = 'Ravens U8')::text,
+                          ((v_bd->'totals'->>'from_games')::int = 3)::text, ((v_bd->'totals'->>'from_adjustments')::int = -3)::text, ((v_bd->'totals'->>'points')::int = 0)::text,
+                          (v_ladder_pts = 0)::text, (v_stranger is null)::text, (v_public is not null)::text, ((v_public->'totals'->>'points')::int = 0)::text,
+                          (v_public::text not like '%player_id%')::text, (v_public::text not like '%full_name%')::text, ((v_switch->>'ladder_breakdown')::boolean)::text,
+                          (v_off is null)::text, (v_off_public is null)::text)
+                        ||'; bd '||coalesce(left(v_bd::text,120),'null')||'; ladder '||coalesce(v_ladder_pts::text,'null')
+                        ||'; stranger '||coalesce(v_stranger::text,'null')||'; public '||coalesce(left(v_public::text,80),'null')
+                        ||'; switch '||coalesce(v_switch::text,'null')||'; off '||coalesce(v_off::text,'null')||'/'||coalesce(v_off_public::text,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r212 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (212, 'the ladder breakdown: every game with its points, the forfeit named, the deduction with its reason, the total the ladder shows; a stranger gets nothing; the public door answers for a published competition and names no one; the organiser''s switch off closes both doors', r212);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

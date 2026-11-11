@@ -1,8 +1,10 @@
 'use client'
 
 import { clubThemeCss } from '@/lib/brand/colour'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { LadderBreakdownSheet, type Breakdown } from '@/components/ladder-breakdown'
 import { SponsorStrip, type PublicSponsor } from './sponsor-strip'
 
 export type Fixture = {
@@ -88,6 +90,7 @@ export function MatchCentre({
   initialDivision,
   shareUrl,
   sponsors = [],
+  switches,
   brand = null,
 }: {
   centre: Centre
@@ -101,6 +104,8 @@ export function MatchCentre({
   shareUrl?: string
   /** X-08: the organiser's sponsors for the strip under the header. */
   sponsors?: PublicSponsor[]
+  /** 0260: the organiser's switches — the ladder breakdown's tap shows only when on. */
+  switches?: { ladder_breakdown?: boolean }
 }) {
   const { competition, fixtures, ladder, divisions } = centre
   const slug = slugOf(shareUrl ?? '')
@@ -195,7 +200,7 @@ export function MatchCentre({
       ) : tab === 'scorers' ? (
         <Scorers rows={centre.top_scorers?.[division] ?? centre.top_scorers?.[divisions[0] ?? ''] ?? []} />
       ) : tab === 'ladder' ? (
-        <Ladder rows={ladder[division] ?? ladder[divisions[0] ?? ''] ?? []} />
+        <Ladder rows={ladder[division] ?? ladder[divisions[0] ?? ''] ?? []} slug={slug} breakdown={Boolean(switches?.ladder_breakdown)} />
       ) : (
         <Squads
           squads={centre.squads ?? {}}
@@ -420,7 +425,16 @@ function Fixtures({ fixtures }: { fixtures: Fixture[] }) {
   )
 }
 
-function Ladder({ rows }: { rows: LadderRow[] }) {
+function Ladder({ rows, slug, breakdown }: { rows: LadderRow[]; slug: string; breakdown: boolean }) {
+  // 0260: tap a row, see every point. Fetched on the tap through the public
+  // door (teams and scores only), by the same anon client the page uses.
+  const [open, setOpen] = useState<LadderRow | null>(null)
+  const fetchBreakdown = useCallback(async () => {
+    if (!open) return null
+    const { data } = await createClient().rpc('public_ladder_breakdown', { p_slug: slug, p_entry: open.entry_id })
+    return (data as unknown as Breakdown | null) ?? null
+  }, [slug, open])
+
   if (rows.length === 0) {
     return <Empty>No ladder yet — it appears once results are in.</Empty>
   }
@@ -432,6 +446,7 @@ function Ladder({ rows }: { rows: LadderRow[] }) {
 
   return (
     <div className="px-3.5">
+      {open && <LadderBreakdownSheet teamName={open.team_name} fetchBreakdown={fetchBreakdown} onClose={() => setOpen(null)} />}
       {[...groups.entries()].map(([group, table]) => (
         <div key={group} className="mb-4">
           {group && <h3 className="eyebrow px-1 pb-1.5">Group {group}</h3>}
@@ -452,10 +467,12 @@ function Ladder({ rows }: { rows: LadderRow[] }) {
               </thead>
               <tbody>
                 {table.map((r, i) => (
-                  <tr key={r.entry_id} className="border-t" style={{ borderColor: 'var(--line-2)' }}>
+                  <tr key={r.entry_id} className="border-t" style={{ borderColor: 'var(--line-2)' }} data-ladder-row={r.entry_id}>
                     <td className="px-3 py-2.5">
                       <span className="mr-2 tabular-nums text-ink-3">{i + 1}</span>
-                      {r.team_name}
+                      {breakdown ? (
+                        <button onClick={() => setOpen(r)} className="tap text-left underline decoration-dotted underline-offset-4" data-ladder-breakdown-open={r.entry_id}>{r.team_name}</button>
+                      ) : r.team_name}
                     </td>
                     <td className="px-1.5 py-2.5 text-right tabular-nums text-ink-2">{r.played}</td>
                     <td className="px-1.5 py-2.5 text-right tabular-nums text-ink-2">{r.won}</td>
