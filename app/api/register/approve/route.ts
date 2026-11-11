@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { adoptEmail } from '@/lib/account-email'
 import { syntheticEmail } from '@/lib/join'
+import { addHat, joinTeam } from '@/lib/membership'
 
 /**
  * A club decides on a family it has never met.
@@ -116,13 +117,6 @@ export async function POST(request: Request) {
   // already here keeps what they are and gains this.
   const forSelf = Boolean((req as { for_self?: boolean }).for_self)
   const hat = forSelf ? 'player' : 'parent'
-  const { data: already } = await admin
-    .from('academy_members')
-    .select('roles')
-    .eq('academy_id', req.academy_id)
-    .eq('profile_id', profileId)
-    .maybeSingle()
-  const roles = Array.from(new Set([...(((already as { roles?: string[] } | null)?.roles ?? []) as string[]), hat])) as ('owner' | 'admin' | 'coach' | 'parent' | 'player')[]
 
   // The child. Matched on NAME AND DATE OF BIRTH, which is the point of
   // collecting a date of birth: name alone matches a cousin, and two clubs
@@ -197,18 +191,10 @@ export async function POST(request: Request) {
   }
 
   // The membership after the player record, because the guards that let a
-  // player's own membership through read that record (0239).
-  await admin.from('academy_members').upsert(
-    {
-      academy_id: req.academy_id,
-      profile_id: profileId,
-      role: hat,
-      roles,
-      status: 'active',
-      invited_by: auth.user.id,
-    },
-    { onConflict: 'academy_id,profile_id' }
-  )
+  // player's own membership through read that record (0239). Never a
+  // demotion: a coach registering their own child stays the coach
+  // (lib/membership.ts).
+  await addHat(admin, { academyId: req.academy_id, profileId, hat, invitedBy: auth.user.id })
 
   if (!forSelf) {
     await admin.from('player_guardians').upsert(
@@ -223,10 +209,7 @@ export async function POST(request: Request) {
   }
 
   if (teamId) {
-    await admin.from('team_members').upsert(
-      { academy_id: req.academy_id, team_id: teamId, profile_id: profileId, role: hat },
-      { onConflict: 'team_id,profile_id' }
-    )
+    await joinTeam(admin, { academyId: req.academy_id, teamId, profileId, role: hat })
   }
 
   // The registration itself, so the program's roll and its capacity count

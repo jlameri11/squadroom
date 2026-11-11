@@ -1,0 +1,13 @@
+-- 0255: a volunteer is a club role
+--
+-- Joey, 11 Nov 2026 (role requests with the club's approval): a member asks
+-- to be a coach, a team manager, a volunteer, a referee or a committee
+-- member, and someone who may says yes. The approved volunteer needs a hat
+-- to land on, and the club's hats are club_roles — so 'volunteer' joins the
+-- eight of 0236. It opens nothing: no screen, no money, no roster power. It
+-- tells the Volunteer coordinator who has said yes.
+--
+-- On its own in this file because Postgres will not let the transaction
+-- that adds an enum value also use it, and 0256's constraint and functions
+-- name it.
+alter type public.club_role add value if not exists 'volunteer';

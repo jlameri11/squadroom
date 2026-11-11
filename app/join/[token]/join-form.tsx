@@ -15,11 +15,17 @@ export function JoinForm({
   token,
   academyName,
   teamName,
+  teamId = null,
+  squads = [],
   role = 'parent',
 }: {
   token: string
   academyName: string
   teamName: string | null
+  /** 0256: the link's squad, the first one ticked when they offer to help a squad. */
+  teamId?: string | null
+  /** 0256: the club's squads by name, to coach, manage or help. */
+  squads?: { id: string; name: string }[]
   /** The link's role (0239): 'player' is an adult team's link — the person joins as themselves. */
   role?: string
 }) {
@@ -35,6 +41,13 @@ export function JoinForm({
   // on a roster the club has already imported, so nobody is added twice.
   const [kids, setKids] = useState<{ name: string; dob: string }[]>([{ name: '', dob: '' }])
   const [dob, setDob] = useState('')
+  // 0256: what they would like to be, if anything — filed as a role request
+  // for the committee once they are in.
+  const [wantedRole, setWantedRole] = useState('')
+  const [wantedNote, setWantedNote] = useState('')
+  const [wantedTeams, setWantedTeams] = useState<string[]>(teamId ? [teamId] : [])
+  const squadRole = wantedRole === 'coach' || wantedRole === 'team_manager' || wantedRole === 'volunteer'
+  const needsSquad = (wantedRole === 'coach' || wantedRole === 'team_manager') && wantedTeams.length === 0
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -54,6 +67,9 @@ export function JoinForm({
         news,
         children: asPlayer ? [] : kids.filter((k) => k.name.trim()).map((k) => ({ name: k.name.trim(), dob: k.dob || null })),
         dob: asPlayer ? dob : undefined,
+        wantedRole: wantedRole || undefined,
+        wantedNote: wantedRole && wantedNote.trim() ? wantedNote.trim() : undefined,
+        wantedTeams: squadRole ? wantedTeams : undefined,
       }),
     })
     const data = await res.json()
@@ -213,6 +229,59 @@ export function JoinForm({
           </fieldset>
         )}
 
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Would you like to help? <span className="font-normal normal-case tracking-normal text-ink-3">(optional)</span></span>
+          <select value={wantedRole} onChange={(e) => setWantedRole(e.target.value)} className="rounded-xl border border-[var(--line)] bg-transparent px-3 py-3" data-join-wanted-role>
+            <option value="">Not just now</option>
+            <option value="coach">Coach</option>
+            <option value="team_manager">Team manager</option>
+            <option value="volunteer">Volunteer</option>
+            <option value="referee">Referee</option>
+            <optgroup label="The committee">
+              <option value="president">President</option>
+              <option value="secretary">Secretary</option>
+              <option value="registrar">Registrar</option>
+              <option value="treasurer">Treasurer</option>
+              <option value="welfare_officer">Welfare officer</option>
+            </optgroup>
+          </select>
+          {squadRole && squads.length > 0 && (
+            <div className="flex flex-wrap gap-1.5" data-join-wanted-squads>
+              {squads.map((s) => {
+                const on = wantedTeams.includes(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setWantedTeams(on ? wantedTeams.filter((x) => x !== s.id) : [...wantedTeams, s.id])}
+                    className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                    style={on ? { background: 'var(--brand)', color: 'var(--brand-ink)', borderColor: 'var(--brand)' } : { borderColor: 'var(--line)' }}
+                    data-join-wanted-squad={s.id}
+                  >
+                    {s.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          {wantedRole && (
+            <>
+              <input
+                value={wantedNote}
+                onChange={(e) => setWantedNote(e.target.value)}
+                maxLength={500}
+                placeholder="A line about you — experience, the days you can do"
+                className="rounded-xl border border-[var(--line)] px-3 py-3"
+                data-join-wanted-note
+              />
+              <span className="text-xs text-ink-3">
+                {needsSquad ? 'Tick the squad first. ' : ''}The committee comes back to you once you are in. Coaches, managers and referees need a current Working With Children Check.
+              </span>
+            </>
+          )}
+        </label>
+
         <label className="flex items-start gap-2.5 text-sm text-ink-2">
           <input
             type="checkbox"
@@ -228,7 +297,7 @@ export function JoinForm({
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || needsSquad}
           className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
         >
           {busy ? 'Sending…' : 'Request to join'}

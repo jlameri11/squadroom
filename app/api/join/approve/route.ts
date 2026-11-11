@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { adoptEmail } from '@/lib/account-email'
 import { syntheticEmail } from '@/lib/join'
+import { addHat, joinTeam } from '@/lib/membership'
+import type { Database } from '@/lib/database.types'
 
 /**
  * The coach vouches for a family.
@@ -89,15 +91,8 @@ export async function POST(request: Request) {
   const asPlayer = link?.role === 'player' && Boolean(req.dob)
 
   // Hats, not a single role (0237): someone already here as a coach or a
-  // parent keeps that and gains the player's hat.
-  const { data: already } = await admin
-    .from('academy_members')
-    .select('roles')
-    .eq('academy_id', req.academy_id)
-    .eq('profile_id', profileId)
-    .maybeSingle()
+  // parent keeps that and gains this hat (addHat, below).
   const hat = asPlayer ? 'player' : 'parent'
-  const roles = Array.from(new Set([...(((already as { roles?: string[] } | null)?.roles ?? []) as string[]), hat]))
 
   if (asPlayer) {
     const { data: ownPlayer, error: ownErr } = await admin
@@ -113,23 +108,13 @@ export async function POST(request: Request) {
   // academy_members fires the trigger that puts them in the academy-wide
   // channel; team_members fires the one that puts them in the team channel
   // and the age-group channel. Membership cascades from these two rows.
-  await admin.from('academy_members').upsert(
-    {
-      academy_id: req.academy_id,
-      profile_id: profileId,
-      role: hat,
-      roles: roles as ('owner' | 'admin' | 'coach' | 'parent' | 'player')[],
-      status: 'active',
-      invited_by: auth.user.id,
-    },
-    { onConflict: 'academy_id,profile_id' }
-  )
-
+  //
+  // Never a demotion (Joey, 11 Nov 2026): someone already here keeps every
+  // hat and gains this one, and keeps their place on the squad if it is
+  // higher (lib/membership.ts says why).
+  await addHat(admin, { academyId: req.academy_id, profileId, hat, invitedBy: auth.user.id })
   if (req.team_id) {
-    await admin.from('team_members').upsert(
-      { academy_id: req.academy_id, team_id: req.team_id, profile_id: profileId, role: hat },
-      { onConflict: 'team_id,profile_id' }
-    )
+    await joinTeam(admin, { academyId: req.academy_id, teamId: req.team_id, profileId, role: hat })
   }
 
   // The rest of the request, read with `*`: the email and news opt-in
@@ -140,6 +125,9 @@ export async function POST(request: Request) {
     email?: string | null
     news_opt_in_at?: string | null
     children?: { name?: string; dob?: string | null }[] | null
+    wanted_role?: Database['public']['Enums']['role_request_kind'] | null
+    wanted_note?: string | null
+    wanted_team_ids?: string[] | null
   }
 
   // Children (0248): each by name and date of birth. The roster first — a
@@ -213,6 +201,19 @@ export async function POST(request: Request) {
       decided_at: new Date().toISOString(),
     })
     .eq('id', requestId)
+
+  // 0256: the role they asked for on the form becomes a request for the
+  // committee — pending, opening nothing, logged and told of by its trigger.
+  if (extra.wanted_role) {
+    const squadRole = ['coach', 'team_manager', 'volunteer'].includes(extra.wanted_role)
+    await admin.from('role_requests').insert({
+      academy_id: req.academy_id,
+      profile_id: profileId,
+      kind: extra.wanted_role,
+      team_ids: squadRole ? (extra.wanted_team_ids?.length ? extra.wanted_team_ids : req.team_id ? [req.team_id] : []) : [],
+      note: extra.wanted_note ?? null,
+    })
+  }
 
   return NextResponse.json({ ok: true })
 }

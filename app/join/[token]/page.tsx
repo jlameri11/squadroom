@@ -33,7 +33,7 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
 
   const { data: link } = await admin
     .from('join_links')
-    .select('id, role, max_uses, use_count, expires_at, revoked_at, academies(name), teams(name)')
+    .select('id, role, academy_id, team_id, max_uses, use_count, expires_at, revoked_at, academies(name), teams(name)')
     .eq(column, value)
     .maybeSingle()
 
@@ -56,6 +56,23 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
 
   const academy = firstOf(link.academies)?.name ?? 'this academy'
   const team = firstOf(link.teams)?.name ?? null
+  // 0256: the club's squads by name, for someone who would like to coach,
+  // manage or help one. Names only — nothing about who is in them.
+  const { data: squads } = await admin
+    .from('teams')
+    .select('id, name')
+    .eq('academy_id', link.academy_id)
+    .eq('status', 'active')
+    .order('name')
 
-  return <JoinForm token={token} academyName={academy} teamName={team} role={link.role} />
+  return (
+    <JoinForm
+      token={token}
+      academyName={academy}
+      teamName={team}
+      teamId={link.team_id}
+      squads={(squads ?? []).map((s) => ({ id: s.id, name: s.name }))}
+      role={link.role}
+    />
+  )
 }

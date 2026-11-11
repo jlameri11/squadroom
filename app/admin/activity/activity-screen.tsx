@@ -49,6 +49,10 @@ export function describe(e: Entry): string {
     case 'fee.changed': return `Fee “${who}” changed (${dollars(d.amount_cents)})`
     case 'fee.deleted': return `Fee “${who}” deleted`
     case 'refund.requested': return `Refund requested, ${dollars(d.amount_cents)}`
+    case 'role_request.made': return `${who} asked to be ${str('words') ?? 'given a role'}`
+    case 'role_request.approved': return `${who} approved as ${str('words') ?? 'asked'}${str('note') ? ` — “${str('note')}”` : ''}`
+    case 'role_request.declined': return `${who}'s request to be ${str('words') ?? 'given a role'} declined${str('note') ? ` — “${str('note')}”` : ''}`
+    case 'role_request.withdrawn': return `${who} withdrew their request to be ${str('words') ?? 'given a role'}`
     case 'event.called_off': return `${who} called off${str('reason') ? ` — ${str('reason')}` : ''}`
     case 'event.back_on': return `${who} back on`
     default:

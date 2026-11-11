@@ -4034,6 +4034,114 @@ begin
     insert into rls_results values (207, 'in club mode a new age-group channel is notices from birth and a club born in club mode gets Club Notices; out of club mode an age group''s channel is open', r207);
   end;
 
+  -- 0256. Role requests: a parent asks to coach the U12 and to be Treasurer;
+  -- pending opens nothing; the U8 coordinator decides neither (outside
+  -- their group; a committee seat); the owner cannot approve the coach
+  -- without a check ("waiting on WWCC"), records one, approves — and the
+  -- parent coaches the U12; the owner approves the Treasurer's seat; a
+  -- volunteer request for the U8 is the coordinator's to approve; the log
+  -- and the queue have every step. Rolled back.
+  declare
+    U12 constant uuid := '00000000-0000-0000-0000-0000000d0012';
+    v_u8 uuid; v_req uuid; v_req2 uuid; v_req3 uuid;
+    v_coach_before boolean; v_grid_refused boolean := false; v_own int;
+    v_coord_refused boolean := false; v_coord_committee_refused boolean := false; v_coord_list jsonb;
+    v_wwcc_refused boolean := false; v_wwcc_msg text; v_list jsonb;
+    v_approved jsonb; v_coach_after boolean; v_tm int; v_treasurer boolean; v_vol jsonb; v_vol_role int;
+    v_log int; v_told_parent int; v_told_owner int; v_vol_waits boolean := false;
+    r208 text := 'FAIL (never ran)';
+  begin
+    begin
+      select t.id into v_u8 from public.teams t where t.academy_id = ACAD_A and t.age_group = 'U8' and t.status = 'active' order by t.name limit 1;
+      -- The owner makes Marcus the U8 coordinator (he has a check).
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.grant_club_role(ACAD_A, MARCUS, 'coordinator', 'age_group', null, 'U8', null);
+      execute 'reset role';
+      -- The parent asks.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_req := public.request_role(ACAD_A, 'coach', array[U12], null, 'I did my Grassroots certificate last winter');
+      v_req2 := public.request_role(ACAD_A, 'treasurer', '{}', null, null);
+      v_req3 := public.request_role(ACAD_A, 'volunteer', array[v_u8], 'oranges and bibs', null);
+      v_coach_before := app_private.is_team_coach(U12);
+      begin
+        if public.availability_grid(U12) is null then v_grid_refused := true; end if;
+      exception when others then v_grid_refused := true;
+      end;
+      select count(*) into v_own from public.role_requests where profile_id = PARENT and status = 'pending';
+      execute 'reset role';
+      -- The coordinator: not the U12, not a committee seat; the U8 volunteer is theirs.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.decide_role_request(v_req, true, null);
+      exception when others then v_coord_refused := true;
+      end;
+      begin
+        perform public.decide_role_request(v_req2, true, null);
+      exception when others then v_coord_committee_refused := true;
+      end;
+      v_coord_list := public.role_requests_pending(ACAD_A);
+      begin
+        perform public.decide_role_request(v_req3, true, null);
+      exception when others then v_vol_waits := sqlerrm like 'waiting on WWCC%';
+      end;
+      execute 'reset role';
+      -- The owner: no check, no coach; then a check, then the coach.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.decide_role_request(v_req, true, null);
+      exception when others then v_wwcc_refused := true; v_wwcc_msg := sqlerrm;
+      end;
+      v_list := public.role_requests_pending(ACAD_A);
+      perform public.record_clearance(ACAD_A, PARENT, 'RLS208', 'cleared', current_date + 365);
+      v_approved := public.decide_role_request(v_req, true, 'thank you');
+      perform public.decide_role_request(v_req2, true, null);
+      execute 'reset role';
+      -- With the check on record, the coordinator says yes to the U8 volunteer.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_vol := public.decide_role_request(v_req3, true, 'welcome');
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_coach_after := app_private.is_team_coach(U12);
+      execute 'reset role';
+      select exists (select 1 from public.club_roles r where r.academy_id = ACAD_A and r.profile_id = PARENT and r.role = 'treasurer') into v_treasurer;
+      select count(*) into v_tm from public.team_members tm where tm.team_id = U12 and tm.profile_id = PARENT and tm.role = 'coach';
+      select count(*) into v_vol_role from public.club_roles r where r.academy_id = ACAD_A and r.profile_id = PARENT and r.role = 'volunteer' and r.team_id = v_u8;
+      select count(*) into v_log from public.activity_log l
+       where l.academy_id = ACAD_A and l.subject_kind = 'role_request' and l.subject_id = v_req and l.action in ('role_request.made', 'role_request.approved');
+      select count(*) into v_told_parent from public.notification_queue n where n.kind = 'role_decided' and n.profile_id = PARENT and (n.payload->>'role_request_id')::uuid = v_req;
+      select count(*) into v_told_owner from public.notification_queue n where n.kind = 'role_request' and n.profile_id = COACH and (n.payload->>'role_request_id')::uuid = v_req;
+      r208 := case when v_req is not null and v_req2 is not null and v_req3 is not null
+                    and not v_coach_before and v_grid_refused and v_own = 3
+                    and v_coord_refused and v_coord_committee_refused
+                    and jsonb_array_length(v_coord_list) = 1 and v_coord_list->0->>'id' = v_req3::text
+                    and v_vol_waits and v_vol->>'status' = 'approved' and v_vol_role = 1
+                    and v_wwcc_refused and v_wwcc_msg like 'waiting on WWCC%'
+                    and exists (select 1 from jsonb_array_elements(v_list) x where x->>'id' = v_req::text and (x->>'needs_check')::boolean and not (x->>'has_check')::boolean)
+                    and v_approved->>'status' = 'approved' and v_coach_after and v_tm = 1 and v_treasurer
+                    and v_log = 2 and v_told_parent = 1 and v_told_owner = 1 then 'PASS'
+                   else 'FAIL (reqs '||coalesce(v_req::text,'null')||'/'||coalesce(v_req2::text,'null')||'/'||coalesce(v_req3::text,'null')
+                        ||'; coach before '||v_coach_before||', grid refused '||v_grid_refused||', own '||v_own
+                        ||'; coord refused '||v_coord_refused||'/'||v_coord_committee_refused||', coord list '||coalesce(left(v_coord_list::text,160),'null')
+                        ||'; vol waits '||v_vol_waits||', vol '||coalesce(v_vol::text,'null')||' role '||v_vol_role
+                        ||'; wwcc refused '||v_wwcc_refused||' ('||coalesce(left(v_wwcc_msg,40),'')||'), list '||coalesce(left(v_list::text,160),'null')
+                        ||'; approved '||coalesce(v_approved::text,'null')||', coach after '||v_coach_after||', tm '||v_tm||', treasurer '||v_treasurer
+                        ||'; log '||v_log||', told parent '||v_told_parent||', told owner '||v_told_owner||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r208 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (208, 'a role request opens nothing while pending; a coordinator decides inside their group only and never a committee seat; a coach, and a volunteer with a children''s squad, need a check first ("waiting on WWCC"), then are; the owner seats a Treasurer; every step logged and told', r208);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

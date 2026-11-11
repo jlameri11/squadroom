@@ -9,6 +9,7 @@ import { PushToggle } from './push-toggle'
 import { CalendarFeed } from './calendar-feed'
 import { TwoStep } from './two-step'
 import { WelfareContact } from '@/components/welfare-contact'
+import { RequestARole } from './role-request'
 import { MyData } from './my-data'
 import { ChatLanguage } from './chat-language'
 import { NotificationPrefs } from './notification-prefs'
@@ -138,6 +139,9 @@ export default async function SettingsPage() {
           arrived by emailed link has no way back in until they do this. */}
       {/* Part A fix 4 (0241): the club's Welfare officer, and one tap to message them. */}
       <WelfareContact />
+
+      {/* 0256: ask to coach, manage, volunteer, referee or sit on the committee. */}
+      <WhenOn feature="role_requests"><RequestARole /></WhenOn>
 
       <SetPassword />
       {/* S-07. Next to the password, because it is the other half of it. */}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { syntheticEmail, toE164 } from '@/lib/join'
+import { addHat, joinTeam } from '@/lib/membership'
 
 /**
  * A coach adding somebody to the club by hand.
@@ -125,10 +126,9 @@ export async function POST(request: Request) {
     await admin.from('profiles').update({ full_name: fullName.trim() }).eq('id', profileId)
   }
 
-  const { error: memberError } = await admin.from('academy_members').upsert(
-    { academy_id: academyId, profile_id: profileId, role: wanted, status: 'active' },
-    { onConflict: 'academy_id,profile_id' }
-  )
+  // A hat added, never one taken: a coach added again as a parent stays the
+  // coach (lib/membership.ts).
+  const { error: memberError } = await addHat(admin, { academyId, profileId, hat: wanted })
   if (memberError) {
     return NextResponse.json({ error: memberError.message }, { status: 500 })
   }
@@ -136,10 +136,7 @@ export async function POST(request: Request) {
   // A team puts them in that squad's conversations, through the same trigger
   // everything else uses.
   if (teamId) {
-    const { error: teamError } = await admin.from('team_members').upsert(
-      { academy_id: academyId, team_id: teamId, profile_id: profileId, role: wanted },
-      { onConflict: 'team_id,profile_id' }
-    )
+    const { error: teamError } = await joinTeam(admin, { academyId, teamId, profileId, role: wanted })
     if (teamError) {
       return NextResponse.json(
         { error: `Added to the club, but not to the squad: ${teamError.message}` },

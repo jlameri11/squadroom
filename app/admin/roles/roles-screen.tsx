@@ -6,7 +6,7 @@ import { useCurrentOrg } from '@/lib/use-current-org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { Sheet } from '@/components/sheet'
 
-type ClubRole = 'president' | 'secretary' | 'registrar' | 'treasurer' | 'coordinator' | 'team_manager' | 'welfare_officer' | 'volunteer_coordinator'
+type ClubRole = 'president' | 'secretary' | 'registrar' | 'treasurer' | 'coordinator' | 'team_manager' | 'welfare_officer' | 'volunteer_coordinator' | 'volunteer'
 type Held = { id: string; profile_id: string; name: string; role: ClubRole; scope_kind: string; scope: string | null; cleared: boolean }
 type Member = { profile_id: string; name: string; role: string; roles?: string[]; cleared: boolean }
 type Officials = {
@@ -36,6 +36,9 @@ export const ROLES: { role: ClubRole; label: string; what: string; scoped?: 'str
 ]
 
 export function roleLabel(role: string): string {
+  // 0255: a volunteer arrives through a role request, not the grant sheet —
+  // it opens nothing; it tells the Volunteer coordinator who said yes.
+  if (role === 'volunteer') return 'Volunteer'
   return ROLES.find((r) => r.role === role)?.label ?? role.replace(/_/g, ' ')
 }
 

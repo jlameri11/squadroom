@@ -4052,6 +4052,9 @@ export type Database = {
           secret_hash: string
           status: Database["public"]["Enums"]["join_request_status"]
           team_id: string | null
+          wanted_note: string | null
+          wanted_role: Database["public"]["Enums"]["role_request_kind"] | null
+          wanted_team_ids: string[]
         }
         Insert: {
           academy_id: string
@@ -4074,6 +4077,9 @@ export type Database = {
           secret_hash: string
           status?: Database["public"]["Enums"]["join_request_status"]
           team_id?: string | null
+          wanted_note?: string | null
+          wanted_role?: Database["public"]["Enums"]["role_request_kind"] | null
+          wanted_team_ids?: string[]
         }
         Update: {
           academy_id?: string
@@ -4096,6 +4102,9 @@ export type Database = {
           secret_hash?: string
           status?: Database["public"]["Enums"]["join_request_status"]
           team_id?: string | null
+          wanted_note?: string | null
+          wanted_role?: Database["public"]["Enums"]["role_request_kind"] | null
+          wanted_team_ids?: string[]
         }
         Relationships: [
           {
@@ -7411,6 +7420,73 @@ export type Database = {
           },
         ]
       }
+      role_requests: {
+        Row: {
+          academy_id: string
+          area: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          kind: Database["public"]["Enums"]["role_request_kind"]
+          note: string | null
+          profile_id: string
+          status: Database["public"]["Enums"]["role_request_status"]
+          team_ids: string[]
+        }
+        Insert: {
+          academy_id: string
+          area?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["role_request_kind"]
+          note?: string | null
+          profile_id: string
+          status?: Database["public"]["Enums"]["role_request_status"]
+          team_ids?: string[]
+        }
+        Update: {
+          academy_id?: string
+          area?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["role_request_kind"]
+          note?: string | null
+          profile_id?: string
+          status?: Database["public"]["Enums"]["role_request_status"]
+          team_ids?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_requests_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safeguarding_officers: {
         Row: {
           academy_id: string
@@ -9211,6 +9287,10 @@ export type Database = {
         Args: { p_approve: boolean; p_player: string }
         Returns: Json
       }
+      decide_role_request: {
+        Args: { p_approve: boolean; p_note?: string; p_request: string }
+        Returns: Json
+      }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
       division_table: { Args: { p_team: string }; Returns: Json }
@@ -9724,6 +9804,7 @@ export type Database = {
         }[]
       }
       my_respect_marks: { Args: { p_fixture: string }; Returns: Json }
+      my_role_requests: { Args: { p_academy: string }; Returns: Json }
       my_rsvps_for_event: {
         Args: { p_event: string }
         Returns: {
@@ -10250,6 +10331,16 @@ export type Database = {
         }
         Returns: string
       }
+      request_role: {
+        Args: {
+          p_academy: string
+          p_area?: string
+          p_kind: Database["public"]["Enums"]["role_request_kind"]
+          p_note?: string
+          p_teams?: string[]
+        }
+        Returns: string
+      }
       require_two_step: { Args: { p_academy: string }; Returns: boolean }
       reschedule_fixture: {
         Args: {
@@ -10312,6 +10403,7 @@ export type Database = {
         Args: { p_academy: string; p_profile: string }
         Returns: number
       }
+      role_requests_pending: { Args: { p_academy: string }; Returns: Json }
       roll_over_season: {
         Args: { p_academy: string; p_from: string; p_plan?: Json; p_to: string }
         Returns: Json
@@ -10709,6 +10801,7 @@ export type Database = {
         Args: { p_reason?: string; p_registration: string }
         Returns: Json
       }
+      withdraw_role_request: { Args: { p_request: string }; Returns: boolean }
       write_player_report: {
         Args: {
           p_body: string
@@ -10759,6 +10852,7 @@ export type Database = {
         | "team_manager"
         | "welfare_officer"
         | "volunteer_coordinator"
+        | "volunteer"
       competition_mode: "managed" | "comms_only"
       competition_type:
         | "season"
@@ -10871,6 +10965,17 @@ export type Database = {
         | "wrong_channel"
         | "other"
       report_status: "open" | "actioned" | "dismissed"
+      role_request_kind:
+        | "coach"
+        | "team_manager"
+        | "volunteer"
+        | "referee"
+        | "president"
+        | "secretary"
+        | "registrar"
+        | "treasurer"
+        | "welfare_officer"
+      role_request_status: "pending" | "approved" | "declined" | "withdrawn"
       rsvp_status: "yes" | "no" | "maybe"
       sheet_status: "submitted" | "confirmed" | "disputed"
       sock_size: "K9-12" | "K13-3" | "2-7" | "7-11" | "11-14"
@@ -11042,6 +11147,7 @@ export const Constants = {
         "team_manager",
         "welfare_officer",
         "volunteer_coordinator",
+        "volunteer",
       ],
       competition_mode: ["managed", "comms_only"],
       competition_type: [
@@ -11166,6 +11272,18 @@ export const Constants = {
         "other",
       ],
       report_status: ["open", "actioned", "dismissed"],
+      role_request_kind: [
+        "coach",
+        "team_manager",
+        "volunteer",
+        "referee",
+        "president",
+        "secretary",
+        "registrar",
+        "treasurer",
+        "welfare_officer",
+      ],
+      role_request_status: ["pending", "approved", "declined", "withdrawn"],
       rsvp_status: ["yes", "no", "maybe"],
       sheet_status: ["submitted", "confirmed", "disputed"],
       sock_size: ["K9-12", "K13-3", "2-7", "7-11", "11-14"],

@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { RequestList } from './request-list'
+import { RoleRequests } from './role-requests'
+import { WhenOn } from '@/components/when-on'
 import { AppShellPage } from '@/components/shell-page'
 
 /**
@@ -25,9 +27,16 @@ export default async function RequestsPage() {
     .order('created_at', { ascending: true })
 
   return (
-    <AppShellPage title="Join requests" back="/admin">
+    <AppShellPage title="Requests" back="/admin">
       <div className="p-4">
 
+      {/* 0256: members asking for a role — the committee's to decide. */}
+      <WhenOn feature="role_requests"><RoleRequests /></WhenOn>
+
+      <div className="sect">
+        <span className="eyebrow">Join requests</span>
+        <span className="text-xs text-ink-3">{(requests ?? []).length === 0 ? 'none waiting' : `${(requests ?? []).length} waiting`}</span>
+      </div>
       <RequestList
         initial={(requests ?? []).map((r) => ({
           id: r.id,

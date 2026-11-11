@@ -543,6 +543,91 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     tickets, newsletter templates, notice translation, AGM papers). No
     deploy until Phase 1 is done.
 
+    **Phase 1 is done by its own definition (11 Nov 2026):**
+    `scripts/test-definition-of-done.mjs` on Inner West FC (every role its
+    job and nothing more; scopes; the Treasurer never medical; an incident
+    to two people; a parent sends no notice; MiniRoos hidden; the log
+    records every admin change; every Home at 375px light and dark; every
+    admin screen at laptop width) and `scripts/scale/message-the-club.mjs`
+    (2,000 people: the tap back in 34 ms, four worker passes of 500).
+
+    **Phase 2 — the plan (11 Nov 2026; plan only, nothing built).** Seven
+    pieces, each behind a switch in Settings → Features (`SIMPLICITY.md`
+    row on arrival), each small because it leans on what exists, in the
+    order they pay back. None starts before Part C (item 12) and the
+    registration brief (item 13), per Joey's 10 Nov order. Sizes: XS a
+    session, S a day, M two or three.
+
+    1. **Notice translation** (XS). W-08's translate route already reads a
+       chat message in the person's own language — their setting, a cache
+       the channel's members share, a budget counted in the database. Club
+       messages (0243) and Club Notices go through the same route,
+       translated on read, never stored as the sender's words. Existing
+       switch `translate`. Test: a parent whose language is Vietnamese
+       opens a notice and reads it in Vietnamese; the sender's text is
+       untouched; the budget still refuses past the cap.
+    2. **Supporter view for grandparents** (S). No account, on purpose —
+       nothing is collected about a grandparent. The public match centre
+       (`/c/{slug}`: fixtures, results, ladder, no child's name) gains a
+       per-squad view and an "Add to calendar" feed (ICS) a parent shares
+       from the team page; the share card carries the link. Switch
+       `supporter_links`. Tests: the feed lists the squad's games and
+       nothing about anyone; the page names no child; MiniRoos show no
+       score there either.
+    3. **Club documents library** (M). `club_documents` (title; kind:
+       policy, by-law, minutes, form; version; file; who may read:
+       everyone, members, committee) in a private bucket `club-documents`
+       on the crest's storage-policy pattern; a Documents card in Settings
+       for families (the code of conduct, the refund policy, the welfare
+       policy, next to the Welfare officer's contact) and Admin → Documents
+       for the Secretary; the Committee room pins the latest. Versioned
+       because "they read the code of conduct" means which one (0081's
+       consents already name a version). Switch `documents`. Tests: a
+       parent reads a policy and not the committee's papers; a stranger
+       nothing; the Secretary replaces a version and the old one stays
+       readable with its date.
+    4. **Kit loans** (M). Admin → Kit list (switch `kit`) is 0123's size
+       count for ordering. Add `kit_items` (an inventory: strips, keeper
+       gloves, balls, bibs, the defibrillator) and `kit_loans` (item, who,
+       issued by, issued on, due, returned on; a deposit as a
+       `payment_requests` row, refunded in full on return through the
+       refund path that exists). An overdue reminder once through
+       `notification_queue`; the squad's kit on the team page for its
+       coach and manager. Switch `kit_loans`. Tests: a loan needs staff; a
+       deposit is asked and refunded on return; the reminder once; the log
+       has the issue and the return.
+    5. **Presentation-day tickets** (M). A program of a new kind
+       `ticketed_event` (0079's programs: price, capacity, a date, a venue;
+       no birth-year rule): a family buys N seats — a quantity on the
+       registration, the checkout that exists — the organiser has the
+       guest list, the door ticks a family off it on a phone (a QR only if
+       a club ever asks). Capacity and waitlist are 0079's trigger. Switch
+       `tickets`. Tests: capacity holds under two simultaneous buys; a
+       family ticked off once; a refund returns the seats; the list names
+       the family, never a child.
+    6. **Newsletter templates** (M). "The Sunday wrap": a saved draft whose
+       placeholders fill from the data — the weekend's results
+       (`academy_results`, MiniRoos left out), next Saturday's games by
+       ground, duties, a sponsor's line — read over and sent through
+       `send_club_message` to the audience chosen, so it arrives as a
+       notice in the app, not an email. `message_templates` per club,
+       staff and comms roles. Switch `newsletters`. Tests: the wrap names
+       no child; a MiniRoos score never appears; a parent cannot send one;
+       the send is 0243's (queued, batched, logged).
+    7. **AGM and committee papers** (S, after 3). One printable page
+       `/admin/agm` assembled from readers that exist: the agenda and last
+       year's minutes (documents), the Treasurer's spreadsheet (B-05's
+       export), the Registrar's numbers (`club_health`), the officials
+       (`club_officials`), the motions as polls in the Committee room with
+       the vote recorded (`polls`: hosts post, members vote). Minutes filed
+       back as a document. Switch `agm_papers`. Tests: the pack reads for
+       the committee and nobody else; one vote per member; the page prints
+       at A4.
+
+    Not in Phase 2, on purpose: child accounts (never), email as a channel
+    (the notice is the channel), per-club theming beyond crest and colours,
+    a supporter *account* (see 2).
+
 12. **Dribl gaps** (Joey, 10 Nov 2026, Part C — after Big Club Phase 1,
     before the simulation): (1) a registration photo — private bucket,
     resized, staff-only until approved, then the player card and the
@@ -583,6 +668,38 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     jobs and every "must not", peak timings under a second, `docs/BUGS.md`
     for what breaks, fixes and re-runs until clean, the data deleted after.
     Commit and push hourly; no deploy.
+
+15. **Role requests with admin approval** (Joey, 11 Nov 2026) — **after
+    Big Club Phase 1's checks, before the deploy** (so ahead of 12, 13
+    and 14). The brief, verbatim:
+
+    > 1. Any member (or someone joining by a club link) can tap "Request a
+    >    role": Coach, Team manager, Volunteer, Referee, Committee
+    >    (President/Secretary/Registrar/Treasurer/Welfare). They pick the
+    >    team(s) or area and add a note.
+    > 2. The request sits as PENDING — no extra access at all until approved.
+    > 3. Approvers: owner, President or Secretary (coordinators can approve
+    >    coach/manager/volunteer requests for their own age groups only).
+    >    One "Role requests" list on Club HQ with Approve / Decline + note;
+    >    the person is told either way.
+    > 4. Coach, manager or anyone working with children: approval also needs
+    >    a current WWCC (existing check) — show "waiting on WWCC" if missing.
+    > 5. Committee roles (President, Secretary, Registrar, Treasurer,
+    >    Welfare) can only be approved by the owner or President.
+    > 6. Fix the known risk: approving a join must never demote someone who
+    >    already holds a higher role (e.g. a coach who is also a parent).
+    > 7. Everything logged in the Activity log. Tests: pending gives no
+    >    access; a coordinator can't approve outside their age groups; a
+    >    Treasurer request can't be approved by a coordinator; no WWCC = no
+    >    coach role.
+    > Do after Big Club Phase 1 checks, before the deploy. Commit and push.
+
+    **Done (11 Nov 2026; 0255–0256):** `role_requests` with
+    `request_role`, `decide_role_request`, `role_requests_pending`,
+    `my_role_requests`, `withdraw_role_request`; Settings → Request a role,
+    the join form's "Would you like to help?", Admin → Requests and the list
+    on Club HQ; `lib/membership.ts` for the no-demotion fix in the three
+    routes that wrote memberships. test-rls 208; `test-role-requests`.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

@@ -215,7 +215,11 @@ Home; tap the crest (top left) if a login is in more than one organisation.
 4. **Sign in as the parent of two.** One Home, two children in two streams:
    the next games, who has not answered, the clinic fee to pay, the duty
    with a swap asked for. Open Saturday's U8 game: the ground's canteen and
-   BBQ jobs beside the squad's own, and "I can help".
+   BBQ jobs beside the squad's own, and "I can help". In **Settings → Help
+   the club**, "Request a role": ask to coach U8 Red — it goes to the
+   committee and changes nothing until they say yes. Back as the President,
+   the request is on Club HQ with "waiting on WWCC" until her check is
+   recorded under Checks; then Approve.
 5. **Open the U8 game page's Match sheet tab.** MiniRoos keep no score — the
    line says so; the U13 game next door shows last week's 3–1.
 6. **Sign in as the coach of U10 Blue.** The register, the ticker, "Report an

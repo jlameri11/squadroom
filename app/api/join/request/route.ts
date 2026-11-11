@@ -27,10 +27,15 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
 
-  const { token, fullName, phone, children, email, news, dob } = body as {
+  const { token, fullName, phone, children, email, news, dob, wantedRole, wantedNote, wantedTeams } = body as {
     token?: string
     fullName?: string
     phone?: string
+    /** 0256: the role they would like, filed for the committee on approval. */
+    wantedRole?: string
+    wantedNote?: string
+    /** 0256: the squads for a coach's, a manager's or a volunteer's role. */
+    wantedTeams?: string[]
     /**
      * The family's children: names, or (0248) names with dates of birth so
      * approval can find each child already on the roster. Older clients
@@ -127,6 +132,28 @@ export async function POST(request: Request) {
     }
   }
 
+  // 0256: the role they would like. Any of the nine; a squad's role names
+  // its squads, which must be this club's.
+  const KINDS = ['coach', 'team_manager', 'volunteer', 'referee', 'president', 'secretary', 'registrar', 'treasurer', 'welfare_officer'] as const
+  type Kind = (typeof KINDS)[number]
+  const wanted: Kind | null = (KINDS as readonly string[]).includes(wantedRole ?? '') ? (wantedRole as Kind) : null
+  let wantedTeamIds: string[] = []
+  if (wanted && ['coach', 'team_manager', 'volunteer'].includes(wanted)) {
+    const asked = Array.isArray(wantedTeams) ? wantedTeams.filter((t) => typeof t === 'string').slice(0, 12) : []
+    if (asked.length > 0) {
+      const { data: theirs } = await admin.from('teams').select('id').eq('academy_id', link.academy_id).eq('status', 'active').in('id', asked)
+      wantedTeamIds = (theirs ?? []).map((t) => t.id)
+      if (wantedTeamIds.length !== asked.length) {
+        return NextResponse.json({ error: 'One of those squads is not this club’s.' }, { status: 400 })
+      }
+    } else if (link.team_id) {
+      wantedTeamIds = [link.team_id]
+    }
+    if (wantedTeamIds.length === 0 && wanted !== 'volunteer') {
+      return NextResponse.json({ error: 'Say which squad you would like to coach or manage.' }, { status: 400 })
+    }
+  }
+
   const row = {
     academy_id: link.academy_id,
     team_id: link.team_id,
@@ -137,6 +164,9 @@ export async function POST(request: Request) {
     children: link.role === 'player' ? [] : kids,
     dob: link.role === 'player' ? dob : null,
     secret_hash: hashSecret(secret),
+    wanted_role: wanted,
+    wanted_note: wanted && wantedNote?.trim() ? wantedNote.trim().slice(0, 500) : null,
+    wanted_team_ids: wantedTeamIds,
   }
   // The email and the news opt-in (unticked unless ticked, with its time)
   // ride on the request until approval copies them to the account (0214).

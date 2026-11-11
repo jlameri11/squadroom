@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { getOrg, setOrg } from '@/lib/org'
 import { invalidateScreen } from '@/lib/hooks/use-screen'
 import { DEFAULT_TZ } from '@/lib/time'
+import { WhenOn } from '@/components/when-on'
+import { RoleRequests } from '@/app/admin/requests/role-requests'
 
 type Job = { id: string; label: string; detail: string | null; href: string; count: number }
 type Today = { label: string; detail: string; count: number; href: string }
@@ -248,6 +250,10 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
               </Link>
             ))}
           </div>
+          {/* 0256: the role requests this person may decide, Approve / Decline on Club HQ itself. */}
+          {(data.persona === 'owner' || data.persona === 'president' || data.persona === 'coordinator') && (
+            <WhenOn feature="role_requests"><RoleRequests onHome /></WhenOn>
+          )}
         </>
       )}
 

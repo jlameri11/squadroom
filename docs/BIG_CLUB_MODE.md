@@ -260,8 +260,21 @@ AGM/committee papers.
   ten-minute walkthrough in `docs/DEMO.md`; `scripts/test-inner-west.mjs`
   checks the size and signs in as each. Every script that looks an auth
   user up now pages through them all (`scripts/_users.mjs`), because the
-  demo pushes the dev project past a thousand accounts. Next: the
-  definition of done (12) and Phase 2 planning.
+  demo pushes the dev project past a thousand accounts.
+- **11 Nov 2026: Phase 1 is done by its own definition.**
+  `scripts/test-definition-of-done.mjs` on Inner West FC proves every line
+  of the definition above but the 2,000-person message, which
+  `scripts/scale/message-the-club.mjs` proves on the local big dataset (the
+  tap back in 34 ms; four worker passes of 500; everyone told once, never
+  the sender). It found one real gap, fixed in 0254: a new age group's
+  channel in a club already in club mode was open to parents. Phase 2 is
+  planned in `BUILD_PLAN.md` item 11 (plan only). Then Joey's **role
+  requests** (11 Nov; 0255–0256; `BUILD_PLAN.md` item 15): a member asks
+  for a role, it opens nothing until approved, coordinators decide inside
+  their groups, committee seats only the owner or the President, a check
+  first for anyone with children, every step logged and told — and
+  approving a join no longer demotes a coach who is also a parent.
+  Ready for the deploy when Joey says.
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 
