@@ -96,7 +96,14 @@ one and is meant to reach hundreds of academies.
     (`node scripts/deploy.mjs --sync-env` copies the allow-list from
     `.env.local`, with `NEXT_PUBLIC_SITE_URL` set to the site, never
     localhost); tools-only secrets are never set there and never in a
-    build. Never run `netlify deploy --build` by hand.
+    build. Never run `netlify deploy --build` by hand. **The upload is the
+    one-step `deploy --prod --build` inside the script** (11 Nov 2026):
+    `deploy --no-build` after a separate build published the raw `.next`,
+    not the runtime's `.netlify/static`, and the live site came up with
+    no stylesheet while every status code read 200. **After every deploy
+    run `node --env-file=.env.local scripts/check-live.mjs`** — it opens
+    the live Home with a real session and checks the page is styled; a
+    curl of the HTML proves nothing about the assets.
 
 - **Session logging (Joey, 2 Nov 2026).** Whenever a session stops, record
   in `docs/NIGHT_LOG.md` **when it stopped and why**: finished, waiting on

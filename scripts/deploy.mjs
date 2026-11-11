@@ -222,6 +222,32 @@ if (!args.has('--deploy')) {
   process.exit(0)
 }
 
-const d = netlify(['deploy', '--prod', '--no-build'])
-if (d.status !== 0) fail('the upload failed')
-console.log(`\n  \x1b[32mdeployed to ${SITE_URL}\x1b[0m — log it in docs/NIGHT_LOG.md (Deploys)\n`)
+// One step, build and upload together (11 Nov 2026). `deploy --no-build`
+// after a separate build published the raw `.next` folder — netlify.toml's
+// publish dir — not the `.netlify/static` the Next runtime fills during a
+// build, so the live HTML pointed at `/_next/static/...` files that were
+// never uploaded and every page came up unstyled. The runtime sets the
+// publish dir inside the build it is part of, so the upload has to be the
+// same command. The env files are hidden for this build as for the first;
+// the first build's scan said this output is clean, and the same output is
+// scanned again below once it is up.
+const movedAgain = hideEnvFiles()
+let d
+try {
+  d = netlify(['deploy', '--prod', '--build', '--context', 'production'])
+} finally {
+  restoreEnvFiles(movedAgain)
+}
+if (d.status !== 0) fail('the deploy failed')
+let after = 0
+for (const b of ['.netlify', '.next']) {
+  const { missing, hits: h } = checkBundle(join(ROOT, b), secrets, { root: ROOT })
+  if (missing) continue
+  for (const x of h) bad(`${x.file} — ${x.why}`)
+  after += h.length
+}
+if (after > 0) fail(`${after} secret(s) in the uploaded build — ROTATE THEM NOW and redeploy`)
+ok('the uploaded build: no env file, no secret value, no tools-only assignment')
+const live = spawnSync('curl', ['-s', '-o', '/dev/null', '-w', '%{http_code}', '-m', '30', `${SITE_URL}/signin`], { encoding: 'utf8' })
+live.stdout === '200' ? ok(`${SITE_URL}/signin answers 200`) : bad(`${SITE_URL}/signin answers ${live.stdout || 'nothing'}`)
+console.log(`\n  \x1b[32mdeployed to ${SITE_URL}\x1b[0m — now: node --env-file=.env.local scripts/check-live.mjs, then log it in docs/NIGHT_LOG.md (Deploys)\n`)
