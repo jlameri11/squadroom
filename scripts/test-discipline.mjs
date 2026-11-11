@@ -5,6 +5,7 @@
 // games, and the organiser can add or overturn one with a reason.
 import { createClient } from '@supabase/supabase-js'
 import { signInClient } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -35,7 +36,7 @@ async function cleanup() {
   for (const c of comps ?? []) await admin.from('competitions').delete().eq('id', c.id)
   const { data: acads } = await admin.from('academies').select('id').like('name', `${TAG} %`)
   for (const a of acads ?? []) await admin.from('academies').delete().eq('id', a.id)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.email === VISITOR_EMAIL)
   if (u) await admin.auth.admin.deleteUser(u.id)
 }

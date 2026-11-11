@@ -16,6 +16,7 @@
 // real families registering is a safeguard a club turns off.
 import { createClient } from '@supabase/supabase-js'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -116,7 +117,7 @@ async function clean() {
   await admin.from('registration_attempts').delete().neq('id', 0)
 
   // The account this suite creates, so it can be run again.
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 200 })
+  const { data: users } = await listAllUsers(admin)
   const mine = users.users.find((u) => u.phone === PHONE.replace('+', ''))
   if (mine) {
     await admin.from('academy_members').delete().eq('profile_id', mine.id)

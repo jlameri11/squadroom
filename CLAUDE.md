@@ -714,6 +714,16 @@ one and is meant to reach hundreds of academies.
   closure React cancels in development: the email gate never showed in
   `next dev`. Guard with the thing you store (the sessionStorage memo), not
   with a ref.
+- **Auth users are paged; look one up through `scripts/_users.mjs`** (11 Nov
+  2026). The admin API hands back a page at a time (1,000 at most, 50 by
+  default), newest first, and the Inner West FC demo (`seed-inner-west.mjs`)
+  put the dev project past a thousand accounts — so a script that read one
+  page and `.find()`-ed a person would miss the demo's own families.
+  `listAllUsers(admin)` pages through them all; every script that used
+  `listUsers` goes through it. And never sign a test in by an address made
+  up from a phone number: a magic link for an address nobody holds SIGNS UP
+  a stranger (test-join-flow learnt this first); use the account's own
+  email, and only a demo or placeholder one.
 - **Call supabase-js methods on the client, never detached** (10 Nov 2026).
   `const rpc = createClient().rpc as any; rpc('fn')` loses `this` and
   throws "Cannot read properties of undefined (reading 'rest')" before the

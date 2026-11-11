@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { enrolTwoStep } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL, PUB=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const admin=createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}})
 const anon =createClient(URL, PUB,{auth:{persistSession:false}})
@@ -19,7 +20,7 @@ const ok=m=>console.log(`  \x1b[32m✓\x1b[0m ${m}`), bad=m=>{console.log(`  \x1
 const head=m=>console.log(`\n${m}`)
 
 async function userFor(email, name){
-  const { data:{users} } = await admin.auth.admin.listUsers({perPage:200})
+  const { data:{users} } = await listAllUsers(admin)
   const found = users.find(u=>u.email===email)
   if (found) await admin.auth.admin.deleteUser(found.id)
   const { data } = await admin.auth.admin.createUser({ email, email_confirm:true, user_metadata:{full_name:name} })
@@ -116,7 +117,7 @@ otherClubMembers===0 ? ok('cannot see the organiser’s members') : bad(`saw ${o
 // cleanup
 for (const n of ['Magic Group','Joga Bonito FC']) await admin.from('academies').delete().eq('name', n)
 for (const e of ['promoter@magicgroup.test','owner@jogabonito.test']) {
-  const { data:{users} } = await admin.auth.admin.listUsers({perPage:200})
+  const { data:{users} } = await listAllUsers(admin)
   const u = users.find(x=>x.email===e); if (u) await admin.auth.admin.deleteUser(u.id)
 }
 console.log(process.exitCode ? '\n\x1b[31mSOMETHING IS MISSING\x1b[0m\n' : '\n\x1b[32mORGANISER JOURNEY WORKS\x1b[0m\n')

@@ -7,6 +7,7 @@
 // family with a fee past due cannot say yes until it is paid.
 import { createClient } from '@supabase/supabase-js'
 import { signInClient } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -49,7 +50,7 @@ async function cleanup() {
   }
   await admin.from('events').delete().like('title', `${TAG} %`)
   await admin.from('academies').update({ block_rsvp_when_overdue: false, overdue_grace_days: 14 }).eq('id', NRIFA)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.email === OFFICIAL_EMAIL)
   if (u) {
     await admin.from('academy_members').delete().eq('profile_id', u.id)

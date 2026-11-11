@@ -11,6 +11,7 @@
  * find and replace its own work rather than duplicating it.
  */
 import { createClient } from '@supabase/supabase-js'
+import { listAllUsers } from './_users.mjs'
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const admin = createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -48,7 +49,7 @@ const GROUNDS = [
 
 async function upsertFamily([name, phone, kids]) {
   const email = `demo${phone}@squadroom.invalid`
-  const { data: existing } = await admin.auth.admin.listUsers()
+  const { data: existing } = await listAllUsers(admin)
   let user = existing.users.find((u) => u.email === email)
   if (!user) {
     const { data, error } = await admin.auth.admin.createUser({

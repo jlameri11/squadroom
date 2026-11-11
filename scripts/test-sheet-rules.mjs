@@ -10,6 +10,7 @@
 // made here and removed at the end.
 import { createClient } from '@supabase/supabase-js'
 import { signInClient } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
@@ -41,7 +42,7 @@ async function cleanup() {
   const { data: acads } = await admin.from('academies').select('id').like('name', `${TAG} %`)
   for (const a of acads ?? []) await admin.from('academies').delete().eq('id', a.id)
   await admin.from('referees').delete().like('full_name', `${TAG} %`)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   for (const email of [VISITOR_EMAIL, REF_EMAIL]) {
     const u = users?.users?.find((x) => x.email === email)
     if (u) {

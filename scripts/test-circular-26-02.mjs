@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -42,7 +43,7 @@ async function cleanup() {
   await admin.from('registration_requests').delete().like('child_name', `% ${TAG}`)
   await admin.from('players').delete().like('full_name', `% ${TAG}`)
   await admin.from('programs').delete().like('name', `${TAG} %`)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.phone === '61400002602' || x.email?.startsWith('61400002602'))
   if (u) await admin.auth.admin.deleteUser(u.id)
 }

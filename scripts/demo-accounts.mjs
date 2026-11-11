@@ -9,6 +9,7 @@
 // grandfathered for two-step (0231), so a password signs them in.
 import { createClient } from '@supabase/supabase-js'
 import { PROJECT_REF, PROJECT_NAME } from './_project.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(PROJECT_REF)) {
@@ -23,7 +24,7 @@ const ACCOUNTS = [
   { email: 'organiser@squadroom-demo.test', name: 'League Organiser', academy: SPL, role: 'admin' },
 ]
 
-const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 })
+const { data: list } = await listAllUsers(admin)
 for (const a of ACCOUNTS) {
   let user = list?.users?.find((u) => u.email === a.email)
   if (!user) {

@@ -7,6 +7,7 @@
 // roles out, and a role never shows anyone a club's families.
 import { createClient } from '@supabase/supabase-js'
 import { signInClient } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -34,7 +35,7 @@ async function cleanup() {
   const { data: comps } = await admin.from('competitions').select('id').like('name', `${TAG} %`)
   for (const c of comps ?? []) await admin.from('competitions').delete().eq('id', c.id)
   await admin.from('referees').delete().like('full_name', `% ${TAG}`)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   for (const e of Object.values(EMAILS)) {
     const u = users?.users?.find((x) => x.email === e)
     if (u) {

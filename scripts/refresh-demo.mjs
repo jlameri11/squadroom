@@ -12,6 +12,7 @@
  * exactly where they are.
  */
 import { createClient } from '@supabase/supabase-js'
+import { listAllUsers } from './_users.mjs'
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -89,7 +90,7 @@ const FAMILIES = [
   ['Ben Turner', '0412000112', ['Alfie Turner']],
 ]
 
-const { data: existingUsers } = await admin.auth.admin.listUsers()
+const { data: existingUsers } = await listAllUsers(admin)
 let links = 0
 
 for (const [name, phone, kids] of FAMILIES) {

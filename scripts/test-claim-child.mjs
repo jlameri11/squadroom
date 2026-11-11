@@ -18,6 +18,7 @@ import puppeteer from 'puppeteer-core'
 import { mkdirSync } from 'node:fs'
 import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -40,7 +41,7 @@ const post = (path, body, cookie) =>
   fetch(`${BASE}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(body) })
 
 async function cleanup() {
-  const { data: u } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: u } = await listAllUsers(admin)
   for (const phone of [PHONE_A, PHONE_B]) {
     const user = u?.users?.find((x) => x.phone === phone.replace('+', ''))
     if (user) await admin.auth.admin.deleteUser(user.id)

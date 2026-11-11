@@ -18,6 +18,7 @@ import { randomBytes } from 'node:crypto'
 import puppeteer from 'puppeteer-core'
 import { resolveBaseUrl } from './_base-url.mjs'
 import { sessionIdOf, totp } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -55,7 +56,7 @@ const daysFromNow = (iso) => (new Date(iso).getTime() - Date.now()) / 864e5
 async function tidy() {
   const { data: orgs } = await admin.from('academies').select('id').eq('slug', SLUG)
   for (const o of orgs ?? []) await admin.from('academies').delete().eq('id', o.id)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   for (const email of [OWNER_EMAIL, COACH_EMAIL]) {
     const u = users?.users?.find((x) => x.email === email)
     if (u) await admin.auth.admin.deleteUser(u.id)
@@ -278,7 +279,7 @@ try {
   {
     const { data: nrifa } = await admin.from('academies').select('two_step_required').eq('id', NRIFA).single()
     nrifa?.two_step_required === false ? ok('NRIFA, here before the rule, does not require it yet') : bad(`NRIFA two_step_required: ${JSON.stringify(nrifa)}`)
-    const { data: ju } = await admin.auth.admin.listUsers({ perPage: 200 })
+    const { data: ju } = await listAllUsers(admin)
     const joeyUser = ju?.users?.find((x) => x.email === 'joeylameri@outlook.com')
     const { data: jl } = joeyUser ? await admin.auth.admin.generateLink({ type: 'magiclink', email: joeyUser.email }) : { data: null }
     if (jl?.properties?.hashed_token) {

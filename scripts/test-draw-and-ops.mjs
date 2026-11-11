@@ -7,6 +7,7 @@
 // match-day list says what is outstanding.
 import { createClient } from '@supabase/supabase-js'
 import { signInClient } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
@@ -40,7 +41,7 @@ async function cleanup() {
   }
   const { data: acads } = await admin.from('academies').select('id').like('name', `${TAG} %`)
   for (const a of acads ?? []) await admin.from('academies').delete().eq('id', a.id)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.email === VISITOR_EMAIL)
   if (u) await admin.auth.admin.deleteUser(u.id)
 }

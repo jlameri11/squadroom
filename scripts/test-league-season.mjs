@@ -11,6 +11,7 @@
 // page shows all of it. The referee is paid; the reports come out.
 import { createClient } from '@supabase/supabase-js'
 import { signInClient } from './_auth.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -54,7 +55,7 @@ async function cleanup() {
   await admin.from('venues').delete().like('name', `${TAG} %`)
   await admin.from('referees').delete().like('full_name', `% ${TAG}`)
   await admin.from('players').delete().like('full_name', `% ${TAG}`)
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const { data: users } = await listAllUsers(admin)
   for (const e of [OFFICIAL_EMAIL, REF_EMAIL]) {
     const u = users?.users?.find((x) => x.email === e)
     if (u) {

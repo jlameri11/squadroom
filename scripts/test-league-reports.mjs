@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { signInSession } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -29,7 +30,7 @@ const cookieFor = (session) => {
 }
 const rowsOf = (text) => text.trim().split(/\r?\n/)
 
-const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 })
+const { data: users } = await listAllUsers(admin)
 const old = users?.users?.find((x) => x.email === STRANGER_EMAIL)
 if (old) await admin.auth.admin.deleteUser(old.id)
 const { data: stranger } = await admin.auth.admin.createUser({ email: STRANGER_EMAIL, email_confirm: true })

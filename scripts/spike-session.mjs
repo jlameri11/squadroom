@@ -14,6 +14,7 @@
  * Run:  node --env-file=.env.local scripts/spike-session.mjs
  */
 import { createClient } from '@supabase/supabase-js'
+import { listAllUsers } from './_users.mjs'
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -41,7 +42,7 @@ const fail = (m) => { console.log(`  \x1b[31m✗\x1b[0m ${m}`); process.exitCode
 const head = (m) => console.log(`\n${++step}. ${m}`)
 
 async function cleanup() {
-  const { data } = await admin.auth.admin.listUsers()
+  const { data } = await listAllUsers(admin)
   const existing = data?.users?.find((u) => u.email === EMAIL)
   if (existing) await admin.auth.admin.deleteUser(existing.id)
 }

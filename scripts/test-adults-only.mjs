@@ -6,6 +6,7 @@
 // service role, with every trigger and policy in play — because the ways in
 // are many and a check in one route handler protects exactly that route.
 import { createClient } from '@supabase/supabase-js'
+import { listAllUsers } from './_users.mjs'
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -39,7 +40,7 @@ async function cleanup() {
   const { data: pls } = await admin.from('players').select('id').eq('notes', TAG)
   for (const p of pls ?? []) await admin.from('player_guardians').delete().eq('player_id', p.id)
   await admin.from('players').delete().eq('notes', TAG)
-  const { data: u } = await admin.auth.admin.listUsers({ perPage: 200 })
+  const { data: u } = await listAllUsers(admin)
   for (const x of u.users) if (x.email?.startsWith(TAG)) await admin.auth.admin.deleteUser(x.id)
 }
 

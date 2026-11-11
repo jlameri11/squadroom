@@ -10,6 +10,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -39,7 +40,7 @@ const post = (path, body, cookie) =>
   })
 
 async function cleanup() {
-  const { data: u } = await admin.auth.admin.listUsers()
+  const { data: u } = await listAllUsers(admin)
   const parent = u?.users?.find((x) => x.phone === PHONE.replace('+', ''))
   if (parent) await admin.auth.admin.deleteUser(parent.id)
   await admin.from('join_requests').delete().eq('phone', PHONE)

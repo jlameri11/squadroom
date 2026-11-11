@@ -171,6 +171,68 @@ the club's coaches can open, never published anywhere.
 
 ---
 
+## Inner West FC — the 10-minute demo (Big Club Mode)
+
+A fictional big club, made by `node --env-file=.env.local scripts/seed-inner-west.mjs`
+(idempotent; dev only): 40 squads across MiniRoos, Juniors, Girls, NPL, Seniors
+and Over-35s; 800 players, 100 of them adults who are their own members; a
+thousand parents; a full committee; two drawn grounds with every squad's
+training slot; last Saturday's results and next Saturday's games; a Winter
+Skills Clinic mid-way; a Saturday roster with gaps. Nothing in it is a real
+club, badge or colour. `scripts/test-inner-west.mjs` checks it is all there
+and signs in as each login.
+
+Every login below uses the password **squadroom-demo**. Each shows one role's
+Home; tap the crest (top left) if a login is in more than one organisation.
+
+| Who | Sign in as | What to show |
+|---|---|---|
+| President | iw.president@squadroom-demo.test | Club HQ: needs a decision, this weekend, money; Admin → Club health, Game day, Activity |
+| Secretary | iw.secretary@squadroom-demo.test | Message the club; the Committee room; Roles |
+| Registrar | iw.registrar@squadroom-demo.test | Programs → Winter Skills Clinic (50 in, 8 waiting); PlayFootball not done |
+| Treasurer | iw.treasurer@squadroom-demo.test | Who owes (the clinic's 14 unpaid); Collect payments — and never a medical record |
+| U9–U12 coordinator | iw.coordinator@squadroom-demo.test | Their age groups' squads and coaches; the coordinator's Home |
+| Team manager (U12 Red) | iw.manager@squadroom-demo.test | The squad's Duties (one swap asked for), Saturday's team sheet reminder, the managers' room |
+| Coach (U10 Blue) | iw.coach@squadroom-demo.test | The squad, the register, the ticker on Saturday's game — a MiniRoos game keeps no score |
+| Parent of two | iw.parent@squadroom-demo.test | Amara in U8 Red (MiniRoos) and Jonah in U13 Black (Juniors): two squads, two chats, one Home; a duty to swap; the clinic to pay |
+| Over-35s player | iw.player@squadroom-demo.test | An adult who is their own member: their squad, their games, no guardian |
+| Welfare officer | iw.welfare@squadroom-demo.test | Welfare: reports, incidents, the contact every family sees in Settings |
+| Volunteer coordinator | iw.volunteers@squadroom-demo.test | Rosters: Saturday at Hawthorne with 8 of 9 spots open, the squads' duties, the ask |
+
+### The ten minutes
+
+1. **Sign in as the President.** Home is Club HQ. Open **Admin → Club health**:
+   families joined per squad, squads with nobody in front of them, checks
+   running out, PlayFootball not done. Then **Admin → Game day**: Saturday
+   across the club by ground — called off, live, results, squads short.
+2. **Admin → Roles.** The committee with a scope each: the U9–U12
+   coordinator, twenty team managers, the Welfare officer. Then
+   **Admin → Activity**: who changed what, when.
+3. **Admin → Venues.** Hawthorne Reserve: the pitches drawn, Pitch 2 cut in
+   half for the MiniRoos, the week of training slots, and **Close ground**
+   for a wet Saturday — every session called off, every family told, in one
+   tap (say it; do not tap it in a demo).
+4. **Sign in as the parent of two.** One Home, two children in two streams:
+   the next games, who has not answered, the clinic fee to pay, the duty
+   with a swap asked for. Open Saturday's U8 game: the ground's canteen and
+   BBQ jobs beside the squad's own, and "I can help".
+5. **Open the U8 game page's Match sheet tab.** MiniRoos keep no score — the
+   line says so; the U13 game next door shows last week's 3–1.
+6. **Sign in as the coach of U10 Blue.** The register, the ticker, "Report an
+   incident or injury" on the Match sheet tab — it goes to the Welfare
+   officer and the President only.
+7. **Sign in as the Volunteer coordinator.** **Admin → Rosters**: Saturday at
+   Hawthorne, 1 of 9 spots filled, the game days with no day set up yet,
+   the squads' duties short or swapped. "Ask the club" sends one message.
+8. **Sign in as the Registrar.** **Programs → Winter Skills Clinic**: 50 in,
+   8 waiting, the places left; approve one. The Treasurer's view of the same
+   program is the money, and never the children's medical notes.
+9. **Settings → Features** as the President: every switch on; turn one off
+   and show the screen that disappears — nothing greys out.
+10. **Settings → Club settings**: club mode, the MiniRoos scores switch (off,
+    the default; the U8 game keeps no score), the Welfare officer's contact
+    every family sees.
+
 ## If somebody asks
 
 **"Does it replace Dribl?"** No, and deliberately. Football NSW mandates Dribl

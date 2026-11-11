@@ -25,6 +25,7 @@
 //     child nobody can collect from training
 import { createClient } from '@supabase/supabase-js'
 import { purgeTestMessages } from './_purge-test-messages.mjs'
+import { listAllUsers } from './_users.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -71,7 +72,7 @@ async function session(email) {
 }
 
 async function clean() {
-  const { data: users } = await admin.auth.admin.listUsers({ perPage: 200 })
+  const { data: users } = await listAllUsers(admin)
   const mine = users.users.find((u) => u.email === EMAIL)
   if (mine) {
     await admin.from('messages').delete().eq('sender_id', mine.id)

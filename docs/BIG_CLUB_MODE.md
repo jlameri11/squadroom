@@ -250,8 +250,18 @@ AGM/committee papers.
   club (a lapsed accreditation is flagged, not a loss of rights — the WWCC
   is what does that, 0169); `incident_reports` filed from the game page,
   told to the welfare people at once, reviewed with a note; switch
-  `accreditations`. test-rls 206; `test-safety`. Next: the Inner West FC
-  demo (14), then the definition of done (12) and Phase 2 planning.
+  `accreditations`. test-rls 206; `test-safety`. **Item 14, the Inner West
+  FC demo:** `scripts/seed-inner-west.mjs` (dev only, idempotent) — 40
+  squads across six streams, 800 players (100 adults), ~1,030 parents, the
+  committee with scopes, two drawn grounds with every squad's slot, last
+  Saturday's results and next Saturday's games with answers, the Winter
+  Skills Clinic mid-way with its money, a Saturday roster with gaps, a
+  little chat; eleven demo logins (password squadroom-demo) and the
+  ten-minute walkthrough in `docs/DEMO.md`; `scripts/test-inner-west.mjs`
+  checks the size and signs in as each. Every script that looks an auth
+  user up now pages through them all (`scripts/_users.mjs`), because the
+  demo pushes the dev project past a thousand accounts. Next: the
+  definition of done (12) and Phase 2 planning.
 
 ## Audit (10 Nov 2026) — what exists, what is a gap
 
