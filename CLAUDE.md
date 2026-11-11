@@ -724,6 +724,17 @@ one and is meant to reach hundreds of academies.
   up from a phone number: a magic link for an address nobody holds SIGNS UP
   a stranger (test-join-flow learnt this first); use the account's own
   email, and only a demo or placeholder one.
+- **Four things the definition-of-done suite taught** (11 Nov 2026).
+  `event_live` is the tally of a game's taps and `event_result` the stored
+  result — a seeded score shows in the second, never the first. The
+  activity log's timestamp is `at`, not `created_at`. A local script acting
+  as an owner of a club that requires two-step (every new club, 0231) must
+  put `aal: 'aal2'` in the JWT claims it sets, or `member_roles_of` hides
+  the owner's hats and every gate says no — `scale/message-the-club.mjs`
+  shows the shape. And a seed with a fixed random sequence must make every
+  draw whether or not the row exists: one draw skipped for a player already
+  on the roster renames everyone after them on the rerun
+  (`seed-inner-west.mjs` learnt this with its adults).
 - **Call supabase-js methods on the client, never detached** (10 Nov 2026).
   `const rpc = createClient().rpc as any; rpc('fn')` loses `this` and
   throws "Cannot read properties of undefined (reading 'rest')" before the

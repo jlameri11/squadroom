@@ -451,7 +451,9 @@ const games = {}
   for (const [tname, ag] of TEAMS) {
     const mini = ageOf(ag) !== null && ageOf(ag) <= 11
     for (const [date, played] of [[lastSat, true], [nextSat, false]]) {
-      const home = gi % 2 === 0
+      // Half the squads at home each Saturday (the other half the next), so
+      // both grounds are busy on the day the roster is for.
+      const home = ((gi >> 1) + (played ? 0 : 1)) % 2 === 0
       const opp = OPPONENTS[(gi * 7 + (played ? 3 : 0)) % OPPONENTS.length]
       const vname = mini ? 'Cintra Park' : gi % 4 < 2 ? 'Hawthorne Reserve' : 'Cintra Park'
       const start = atLocal(date, timesHome[gi % timesHome.length])

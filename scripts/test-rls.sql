@@ -3906,14 +3906,14 @@ begin
       r205 := case when v_day = v_day2 and v_job is not null and jsonb_array_length(v_helpers->'ground'->'jobs') = 5
                     and (v_rostered->>'assigned')::int = 2 and jsonb_array_length(v_duties->'duties') = 2
                     and (v_duties->'duties'->0->>'player_id') <> (v_duties->'duties'->1->>'player_id')
-                    and (v_swap->'duties'->0->>'requested_swap_at') is not null and v_msgs = 1
+                    and (select x->>'requested_swap_at' from jsonb_array_elements(coalesce(v_swap->'duties', '[]'::jsonb)) x where x->>'id' = v_duties->'duties'->0->>'id') is not null and v_msgs = 1
                     and jsonb_array_length(v_gaps->'ground_days') >= 1 and (v_gaps->'ground_days'->0->>'open')::int = 9
                     and (v_took->'jobs'->0->'helpers'->0->>'me')::boolean
                     and v_parent_take and v_parent_gaps is null
                     and v_queued >= 0 and v_again = 0 then 'PASS'
                    else 'FAIL (day '||coalesce(v_day::text,'null')||'/'||coalesce(v_day2::text,'null')||'; ground jobs '||coalesce(jsonb_array_length(v_helpers->'ground'->'jobs')::text,'none')
                         ||'; rostered '||coalesce(v_rostered::text,'null')||'; duties '||coalesce(left(v_duties::text,120),'null')
-                        ||'; swap '||coalesce((v_swap->'duties'->0->>'requested_swap_at'),'null')||'; msgs '||v_msgs
+                        ||'; swap '||coalesce((select x->>'requested_swap_at' from jsonb_array_elements(coalesce(v_swap->'duties', '[]'::jsonb)) x where x->>'id' = v_duties->'duties'->0->>'id'),'null')||'; msgs '||v_msgs
                         ||'; gaps '||coalesce(left(v_gaps::text,120),'null')||'; took '||coalesce(left(v_took::text,80),'null')
                         ||'; parent take refused '||v_parent_take||'; parent gaps '||coalesce(v_parent_gaps::text,'null')||'; queued '||v_queued||'/'||v_again||')' end;
       raise exception 'rolled back on purpose' using errcode = 'P0001';
@@ -4001,6 +4001,37 @@ begin
     end;
     execute 'reset role';
     insert into rls_results values (206, 'an accreditation is recorded by the staff for someone else, read by the staff and its owner, never a parent, and warned of to both thirty days out, once; an incident is filed from the ground by a coach, never a parent, read by the filer and told to the welfare people at once', r206);
+  end;
+
+  -- 0254. In club mode a new age-group channel is notices from birth, and a
+  -- club born in club mode gets "Club Notices" for its club-wide channel;
+  -- out of club mode an age group's channel is open, as 0005 made it.
+  -- Rolled back.
+  declare
+    v_ch uuid; v_mode text; v_ch2 uuid; v_mode2 text; v_club uuid := gen_random_uuid(); v_wide uuid; v_wide_name text; v_wide_mode text;
+    r207 text := 'FAIL (never ran)';
+  begin
+    begin
+      update public.academies set club_mode = true where id = ACAD_A;
+      v_ch := public.ensure_system_channel(ACAD_A, 'age_group', 'U99');
+      select posting_mode::text into v_mode from public.channels where id = v_ch;
+      update public.academies set club_mode = false where id = ACAD_B;
+      v_ch2 := public.ensure_system_channel(ACAD_B, 'age_group', 'U99');
+      select posting_mode::text into v_mode2 from public.channels where id = v_ch2;
+      insert into public.academies (id, name, slug, type, club_mode) values (v_club, 'RLS Club Mode FC', 'rls-club-mode-fc', 'club', true);
+      v_wide := public.ensure_system_channel(v_club, 'academy_wide');
+      select name, posting_mode::text into v_wide_name, v_wide_mode from public.channels where id = v_wide;
+      r207 := case when v_mode = 'hosts_only' and v_mode2 = 'open' and v_wide_name = 'Club Notices' and v_wide_mode = 'hosts_only' then 'PASS'
+                   else 'FAIL (club mode age group '||coalesce(v_mode,'null')||', open club '||coalesce(v_mode2,'null')
+                        ||', born in club mode '||coalesce(v_wide_name,'null')||'/'||coalesce(v_wide_mode,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r207 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (207, 'in club mode a new age-group channel is notices from birth and a club born in club mode gets Club Notices; out of club mode an age group''s channel is open', r207);
   end;
 
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
