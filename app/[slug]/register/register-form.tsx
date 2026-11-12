@@ -42,6 +42,9 @@ type Data = {
 
 const KEY = (slug: string) => `squadroom.registration.${slug}`
 const DRAFT = (slug: string) => `squadroom.draft.${slug}`
+/** Every registration sent from this phone at this club, so a family pays for all of them in one go. */
+const LIST = (slug: string) => `squadroom.registrations.${slug}`
+type Sent = { requestId: string; secret: string; programId?: string | null; childName?: string; covered?: boolean }
 
 type Draft = {
   step: 1 | 2 | 3
@@ -110,7 +113,9 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [data, setData] = useState<Data | null | undefined>(undefined)
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [chosen, setChosen] = useState<string | null>(null)
-  const [sent, setSent] = useState<{ requestId: string; secret: string; programId?: string; covered?: boolean } | null>(null)
+  const [sent, setSent] = useState<Sent | null>(null)
+  // The other registrations sent from this phone (a second child), for one checkout.
+  const [familyList, setFamilyList] = useState<Sent[]>([])
   const [status, setStatus] = useState<'pending' | 'approved' | 'declined' | null>(null)
   // 0263: the photo, cropped and resized in the browser, sent once the
   // request exists (it needs the request's secret), kept until then.
@@ -182,10 +187,11 @@ export function RegisterForm({ slug }: { slug: string }) {
     try {
       const saved = localStorage.getItem(KEY(slug))
       if (saved) {
-        const s = JSON.parse(saved) as { requestId: string; secret: string; programId?: string; covered?: boolean }
+        const s = JSON.parse(saved) as Sent
         setSent(s)
         if (s.programId) setChosen(s.programId)
       }
+      setFamilyList(JSON.parse(localStorage.getItem(LIST(slug)) ?? '[]') as Sent[])
       // And a form half filled in. Picked up where they left off.
       const draft = localStorage.getItem(DRAFT(slug))
       if (draft && !saved) {
@@ -366,6 +372,13 @@ export function RegisterForm({ slug }: { slug: string }) {
     // fee where the club passes it on (the route works the real figure out).
     const payNowCharge = Math.max(0, (sentProgram?.amount_cents ?? 0) - (akNumber.trim() ? 5000 : 0))
     const payNowFee = data.academy.card_fee_passthrough ? cardFeeCents(payNowCharge) : 0
+    // The brief's "all into one checkout": the other pay-now registrations
+    // sent from this phone, paid together with this one.
+    const others = familyList.filter((e) => e.requestId !== sent.requestId && !e.covered && data.programs.find((p) => p.id === e.programId)?.pay_timing === 'now')
+    const allCharge = payNowCharge + others.reduce((n, e) => n + (data.programs.find((p) => p.id === e.programId)?.amount_cents ?? 0), 0)
+    const allFee = data.academy.card_fee_passthrough ? cardFeeCents(allCharge) : 0
+    // Cents on a button that charges a card, as the card above it has them.
+    const dollars = (c: number) => `$${(c / 100).toFixed(2)}`
     return (
       <Frame css={clubCss} logo={logo} academy={data.academy.name}>
         <h1 className="display text-xl">
@@ -497,13 +510,33 @@ export function RegisterForm({ slug }: { slug: string }) {
                 ? 'Opening Stripe…'
                 : akNumber.trim() && (sentProgram.amount_cents ?? 0) <= 5000
                   ? 'Use the voucher'
-                  : `Pay ${money(payNowCharge + payNowFee)}`}
+                  : `Pay ${dollars(payNowCharge + payNowFee)}`}
             </button>
             {/* 0270: the card fee, said before the tap. */}
             {payNowFee > 0 && (
               <p className="mt-2 text-xs text-ink-2" data-card-fee={payNowFee}>
-                Includes a card processing fee of {money(payNowFee)}, passed on by the club at Stripe&apos;s rate (1.7% + 30c).
+                Includes a card processing fee of {dollars(payNowFee)}, passed on by the club at Stripe&apos;s rate (1.7% + 30c).
               </p>
+            )}
+            {/* Two children from one phone: one checkout for all of them. */}
+            {others.length > 0 && (
+              <button
+                onClick={async () => {
+                  setBusy(true)
+                  setError(null)
+                  const res = await fetch('/api/register/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requests: [sent, ...others].map((e) => ({ requestId: e.requestId, secret: e.secret })) }) })
+                  const body = await res.json().catch(() => ({}))
+                  setBusy(false)
+                  if (!res.ok || !body.url) return setError(body.error ?? 'Could not start the payment.')
+                  window.location.href = body.url
+                }}
+                disabled={busy}
+                className="mt-2 w-full rounded-xl border px-4 py-3 text-sm font-semibold disabled:opacity-50"
+                style={{ borderColor: tint, color: 'var(--brand-text)' }}
+                data-pay-all-registrations={others.length + 1}
+              >
+                Pay for {[childName || sent.childName, ...others.map((e) => e.childName)].filter(Boolean).map((n) => String(n).split(' ')[0]).join(' and ')} in one go — {dollars(allCharge + allFee)}
+              </button>
             )}
             {error && <p className="mt-2 text-sm" style={{ color: 'var(--no)' }}>{error}</p>}
           </div>
@@ -592,7 +625,15 @@ export function RegisterForm({ slug }: { slug: string }) {
 
     // The program too (0262), so a parent who comes back sees the right
     // "Pay now" for it.
-    const saved = { requestId: body.requestId, secret: body.secret, programId: program?.id }
+    const saved: Sent = { requestId: body.requestId, secret: body.secret, programId: program?.id ?? null, childName }
+    // Every registration from this phone, so a second child can be paid with the first.
+    const list = [...familyList.filter((e) => e.requestId !== saved.requestId), saved].slice(-10)
+    setFamilyList(list)
+    try {
+      localStorage.setItem(LIST(slug), JSON.stringify(list))
+    } catch {
+      /* no storage: one at a time */
+    }
     // 0263: the photo rides after the request, with its secret.
     if (photo) {
       const up = await fetch('/api/register/photo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: saved.requestId, secret: saved.secret, image: photo }) })

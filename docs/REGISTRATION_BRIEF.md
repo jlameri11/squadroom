@@ -1,8 +1,10 @@
 # Registration — as close to Dribl as possible (Joey, 10 Nov 2026)
 
-**Status: in progress (11 Nov 2026).** Part C is done; this is the queue
-now, then the SPL Season 4 simulation (`SIMULATION.md`). Commit and push
-hourly; Joey says when the next deploy is.
+**Status: done (12 Nov 2026).** All ten gaps are built, applied to dev and
+proven (0262–0270); the brief's test list is covered below. Next in the
+queue: Joey's sign-up and account creation brief (`BUILD_PLAN.md` item 17),
+then the "Feels instant" pass, then the SPL Season 4 simulation. Commit and
+push hourly; Joey says when the next deploy is.
 
 | Gap | State |
 |---|---|
@@ -16,6 +18,18 @@ hourly; Joey says when the next deploy is.
 | 8. Save and resume | **Done** — 0269, `registration_drafts` (the account), `/api/register/draft` (the code); test-rls 221, `test-save-resume` |
 | 9. Receipts | **Done** — on screen (0265), the push on landing and on a refund (0270, trigger), the email once Resend exists (`lib/mail/receipt.ts`); test-rls 222, `test-card-fee`, `test-pay-now` §6 |
 | 10. Card fee pass-through | **Done** — 0270, `academies.card_fee_passthrough` (Settings → Club, off), `app_private.card_fee_cents`, its own line on the quote, the Payments row, the Pay now card, Checkout and the receipt; test-rls 222, `test-card-fee`, `test-pay-now` §6 |
+
+## The brief's tests, and where each is proven
+
+| Test | Suite |
+|---|---|
+| a family registers two kids + a parent as coach in one checkout | `test-pay-now` §7 — `/api/register/pay` takes several registrations from one phone into one Checkout; the coach's registration has nothing to pay and is approved after the WWCC tick, the parent hat kept |
+| pay-now reject auto-refunds | `test-pay-now` §3 and §5 |
+| voucher deducted and listed for redemption | `test-active-kids`; `test-pay-now` §5 |
+| photo private until approved | `test-registration-photo`; test-rls 215 |
+| approve → team + jersey in one step | `test-club-review` §3; test-rls 220 |
+| draft resumes on another device | `test-save-resume`; test-rls 221 |
+| under-13 never gets an account | unchanged: a child's registration makes the parent's account, never the child's (0214; `test-adults-only`, `player_logins`) |
 
 ## The brief, verbatim
 

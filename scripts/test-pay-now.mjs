@@ -85,9 +85,17 @@ async function cleanup() {
   await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title', `${TAG} small fee`)
   const { data: kids } = await admin.from('players').select('id').eq('academy_id', NRIFA).like('full_name', `${TAG} %`)
   for (const k of kids ?? []) { await admin.from('player_guardians').delete().eq('player_id', k.id); await admin.from('players').delete().eq('id', k.id) }
+  // §7: the parent's coach registration (no program), and what approval gave them.
+  await admin.from('registration_requests').delete().eq('academy_id', NRIFA).like('child_name', `${TAG} %`)
   const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.phone === PHONE.replace('+', ''))
-  if (u) await admin.auth.admin.deleteUser(u.id)
+  if (u) {
+    await admin.from('team_members').delete().eq('profile_id', u.id)
+    await admin.from('club_roles').delete().eq('profile_id', u.id)
+    await admin.from('staff_clearances').delete().eq('profile_id', u.id)
+    await admin.from('academy_members').delete().eq('profile_id', u.id)
+    await admin.auth.admin.deleteUser(u.id)
+  }
 }
 await cleanup()
 
@@ -287,6 +295,40 @@ try {
       push?.url === `/receipts/${paid.id}` ? ok(`and the push to the payer: "${push.title}"`) : bad(`push ${JSON.stringify(push)}`)
     }
     await admin.from('academies').update({ card_fee_passthrough: feeBefore?.card_fee_passthrough ?? false }).eq('id', NRIFA)
+  }
+
+  head('7. A family: two children and the parent as coach — the children in one checkout')
+  {
+    const U8 = '00000000-0000-0000-0000-0000000d0008'
+    const inTwoYears = new Date(Date.now() + 730 * 864e5).toISOString().slice(0, 10)
+    const nine = await post('/api/register/request', { slug: SLUG, programId: program.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Nine`, childDob: '2016-11-11', consents })
+    const ten = await post('/api/register/request', { slug: SLUG, programId: program.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Ten`, childDob: '2017-12-12', consents })
+    const coach = await post('/api/register/request', { slug: SLUG, registerAs: 'coach', guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Parent`, childDob: '1985-01-01', wwccNumber: 'WWC9998887E', wwccExpiresOn: inTwoYears, roleNote: 'Happy to help with the U8s', consents })
+    nine.status === 200 && ten.status === 200 && coach.status === 200 ? ok('two children registered, and the parent as a coach') : bad(`requests: ${nine.status} ${ten.status} ${coach.status} ${coach.error ?? ''}`)
+    const payCoach = await post('/api/register/pay', { requestId: coach.requestId, secret: coach.secret })
+    payCoach.status === 409 ? ok('a coach\'s registration has nothing to pay') : bad(`pay coach: ${payCoach.status}`)
+    const mixed = await post('/api/register/pay', { requests: [{ requestId: nine.requestId, secret: nine.secret }, { requestId: ten.requestId, secret: 'wrong' }] })
+    mixed.status === 404 ? ok('a wrong secret on either: nothing') : bad(`mixed: ${mixed.status}`)
+    const pay = await post('/api/register/pay', { requests: [{ requestId: nine.requestId, secret: nine.secret }, { requestId: ten.requestId, secret: ten.secret }] })
+    pay.status === 200 && pay.amount_cents === 24000 && pay.count === 2 && pay.card_fee_cents === 0 ? ok('one Checkout for both children: $240.00') : bad(`pay both: ${pay.status} ${JSON.stringify(pay).slice(0, 160)}`)
+    const session = pay.session_id ? await stripe.checkout.sessions.retrieve(pay.session_id, {}, { stripeAccount: harness.id }).catch((e) => ({ error: e.message })) : null
+    session?.amount_total === 24000 ? ok('Stripe asks for $240.00 in one go') : bad(`session total ${session?.amount_total ?? session?.error}`)
+    if (pay.url) await payOnCheckout(pay.url, 'the two children')
+    const both = await until(async () => { const { data } = await admin.from('payments').select('registration_request_id, status, stripe_session_id, amount_cents').in('registration_request_id', [nine.requestId, ten.requestId]); return data?.length === 2 && data.every((p) => p.status === 'paid') ? data : null }, 90000, 2000)
+    both && new Set(both.map((p) => p.stripe_session_id)).size === 1 && both.every((p) => p.amount_cents === 12000) ? ok('both paid, $120.00 each, one session between them') : bad(`both: ${JSON.stringify(both)}`)
+    const again = await post('/api/register/pay', { requests: [{ requestId: nine.requestId, secret: nine.secret }, { requestId: ten.requestId, secret: ten.secret }] })
+    again.status === 409 ? ok('paying them again is refused') : bad(`again: ${again.status}`)
+    await owner.client.rpc('confirm_wwcc_check', { p_request: coach.requestId, p_checked: true })
+    const a9 = await post('/api/register/approve', { requestId: nine.requestId, decision: 'approve', teamId: U8 }, cookie)
+    const a10 = await post('/api/register/approve', { requestId: ten.requestId, decision: 'approve', teamId: U8 }, cookie)
+    const ac = await post('/api/register/approve', { requestId: coach.requestId, decision: 'approve', teamId: U8 }, cookie)
+    const { data: prof } = await admin.from('profiles').select('id').eq('phone', PHONE).maybeSingle()
+    const { data: hats } = prof ? await admin.from('academy_members').select('roles').eq('academy_id', NRIFA).eq('profile_id', prof.id).maybeSingle() : { data: null }
+    const { data: kids } = await admin.from('players').select('id, full_name').eq('academy_id', NRIFA).in('full_name', [`${TAG} Child Nine`, `${TAG} Child Ten`])
+    const { data: moved } = kids?.length ? await admin.from('payments').select('player_id, request_id, status').in('player_id', kids.map((k) => k.id)) : { data: [] }
+    a9.status === 200 && a10.status === 200 && ac.status === 200 && (kids ?? []).length === 2 && (moved ?? []).length === 2 && (moved ?? []).every((m) => m.request_id === fee.id && m.status === 'paid') ? ok('approved: both children on the roster, each payment on the program fee') : bad(`approve ${a9.status} ${a10.status} ${ac.status} ${ac.error ?? ''}; kids ${kids?.length}; moved ${JSON.stringify(moved)}`)
+    const roles = hats?.roles ?? []
+    roles.includes('coach') && roles.includes('parent') ? ok('the parent is a coach and a parent at once — neither hat lost') : bad(`hats ${JSON.stringify(roles)}`)
   }
 } catch (e) {
   bad(`threw: ${e.message}`)
