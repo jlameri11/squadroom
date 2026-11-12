@@ -77,6 +77,10 @@ writeFileSync(PNG_FILE, PNG)
 const dataUrl = `data:image/png;base64,${PNG.toString('base64')}`
 
 const { data: clubBefore } = await admin.from('academies').select('photo_required').eq('id', IW).single()
+// The public form allows twenty registrations an hour from one address; a
+// run of suites from this machine is more than that. The throttle log is
+// not demo data.
+await admin.from('registration_attempts').delete().gte('created_at', '1970-01-01')
 
 async function cleanup() {
   const { data: progs } = await admin.from('programs').select('id').eq('academy_id', IW).like('name', `${TAG} %`)

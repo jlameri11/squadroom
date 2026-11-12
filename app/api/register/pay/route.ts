@@ -37,6 +37,8 @@ export async function POST(request: Request) {
   if (req.status !== 'pending') return NextResponse.json({ error: `This registration is ${req.status}.` }, { status: 409 })
   if (new Date(req.expires_at) < new Date()) return NextResponse.json({ error: 'This registration has lapsed — register again.' }, { status: 409 })
 
+  // 0267: a role's registration has no program, and nothing to pay.
+  if (!req.program_id) return NextResponse.json({ error: 'This registration has nothing to pay.' }, { status: 409 })
   const { data: program } = await admin
     .from('programs')
     .select('id, name, pay_timing, payment_required, payment_request_id')

@@ -28,6 +28,12 @@ type Row = {
   spots_left: number | null
   /** 0263: the registration photo, in the private bucket, until approved. */
   photo_path?: string | null
+  /** 0267: a coach, team manager, volunteer or referee registering themselves, with their WWCC. */
+  register_as?: string | null
+  wwcc_number?: string | null
+  wwcc_expires_on?: string | null
+  wwcc_checked_at?: string | null
+  role_note?: string | null
   // R-18
   ffa_number: string | null
   fifa_id: string | null
@@ -37,6 +43,21 @@ type Row = {
 }
 
 /** R-18: may this request be accepted, as far as PlayFootball goes? */
+/** 0267: a coach, team manager, volunteer or referee registering themselves. */
+const ROLE_LABEL: Record<string, string> = { player: 'Player', coach: 'Coach', team_manager: 'Team manager', volunteer: 'Volunteer', referee: 'Referee' }
+function roleOf(r: Row) {
+  return r.register_as ?? 'player'
+}
+/** A coach, a manager or a referee is approved once the WWCC is ticked as checked on the register. */
+function wwccOk(r: Row) {
+  const role = roleOf(r)
+  return role === 'player' || role === 'volunteer' || Boolean(r.wwcc_checked_at)
+}
+function dayOf(ymd: string) {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 function officialOk(r: Row) {
   if (!r.requires_official) return true
   return Boolean(r.official_confirmed_at) || r.existing_official_status === 'registered' || r.existing_official_status === 'not_required'
@@ -85,6 +106,8 @@ export function RegistrationQueue() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
   const [team, setTeam] = useState<Record<string, string>>({})
+  // 0267: a team manager's role is scoped to a squad, so one has to be picked.
+  const teamOk = (r: Row) => roleOf(r) !== 'team_manager' || Boolean(team[r.request_id])
   const [note, setNote] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -113,7 +136,8 @@ export function RegistrationQueue() {
     const rows = (data ?? []) as Row[]
     setRows(rows)
 
-    const programIds = [...new Set(rows.map((r) => r.program_id))]
+    // A role's request has no program (0267).
+    const programIds = [...new Set(rows.map((r) => r.program_id).filter((id): id is string => Boolean(id)))]
     if (programIds.length > 0) {
       const { data: programs } = await supabase
         .from('programs')
@@ -152,6 +176,18 @@ export function RegistrationQueue() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // 0267: the Working With Children Check, checked on the Service NSW
+  // register by somebody at the club — approval of a coach, manager or
+  // referee waits on it.
+  async function confirmWwcc(row: Row, checked: boolean) {
+    setBusy(row.request_id)
+    setError(null)
+    const { error } = await createClient().rpc('confirm_wwcc_check', { p_request: row.request_id, p_checked: checked })
+    setBusy(null)
+    if (error) return setError(error.message)
+    await load()
+  }
 
   async function confirmOfficial(row: Row, confirmed: boolean) {
     setBusy(row.request_id)
@@ -464,11 +500,18 @@ export function RegistrationQueue() {
                   className="min-w-0 flex-1 px-4 py-3 text-left"
                 >
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 flex-1 truncate font-medium">{r.child_name}</span>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {r.child_name}
+                      {roleOf(r) !== 'player' && (
+                        <span className="ml-2 rounded-full px-2.5 py-1 align-middle text-xs font-semibold" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-register-as={roleOf(r)}>
+                          {ROLE_LABEL[roleOf(r)] ?? roleOf(r)}
+                        </span>
+                      )}
+                    </span>
                     <span className="flex-none text-xs text-ink-3">{ago(r.created_at)}</span>
                   </span>
                   <span className="block truncate text-sm text-ink-2">
-                    {r.program_name} · born {r.child_dob.slice(0, 4)}
+                    {r.program_name ?? `Registering as ${(ROLE_LABEL[roleOf(r)] ?? roleOf(r)).toLowerCase()}`} · born {r.child_dob.slice(0, 4)}
                   </span>
                   <span className="block truncate text-xs text-ink-3">
                     {r.guardian_name}
@@ -553,6 +596,37 @@ export function RegistrationQueue() {
                       </ul>
                     )}
 
+                    {/* 0267: the Working With Children Check, and the club's tick that it was checked on the register. */}
+                    {roleOf(r) !== 'player' && (
+                      <div className="mt-3 rounded-lg p-2.5 text-sm" style={{ background: 'var(--surface-2)' }} data-wwcc-block>
+                        <span className="block text-xs text-ink-3">Working With Children Check</span>
+                        <span className="block">
+                          {r.wwcc_number ? `${r.wwcc_number}${r.wwcc_expires_on ? ` · expires ${dayOf(r.wwcc_expires_on)}` : ''}` : 'No number given'}
+                        </span>
+                        {r.role_note && <span className="block text-xs text-ink-2">“{r.role_note}”</span>}
+                        {r.wwcc_number &&
+                          (r.wwcc_checked_at ? (
+                            <span className="mt-1 flex items-center gap-2">
+                              <span className="pill" style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }}>Checked on the register</span>
+                              {r.status === 'pending' && (
+                                <button onClick={() => void confirmWwcc(r, false)} disabled={busy === r.request_id} className="text-xs underline underline-offset-2 text-ink-3">
+                                  undo
+                                </button>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="mt-1 flex items-center gap-2">
+                              <span className="pill" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>Not checked</span>
+                              {r.status === 'pending' && (
+                                <button onClick={() => void confirmWwcc(r, true)} disabled={busy === r.request_id} className="rounded-lg border px-2 py-1 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }} data-wwcc-check>
+                                  I checked the WWCC register — cleared
+                                </button>
+                              )}
+                            </span>
+                          ))}
+                      </div>
+                    )}
+
                     {(r.requires_official || r.ffa_number || r.fifa_id) && (
                       <div className="mt-3 rounded-lg p-2.5 text-sm" style={{ background: 'var(--surface-2)' }}>
                         <span className="block text-xs text-ink-3">PlayFootball</span>
@@ -588,14 +662,17 @@ export function RegistrationQueue() {
                     {r.status === 'pending' && (
                       <>
                         <label className="mt-3 block text-sm">
-                          <span className="text-ink-2">Which squad?</span>
+                          <span className="text-ink-2">
+                            {roleOf(r) === 'coach' ? 'Which squad do they coach?' : roleOf(r) === 'team_manager' ? 'Which squad do they manage?' : 'Which squad?'}
+                          </span>
                           <select
                             value={team[r.request_id] ?? ''}
                             onChange={(e) => setTeam({ ...team, [r.request_id]: e.target.value })}
                             className="mt-0.5 w-full rounded-lg border px-3 py-2.5 text-sm"
                             style={{ borderColor: 'var(--line)' }}
+                            data-squad-select
                           >
-                            <option value="">Decide later</option>
+                            <option value="">{roleOf(r) === 'team_manager' ? 'Pick a squad' : 'Decide later'}</option>
                             {teams.map((t) => (
                               <option key={t.id} value={t.id}>
                                 {t.name}
@@ -622,12 +699,13 @@ export function RegistrationQueue() {
                         <div className="mt-2 flex gap-2">
                           <button
                             onClick={() => void decide(r, 'approve')}
-                            disabled={busy === r.request_id || !officialOk(r)}
-                            title={officialOk(r) ? undefined : 'Confirm the PlayFootball registration first'}
+                            disabled={busy === r.request_id || !officialOk(r) || !wwccOk(r) || !teamOk(r)}
+                            title={!officialOk(r) ? 'Confirm the PlayFootball registration first' : !wwccOk(r) ? 'Check the Working With Children Check on the register first' : !teamOk(r) ? 'Pick the squad they manage' : undefined}
                             className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-yes-ink disabled:opacity-50"
                             style={{ background: 'var(--yes)' }}
+                            data-accept
                           >
-                            {busy === r.request_id ? 'Working…' : officialOk(r) ? 'Accept' : 'Accept (PlayFootball first)'}
+                            {busy === r.request_id ? 'Working…' : !officialOk(r) ? 'Accept (PlayFootball first)' : !wwccOk(r) ? 'Accept (check the WWCC first)' : !teamOk(r) ? 'Accept (pick a squad)' : 'Accept'}
                           </button>
                           <button
                             onClick={() => void decide(r, 'decline')}

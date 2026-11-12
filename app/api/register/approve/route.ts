@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   const { data: req } = await supabase
     .from('registration_requests')
     .select(
-      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path'
+      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path, register_as, wwcc_number, wwcc_expires_on, wwcc_checked_at'
     )
     .eq('id', requestId)
     .maybeSingle()
@@ -62,6 +62,26 @@ export async function POST(request: Request) {
     const { data: club } = await admin.from('academies').select('photo_required').eq('id', req.academy_id).maybeSingle()
     if (club?.photo_required) {
       return NextResponse.json({ error: `${req.child_name} has no photo yet, and the club requires one. Ask the family to add it from their registration page, then approve.` }, { status: 422 })
+    }
+  }
+
+  // 0267: a coach, team manager, volunteer or referee. A coach, a manager
+  // or a referee is approved only once the club has checked the Working
+  // With Children Check on the register and ticked it; a manager needs the
+  // squad they manage. Refused here, before any account is made.
+  const registerAs = (req.register_as ?? 'player') as 'player' | 'coach' | 'team_manager' | 'volunteer' | 'referee'
+  if (decision === 'approve' && registerAs !== 'player') {
+    if (registerAs !== 'volunteer' && !(req.wwcc_number && req.wwcc_expires_on && req.wwcc_checked_at)) {
+      return NextResponse.json(
+        { error: `${req.child_name}'s Working With Children Check has to be checked on the Service NSW register first — tick it on the request, then approve.` },
+        { status: 422 }
+      )
+    }
+    if (req.wwcc_expires_on && new Date(req.wwcc_expires_on + 'T00:00:00') <= new Date()) {
+      return NextResponse.json({ error: `${req.child_name}'s Working With Children Check has expired.` }, { status: 422 })
+    }
+    if (registerAs === 'team_manager' && !teamId) {
+      return NextResponse.json({ error: 'Pick the squad they manage, then approve.' }, { status: 422 })
     }
   }
 
@@ -144,6 +164,71 @@ export async function POST(request: Request) {
   // The email they registered with becomes the account's (0214), unless the
   // account has one already. Before 0214 this quietly does nothing.
   await adoptEmail(admin, profileId, req.guardian_email)
+
+  // 0267: a role. No player and no program — the hat, the clearance as
+  // checked, the squad where there is one, the referee's place in the pool;
+  // the photo to the staff folder; the consents against the person.
+  if (registerAs !== 'player') {
+    // The clearance first: the coach's hat and the squad row below are
+    // refused without a current one (0120).
+    if (req.wwcc_number && req.wwcc_expires_on) {
+      await admin.from('staff_clearances').upsert(
+        {
+          academy_id: req.academy_id,
+          profile_id: profileId,
+          kind: 'wwcc',
+          number: req.wwcc_number,
+          outcome: 'cleared',
+          expires_on: req.wwcc_expires_on,
+          verified_by: auth.user.id,
+          verified_at: now,
+          note: 'Given at registration; checked on the register before approval.',
+        },
+        { onConflict: 'academy_id,profile_id' }
+      )
+    }
+    if (registerAs !== 'referee') {
+      await addHat(admin, { academyId: req.academy_id, profileId, hat: registerAs === 'coach' ? 'coach' : 'parent', invitedBy: auth.user.id })
+    }
+    if (registerAs === 'coach' && teamId) {
+      await joinTeam(admin, { academyId: req.academy_id, teamId, profileId, role: 'coach' })
+    }
+    if (registerAs === 'team_manager' && teamId) {
+      const { data: has } = await admin.from('club_roles').select('id').eq('academy_id', req.academy_id).eq('profile_id', profileId).eq('role', 'team_manager').eq('team_id', teamId).maybeSingle()
+      if (!has) await admin.from('club_roles').insert({ academy_id: req.academy_id, profile_id: profileId, role: 'team_manager', scope_kind: 'team', team_id: teamId, granted_by: auth.user.id })
+    }
+    if (registerAs === 'volunteer') {
+      const { data: has } = await admin.from('club_roles').select('id').eq('academy_id', req.academy_id).eq('profile_id', profileId).eq('role', 'volunteer').maybeSingle()
+      if (!has) await admin.from('club_roles').insert({ academy_id: req.academy_id, profile_id: profileId, role: 'volunteer', scope_kind: 'club', granted_by: auth.user.id })
+    }
+    if (registerAs === 'referee') {
+      const { data: inPool } = await admin.from('referees').select('id').eq('academy_id', req.academy_id).eq('profile_id', profileId).maybeSingle()
+      if (!inPool) {
+        await admin.from('referees').insert({ academy_id: req.academy_id, profile_id: profileId, full_name: req.child_name, phone: req.guardian_phone, status: 'active', claimed_at: now, created_by: auth.user.id })
+      }
+    }
+    let photoPath: string | null = req.photo_path
+    if (req.photo_path) {
+      const ext = req.photo_path.split('.').pop() ?? 'jpg'
+      const dest = `${req.academy_id}/staff/${profileId}/registration.${ext}`
+      const { error: moveErr } = await admin.storage.from('player-photos').move(req.photo_path, dest)
+      if (!moveErr) photoPath = dest
+    }
+    const roleConsents = (req.consents ?? []) as { id: string; version: number }[]
+    if (roleConsents.length > 0) {
+      await admin.from('consent_acceptances').upsert(
+        roleConsents.map((c) => ({ academy_id: req.academy_id, document_id: c.id, profile_id: profileId, player_id: null, accepted: true, accepted_at: now })),
+        { onConflict: 'document_id,profile_id,player_id' }
+      )
+    }
+    await admin
+      .from('registration_requests')
+      .update({ status: 'approved', profile_id: profileId, photo_path: photoPath, decided_by: auth.user.id, decided_at: now, decision_note: note?.trim() || null })
+      .eq('id', requestId)
+    return NextResponse.json({ ok: true, role: registerAs })
+  }
+  // A player's registration always has its program (the table says so).
+  if (!req.program_id) return NextResponse.json({ error: 'This registration has no program.' }, { status: 500 })
 
   // 0239: an adult registering themselves is the player; a child's
   // registration makes a parent. Hats, not a single role (0237): someone

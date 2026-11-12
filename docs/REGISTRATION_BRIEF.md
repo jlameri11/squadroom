@@ -11,8 +11,8 @@ hourly; Joey says when the next deploy is.
 | 3. Active & Creative Kids voucher | **Done** — 0264, `apply_active_kids_voucher`, `active_kids_to_redeem`, `academies.active_kids_provider` (Settings → Club), the Pay now card; test-rls 216, `test-active-kids`, `test-pay-now` §5 |
 | 4. Family dashboard | **Done** — 0265, `/settings/registrations` (`my_registrations`), `/receipts/{payment}` (`payment_receipt`); test-rls 217, `test-my-registrations` |
 | 5. Find a club | **Done** — 0266, `/clubs` (`public_find_clubs`), `academies.suburb` (Settings → Club), the Clubs strip on `/c/{slug}` (`public_competition_clubs`); test-rls 218, `test-find-a-club` |
-| 6. Register as | next |
-| 7. Club review | queued |
+| 6. Register as | **Done** — 0267, `register_as` on the form and the queue, `confirm_wwcc_check`, the approval branch in `/api/register/approve`; test-rls 219, `test-register-as` |
+| 7. Club review | next |
 | 8. Save and resume | queued |
 | 9. Receipts | queued — the on-screen receipt is built with gap 4; the push and the email remain |
 | 10. Card fee pass-through | queued |

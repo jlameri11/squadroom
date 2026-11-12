@@ -19,8 +19,14 @@ function clientIpHash(request: Request): string {
   return createHash('sha256').update(fwd).digest('hex')
 }
 
+/** 0267: who the form registers. A role is an adult's own registration. */
+const ROLES = ['player', 'coach', 'team_manager', 'volunteer', 'referee'] as const
+type RegisterAs = (typeof ROLES)[number]
+
 /**
- * A family who has never heard of us registers a child.
+ * A family who has never heard of us registers a child — or, since 0267,
+ * an adult registers themselves as a coach, a team manager, a volunteer or
+ * a referee.
  *
  * The most exposed surface in the product: writable by anyone on the
  * internet, with no account, no invite link and no coach who knows their
@@ -28,12 +34,13 @@ function clientIpHash(request: Request): string {
  * whole point of the flow.
  *
  * NOTHING HERE GRANTS ANYTHING. It creates a pending request a human still
- * decides. No account, no membership, no channel, no roster row.
+ * decides. No account, no membership, no channel, no roster row, no role.
  *
- * Every rule lives in `check_registration` rather than here, so it is one
- * thing, testable without HTTP, and the route cannot drift from it. The route
- * does the two things SQL cannot: hash the caller's address, and mint a
- * secret the database only ever sees the hash of.
+ * Every rule lives in `check_registration` (a player) or
+ * `check_role_registration` (a role) rather than here, so it is one thing,
+ * testable without HTTP, and the route cannot drift from it. The route does
+ * the two things SQL cannot: hash the caller's address, and mint a secret the
+ * database only ever sees the hash of.
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
@@ -53,6 +60,10 @@ export async function POST(request: Request) {
     answers,
     consents,
     forSelf,
+    registerAs,
+    wwccNumber,
+    wwccExpiresOn,
+    roleNote,
   } = body as {
     slug?: string
     programId?: string
@@ -68,11 +79,19 @@ export async function POST(request: Request) {
     childGender?: string
     answers?: Record<string, unknown>
     consents?: { id: string; version: number }[]
+    /** 0267: a coach, team manager, volunteer or referee registering themselves. */
+    registerAs?: string
+    wwccNumber?: string
+    wwccExpiresOn?: string
+    roleNote?: string
   }
 
-  if (!slug || !programId || !guardianName?.trim() || !childName?.trim() || !childDob) {
+  const role: RegisterAs = ROLES.includes(registerAs as RegisterAs) ? (registerAs as RegisterAs) : 'player'
+  const forRole = role !== 'player'
+
+  if (!slug || (!forRole && !programId) || !guardianName?.trim() || !childName?.trim() || !childDob) {
     return NextResponse.json(
-      { error: 'Please fill in your name, your child’s name and their date of birth.' },
+      { error: forRole ? 'Please fill in your name and your date of birth.' : 'Please fill in your name, your child’s name and their date of birth.' },
       { status: 400 }
     )
   }
@@ -104,13 +123,29 @@ export async function POST(request: Request) {
   const mail = checkEmail(guardianEmail)
   if (!mail.ok) return NextResponse.json({ error: mail.error }, { status: 400 })
 
+  // 0267: the Working With Children Check. A coach, a manager or a referee
+  // gives the number and its expiry; a volunteer may. The club checks the
+  // number on the register before approving — this only takes it down.
+  const wwcc = (wwccNumber ?? '').replace(/\s/g, '').toUpperCase()
+  const wwccExpiry = wwccExpiresOn && /^\d{4}-\d{2}-\d{2}$/.test(wwccExpiresOn) ? wwccExpiresOn : null
+  if (forRole) {
+    if (role !== 'volunteer' && (!wwcc || !wwccExpiry)) {
+      return NextResponse.json({ error: 'A coach, manager or referee gives their Working With Children Check number and its expiry date.' }, { status: 400 })
+    }
+    if (wwcc && !wwccExpiry) return NextResponse.json({ error: 'When does the Working With Children Check expire?' }, { status: 400 })
+    if (wwcc && !/^[A-Z0-9]{6,20}$/.test(wwcc)) return NextResponse.json({ error: 'That does not look like a Working With Children Check number.' }, { status: 400 })
+    if (wwccExpiry && new Date(wwccExpiry + 'T00:00:00') <= new Date()) {
+      return NextResponse.json({ error: 'That Working With Children Check has expired. Renew it with Service NSW first.' }, { status: 400 })
+    }
+  }
+
   const admin = createAdminClient()
 
   // Rate limited BEFORE the eligibility check, so a program's rules cannot be
   // probed for free. The limit counts the attempt whether or not it succeeds.
   const { data: throttled } = await admin.rpc('check_registration_rate', {
     p_ip_hash: clientIpHash(request),
-    p_program: programId,
+    p_program: (forRole ? null : programId) as unknown as string,
   })
   if (throttled) {
     return NextResponse.json(
@@ -122,40 +157,59 @@ export async function POST(request: Request) {
   // Eligibility, consents, capacity and whether the program is open at all.
   // One unhelpful message for every failure, deliberately — the differences
   // would tell somebody probing which ids are real.
-  const { data: program, error: refused } = await admin.rpc('check_registration', {
-    p_academy_slug: slug,
-    p_program: programId,
-    p_child_dob: childDob,
-    p_consents: (consents ?? []) as never,
-  })
-
-  if (refused || !program) {
-    return NextResponse.json(
-      { error: refused?.message ?? "That isn't open for registrations." },
-      { status: 400 }
-    )
-  }
-
-  const { data: academy } = await admin
-    .from('academies')
-    .select('id')
-    .eq('slug', slug.trim().toLowerCase())
-    .maybeSingle()
-  if (!academy) {
-    return NextResponse.json({ error: "That isn't open for registrations." }, { status: 400 })
+  let academyId: string | null = null
+  let program: string | null = null
+  if (forRole) {
+    const { data: acad, error: refused } = await admin.rpc('check_role_registration', {
+      p_academy_slug: slug,
+      p_dob: childDob,
+      p_consents: (consents ?? []) as never,
+    })
+    if (refused || !acad) {
+      return NextResponse.json({ error: refused?.message ?? "That isn't open for registrations." }, { status: 400 })
+    }
+    academyId = acad as unknown as string
+  } else {
+    const { data: ok, error: refused } = await admin.rpc('check_registration', {
+      p_academy_slug: slug,
+      p_program: programId as string,
+      p_child_dob: childDob,
+      p_consents: (consents ?? []) as never,
+    })
+    if (refused || !ok) {
+      return NextResponse.json(
+        { error: refused?.message ?? "That isn't open for registrations." },
+        { status: 400 }
+      )
+    }
+    program = ok as unknown as string
+    const { data: academy } = await admin
+      .from('academies')
+      .select('id')
+      .eq('slug', slug.trim().toLowerCase())
+      .maybeSingle()
+    if (!academy) {
+      return NextResponse.json({ error: "That isn't open for registrations." }, { status: 400 })
+    }
+    academyId = academy.id
   }
 
   // The answers, against the questions actually asked. The form enforces
   // required questions and option lists; this is where that is true for a
-  // browser that was not running the form.
-  const { data: asked } = await admin
-    .from('programs')
-    .select('questions')
-    .eq('id', program)
-    .maybeSingle()
-  const cleaned = cleanAnswers((asked?.questions ?? []) as unknown as Question[], answers)
-  if (!cleaned.ok) {
-    return NextResponse.json({ error: cleaned.error }, { status: 400 })
+  // browser that was not running the form. A role has no program, so no
+  // questions.
+  let cleanedAnswers: Record<string, unknown> = {}
+  if (program) {
+    const { data: asked } = await admin
+      .from('programs')
+      .select('questions')
+      .eq('id', program)
+      .maybeSingle()
+    const cleaned = cleanAnswers((asked?.questions ?? []) as unknown as Question[], answers)
+    if (!cleaned.ok) {
+      return NextResponse.json({ error: cleaned.error }, { status: 400 })
+    }
+    cleanedAnswers = cleaned.answers as Record<string, unknown>
   }
 
   // R-18: PlayFootball's ids are digits. Spaces people type are dropped;
@@ -167,8 +221,9 @@ export async function POST(request: Request) {
   }
 
   // 0239: registering yourself means being an adult; a child's registration
-  // is a parent's, as before.
-  if (forSelf === true && !(childDob && isAdult(childDob))) {
+  // is a parent's, as before. A role is always the adult's own.
+  const self = forRole || forSelf === true
+  if (self && !(childDob && isAdult(childDob))) {
     return NextResponse.json({ error: 'Registering yourself needs you to be 18 or over. A parent registers a child.' }, { status: 400 })
   }
 
@@ -177,20 +232,24 @@ export async function POST(request: Request) {
   const { data: created, error } = await admin
     .from('registration_requests')
     .insert({
-      academy_id: academy.id,
+      academy_id: academyId as string,
       program_id: program,
       guardian_name: guardianName.trim(),
       guardian_phone: e164,
       guardian_email: mail.email,
       child_name: childName.trim(),
       child_dob: childDob,
-      for_self: forSelf === true,
+      for_self: self,
       child_gender: (gender as Gender) || null,
       ffa_number: ffa || null,
       fifa_id: fifa || null,
-      answers: cleaned.answers as never,
+      answers: cleanedAnswers as never,
       consents: (consents ?? []) as never,
       secret_hash: hashSecret(secret),
+      register_as: role,
+      wwcc_number: forRole && wwcc ? wwcc : null,
+      wwcc_expires_on: forRole && wwcc ? wwccExpiry : null,
+      role_note: forRole ? roleNote?.trim().slice(0, 500) || null : null,
     })
     .select('id')
     .single()

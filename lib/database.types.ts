@@ -7372,10 +7372,16 @@ export type Database = {
           photo_path: string | null
           player_id: string | null
           profile_id: string | null
-          program_id: string
+          program_id: string | null
+          register_as: string
           registration_id: string | null
+          role_note: string | null
           secret_hash: string
           status: string
+          wwcc_checked_at: string | null
+          wwcc_checked_by: string | null
+          wwcc_expires_on: string | null
+          wwcc_number: string | null
         }
         Insert: {
           academy_id: string
@@ -7402,10 +7408,16 @@ export type Database = {
           photo_path?: string | null
           player_id?: string | null
           profile_id?: string | null
-          program_id: string
+          program_id?: string | null
+          register_as?: string
           registration_id?: string | null
+          role_note?: string | null
           secret_hash: string
           status?: string
+          wwcc_checked_at?: string | null
+          wwcc_checked_by?: string | null
+          wwcc_expires_on?: string | null
+          wwcc_number?: string | null
         }
         Update: {
           academy_id?: string
@@ -7432,10 +7444,16 @@ export type Database = {
           photo_path?: string | null
           player_id?: string | null
           profile_id?: string | null
-          program_id?: string
+          program_id?: string | null
+          register_as?: string
           registration_id?: string | null
+          role_note?: string | null
           secret_hash?: string
           status?: string
+          wwcc_checked_at?: string | null
+          wwcc_checked_by?: string | null
+          wwcc_expires_on?: string | null
+          wwcc_number?: string | null
         }
         Relationships: [
           {
@@ -7479,6 +7497,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "programs"
             referencedColumns: ["id", "academy_id"]
+          },
+          {
+            foreignKeyName: "registration_requests_wwcc_checked_by_fkey"
+            columns: ["wwcc_checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -9222,6 +9247,10 @@ export type Database = {
         Args: { p_ip_hash: string; p_program: string }
         Returns: boolean
       }
+      check_role_registration: {
+        Args: { p_academy_slug: string; p_consents: Json; p_dob: string }
+        Returns: string
+      }
       child_privacy: { Args: { p_player: string }; Returns: Json }
       claim_competition_invite: {
         Args: { p_academy: string; p_team?: string; p_token: string }
@@ -9365,6 +9394,10 @@ export type Database = {
       }
       confirm_official_rego: {
         Args: { p_confirmed?: boolean; p_request: string }
+        Returns: undefined
+      }
+      confirm_wwcc_check: {
+        Args: { p_checked?: boolean; p_request: string }
         Returns: undefined
       }
       convert_poll_to_event: {
@@ -10521,10 +10554,15 @@ export type Database = {
           photo_path: string
           program_id: string
           program_name: string
+          register_as: string
           request_id: string
           requires_official: boolean
+          role_note: string
           spots_left: number
           status: string
+          wwcc_checked_at: string
+          wwcc_expires_on: string
+          wwcc_number: string
         }[]
       }
       registrations_export: {

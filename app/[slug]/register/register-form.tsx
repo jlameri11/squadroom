@@ -52,10 +52,25 @@ type Draft = {
   answers: Record<string, string>
   agreed: Record<string, boolean>
   savedAt: number
+  /** 0267: a role's registration. */
+  registerAs?: RegisterAs
+  wwccNumber?: string
+  wwccExpiresOn?: string
+  roleNote?: string
 }
 
 // Short enough to sit three abreast on a 375px phone without truncating.
 const STEPS = ['Who’s playing', 'Details', 'Review & send'] as const
+
+/** 0267: who the form registers. A role is an adult's own registration, for no program. */
+type RegisterAs = 'player' | 'coach' | 'team_manager' | 'volunteer' | 'referee'
+const ROLE_OPTIONS: [RegisterAs, string][] = [
+  ['player', 'Player'],
+  ['coach', 'Coach'],
+  ['team_manager', 'Team manager'],
+  ['volunteer', 'Volunteer'],
+  ['referee', 'Referee'],
+]
 
 /**
  * Registering a child at a club that has never heard of you.
@@ -119,6 +134,12 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [childDob, setChildDob] = useState('')
   // 0239: an adult registering themselves — the "child" fields are theirs.
   const [forSelf, setForSelf] = useState(false)
+  // 0267: a coach, team manager, volunteer or referee registering themselves,
+  // with their Working With Children Check.
+  const [registerAs, setRegisterAs] = useState<RegisterAs>('player')
+  const [wwccNumber, setWwccNumber] = useState('')
+  const [wwccExpiresOn, setWwccExpiresOn] = useState('')
+  const [roleNote, setRoleNote] = useState('')
   // R-18: PlayFootball's ids, so the club can confirm the registration.
   const [childFfa, setChildFfa] = useState('')
   const [childFifa, setChildFifa] = useState('')
@@ -160,6 +181,11 @@ export function RegisterForm({ slug }: { slug: string }) {
         setGuardianEmail(d.guardianEmail ?? '')
         setAnswers(d.answers ?? {})
         setAgreed(d.agreed ?? {})
+        setRegisterAs(d.registerAs ?? 'player')
+        if (d.registerAs && d.registerAs !== 'player') setForSelf(true)
+        setWwccNumber(d.wwccNumber ?? '')
+        setWwccExpiresOn(d.wwccExpiresOn ?? '')
+        setRoleNote(d.roleNote ?? '')
         setResumed(Boolean(d.childName || d.guardianName || d.chosen))
       }
     } catch {
@@ -177,12 +203,13 @@ export function RegisterForm({ slug }: { slug: string }) {
       const d: Draft = {
         step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
         answers, agreed, savedAt: Date.now(),
+        registerAs, wwccNumber, wwccExpiresOn, roleNote,
       }
       localStorage.setItem(DRAFT(slug), JSON.stringify(d))
     } catch {
       /* no storage, no draft */
     }
-  }, [hydrated, sent, slug, step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed])
+  }, [hydrated, sent, slug, step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed, registerAs, wwccNumber, wwccExpiresOn, roleNote])
 
   // Once there is a request, ask where it stands. Not polled on a timer: a
   // club approving takes hours or days, and a page left open on a phone
@@ -367,7 +394,10 @@ export function RegisterForm({ slug }: { slug: string }) {
   const full = program?.spots_left === 0
   const unansweredQs = unanswered(program?.questions, answers)
 
-  const step1Ok = Boolean(program && childName.trim() && childDob)
+  const forRole = registerAs !== 'player'
+  const needsWwcc = registerAs === 'coach' || registerAs === 'team_manager' || registerAs === 'referee'
+  const roleLabel = ROLE_OPTIONS.find(([v]) => v === registerAs)?.[1] ?? registerAs
+  const step1Ok = Boolean((program || forRole) && childName.trim() && childDob) && (!needsWwcc || Boolean(wwccNumber.trim() && wwccExpiresOn))
   const step2Ok =
     Boolean(guardianName.trim()) &&
     EMAIL_SHAPE.test(guardianEmail.trim()) &&
@@ -376,7 +406,7 @@ export function RegisterForm({ slug }: { slug: string }) {
     (!data.academy.photo_required || Boolean(photo))
 
   async function submit() {
-    if (!program) return
+    if (!program && !forRole) return
     setBusy(true)
     setError(null)
     const res = await fetch('/api/register/request', {
@@ -384,13 +414,18 @@ export function RegisterForm({ slug }: { slug: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         slug,
-        programId: program.id,
+        programId: program?.id,
         guardianName,
         guardianPhone: guardianPhone || undefined,
         guardianEmail: guardianEmail || undefined,
         childName,
         childDob,
-        forSelf,
+        forSelf: forSelf || forRole,
+        // 0267: the role and the Working With Children Check.
+        registerAs,
+        wwccNumber: forRole ? wwccNumber || undefined : undefined,
+        wwccExpiresOn: forRole ? wwccExpiresOn || undefined : undefined,
+        roleNote: forRole ? roleNote || undefined : undefined,
         childFfa: childFfa || undefined,
         childFifa: childFifa || undefined,
         childGender: childGender || undefined,
@@ -406,7 +441,7 @@ export function RegisterForm({ slug }: { slug: string }) {
 
     // The program too (0262), so a parent who comes back sees the right
     // "Pay now" for it.
-    const saved = { requestId: body.requestId, secret: body.secret, programId: program.id }
+    const saved = { requestId: body.requestId, secret: body.secret, programId: program?.id }
     // 0263: the photo rides after the request, with its secret.
     if (photo) {
       const up = await fetch('/api/register/photo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: saved.requestId, secret: saved.secret, image: photo }) })
@@ -439,6 +474,38 @@ export function RegisterForm({ slug }: { slug: string }) {
 
           {step === 1 && (
             <>
+              {/* 0267: a player (a child, or yourself), or a role. */}
+              <section className="mt-4" data-register-as={registerAs}>
+                <span className="eyebrow">Register as</span>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ROLE_OPTIONS.map(([value, label]) => (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setRegisterAs(value)
+                        if (value !== 'player') {
+                          setChosen(null)
+                          setForSelf(true)
+                        } else {
+                          setForSelf(false)
+                        }
+                      }}
+                      aria-pressed={registerAs === value}
+                      className="min-w-fit flex-1 rounded-lg border px-2.5 py-2 text-sm font-semibold"
+                      style={
+                        registerAs === value
+                          ? { borderColor: tint, background: 'var(--brand-faint)', color: 'var(--brand-text)' }
+                          : { borderColor: 'var(--line)', color: 'var(--ink-2)' }
+                      }
+                      data-role-option={value}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {!forRole && (
               <section className="mt-4">
                 <span className="eyebrow">What for</span>
                 <div className="mt-1.5 flex flex-col gap-2">
@@ -460,10 +527,11 @@ export function RegisterForm({ slug }: { slug: string }) {
                   ))}
                 </div>
               </section>
+              )}
 
-              {program && (
+              {(program || forRole) && (
                 <>
-                  {full && program.waitlist_enabled && (
+                  {full && program?.waitlist_enabled && (
                     <p
                       className="mt-4 rounded-lg border p-3 text-sm"
                       style={{ borderColor: 'var(--maybe)', color: 'var(--maybe)' }}
@@ -475,19 +543,21 @@ export function RegisterForm({ slug }: { slug: string }) {
 
                   <section className="mt-5">
                     <span className="eyebrow">{forSelf ? 'You' : 'Your child'}</span>
-                    <label className="mt-2 flex items-start gap-2.5 text-sm text-ink-2">
-                      <input
-                        type="checkbox"
-                        checked={forSelf}
-                        onChange={(e) => {
-                          setForSelf(e.target.checked)
-                          if (e.target.checked && !childName.trim() && guardianName.trim()) setChildName(guardianName)
-                        }}
-                        className="mt-0.5 h-4 w-4 flex-none"
-                        data-register-for-self
-                      />
-                      <span>I&apos;m registering myself (I&apos;m 18 or over)</span>
-                    </label>
+                    {!forRole && (
+                      <label className="mt-2 flex items-start gap-2.5 text-sm text-ink-2">
+                        <input
+                          type="checkbox"
+                          checked={forSelf}
+                          onChange={(e) => {
+                            setForSelf(e.target.checked)
+                            if (e.target.checked && !childName.trim() && guardianName.trim()) setChildName(guardianName)
+                          }}
+                          className="mt-0.5 h-4 w-4 flex-none"
+                          data-register-for-self
+                        />
+                        <span>I&apos;m registering myself (I&apos;m 18 or over)</span>
+                      </label>
+                    )}
                     <Field label={forSelf ? 'Your full name' : 'Their full name'} value={childName} onChange={setChildName} />
                     <Field
                       label={forSelf ? 'Your date of birth' : 'Date of birth'}
@@ -495,22 +565,54 @@ export function RegisterForm({ slug }: { slug: string }) {
                       value={childDob}
                       onChange={setChildDob}
                       hint={
-                        program.born_from_year
-                          ? `This program is for children born ${program.born_from_year}–${
-                              program.born_to_year ?? program.born_from_year
-                            }.`
-                          : undefined
+                        forRole
+                          ? 'You need to be 18 or over.'
+                          : program?.born_from_year
+                            ? `This program is for children born ${program.born_from_year}–${
+                                program.born_to_year ?? program.born_from_year
+                              }.`
+                            : undefined
                       }
                     />
-                    {program.requires_official_rego && (
+                    {/* 0267: a role's Working With Children Check, and a word on where they would like to help. */}
+                    {forRole && (
+                      <>
+                        <p className="mt-3 rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
+                          {needsWwcc
+                            ? 'A coach, manager or referee gives their Working With Children Check number and expiry, as on the Service NSW letter. The club checks it on the register before you start.'
+                            : 'If you hold a Working With Children Check, give the number and its expiry; the club checks it on the register.'}
+                        </p>
+                        <Field
+                          label={needsWwcc ? 'Working With Children Check number' : 'Working With Children Check number (if you have one)'}
+                          value={wwccNumber}
+                          onChange={setWwccNumber}
+                          hint="For example WWC1234567E."
+                        />
+                        <Field label="WWCC expiry date" type="date" value={wwccExpiresOn} onChange={setWwccExpiresOn} />
+                        <label className="mt-3 flex flex-col gap-1.5">
+                          <span className="eyebrow">Which team or age group would you like to help with? (optional)</span>
+                          <textarea
+                            value={roleNote}
+                            onChange={(e) => setRoleNote(e.target.value)}
+                            rows={2}
+                            className="rounded-xl border px-3.5 py-3 text-base"
+                            style={{ borderColor: 'var(--line)' }}
+                            data-role-note
+                          />
+                        </label>
+                      </>
+                    )}
+                    {!forRole && program?.requires_official_rego && (
                       <p className="mt-3 rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
                         This program is for players registered in <b>PlayFootball</b> first (Football
                         Australia&apos;s rule). Register there if you haven&apos;t, then give the FFA number
                         or FIFA ID below so the club can confirm it.
                       </p>
                     )}
+                    {!forRole && (
+                    <>
                     <Field
-                      label={program.requires_official_rego ? 'FFA number' : 'FFA number (if registered in PlayFootball)'}
+                      label={program?.requires_official_rego ? 'FFA number' : 'FFA number (if registered in PlayFootball)'}
                       value={childFfa}
                       onChange={setChildFfa}
                       hint="On the PlayFootball profile, digits only."
@@ -540,12 +642,16 @@ export function RegisterForm({ slug }: { slug: string }) {
                         ))}
                       </div>
                     </fieldset>
+                    </>
+                    )}
                   </section>
                 </>
               )}
 
               <button
                 onClick={() => {
+                  // A role is the person's own: their name is the contact name too.
+                  if (forRole && !guardianName.trim()) setGuardianName(childName)
                   setStep(2)
                   window.scrollTo({ top: 0 })
                 }}
@@ -553,12 +659,18 @@ export function RegisterForm({ slug }: { slug: string }) {
                 className="mt-5 w-full rounded-xl px-4 py-3 font-semibold disabled:opacity-50"
                 style={{ background: tint, color: ink }}
               >
-                {!program ? 'Choose a program' : !childName.trim() || !childDob ? 'Fill in your child’s name and date of birth' : 'Continue'}
+                {!program && !forRole
+                  ? 'Choose a program'
+                  : !childName.trim() || !childDob
+                    ? forRole ? 'Fill in your name and date of birth' : 'Fill in your child’s name and date of birth'
+                    : needsWwcc && !(wwccNumber.trim() && wwccExpiresOn)
+                      ? 'Your WWCC number and expiry'
+                      : 'Continue'}
               </button>
             </>
           )}
 
-          {step === 2 && program && (
+          {step === 2 && (program || forRole) && (
             <>
               <section className="mt-4">
                 <span className="eyebrow">You</span>
@@ -587,10 +699,10 @@ export function RegisterForm({ slug }: { slug: string }) {
                 {photoNote && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{photoNote}</p>}
               </section>
 
-              {(program.questions ?? []).length > 0 && (
+              {(program?.questions ?? []).length > 0 && (
                 <section className="mt-5">
                   <span className="eyebrow">{data.academy.name} asks</span>
-                  {(program.questions ?? []).map((q) => (
+                  {(program?.questions ?? []).map((q) => (
                     <QuestionField
                       key={q.id}
                       question={q}
@@ -681,14 +793,38 @@ export function RegisterForm({ slug }: { slug: string }) {
             </>
           )}
 
-          {step === 3 && program && (
+          {step === 3 && (program || forRole) && (
             <>
               <section className="mt-4">
                 <span className="eyebrow">Check it over</span>
                 <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
-                  <dt className="text-ink-3">Program</dt>
-                  <dd className="font-medium">{program.name}</dd>
-                  <dt className="text-ink-3">Child</dt>
+                  {forRole ? (
+                    <>
+                      <dt className="text-ink-3">Registering as</dt>
+                      <dd className="font-medium" data-review-role>{roleLabel}</dd>
+                      {wwccNumber.trim() && (
+                        <>
+                          <dt className="text-ink-3">WWCC</dt>
+                          <dd>
+                            {wwccNumber.trim().toUpperCase()}
+                            {wwccExpiresOn ? `, expires ${new Date(wwccExpiresOn + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+                          </dd>
+                        </>
+                      )}
+                      {roleNote.trim() && (
+                        <>
+                          <dt className="text-ink-3">Where</dt>
+                          <dd>{roleNote.trim()}</dd>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <dt className="text-ink-3">Program</dt>
+                      <dd className="font-medium">{program?.name}</dd>
+                    </>
+                  )}
+                  <dt className="text-ink-3">{forSelf || forRole ? 'You' : 'Child'}</dt>
                   <dd>
                     {childName}
                     {childDob ? `, born ${new Date(childDob + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
@@ -714,10 +850,10 @@ export function RegisterForm({ slug }: { slug: string }) {
               <section className="mt-4">
                 <span className="eyebrow">The fee</span>
                 <p className="mt-1.5 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
-                  {program.amount_cents != null ? (
+                  {program?.amount_cents != null ? (
                     <>
                       <b>{money(program.amount_cents)}</b>
-                      {program.payment_required ? ' — paid after the club accepts, in the app.' : ' — the club will tell you when it is due.'}
+                      {program?.payment_required ? ' — paid after the club accepts, in the app.' : ' — the club will tell you when it is due.'}
                       {full ? ' Nothing is owed while you are on the waitlist.' : ''}
                     </>
                   ) : (

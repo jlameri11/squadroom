@@ -54,6 +54,10 @@ const post = async (path, body, cookie) => {
 }
 
 const { data: akBefore } = await admin.from('academies').select('active_kids_provider').eq('id', NRIFA).single()
+// The public form allows twenty registrations an hour from one address; a
+// run of suites from this machine is more than that. The throttle log is
+// not demo data.
+await admin.from('registration_attempts').delete().gte('created_at', '1970-01-01')
 const AK_NUMBERS = ['9876543210987654', '1111222233334444', '5555666677778888']
 
 async function cleanup() {

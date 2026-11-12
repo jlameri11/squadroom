@@ -4886,6 +4886,63 @@ begin
     insert into rls_results values (218, 'Find a club: a stranger finds a club with something open by name or suburb, with its open programs and nothing about anyone; not with the switch off, not a league, not a club with nothing open; a published competition lists its clubs, an unpublished one nothing', r218);
   end;
 
+  -- 0267. Register as: a coach's request with no program sits in the queue
+  -- with its role and WWCC number; a parent cannot tick the check, the
+  -- club can; the role rules take an adult and refuse a 16-year-old; a
+  -- staff photo is the person's, the staff's and nobody else's. Rolled back.
+  declare
+    v_req uuid; v_slug text; v_rows integer; v_role text; v_num text; v_parent text := 'ok'; v_checked timestamptz;
+    v_ok uuid; v_young text := 'ok'; v_self boolean; v_staff boolean; v_other boolean;
+    r219 text := 'FAIL (never ran)';
+  begin
+    begin
+      select slug into v_slug from public.academies where id = ACAD_A;
+      insert into public.registration_requests (academy_id, program_id, guardian_name, guardian_phone, guardian_email, child_name, child_dob, secret_hash, status, expires_at, for_self, register_as, wwcc_number, wwcc_expires_on)
+      values (ACAD_A, null, 'RLS Coach', '+61400000777', 'rls.coach@example.com', 'RLS Coach', '1990-05-05', 'x', 'pending', now() + interval '7 days', true, 'coach', 'WWC0009999E', current_date + 365) returning id into v_req;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*), max(t.register_as), max(t.wwcc_number) into v_rows, v_role, v_num from public.registration_queue(ACAD_A, 'pending') t where t.request_id = v_req;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.confirm_wwcc_check(v_req, true);
+        v_parent := 'allowed';
+      exception when others then v_parent := sqlstate; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.confirm_wwcc_check(v_req, true);
+      execute 'reset role';
+      select wwcc_checked_at into v_checked from public.registration_requests where id = v_req;
+      v_ok := public.check_role_registration(v_slug, '1990-05-05',
+                (select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'version', c.version)), '[]'::jsonb)
+                   from public.consent_documents c where c.academy_id = ACAD_A and c.published_at is not null and c.retired_at is null and c.required));
+      begin
+        perform public.check_role_registration(v_slug, (current_date - interval '16 years')::date, '[]'::jsonb);
+        v_young := 'allowed';
+      exception when others then v_young := sqlstate; end;
+      -- The staff folder: MARCUS (a coach, not staff) sees his own, not the owner's; the owner sees his.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      v_self := app_private.may_see_photo(ACAD_A::text || '/staff/' || MARCUS::text || '/registration.jpg');
+      v_other := app_private.may_see_photo(ACAD_A::text || '/staff/' || COACH::text || '/registration.jpg');
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      v_staff := app_private.may_see_photo(ACAD_A::text || '/staff/' || MARCUS::text || '/registration.jpg');
+      r219 := case when v_rows = 1 and v_role = 'coach' and v_num = 'WWC0009999E' and v_parent = '42501' and v_checked is not null
+                    and v_ok = ACAD_A and v_young = '22023' and v_self and not v_other and v_staff then 'PASS'
+                   else 'FAIL (queue rows '||coalesce(v_rows::text,'null')||' role '||coalesce(v_role,'null')||' number '||coalesce(v_num,'null')
+                        ||'; parent tick '||v_parent||'; checked '||coalesce(v_checked::text,'null')||'; adult ok '||coalesce(v_ok::text,'null')||' young '||v_young
+                        ||'; staff photo self '||v_self||' other '||v_other||' staff '||v_staff||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r219 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (219, 'register as: a coach''s request with no program sits in the queue with its role and WWCC number; a parent cannot tick the check, the club can; an adult passes the role rules and a 16-year-old does not; a staff photo is the person''s and the staff''s, nobody else''s', r219);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
