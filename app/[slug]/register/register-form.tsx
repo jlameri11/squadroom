@@ -26,6 +26,8 @@ type Data = {
     primary_colour: string
     logo_url: string | null
     timezone: string
+    /** 0269: the club's id, for a signed-in person's draft. */
+    id?: string
     /** 0263: the club wants a passport-style photo with every registration. */
     photo_required?: boolean
     /** 0264: the club takes Active & Creative Kids vouchers (a provider, feature on). */
@@ -54,6 +56,7 @@ type Draft = {
   savedAt: number
   /** 0267: a role's registration. */
   registerAs?: RegisterAs
+  forSelf?: boolean
   wwccNumber?: string
   wwccExpiresOn?: string
   roleNote?: string
@@ -115,6 +118,15 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [paid, setPaid] = useState(false)
   // 0264: an Active & Creative Kids voucher on a pay-now registration — the
   // number and, if it differs, the child's name as on the voucher.
+  // 0269: save and resume beyond this browser — to the account when signed
+  // in, by a code when not.
+  const [me, setMe] = useState<string | null>(null)
+  const [resumeCode, setResumeCode] = useState<string | null>(null)
+  const [resumeOpen, setResumeOpen] = useState(false)
+  const [enterCode, setEnterCode] = useState('')
+  const [resumeError, setResumeError] = useState<string | null>(null)
+  const [draftBusy, setDraftBusy] = useState(false)
+  const [synced, setSynced] = useState(false)
   // 0268: the club's question, and the family's answer.
   const [infoNote, setInfoNote] = useState<string | null>(null)
   const [familyReply, setFamilyReply] = useState<string | null>(null)
@@ -157,6 +169,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
+    let localSavedAt = 0
     createClient()
       .rpc('public_programs', { p_slug: slug })
       .then(({ data }) => setData((data as unknown as Data) ?? null))
@@ -174,46 +187,112 @@ export function RegisterForm({ slug }: { slug: string }) {
       const draft = localStorage.getItem(DRAFT(slug))
       if (draft && !saved) {
         const d = JSON.parse(draft) as Draft
-        setStep(d.step ?? 1)
-        setChosen(d.chosen ?? null)
-        setChildName(d.childName ?? '')
-        setChildDob(d.childDob ?? '')
-        setChildFfa(d.childFfa ?? '')
-        setChildFifa(d.childFifa ?? '')
-        setChildGender(d.childGender ?? '')
-        setGuardianName(d.guardianName ?? '')
-        setGuardianPhone(d.guardianPhone ?? '')
-        setGuardianEmail(d.guardianEmail ?? '')
-        setAnswers(d.answers ?? {})
-        setAgreed(d.agreed ?? {})
-        setRegisterAs(d.registerAs ?? 'player')
-        if (d.registerAs && d.registerAs !== 'player') setForSelf(true)
-        setWwccNumber(d.wwccNumber ?? '')
-        setWwccExpiresOn(d.wwccExpiresOn ?? '')
-        setRoleNote(d.roleNote ?? '')
-        setResumed(Boolean(d.childName || d.guardianName || d.chosen))
+        applyDraft(d)
+        localSavedAt = d.savedAt ?? 0
       }
     } catch {
       // A private window refuses storage. The form still works; the parent
       // just cannot be told the outcome on this device.
     }
     setHydrated(true)
+    // 0269: a signed-in person's draft lives against their account too, so
+    // the phone they finish on need not be the one they started on. The
+    // newer of the two wins.
+    void (async () => {
+      const supabase = createClient()
+      const { data: claims } = await supabase.auth.getClaims()
+      const uid = claims?.claims?.sub ?? null
+      if (!uid) return
+      setMe(uid)
+      const { data: pub } = await supabase.rpc('public_programs', { p_slug: slug })
+      const academyId = (pub as unknown as Data | null)?.academy?.id
+      if (!academyId) return
+      const { data: row } = await supabase.from('registration_drafts').select('draft, updated_at').eq('academy_id', academyId).eq('profile_id', uid).maybeSingle()
+      const d = (row?.draft ?? null) as Draft | null
+      if (d && (d.savedAt ?? 0) > localSavedAt) applyDraft(d)
+      if (row) setSynced(true)
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
+
+  // Every field from a draft — the browser's, the account's, or a code's.
+  function applyDraft(d: Draft) {
+    setStep(d.step ?? 1)
+    setChosen(d.chosen ?? null)
+    setChildName(d.childName ?? '')
+    setChildDob(d.childDob ?? '')
+    setChildFfa(d.childFfa ?? '')
+    setChildFifa(d.childFifa ?? '')
+    setChildGender(d.childGender ?? '')
+    setGuardianName(d.guardianName ?? '')
+    setGuardianPhone(d.guardianPhone ?? '')
+    setGuardianEmail(d.guardianEmail ?? '')
+    setAnswers(d.answers ?? {})
+    setAgreed(d.agreed ?? {})
+    setRegisterAs(d.registerAs ?? 'player')
+    setForSelf(Boolean(d.registerAs && d.registerAs !== 'player') || Boolean(d.forSelf))
+    setWwccNumber(d.wwccNumber ?? '')
+    setWwccExpiresOn(d.wwccExpiresOn ?? '')
+    setRoleNote(d.roleNote ?? '')
+    setResumed(Boolean(d.childName || d.guardianName || d.chosen))
+  }
+
+  // 0269: the current form as a draft.
+  function currentDraft(): Draft {
+    return {
+      step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
+      answers, agreed, savedAt: Date.now(),
+      registerAs, wwccNumber, wwccExpiresOn, roleNote, forSelf,
+    }
+  }
+
+  // 0269: no account — a code to pick the draft up on another phone.
+  async function saveForLater() {
+    setDraftBusy(true)
+    setResumeError(null)
+    const res = await fetch('/api/register/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', slug, draft: currentDraft() }) })
+    const body = await res.json().catch(() => ({}))
+    setDraftBusy(false)
+    if (!res.ok) return setResumeError(body.error ?? 'Could not save it.')
+    setResumeCode(body.code)
+  }
+
+  async function pickUp() {
+    setDraftBusy(true)
+    setResumeError(null)
+    const res = await fetch('/api/register/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'load', slug, code: enterCode }) })
+    const body = await res.json().catch(() => ({}))
+    setDraftBusy(false)
+    if (!res.ok) return setResumeError(body.error ?? 'No draft with that code.')
+    applyDraft(body.draft as Draft)
+    setResumeCode(body.code)
+    setResumeOpen(false)
+  }
 
   // The draft, kept as it is typed. Not before the restore has run, or the
   // first render's empty fields would overwrite what was saved.
   useEffect(() => {
     if (!hydrated || sent) return
+    const d: Draft = {
+      step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
+      answers, agreed, savedAt: Date.now(),
+      registerAs, wwccNumber, wwccExpiresOn, roleNote, forSelf,
+    }
     try {
-      const d: Draft = {
-        step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
-        answers, agreed, savedAt: Date.now(),
-        registerAs, wwccNumber, wwccExpiresOn, roleNote,
-      }
       localStorage.setItem(DRAFT(slug), JSON.stringify(d))
     } catch {
       /* no storage, no draft */
     }
+    // 0269: and against the account, a moment after the typing stops.
+    if (!me || !data?.academy?.id) return
+    const academyId = data.academy.id
+    const t = setTimeout(async () => {
+      const { error } = await createClient()
+        .from('registration_drafts')
+        .upsert({ academy_id: academyId, profile_id: me, draft: d as never, updated_at: new Date().toISOString(), expires_at: new Date(Date.now() + 14 * 864e5).toISOString() }, { onConflict: 'academy_id,profile_id' })
+      if (!error) setSynced(true)
+    }, 1200)
+    return () => clearTimeout(t)
   }, [hydrated, sent, slug, step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed, registerAs, wwccNumber, wwccExpiresOn, roleNote])
 
   // Once there is a request, ask where it stands. Not polled on a timer: a
@@ -509,6 +588,9 @@ export function RegisterForm({ slug }: { slug: string }) {
       // Nothing to do. The request is made; this device just will not be
       // able to collect the session automatically.
     }
+    // 0269: the draft has done its job, wherever it was kept.
+    if (resumeCode) void fetch('/api/register/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear', slug, code: resumeCode }) })
+    if (me && data?.academy?.id) void createClient().from('registration_drafts').delete().eq('academy_id', data.academy.id).eq('profile_id', me)
     setSent(saved)
   }
 
@@ -526,6 +608,59 @@ export function RegisterForm({ slug }: { slug: string }) {
           {resumed && step > 1 && (
             <p className="mt-2 text-xs text-ink-3">Picked up where you left off.</p>
           )}
+
+          {/* 0269: finish on another phone. Signed in, the draft follows the account as you type;
+              not signed in, a code does the same job. */}
+          <div className="mt-2 text-xs text-ink-3" data-save-resume={me ? 'account' : resumeCode ? 'code' : 'none'}>
+            {me ? (
+              synced ? (
+                <span data-draft-synced>Saved to your account as you go — open this page on any phone you&apos;re signed in on.</span>
+              ) : (
+                <span>Your draft is saved to your account as you type.</span>
+              )
+            ) : resumeCode ? (
+              <span className="block rounded-lg border p-2.5" style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }} data-resume-code={resumeCode}>
+                Your code is <b className="font-mono text-base tracking-wider" style={{ color: 'var(--ink)' }}>{resumeCode}</b>. On any phone, open this page and tap
+                &ldquo;Pick up where I left off&rdquo;. It keeps for 14 days.
+              </span>
+            ) : resumeOpen ? (
+              <span className="block rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }} data-resume-form>
+                <label className="block text-ink-2">
+                  The code from the other phone
+                  <input
+                    value={enterCode}
+                    onChange={(e) => setEnterCode(e.target.value.toUpperCase())}
+                    placeholder="ABC-234"
+                    autoComplete="off"
+                    className="mt-1 w-full rounded-lg border px-3 py-2 font-mono text-base tracking-wider"
+                    style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                    data-resume-input
+                  />
+                </label>
+                <span className="mt-2 flex gap-2">
+                  <button type="button" onClick={() => void pickUp()} disabled={draftBusy || enterCode.replace(/[^A-Z0-9]/g, '').length < 6} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50" style={{ background: tint, color: ink }} data-resume-load>
+                    {draftBusy ? 'Looking…' : 'Pick it up'}
+                  </button>
+                  <button type="button" onClick={() => { setResumeOpen(false); setResumeError(null) }} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
+                    Cancel
+                  </button>
+                </span>
+                {resumeError && <span className="mt-1.5 block" style={{ color: 'var(--no)' }} data-resume-error>{resumeError}</span>}
+              </span>
+            ) : (
+              <span className="flex flex-wrap gap-x-3 gap-y-1">
+                <button type="button" onClick={() => void saveForLater()} disabled={draftBusy} className="tap underline underline-offset-2 disabled:opacity-50" data-save-draft>
+                  {draftBusy ? 'Saving…' : 'Finish on another phone? Save and get a code'}
+                </button>
+                {!resumed && (
+                  <button type="button" onClick={() => setResumeOpen(true)} className="tap underline underline-offset-2" data-resume-open>
+                    Pick up where I left off
+                  </button>
+                )}
+                {resumeError && <span className="block w-full" style={{ color: 'var(--no)' }} data-resume-error>{resumeError}</span>}
+              </span>
+            )}
+          </div>
 
           {step === 1 && (
             <>

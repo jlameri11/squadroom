@@ -5002,6 +5002,48 @@ begin
     insert into rls_results values (220, 'the club''s review: a parent cannot ask a family for more, the club can; the question is on the queue and the family''s dashboard; an accepted request carries its registration and where it stands, deregistered included', r220);
   end;
 
+  -- 0269. A draft saved to the account: a parent keeps and reads their own
+  -- draft at a club, not another person's, cannot write one as somebody
+  -- else, and a code's draft is nobody's to read through the table; a
+  -- stranger reads none; the public page carries the club's id. Rolled back.
+  declare
+    v_slug text; v_own integer; v_theirs integer; v_code_rows integer; v_forged text := 'ok'; v_anon text := 'ok'; v_id text;
+    r221 text := 'FAIL (never ran)';
+  begin
+    begin
+      select slug into v_slug from public.academies where id = ACAD_A;
+      v_id := public.public_programs(v_slug)->'academy'->>'id';
+      insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, COACH, '{"childName":"RLS Coach Kid"}');
+      insert into public.registration_drafts (academy_id, code, draft) values (ACAD_A, 'RLS-CODE', '{"childName":"RLS Code Kid"}');
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, PARENT, '{"childName":"RLS Parent Kid"}');
+      select count(*) into v_own from public.registration_drafts d where d.profile_id = PARENT and d.draft->>'childName' = 'RLS Parent Kid';
+      select count(*) into v_theirs from public.registration_drafts d where d.profile_id = COACH;
+      select count(*) into v_code_rows from public.registration_drafts d where d.code is not null;
+      begin
+        insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, COACH, '{"childName":"forged"}');
+        v_forged := 'allowed';
+      exception when others then v_forged := sqlstate; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+      execute 'set local role anon';
+      begin
+        select count(*)::text into v_anon from public.registration_drafts;
+      exception when others then v_anon := sqlstate; end;
+      execute 'reset role';
+      r221 := case when v_id = ACAD_A::text and v_own = 1 and v_theirs = 0 and v_code_rows = 0 and v_forged in ('42501', '23505') and v_anon in ('42501', '0') then 'PASS'
+                   else 'FAIL (id '||coalesce(v_id,'null')||'; own '||v_own||' theirs '||v_theirs||' code rows '||v_code_rows||' forged '||v_forged||' anon '||v_anon||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r221 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (221, 'a draft saved to the account: a parent keeps and reads their own, not another person''s, cannot write one as somebody else, a code''s draft is nobody''s through the table, a stranger reads none; the public page carries the club''s id', r221);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

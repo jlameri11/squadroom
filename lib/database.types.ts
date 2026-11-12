@@ -7346,6 +7346,54 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_drafts: {
+        Row: {
+          academy_id: string
+          code: string | null
+          created_at: string
+          draft: Json
+          expires_at: string
+          id: string
+          profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          code?: string | null
+          created_at?: string
+          draft: Json
+          expires_at?: string
+          id?: string
+          profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          code?: string | null
+          created_at?: string
+          draft?: Json
+          expires_at?: string
+          id?: string
+          profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_drafts_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_drafts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registration_requests: {
         Row: {
           academy_id: string
