@@ -653,8 +653,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     `test-team-creator`. **Part C is complete** (item 1, the photo, is in
     13). Next: item 13, the registration brief — gap 1 (pay timing, 0262),
     gap 2 (the photo, 0263), gap 3 (the Active & Creative Kids voucher,
-    0264) and gap 4 (the family dashboard and the receipt, 0265) are done;
-    the table of the rest is in `REGISTRATION_BRIEF.md`.
+    0264), gap 4 (the family dashboard and the receipt, 0265) and gap 5
+    (Find a club, 0266) are done; the table of the rest is in
+    `REGISTRATION_BRIEF.md`.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features
@@ -731,6 +732,41 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     the join form's "Would you like to help?", Admin → Requests and the list
     on Club HQ; `lib/membership.ts` for the no-demotion fix in the three
     routes that wrote memberships. test-rls 208; `test-role-requests`.
+
+17. **Sign-up and account creation** (Joey, 12 Nov 2026) — **after the
+    registration brief (13), before the "Feels instant" pass (16) and the
+    simulation (14).** The brief, verbatim:
+
+    > Sign-up and account creation (Joey, 12 Nov — Dribl's simplicity, our coach links):
+    >
+    > THE FLOW (every way in — coach's link/QR/code, club sign-up, registration):
+    > 1. Tap the coach's link → a simple screen: club crest + "Join U9 Navy at NRIFA" → "Create account" (or "I already have an account → Sign in").
+    > 2. CREATE ACCOUNT — one plain screen, one column, labels above fields, * for required:
+    >    First name* · Middle name (optional) · Last name* · Email* · Mobile* (defaults to +61; other country codes accepted if typed) · Password* (min 8, show/hide eye, no confirm field, no other rules)
+    >    Under the button: "By creating an account you agree to our Terms and Privacy Policy" (links; placeholder pages until the lawyer's versions).
+    > 3. CONFIRM: a 6-digit code to their email (and by text once Twilio is set up). No access until confirmed. Resend after 30 s; expires in 10 min; rate-limited.
+    > 4. STRAIGHT BACK to where they started: the join request for that team (their child's name + birthday, as now) → the coach approves → they're in. One account for everything; no step repeated.
+    > An account is always required — nobody joins a club without one.
+    >
+    > SIGNING IN LATER: email + password. Backups: "Email me a code instead" and "Forgot password" (reset by code). Owners, admins and league staff still get the two-step text code.
+    >
+    > EXISTING ACCOUNTS: split names into First + Last (on the last space; flag odd ones for the club to check). Anyone without a password sets one next time they sign in (one screen, "Not now" allowed once).
+    >
+    > KIDS: unchanged — under-13s never get an account; 13+ needs a parent's approval.
+    >
+    > LOOK: as simple as Dribl's form — white/near-black card, big tap targets, no extra copy, one button per screen. Works at 375 px.
+    >
+    > DEMO: demo accounts keep squadroom-demo; their code shows on screen.
+    >
+    > LAUNCH LIST (NEEDS JOEY): Resend + domain before real families sign up (Supabase's built-in email is rate-limited); leaked-password protection when moving to Supabase Pro.
+    >
+    > Tests: no access before confirming; wrong/expired code refused; forgot-password works; names split correctly; terms line on every path; a coach's link → create account → code → lands on that team's join request; existing account → sign in → same place; under-13 rules unchanged.
+    > Do after the current registration work. Commit and push hourly.
+
+    Where it lands on what exists: the join flow (`/join/<token>`, 0010+),
+    phone-shaped placeholder accounts and `account_emails` (0214), the
+    two-step text code (0232), `EmailGate`, `SetPassword`, `profiles.full_name`
+    (to be split into first/middle/last). Status: queued, after gap 10.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

@@ -23,6 +23,8 @@ export const BARE = [
   // The front door for a club that has heard of us, the privacy page, and
   // the status page ("is it just me?") — none of them wants a sign-in.
   '/for-clubs', '/privacy', '/status',
+  // Find a club (0266): a family with no account searching for one.
+  '/clubs',
 ]
 
 /**
@@ -36,7 +38,7 @@ export const BARE = [
  * say so the first time its tab bar goes missing.
  */
 export const APP_ROOTS = new Set([
-  'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'competitions', 'directory',
+  'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'clubs', 'competitions', 'directory',
   'for-clubs', 'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'privacy', 'programs', 'ref', 'referee',
   'scan', 'settings', 'signin', 'signup', 'start', 'status',
 ])

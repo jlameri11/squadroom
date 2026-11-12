@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Centre } from './match-centre'
+import type { Centre, PublicClub } from './match-centre'
 import type { PublicSponsor } from './sponsor-strip'
 
 /**
@@ -42,6 +42,17 @@ export async function loadSwitches(slug: string): Promise<PublicSwitches> {
   )
   const { data } = await anon.rpc('public_switches', { p_slug: slug })
   return (data as unknown as PublicSwitches) ?? {}
+}
+
+/** 0266: the clubs in this competition — a name, a crest, the door to each club's page. */
+export async function loadClubs(slug: string): Promise<PublicClub[]> {
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const { data } = await anon.rpc('public_competition_clubs', { p_slug: slug })
+  return (data as unknown as PublicClub[]) ?? []
 }
 
 export async function loadSponsors(slug: string): Promise<PublicSponsor[]> {

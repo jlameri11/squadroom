@@ -26,6 +26,7 @@ export function AcademySettings({
   miniroosScores = false,
   photoRequired = false,
   activeKidsProvider = false,
+  suburb = null,
 }: {
   academyId: string
   dmPolicy: string
@@ -53,6 +54,8 @@ export function AcademySettings({
   photoRequired?: boolean
   /** 0264: the club is a registered Active & Creative Kids provider. */
   activeKidsProvider?: boolean
+  /** 0266: where the club is, for Find a club. */
+  suburb?: string | null
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -69,6 +72,7 @@ export function AcademySettings({
   const [miniroos, setMiniroos] = useState(miniroosScores)
   const [photoReq, setPhotoReq] = useState(photoRequired)
   const [activeKids, setActiveKids] = useState(activeKidsProvider)
+  const [where, setWhere] = useState(suburb ?? '')
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
@@ -85,6 +89,7 @@ export function AcademySettings({
     | { block_rsvp_when_overdue: boolean }
     | { overdue_grace_days: number }
     | { contact_email: string | null }
+    | { suburb: string | null }
 
   const ladder = (() => {
     const a = Math.round(Number(second) * 100)
@@ -424,6 +429,37 @@ export function AcademySettings({
             />
             We&apos;re a registered Active &amp; Creative Kids provider
           </label>
+        </section>
+      </WhenOn>
+
+      {/* 0266: Find a club — the public search by name or suburb. */}
+      <WhenOn feature="find_a_club" orgId={academyId}>
+        <section data-find-a-club-section>
+          <h2 className="font-semibold">Find a club</h2>
+          <p className="mt-0.5 text-sm text-ink-2">
+            Families search Squadroom&apos;s public Find a club page by club name or suburb. You are listed while you have
+            a program open to register for; turn the Find a club feature off (Settings → Features) to be left out.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              value={where}
+              onChange={(e) => setWhere(e.target.value)}
+              placeholder="Suburb"
+              aria-label="Suburb"
+              className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--line)' }}
+              data-suburb
+            />
+            <button
+              onClick={() => update({ suburb: where.trim() || null })}
+              disabled={busy || where.trim() === (suburb ?? '')}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50"
+              style={{ background: 'var(--brand)' }}
+              data-suburb-save
+            >
+              Save
+            </button>
+          </div>
         </section>
       </WhenOn>
 

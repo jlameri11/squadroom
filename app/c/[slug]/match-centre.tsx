@@ -40,6 +40,9 @@ export type LadderRow = {
 
 export type SquadPlayer = { name: string; number: number | null }
 
+/** 0266: a club in the competition, with the door to its own public page. */
+export type PublicClub = { name: string; slug: string; suburb: string | null; logo_url: string | null }
+
 export type Centre = {
   competition: { name: string; season: string | null; organiser: string }
   fixtures: Fixture[]
@@ -92,8 +95,11 @@ export function MatchCentre({
   sponsors = [],
   switches,
   brand = null,
+  clubs = [],
 }: {
   centre: Centre
+  /** 0266: the clubs in this competition, each a door to its own page. */
+  clubs?: PublicClub[]
   /** The organiser's colours and logo (a league, usually). Null: black and white. */
   brand?: { primary: string | null; secondary: string | null; logo: string | null } | null
   /** L-12: inside a league's own website. No header, a footer link out. */
@@ -157,6 +163,24 @@ export function MatchCentre({
 
       {/* X-08: the organiser's sponsors — a name, a logo, a link. */}
       <SponsorStrip sponsors={sponsors} slug={slug} />
+
+      {/* 0266: the clubs in this competition, each a door to its own page. */}
+      {!embed && clubs.length > 0 && (
+        <section className="px-3.5 pt-3" data-public-clubs={clubs.length}>
+          <p className="eyebrow px-1">Clubs</p>
+          <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1">
+            {clubs.map((c) => (
+              <a key={c.slug} href={`/${c.slug}`} className="flex flex-none items-center gap-2 rounded-full border px-3 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }}>
+                {c.logo_url && (
+                  // eslint-disable-next-line @next/next/no-img-element -- the club's own file
+                  <img src={c.logo_url} alt="" className="h-5 w-5 rounded object-contain" />
+                )}
+                <span className="whitespace-nowrap">{c.name}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {divisions.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto px-3.5 pt-3.5 pb-1">

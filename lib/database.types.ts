@@ -41,6 +41,7 @@ export type Database = {
           setup_started_at: string
           sibling_discount_bps: number[]
           slug: string
+          suburb: string | null
           timezone: string
           two_step_required: boolean
           type: Database["public"]["Enums"]["org_type"]
@@ -72,6 +73,7 @@ export type Database = {
           setup_started_at?: string
           sibling_discount_bps?: number[]
           slug: string
+          suburb?: string | null
           timezone?: string
           two_step_required?: boolean
           type?: Database["public"]["Enums"]["org_type"]
@@ -103,6 +105,7 @@ export type Database = {
           setup_started_at?: string
           sibling_discount_bps?: number[]
           slug?: string
+          suburb?: string | null
           timezone?: string
           two_step_required?: boolean
           type?: Database["public"]["Enums"]["org_type"]
@@ -10335,7 +10338,9 @@ export type Database = {
         Args: { p_code: string; p_slug: string }
         Returns: Json
       }
+      public_competition_clubs: { Args: { p_slug: string }; Returns: Json }
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
+      public_find_clubs: { Args: { p_query?: string }; Returns: Json }
       public_ladder_breakdown: {
         Args: { p_entry: string; p_slug: string }
         Returns: Json

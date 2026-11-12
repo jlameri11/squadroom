@@ -4821,6 +4821,71 @@ begin
     insert into rls_results values (217, 'a family''s own registrations: the parent sees their children''s registrations, a public-form request made with their mobile, their people and their payments; an outsider none; a receipt is the payer''s, the family''s and the club''s, nobody else''s', r217);
   end;
 
+  -- 0266. Find a club: a stranger finds a club with something open by its
+  -- name or its suburb, with its open programs and nothing about anyone;
+  -- not with the switch off, not a league, not a club with nothing open;
+  -- a published competition lists its clubs, an unpublished one nothing.
+  -- Rolled back.
+  declare
+    v_slug text; v_all jsonb; v_by_suburb jsonb; v_none jsonb; v_off jsonb; v_league uuid; v_with_league jsonb;
+    v_comp uuid; v_clubs jsonb; v_unpub uuid; v_unpub_clubs jsonb; v_prog uuid;
+    r218 text := 'FAIL (never ran)';
+  begin
+    begin
+      select slug into v_slug from public.academies where id = ACAD_A;
+      insert into public.programs (academy_id, name, kind, status, season, created_by, born_from_year, born_to_year)
+      values (ACAD_A, 'RLS Find Squad', 'squad', 'open', '2026', COACH, 2015, 2019) returning id into v_prog;
+      update public.academies set suburb = 'Rlsville' where id = ACAD_A;
+      perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+      execute 'set local role anon';
+      v_all := public.public_find_clubs(null);
+      v_by_suburb := public.public_find_clubs('rlsvil');
+      v_none := public.public_find_clubs('zzzz-no-such-club');
+      execute 'reset role';
+      insert into public.academy_features (academy_id, feature, enabled) values (ACAD_A, 'find_a_club', false);
+      execute 'set local role anon';
+      v_off := public.public_find_clubs(v_slug);
+      execute 'reset role';
+      delete from public.academy_features where academy_id = ACAD_A and feature = 'find_a_club';
+      -- A league with an open program is still not a club.
+      insert into public.academies (name, slug, type, created_by) values ('RLS League', 'rls-find-league', 'league', COACH) returning id into v_league;
+      insert into public.programs (academy_id, name, kind, status, season, created_by)
+      values (v_league, 'RLS League Camp', 'camp', 'open', '2026', COACH);
+      -- A published competition with the club in it, and an unpublished one.
+      insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by, public_slug, published_at)
+      values (v_league, 'RLS Find Cup', 'season', '2026', 'active', 'managed', 'participants', COACH, 'rls-find-cup', now()) returning id into v_comp;
+      insert into public.competition_clubs (competition_id, academy_id, status, joined_at) values (v_comp, ACAD_A, 'active', now());
+      insert into public.competitions (organiser_id, name, type, season, status, mode, visibility, created_by, public_slug)
+      values (v_league, 'RLS Hidden Cup', 'season', '2026', 'active', 'managed', 'participants', COACH, 'rls-hidden-cup') returning id into v_unpub;
+      insert into public.competition_clubs (competition_id, academy_id, status, joined_at) values (v_unpub, ACAD_A, 'active', now());
+      execute 'set local role anon';
+      v_with_league := public.public_find_clubs('rls');
+      v_clubs := public.public_competition_clubs('rls-find-cup');
+      v_unpub_clubs := public.public_competition_clubs('rls-hidden-cup');
+      execute 'reset role';
+      r218 := case when exists (select 1 from jsonb_array_elements(v_all) c where c->>'slug' = v_slug
+                                   and exists (select 1 from jsonb_array_elements(c->'programs') p where p->>'name' = 'RLS Find Squad'))
+                    and exists (select 1 from jsonb_array_elements(v_by_suburb) c where c->>'slug' = v_slug and c->>'suburb' = 'Rlsville')
+                    and jsonb_array_length(v_none) = 0
+                    and jsonb_array_length(v_off) = 0
+                    and not exists (select 1 from jsonb_array_elements(v_with_league) c where c->>'slug' = 'rls-find-league')
+                    and v_all::text not ilike '%phone%' and v_all::text not ilike '%guardian%' and v_all::text not ilike '%email%'
+                    and exists (select 1 from jsonb_array_elements(v_clubs) c where c->>'slug' = v_slug)
+                    and jsonb_array_length(v_unpub_clubs) = 0 then 'PASS'
+                   else 'FAIL (all has club '||exists (select 1 from jsonb_array_elements(v_all) c where c->>'slug' = v_slug)
+                        ||'; by suburb '||left(v_by_suburb::text, 120)||'; none '||jsonb_array_length(v_none)||'; off '||jsonb_array_length(v_off)
+                        ||'; league listed '||exists (select 1 from jsonb_array_elements(v_with_league) c where c->>'slug' = 'rls-find-league')
+                        ||'; comp clubs '||left(v_clubs::text, 120)||'; unpublished '||jsonb_array_length(v_unpub_clubs)||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r218 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (218, 'Find a club: a stranger finds a club with something open by name or suburb, with its open programs and nothing about anyone; not with the switch off, not a league, not a club with nothing open; a published competition lists its clubs, an unpublished one nothing', r218);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --
