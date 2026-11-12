@@ -10046,6 +10046,7 @@ export type Database = {
           phone: string
         }[]
       }
+      my_registrations: { Args: never; Returns: Json }
       my_respect_marks: { Args: { p_fixture: string }; Returns: Json }
       my_role_requests: { Args: { p_academy: string }; Returns: Json }
       my_rsvps_for_event: {
@@ -10182,6 +10183,7 @@ export type Database = {
         Args: { p_note: string; p_suspension: string }
         Returns: undefined
       }
+      payment_receipt: { Args: { p_payment: string }; Returns: Json }
       payment_register: {
         Args: { p_request: string }
         Returns: {

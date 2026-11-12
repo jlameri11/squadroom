@@ -4754,6 +4754,73 @@ begin
     insert into rls_results values (216, 'the Active & Creative Kids voucher: the public page says whether the club takes one; the family puts one on the fee and $50 comes off; a coach cannot, a number is used once, one per fee, nothing when the club is not a provider; the owner and the Treasurer see the list and tick it, a parent and an outsider cannot', r216);
   end;
 
+  -- 0265. A family's own registrations: the parent sees their children's
+  -- registrations, a public-form request made with their mobile before
+  -- they had an account, their people and their payments; an outsider sees
+  -- none of it. A receipt is the payer's, the family's and the club's,
+  -- nobody else's. Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_phone text; v_prog uuid; v_reg uuid; v_fee uuid; v_pay uuid; v_mine jsonb; v_theirs jsonb; v_other uuid;
+    v_receipt jsonb; v_outsider text := 'ok'; v_staff jsonb;
+    r217 text := 'FAIL (never ran)';
+  begin
+    begin
+      select p.phone::text into v_phone from public.profiles p where p.id = PARENT;
+      insert into public.programs (academy_id, name, kind, status, season, created_by, born_from_year, born_to_year)
+      values (ACAD_A, 'RLS Mine Squad', 'squad', 'open', '2026', COACH, 2015, 2019) returning id into v_prog;
+      insert into public.program_registrations (academy_id, program_id, player_id, submitted_by, status)
+      values (ACAD_A, v_prog, LEO, PARENT, 'waitlisted') returning id into v_reg;
+      -- A request from the public form with the parent's mobile and no account yet; and someone else's.
+      insert into public.registration_requests (academy_id, program_id, guardian_name, guardian_phone, guardian_email, child_name, child_dob, secret_hash, status, expires_at)
+      values (ACAD_A, v_prog, 'RLS Parent', v_phone, 'rls.parent@example.com', 'RLS New Child', '2017-01-01', 'x', 'pending', now() + interval '7 days');
+      insert into public.registration_requests (academy_id, program_id, guardian_name, guardian_phone, guardian_email, child_name, child_dob, secret_hash, status, expires_at)
+      values (ACAD_A, v_prog, 'RLS Stranger', '+61400000999', 'rls.stranger@example.com', 'RLS Other Child', '2017-01-01', 'x', 'pending', now() + interval '7 days') returning id into v_other;
+      insert into public.payment_requests (academy_id, title, amount_cents, currency, per_player, team_id, created_by)
+      values (ACAD_A, 'RLS Mine fee', 8000, 'aud', true, U8, COACH) returning id into v_fee;
+      insert into public.payments (academy_id, request_id, profile_id, player_id, amount_cents, currency, status, paid_at, instalment_seq, stripe_payment_intent)
+      values (ACAD_A, v_fee, PARENT, LEO, 8000, 'aud', 'paid', now(), 1, 'pi_rls_mine') returning id into v_pay;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_mine := public.my_registrations();
+      v_receipt := public.payment_receipt(v_pay);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_theirs := public.my_registrations();
+      begin
+        perform public.payment_receipt(v_pay);
+        v_outsider := 'allowed';
+      exception when others then v_outsider := sqlstate; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_staff := public.payment_receipt(v_pay);
+      execute 'reset role';
+      r217 := case when exists (select 1 from jsonb_array_elements(v_mine->'registrations') r where (r->>'id')::uuid = v_reg and r->>'status' = 'waitlisted' and r->>'child' = 'Leo Whitfield')
+                    and exists (select 1 from jsonb_array_elements(v_mine->'requests') q where q->>'child' = 'RLS New Child' and q->>'status' = 'pending')
+                    and not exists (select 1 from jsonb_array_elements(v_mine->'requests') q where (q->>'id')::uuid = v_other)
+                    and exists (select 1 from jsonb_array_elements(v_mine->'people') p where (p->>'id')::uuid = LEO)
+                    and exists (select 1 from jsonb_array_elements(v_mine->'payments') p where (p->>'id')::uuid = v_pay and (p->>'amount_cents')::integer = 8000)
+                    -- The outsider is a Ravens parent with their own child: their own things, none of ours.
+                    and not exists (select 1 from jsonb_array_elements(v_theirs->'registrations') r where (r->>'id')::uuid = v_reg)
+                    and not exists (select 1 from jsonb_array_elements(v_theirs->'requests') q where q->>'child' like 'RLS %')
+                    and not exists (select 1 from jsonb_array_elements(v_theirs->'people') p where (p->>'id')::uuid = LEO)
+                    and not exists (select 1 from jsonb_array_elements(v_theirs->'payments') p where (p->>'id')::uuid = v_pay)
+                    and (v_receipt->>'amount_cents')::integer = 8000 and v_receipt->>'child' = 'Leo Whitfield' and v_receipt->>'stripe_payment_intent' = 'pi_rls_mine'
+                    and v_outsider = '42501' and (v_staff->>'amount_cents')::integer = 8000 then 'PASS'
+                   else 'FAIL (mine '||left(v_mine::text, 400)||'; theirs '||left(v_theirs::text, 160)||'; receipt '||left(coalesce(v_receipt::text,'null'), 160)||'; outsider '||v_outsider||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r217 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (217, 'a family''s own registrations: the parent sees their children''s registrations, a public-form request made with their mobile, their people and their payments; an outsider none; a receipt is the payer''s, the family''s and the club''s, nobody else''s', r217);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

@@ -111,6 +111,18 @@ export default async function SettingsPage() {
             <span className="flex-none text-lg text-ink-3">›</span>
           </Link>
         </li>
+        {/* 0265: the registration brief's family dashboard. */}
+        <li>
+          <Link href="/settings/registrations" className="row justify-between">
+            <span className="min-w-0">
+              <span className="block truncate font-medium">My registrations</span>
+              <span className="block truncate text-sm text-ink-3">
+                Where each one stands, your people, your receipts
+              </span>
+            </span>
+            <span className="flex-none text-lg text-ink-3">›</span>
+          </Link>
+        </li>
         <li>
           <Link href="/payments" className="row justify-between">
             <span className="min-w-0">
