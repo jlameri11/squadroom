@@ -43,7 +43,7 @@ export const FEATURES: { key: FeatureKey; label: string; what: string; builtYet?
   { key: 'ladder_breakdown', label: 'Ladder breakdown', what: 'Tap a ladder row to see how every point was earned: each game with its points, forfeits named, the league’s adjustments with their reasons — on the league’s page and the public match centre.' },
   { key: 'find_a_club', label: 'Find a club', what: 'A public page to search clubs by name or suburb and see their open programs.', builtYet: false },
   { key: 'card_fee_passthrough', label: 'Card-fee pass-through', what: 'Families pay the card processing fee, shown clearly before paying. Off by default.', builtYet: false },
-  { key: 'active_kids', label: 'Active & Creative Kids vouchers', what: 'The NSW voucher at checkout, and the Treasurer’s list to redeem.', builtYet: false },
+  { key: 'active_kids', label: 'Active & Creative Kids vouchers', what: 'The NSW voucher at checkout ($50 off, once the club says it is a provider in Settings → Club), and the Treasurer’s list to redeem in Service NSW.' },
   { key: 'scheduled_messages', label: 'Scheduled messages', what: '“Send later…” in the composer: a message posted at a chosen time.' },
   { key: 'digest', label: 'Digest', what: 'Bundle ordinary chat into one notification every 10, 30 or 60 minutes.' },
   { key: 'helpers', label: 'Helpers wanted', what: 'Jobs on a game day — canteen, BBQ, linesman — that families put their hand up for.' },

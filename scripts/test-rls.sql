@@ -4646,6 +4646,114 @@ begin
     insert into rls_results values (215, 'the registration photo: the public page says whether it is required; a pending photo is the club''s to see and not a parent''s; the referee of today''s game sees the card of a player on its sheet, an outsider nobody''s', r215);
   end;
 
+  -- 0264. The Active & Creative Kids voucher: the public page says whether
+  -- the club takes one (a provider, with the feature on); the child's family
+  -- puts one on the fee and $50 comes off; a coach who is not the family
+  -- cannot; a number is used once, one voucher per fee; the owner and the
+  -- Treasurer see the list to redeem and tick it, a parent and an outsider
+  -- cannot. Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    ZOE constant uuid := '00000000-0000-0000-0000-0000000e0006';
+    v_slug text; v_off text; v_on text; v_feature_off text; v_fee uuid; v_apply jsonb; v_cents integer;
+    v_coach text := 'ok'; v_twice text := 'ok'; v_second text := 'ok'; v_closed text := 'ok'; v_bad text := 'ok';
+    v_owner_rows integer; v_parent_list text := 'ok'; v_treasurer_rows integer; v_number text; v_redeemed timestamptz; v_outsider text := 'ok';
+    v_vid uuid;
+    r216 text := 'FAIL (never ran)';
+  begin
+    begin
+      select slug into v_slug from public.academies where id = ACAD_A;
+      v_off := public.public_programs(v_slug)->'academy'->>'active_kids';
+      update public.academies set active_kids_provider = true where id = ACAD_A;
+      v_on := public.public_programs(v_slug)->'academy'->>'active_kids';
+      insert into public.academy_features (academy_id, feature, enabled) values (ACAD_A, 'active_kids', false);
+      v_feature_off := public.public_programs(v_slug)->'academy'->>'active_kids';
+      delete from public.academy_features where academy_id = ACAD_A and feature = 'active_kids';
+      insert into public.payment_requests (academy_id, title, amount_cents, currency, per_player, team_id, created_by)
+      values (ACAD_A, 'RLS AK fee', 12000, 'aud', true, U8, COACH) returning id into v_fee;
+      -- The family.
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_apply := public.apply_active_kids_voucher(v_fee, LEO, '1234 5678 9012 3456', 'Leo Whitfield', '2018-03-14');
+      begin
+        perform public.apply_active_kids_voucher(v_fee, ZOE, '1234-5678-9012-3456', 'Zoe Whitfield', '2018-03-14');
+        v_twice := 'allowed';
+      exception when others then v_twice := sqlstate; end;
+      begin
+        perform public.apply_active_kids_voucher(v_fee, LEO, '2222 3333 4444 5555', 'Leo Whitfield', '2018-03-14');
+        v_second := 'allowed';
+      exception when others then v_second := sqlstate; end;
+      begin
+        perform public.apply_active_kids_voucher(v_fee, ZOE, '12', 'Zoe Whitfield', '2018-03-14');
+        v_bad := 'allowed';
+      exception when others then v_bad := sqlstate; end;
+      begin
+        perform public.active_kids_to_redeem(ACAD_A);
+        v_parent_list := 'allowed';
+      exception when others then v_parent_list := sqlstate; end;
+      execute 'reset role';
+      -- A coach who is not the family.
+      perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.apply_active_kids_voucher(v_fee, ZOE, '3333 4444 5555 6666', 'Zoe Whitfield', '2018-03-14');
+        v_coach := 'allowed';
+      exception when others then v_coach := sqlstate; end;
+      execute 'reset role';
+      -- The provider switched off: nothing taken.
+      update public.academies set active_kids_provider = false where id = ACAD_A;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.apply_active_kids_voucher(v_fee, ZOE, '4444 5555 6666 7777', 'Zoe Whitfield', '2018-03-14');
+        v_closed := 'allowed';
+      exception when others then v_closed := sqlstate; end;
+      execute 'reset role';
+      update public.academies set active_kids_provider = true where id = ACAD_A;
+      v_cents := app_private.voucher_cents(v_fee, LEO);
+      -- The owner's list, then the Treasurer's; the Treasurer ticks it.
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*), max(t.voucher_number) into v_owner_rows, v_number from public.active_kids_to_redeem(ACAD_A) t;
+      execute 'reset role';
+      -- The id is read here, as the definer: a probe's own subquery runs
+      -- under the probe's RLS, and a parent lists no vouchers.
+      select v.id into v_vid from public.vouchers v where v.voucher_number = '1234567890123456';
+      insert into public.club_roles (academy_id, profile_id, role, scope_kind) values (ACAD_A, PARENT, 'treasurer', 'club');
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select count(*) into v_treasurer_rows from public.active_kids_to_redeem(ACAD_A) t;
+      perform public.mark_active_kids_redeemed(v_vid, true);
+      execute 'reset role';
+      select v.redeemed_at into v_redeemed from public.vouchers v where v.id = v_vid;
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.mark_active_kids_redeemed(v_vid, false);
+        v_outsider := 'allowed';
+      exception when others then v_outsider := sqlstate; end;
+      execute 'reset role';
+      r216 := case when v_off = 'false' and v_on = 'true' and v_feature_off = 'false'
+                    and (v_apply->>'off_cents')::integer = 5000 and (v_apply->>'left_cents')::integer = 7000 and v_cents = 5000
+                    and v_twice = '23505' and v_second = '23505' and v_bad = '22023' and v_coach = '42501' and v_closed = '22023'
+                    and v_owner_rows = 1 and v_number = '1234567890123456' and v_parent_list = '42501'
+                    and v_treasurer_rows = 1 and v_redeemed is not null and v_outsider = '42501' then 'PASS'
+                   else 'FAIL (public '||coalesce(v_off,'null')||'/'||coalesce(v_on,'null')||'/'||coalesce(v_feature_off,'null')
+                        ||'; apply '||coalesce(v_apply::text,'null')||' cents '||coalesce(v_cents::text,'null')
+                        ||'; twice '||v_twice||' second '||v_second||' bad '||v_bad||' coach '||v_coach||' closed '||v_closed
+                        ||'; owner rows '||coalesce(v_owner_rows::text,'null')||' number '||coalesce(v_number,'null')||' parent list '||v_parent_list
+                        ||'; treasurer rows '||coalesce(v_treasurer_rows::text,'null')||' redeemed '||coalesce(v_redeemed::text,'null')||' outsider '||v_outsider||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r216 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (216, 'the Active & Creative Kids voucher: the public page says whether the club takes one; the family puts one on the fee and $50 comes off; a coach cannot, a number is used once, one per fee, nothing when the club is not a provider; the owner and the Treasurer see the list and tick it, a parent and an outsider cannot', r216);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

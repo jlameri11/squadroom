@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Outstanding } from './outstanding'
 import { RefundsPanel } from './refunds-panel'
 import { VouchersPanel } from './vouchers-panel'
+import { ActiveKidsPanel } from './active-kids-panel'
 import { ConnectStatus } from './connect-status'
 import { createClient } from '@/lib/supabase/client'
 
@@ -107,6 +108,7 @@ export function PaymentsAdmin({
 
       <RefundsPanel academyId={academyId} />
       <VouchersPanel academyId={academyId} />
+      <ActiveKidsPanel academyId={academyId} />
 
       <section className="mt-5 rounded-xl border border-[var(--line)] p-4">
         <h2 className="font-semibold">Where the money goes</h2>

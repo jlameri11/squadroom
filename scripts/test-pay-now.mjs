@@ -53,7 +53,13 @@ const post = async (path, body, cookie) => {
   return { status: res.status, ...json }
 }
 
+const { data: akBefore } = await admin.from('academies').select('active_kids_provider').eq('id', NRIFA).single()
+const AK_NUMBERS = ['9876543210987654', '1111222233334444', '5555666677778888']
+
 async function cleanup() {
+  // 0264: the vouchers (their redemptions go with them), and the club's provider setting.
+  await admin.from('vouchers').delete().eq('academy_id', NRIFA).in('voucher_number', AK_NUMBERS)
+  await admin.from('academies').update({ active_kids_provider: akBefore?.active_kids_provider ?? false }).eq('id', NRIFA)
   const { data: progs } = await admin.from('programs').select('id, payment_request_id').eq('academy_id', NRIFA).like('name', `${TAG} %`)
   for (const p of progs ?? []) {
     const { data: reqs } = await admin.from('registration_requests').select('id').eq('program_id', p.id)
@@ -63,10 +69,11 @@ async function cleanup() {
       await admin.from('registration_requests').delete().eq('id', r.id)
     }
     if (p.payment_request_id) { await admin.from('payments').delete().eq('request_id', p.payment_request_id) }
-    await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title', `${TAG} season fee — %`)
+    await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title', `${TAG} % — %`)
     await admin.from('programs').delete().eq('id', p.id)
     if (p.payment_request_id) await admin.from('payment_requests').delete().eq('id', p.payment_request_id)
   }
+  await admin.from('payment_requests').delete().eq('academy_id', NRIFA).like('title', `${TAG} small fee`)
   const { data: kids } = await admin.from('players').select('id').eq('academy_id', NRIFA).like('full_name', `${TAG} %`)
   for (const k of kids ?? []) { await admin.from('player_guardians').delete().eq('player_id', k.id); await admin.from('players').delete().eq('id', k.id) }
   const { data: users } = await listAllUsers(admin)
@@ -199,6 +206,57 @@ try {
     } finally {
       await browser.close()
     }
+  }
+  head('5. With an Active & Creative Kids voucher (0264): $50 off before the charge')
+  {
+    await admin.from('academies').update({ active_kids_provider: true }).eq('id', NRIFA)
+    // $120 fee, $50 voucher: Stripe charges $70; approval moves the voucher with the payment.
+    const r = await post('/api/register/request', { slug: SLUG, programId: program.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Five`, childDob: '2016-07-07', consents })
+    const pay = await post('/api/register/pay', { requestId: r.requestId, secret: r.secret, voucher: { number: '9876 5432 1098 7654', childName: '' } })
+    pay.status === 200 && pay.amount_cents === 7000 && pay.off_cents === 5000 && String(pay.url).startsWith('https://checkout.stripe.com/') ? ok('a $70.00 Checkout: the voucher\'s $50.00 taken off first') : bad(`pay with voucher: ${pay.status} ${pay.error ?? JSON.stringify(pay).slice(0, 160)}`)
+    const { data: v5 } = await admin.from('vouchers').select('id, child_name, child_dob, registration_request_id').eq('voucher_number', '9876543210987654').maybeSingle()
+    v5?.child_name === `${TAG} Child Five` && v5.child_dob === '2016-07-07' && v5.registration_request_id === r.requestId ? ok('the voucher row names the child from the registration and the request it waits on') : bad(`voucher ${JSON.stringify(v5)}`)
+    const { data: mine } = await owner.client.rpc('my_payment_requests', { p_academy: NRIFA })
+    !(mine ?? []).some((m) => String(m.title).startsWith(`${TAG} season fee —`)) ? ok('the registration\'s stand-in fee is in nobody\'s Payments list') : bad('a member sees the stand-in fee as a bill')
+    if (pay.url) await payOnCheckout(pay.url, `${TAG} Child Five`)
+    const paid = await until(async () => { const { data } = await admin.from('payments').select('id, status, amount_cents').eq('registration_request_id', r.requestId).maybeSingle(); return data?.status === 'paid' ? data : null }, 90000, 2000)
+    paid?.amount_cents === 7000 ? ok('paid $70.00') : bad(`payment ${JSON.stringify(paid)}`)
+    const a = await post('/api/register/approve', { requestId: r.requestId, decision: 'approve' }, cookie)
+    const { data: kid5 } = await admin.from('players').select('id').eq('academy_id', NRIFA).eq('full_name', `${TAG} Child Five`).maybeSingle()
+    const { data: red5 } = v5 ? await admin.from('voucher_redemptions').select('request_id, player_id, amount_cents').eq('voucher_id', v5.id).maybeSingle() : { data: null }
+    a.status === 200 && kid5 && red5?.request_id === fee.id && red5.player_id === kid5.id && red5.amount_cents === 5000 ? ok('approved: the voucher moved onto the program fee, for the child') : bad(`approve ${a.status}; redemption ${JSON.stringify(red5)}`)
+    const { data: owes } = await owner.client.rpc('outstanding_fees', { p_academy: NRIFA })
+    const owe5 = (owes ?? []).find((o) => o.player_id === kid5?.id && o.request_id === fee.id)
+    !owe5 || owe5.outstanding_cents === 0 ? ok('who-owes: nothing owing — $70 paid, $50 the voucher') : bad(`owes: ${JSON.stringify(owe5)}`)
+    const { data: toRedeem } = await owner.client.rpc('active_kids_to_redeem', { p_academy: NRIFA })
+    const t5 = (toRedeem ?? []).find((t) => t.voucher_number === '9876543210987654')
+    t5 && t5.waiting === false && t5.fee_title === `${TAG} season fee` ? ok('the Treasurer\'s list has it, on the program fee, ready to redeem') : bad(`to redeem: ${JSON.stringify(t5)}`)
+
+    // A $50 program: the voucher covers it — no Stripe, nothing to pay.
+    const { data: small } = await admin.from('payment_requests').insert({ academy_id: NRIFA, title: `${TAG} small fee`, amount_cents: 5000, per_player: true, currency: 'aud' }).select('id').single()
+    const { data: programSmall } = await admin.from('programs').insert({ academy_id: NRIFA, name: `${TAG} Small`, kind: 'camp', status: 'open', season: '2026', created_by: owner.session.user.id, payment_required: true, payment_request_id: small.id, pay_timing: 'now', born_from_year: 2015, born_to_year: 2018 }).select('id').single()
+    const r6 = await post('/api/register/request', { slug: SLUG, programId: programSmall.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Six`, childDob: '2016-08-08', consents })
+    const pay6 = await post('/api/register/pay', { requestId: r6.requestId, secret: r6.secret, voucher: { number: '1111 2222 3333 4444' } })
+    const { count: pays6 } = await admin.from('payments').select('id', { count: 'exact', head: true }).eq('registration_request_id', r6.requestId)
+    pay6.status === 200 && pay6.covered === true && pay6.amount_cents === 0 && pays6 === 0 ? ok('a $50 fee: covered, no Checkout, no payment row') : bad(`covered: ${pay6.status} ${JSON.stringify(pay6).slice(0, 160)}, ${pays6} payments`)
+    const again6 = await post('/api/register/pay', { requestId: r6.requestId, secret: r6.secret })
+    again6.covered === true ? ok('tapping again keeps the same voucher') : bad(`again: ${JSON.stringify(again6).slice(0, 120)}`)
+    const a6 = await post('/api/register/approve', { requestId: r6.requestId, decision: 'approve' }, cookie)
+    const { data: kid6 } = await admin.from('players').select('id').eq('academy_id', NRIFA).eq('full_name', `${TAG} Child Six`).maybeSingle()
+    const { data: owes6 } = await owner.client.rpc('outstanding_fees', { p_academy: NRIFA })
+    const owe6 = (owes6 ?? []).find((o) => o.player_id === kid6?.id && o.request_id === small.id)
+    a6.status === 200 && kid6 && (!owe6 || owe6.outstanding_cents === 0) ? ok('approved: nothing owing on the $50 fee') : bad(`approve ${a6.status}; owes ${JSON.stringify(owe6)}`)
+
+    // Declined: the money comes back and so does the voucher.
+    const r7 = await post('/api/register/request', { slug: SLUG, programId: program.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Seven`, childDob: '2016-09-09', consents })
+    const pay7 = await post('/api/register/pay', { requestId: r7.requestId, secret: r7.secret, voucher: { number: '5555 6666 7777 8888' } })
+    if (pay7.url) await payOnCheckout(pay7.url, `${TAG} Child Seven`)
+    const paid7 = await until(async () => { const { data } = await admin.from('payments').select('id, status').eq('registration_request_id', r7.requestId).maybeSingle(); return data?.status === 'paid' ? data : null }, 90000, 2000)
+    const d7 = paid7 ? await post('/api/register/approve', { requestId: r7.requestId, decision: 'decline', note: 'Zz: full' }, cookie) : { status: 0 }
+    const { data: refund7 } = paid7 ? await admin.from('refunds').select('amount_cents, status').eq('payment_id', paid7.id).maybeSingle() : { data: null }
+    const { count: v7 } = await admin.from('vouchers').select('id', { count: 'exact', head: true }).eq('voucher_number', '5555666677778888')
+    d7.status === 200 && refund7?.amount_cents === 7000 && refund7.status === 'issued' && v7 === 0 ? ok('declined: the $70.00 refunded, the voucher given back (its number free again)') : bad(`decline ${d7.status}; refund ${JSON.stringify(refund7)}; vouchers left ${v7}`)
+    await admin.from('academies').update({ active_kids_provider: akBefore?.active_kids_provider ?? false }).eq('id', NRIFA)
   }
 } catch (e) {
   bad(`threw: ${e.message}`)

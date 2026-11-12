@@ -66,7 +66,7 @@ registration and payments · roles · safeguarding · branding · offline scores
 | Ladder breakdown (0260) | `ladder_breakdown` | anyone who sees the ladder: the competition's participants on its Ladder tab, anyone on the public match centre | tap a ladder row: a sheet with every game (score, result, the points the division gives, forfeits named), the league's adjustments with their reasons, and the sum the row shows; off, the rows are not tappable and both readers answer null |
 | Find a club | `find_a_club` | the public | `/clubs` (registration brief) |
 | Card-fee pass-through | `card_fee_passthrough` | families, shown before paying | checkout (registration brief) |
-| Active Kids vouchers | `active_kids` | families at checkout; the Treasurer's redeem list | checkout, Admin → Payments (registration brief) |
+| Active & Creative Kids vouchers (0264) | `active_kids` | families on a child's fee (Payments) and on a pay-now registration's Pay now card, once the club says it is a provider in Settings → Club; the club's staff and its Treasurer redeem | Payments → "Use an Active & Creative Kids voucher" (the number, the child as on the voucher; $50 off); `/{slug}/register` after sending (the Pay now card); Admin → Payments → "Vouchers to redeem in Service NSW" with a Redeemed tick |
 | Scheduled messages | `scheduled_messages` | anyone who may post | the composer's "Send later" |
 | Digest | `digest` | everyone, in Settings | Settings → Notifications |
 | Helpers wanted (G-07) | `helpers` | the squad's coach asks; families help | the game page; a ground's day with its own jobs seen from every game there, and Admin → Rosters (0252) |

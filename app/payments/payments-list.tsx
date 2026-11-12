@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { WhenOn } from '@/components/when-on'
 
 export type Owing = {
   request_id: string
@@ -46,12 +47,15 @@ export function PaymentsList({
   justPaid,
   cancelled,
   onChanged,
+  activeKidsProvider = false,
 }: {
   owing: Owing[]
   justPaid: boolean
   cancelled: boolean
   /** The list is read again — after a day is picked (0227). */
   onChanged?: () => void
+  /** 0264: the club is an Active & Creative Kids provider. */
+  activeKidsProvider?: boolean
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -59,7 +63,14 @@ export function PaymentsList({
   // B-07: a voucher code typed on one child's fee.
   const [codeFor, setCodeFor] = useState<string | null>(null)
   const [code, setCode] = useState('')
-  const [applied, setApplied] = useState<string | null>(null)
+  // What was just applied, on the row it was applied to.
+  const [applied, setApplied] = useState<{ key: string; text: string } | null>(null)
+  // 0264: an Active & Creative Kids voucher — the number and the child's
+  // details as they are on it. $50 off; the club redeems it with Service NSW.
+  const [akFor, setAkFor] = useState<string | null>(null)
+  const [akNumber, setAkNumber] = useState('')
+  const [akName, setAkName] = useState('')
+  const [akDob, setAkDob] = useState('')
   // B-08: "Can't pay today? Pick a day" — the family's own day, before the chase.
   const [laterFor, setLaterFor] = useState<string | null>(null)
   const [laterDate, setLaterDate] = useState('')
@@ -95,9 +106,41 @@ export function PaymentsList({
     setBusy(null)
     if (error) return setError(error.message)
     const r = data as unknown as { voucher: string; off_cents: number }
-    setApplied(`${r.voucher}: ${money(r.off_cents, row.currency)} off.`)
+    setApplied({ key, text: `${r.voucher}: ${money(r.off_cents, row.currency)} off.` })
     setCodeFor(null)
     setCode('')
+    onChanged?.()
+    router.refresh()
+  }
+
+  async function openAk(row: Owing) {
+    setAkFor(row.request_id + (row.player_id ?? ''))
+    setCodeFor(null)
+    setAkNumber('')
+    setAkName(row.player_name ?? '')
+    setAkDob('')
+    setError(null)
+    // The child's date of birth, as the club has it — editable, since the
+    // voucher carries what Service NSW was told.
+    if (row.player_id) {
+      const { data } = await createClient().from('players').select('dob').eq('id', row.player_id).maybeSingle()
+      if (data?.dob) setAkDob(String(data.dob).slice(0, 10))
+    }
+  }
+
+  async function applyAk(row: Owing) {
+    const key = row.request_id + (row.player_id ?? '')
+    setBusy(key)
+    setError(null)
+    const { data, error } = await createClient().rpc('apply_active_kids_voucher', {
+      p_request: row.request_id, p_player: row.player_id, p_number: akNumber, p_child_name: akName, p_child_dob: akDob,
+    } as never)
+    setBusy(null)
+    if (error) return setError(error.message)
+    const r = data as unknown as { voucher: string; off_cents: number }
+    setApplied({ key, text: `${r.voucher}: ${money(r.off_cents, row.currency)} off. The club redeems it with Service NSW.` })
+    setAkFor(null)
+    onChanged?.()
     router.refresh()
   }
 
@@ -223,12 +266,71 @@ export function PaymentsList({
                   <button onClick={() => redeem(row)} disabled={busy === key || !code.trim()} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: BRAND }}>Apply</button>
                   <button onClick={() => setCodeFor(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
                 </div>
+              ) : akFor === key ? (
+                <div className="mt-2 rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }} data-active-kids-form>
+                  <p className="text-xs text-ink-2">
+                    The voucher number and the child&apos;s details as they are on the voucher. $50 comes off this fee; the club redeems it with Service NSW.
+                  </p>
+                  <input
+                    value={akNumber}
+                    onChange={(e) => setAkNumber(e.target.value)}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Voucher number"
+                    aria-label="Voucher number"
+                    className="mt-2 w-full rounded-lg border px-2 py-1.5 font-mono text-base tracking-wide"
+                    style={{ borderColor: 'var(--line)' }}
+                    data-ak-number
+                  />
+                  <input
+                    value={akName}
+                    onChange={(e) => setAkName(e.target.value)}
+                    placeholder="Child's name on the voucher"
+                    aria-label="Child's name on the voucher"
+                    className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm"
+                    style={{ borderColor: 'var(--line)' }}
+                    data-ak-name
+                  />
+                  <label className="mt-2 block text-xs text-ink-2">
+                    Date of birth on the voucher
+                    <input
+                      type="date"
+                      value={akDob}
+                      onChange={(e) => setAkDob(e.target.value)}
+                      className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-base"
+                      style={{ borderColor: 'var(--line)' }}
+                      data-ak-dob
+                    />
+                  </label>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => applyAk(row)}
+                      disabled={busy === key || !akNumber.trim() || !akName.trim() || !akDob}
+                      className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50"
+                      style={{ background: BRAND }}
+                      data-ak-apply
+                    >
+                      {busy === key ? '…' : 'Use the voucher'}
+                    </button>
+                    <button onClick={() => setAkFor(null)} className="rounded-lg border px-2 py-1.5 text-xs" style={{ borderColor: 'var(--line)' }}>Cancel</button>
+                  </div>
+                </div>
               ) : (
-                <button onClick={() => { setCodeFor(key); setCode('') }} className="tap mt-1 text-xs underline underline-offset-2 text-ink-3" data-have-a-code>
-                  Have a voucher code?
-                </button>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  <button onClick={() => { setCodeFor(key); setCode(''); setAkFor(null) }} className="tap text-xs underline underline-offset-2 text-ink-3" data-have-a-code>
+                    Have a voucher code?
+                  </button>
+                  {/* 0264: only a provider club, with the feature on; off, nothing shows. */}
+                  {activeKidsProvider && row.player_id && (
+                    <WhenOn feature="active_kids">
+                      <button onClick={() => openAk(row)} className="tap text-xs underline underline-offset-2 text-ink-3" data-active-kids>
+                        Use an Active &amp; Creative Kids voucher
+                      </button>
+                    </WhenOn>
+                  )}
+                </div>
               )}
-              {applied && codeFor === null && <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }}>{applied}</p>}
+              {applied?.key === key && <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }}>{applied.text}</p>}
 
               {row.due_on && (
                 <div className={`mt-2 text-xs ${overdue ? 'font-semibold ' : 'text-ink-2'}`}>

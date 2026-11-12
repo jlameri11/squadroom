@@ -102,6 +102,7 @@ export function AcademyLoader() {
           clubMode={(academy as { club_mode?: boolean }).club_mode}
           miniroosScores={(academy as { miniroos_scores?: boolean }).miniroos_scores}
           photoRequired={(academy as { photo_required?: boolean }).photo_required}
+          activeKidsProvider={(academy as { active_kids_provider?: boolean }).active_kids_provider}
         />
         </>
       ) : (

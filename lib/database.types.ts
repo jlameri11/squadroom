@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       academies: {
         Row: {
+          active_kids_provider: boolean
           block_rsvp_when_overdue: boolean
           club_mode: boolean
           contact_email: string | null
@@ -46,6 +47,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_kids_provider?: boolean
           block_rsvp_when_overdue?: boolean
           club_mode?: boolean
           contact_email?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_kids_provider?: boolean
           block_rsvp_when_overdue?: boolean
           club_mode?: boolean
           contact_email?: string | null
@@ -8799,9 +8802,12 @@ export type Database = {
           academy_id: string
           active: boolean
           amount_cents: number | null
+          child_dob: string | null
+          child_name: string | null
           code: string
           created_at: string
           created_by: string | null
+          entered_by: string | null
           expires_on: string | null
           id: string
           kind: string
@@ -8809,15 +8815,22 @@ export type Database = {
           max_uses: number | null
           percent_bps: number | null
           program_id: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          registration_request_id: string | null
           used_count: number
+          voucher_number: string | null
         }
         Insert: {
           academy_id: string
           active?: boolean
           amount_cents?: number | null
+          child_dob?: string | null
+          child_name?: string | null
           code: string
           created_at?: string
           created_by?: string | null
+          entered_by?: string | null
           expires_on?: string | null
           id?: string
           kind?: string
@@ -8825,15 +8838,22 @@ export type Database = {
           max_uses?: number | null
           percent_bps?: number | null
           program_id?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          registration_request_id?: string | null
           used_count?: number
+          voucher_number?: string | null
         }
         Update: {
           academy_id?: string
           active?: boolean
           amount_cents?: number | null
+          child_dob?: string | null
+          child_name?: string | null
           code?: string
           created_at?: string
           created_by?: string | null
+          entered_by?: string | null
           expires_on?: string | null
           id?: string
           kind?: string
@@ -8841,7 +8861,11 @@ export type Database = {
           max_uses?: number | null
           percent_bps?: number | null
           program_id?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          registration_request_id?: string | null
           used_count?: number
+          voucher_number?: string | null
         }
         Relationships: [
           {
@@ -8859,10 +8883,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vouchers_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vouchers_program_id_fkey"
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_registration_request_id_fkey"
+            columns: ["registration_request_id"]
+            isOneToOne: false
+            referencedRelation: "registration_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -8899,6 +8944,22 @@ export type Database = {
       academy_results: { Args: { p_academy: string }; Returns: Json }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
       accreditation_board: { Args: { p_academy?: string }; Returns: Json }
+      active_kids_to_redeem: {
+        Args: { p_academy: string }
+        Returns: {
+          child_dob: string
+          child_name: string
+          entered_at: string
+          family: string
+          fee_title: string
+          off_cents: number
+          redeemed_at: string
+          redeemed_by: string
+          voucher_id: string
+          voucher_number: string
+          waiting: boolean
+        }[]
+      }
       add_fixture_change_note: {
         Args: { p_body: string; p_request: string }
         Returns: string
@@ -8971,6 +9032,16 @@ export type Database = {
         Returns: undefined
       }
       applied_migration: { Args: { p_name: string }; Returns: string }
+      apply_active_kids_voucher: {
+        Args: {
+          p_child_dob: string
+          p_child_name: string
+          p_number: string
+          p_player: string
+          p_request: string
+        }
+        Returns: Json
+      }
       apply_imported_results: {
         Args: { p_academy: string; p_events: Json; p_team: string }
         Returns: Json
@@ -9793,6 +9864,10 @@ export type Database = {
           p_squad_program: string
         }
         Returns: string
+      }
+      mark_active_kids_redeemed: {
+        Args: { p_redeemed: boolean; p_voucher: string }
+        Returns: undefined
       }
       mark_channel_read: { Args: { p_channel: string }; Returns: undefined }
       mark_club_message_seen: {

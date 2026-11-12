@@ -34,7 +34,9 @@ export function VouchersPanel({ academyId }: { academyId: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const { data } = await createClient().from('vouchers').select('id, code, label, kind, amount_cents, percent_bps, max_uses, used_count, expires_on, active').eq('academy_id', academyId).order('created_at', { ascending: false })
+    // The club's own codes. A family's Active & Creative Kids voucher (0264)
+    // is a row here too, but it has its own list to be redeemed from.
+    const { data } = await createClient().from('vouchers').select('id, code, label, kind, amount_cents, percent_bps, max_uses, used_count, expires_on, active').eq('academy_id', academyId).is('voucher_number', null).order('created_at', { ascending: false })
     setRows((data as Voucher[] | null) ?? [])
   }, [academyId])
 

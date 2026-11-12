@@ -8,8 +8,8 @@ hourly; Joey says when the next deploy is.
 |---|---|
 | 1. Pay timing per program | **Done** — 0262, `/api/register/pay`, `lib/stripe/refund.ts`; test-rls 214, `test-pay-now` (Stripe test mode) |
 | 2. Photo step | **Done** — 0263, `/api/register/photo`, `academies.photo_required` (Settings → Club); test-rls 215, `test-registration-photo` |
-| 3. Active & Creative Kids voucher | next |
-| 4. Family dashboard | queued |
+| 3. Active & Creative Kids voucher | **Done** — 0264, `apply_active_kids_voucher`, `active_kids_to_redeem`, `academies.active_kids_provider` (Settings → Club), the Pay now card; test-rls 216, `test-active-kids`, `test-pay-now` §5 |
+| 4. Family dashboard | next |
 | 5. Find a club | queued |
 | 6. Register as | queued |
 | 7. Club review | queued |

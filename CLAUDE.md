@@ -518,6 +518,16 @@ one and is meant to reach hundreds of academies.
       treasurer marks the run paid. No Stripe payouts, no bank files; the
       routes and the referee's "Connect Stripe" were removed. Do not
       rebuild them without Joey.
+  - **The Active & Creative Kids voucher never reaches Service NSW** (0264,
+    the registration brief). A family's voucher is a `vouchers` row of kind
+    `government` worth $50, used once anywhere, with the number and the
+    child's details as on the voucher, and one redemption on the fee — the
+    same path every voucher takes off a fee. The club must say it is a
+    provider (Settings → Club) and the `active_kids` switch must be on; the
+    Treasurer redeems each number by hand in the Service NSW provider portal
+    from Admin → Payments and ticks it. No call, no file, no link to Service
+    NSW, ever. A voucher on a pay-now registration moves with the payment on
+    approval and is given back on a decline.
   - `profiles.phone` is a DOMAIN, not text. A set-returning function
     declaring `text` fails with "structure of query does not match function
     result type", which names neither the column nor the type.

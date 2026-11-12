@@ -28,6 +28,8 @@ type Data = {
     timezone: string
     /** 0263: the club wants a passport-style photo with every registration. */
     photo_required?: boolean
+    /** 0264: the club takes Active & Creative Kids vouchers (a provider, feature on). */
+    active_kids?: boolean
   }
   programs: Program[]
   consents: Consent[]
@@ -87,7 +89,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [data, setData] = useState<Data | null | undefined>(undefined)
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [chosen, setChosen] = useState<string | null>(null)
-  const [sent, setSent] = useState<{ requestId: string; secret: string } | null>(null)
+  const [sent, setSent] = useState<{ requestId: string; secret: string; programId?: string; covered?: boolean } | null>(null)
   const [status, setStatus] = useState<'pending' | 'approved' | 'declined' | null>(null)
   // 0263: the photo, cropped and resized in the browser, sent once the
   // request exists (it needs the request's secret), kept until then.
@@ -96,6 +98,11 @@ export function RegisterForm({ slug }: { slug: string }) {
   // 0262: back from Stripe with ?paid=1 — read after mount, so the server and
   // the first paint agree.
   const [paid, setPaid] = useState(false)
+  // 0264: an Active & Creative Kids voucher on a pay-now registration — the
+  // number and, if it differs, the child's name as on the voucher.
+  const [akOpen, setAkOpen] = useState(false)
+  const [akNumber, setAkNumber] = useState('')
+  const [akName, setAkName] = useState('')
   useEffect(() => {
     try {
       if (new URLSearchParams(window.location.search).get('paid') === '1') setPaid(true)
@@ -133,7 +140,7 @@ export function RegisterForm({ slug }: { slug: string }) {
     try {
       const saved = localStorage.getItem(KEY(slug))
       if (saved) {
-        const s = JSON.parse(saved) as { requestId: string; secret: string; programId?: string }
+        const s = JSON.parse(saved) as { requestId: string; secret: string; programId?: string; covered?: boolean }
         setSent(s)
         if (s.programId) setChosen(s.programId)
       }
@@ -237,20 +244,80 @@ export function RegisterForm({ slug }: { slug: string }) {
               ? `Stripe has your payment. ${data.academy.name} confirms the place; if they cannot take it, the fee comes back in full. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`
               : `${data.academy.name} will look at this and come back to you. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`}
         </p>
+        {/* 0264: the voucher covered the fee — nothing to pay, nothing for Stripe. */}
+        {payNow && !paid && sent.covered && (
+          <p className="mt-4 rounded-xl border p-3.5 text-sm" style={{ borderColor: 'var(--yes)', color: 'var(--yes)' }} data-ak-covered>
+            Your Active &amp; Creative Kids voucher covers the fee — nothing to pay. {data.academy.name} will look at the registration and come back to you.
+          </p>
+        )}
         {/* 0262: a program that charges on submit — one tap to Stripe, refunded in full on a decline. */}
-        {payNow && !paid && (
+        {payNow && !paid && !sent.covered && (
           <div className="mt-4 rounded-xl border p-3.5" style={{ borderColor: 'var(--brand)' }} data-pay-now>
             <p className="text-sm">
               <b>{sentProgram.name}</b> is paid on registration: <b>{`$${((sentProgram.amount_cents ?? 0) / 100).toFixed(2)}`}</b>, refunded in full if the club cannot take the place.
             </p>
+            {/* 0264: the NSW voucher, taken off before the charge. Only a club that takes them. */}
+            {data.academy.active_kids && (
+              <div className="mt-3" data-ak-pay-now>
+                {!akOpen ? (
+                  <button type="button" onClick={() => setAkOpen(true)} className="tap text-xs underline underline-offset-2" style={{ color: 'var(--brand-text)' }} data-ak-toggle>
+                    Have an Active &amp; Creative Kids voucher? $50 off
+                  </button>
+                ) : (
+                  <div className="rounded-lg border p-2.5" style={{ borderColor: 'var(--line)' }} data-ak-form>
+                    <p className="text-xs text-ink-2">
+                      The voucher number, and the child&apos;s name if it is written differently on the voucher. The club redeems it with Service NSW.
+                    </p>
+                    <input
+                      value={akNumber}
+                      onChange={(e) => setAkNumber(e.target.value)}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="Voucher number"
+                      aria-label="Voucher number"
+                      className="mt-2 w-full rounded-lg border px-2 py-1.5 font-mono text-base tracking-wide"
+                      style={{ borderColor: 'var(--line)' }}
+                      data-ak-number
+                    />
+                    <input
+                      value={akName}
+                      onChange={(e) => setAkName(e.target.value)}
+                      placeholder={childName ? `Name on the voucher, if not ${childName}` : 'Name on the voucher, if different'}
+                      aria-label="Child's name on the voucher"
+                      className="mt-2 w-full rounded-lg border px-2 py-1.5 text-sm"
+                      style={{ borderColor: 'var(--line)' }}
+                      data-ak-name
+                    />
+                    {akNumber.trim() && (
+                      <p className="mt-2 text-xs" style={{ color: 'var(--yes)' }} data-ak-sum>
+                        {(sentProgram.amount_cents ?? 0) > 5000
+                          ? `$50.00 comes off: you pay $${(((sentProgram.amount_cents ?? 0) - 5000) / 100).toFixed(2)}.`
+                          : 'The voucher covers the fee — nothing to pay.'}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={async () => {
                 setBusy(true)
                 setError(null)
-                const res = await fetch('/api/register/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: sent.requestId, secret: sent.secret }) })
+                const voucher = akNumber.trim() ? { number: akNumber, childName: akName } : undefined
+                const res = await fetch('/api/register/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: sent.requestId, secret: sent.secret, voucher }) })
                 const body = await res.json().catch(() => ({}))
                 setBusy(false)
-                if (!res.ok || !body.url) return setError(body.error ?? 'Could not start the payment.')
+                if (!res.ok) return setError(body.error ?? 'Could not start the payment.')
+                if (body.covered) {
+                  const next = { ...sent, covered: true }
+                  try {
+                    localStorage.setItem(KEY(slug), JSON.stringify(next))
+                  } catch {
+                    /* kept on screen; the club has it either way */
+                  }
+                  return setSent(next)
+                }
+                if (!body.url) return setError('Could not start the payment.')
                 window.location.href = body.url
               }}
               disabled={busy}
@@ -258,7 +325,7 @@ export function RegisterForm({ slug }: { slug: string }) {
               style={{ background: tint, color: ink }}
               data-pay-now-button
             >
-              {busy ? 'Opening Stripe…' : 'Pay now'}
+              {busy ? 'Opening Stripe…' : akNumber.trim() && (sentProgram.amount_cents ?? 0) <= 5000 ? 'Use the voucher' : 'Pay now'}
             </button>
             {error && <p className="mt-2 text-sm" style={{ color: 'var(--no)' }}>{error}</p>}
           </div>

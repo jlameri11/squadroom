@@ -651,9 +651,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     `ladder_breakdown`, test-rls 212, `test-ladder-breakdown`. (3) Team
     Creator — done, 0261, switch `team_creator`, test-rls 213,
     `test-team-creator`. **Part C is complete** (item 1, the photo, is in
-    13). Next: item 13, the registration brief — gap 1 (pay timing, 0262)
-    and gap 2 (the photo, 0263) are done; the table of the rest is in
-    `REGISTRATION_BRIEF.md`.
+    13). Next: item 13, the registration brief — gap 1 (pay timing, 0262),
+    gap 2 (the photo, 0263) and gap 3 (the Active & Creative Kids voucher,
+    0264) are done; the table of the rest is in `REGISTRATION_BRIEF.md`.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features

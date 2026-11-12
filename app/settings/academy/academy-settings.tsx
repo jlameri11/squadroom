@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { WhenOn } from '@/components/when-on'
 
 /**
  * The two safeguarding switches, with their consequences written out.
@@ -24,6 +25,7 @@ export function AcademySettings({
   clubMode,
   miniroosScores = false,
   photoRequired = false,
+  activeKidsProvider = false,
 }: {
   academyId: string
   dmPolicy: string
@@ -49,6 +51,8 @@ export function AcademySettings({
   miniroosScores?: boolean
   /** 0263: a passport-style photo with every registration. */
   photoRequired?: boolean
+  /** 0264: the club is a registered Active & Creative Kids provider. */
+  activeKidsProvider?: boolean
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -64,6 +68,7 @@ export function AcademySettings({
   const [blockOverdue, setBlockOverdue] = useState(blockRsvpWhenOverdue)
   const [miniroos, setMiniroos] = useState(miniroosScores)
   const [photoReq, setPhotoReq] = useState(photoRequired)
+  const [activeKids, setActiveKids] = useState(activeKidsProvider)
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
@@ -396,6 +401,31 @@ export function AcademySettings({
           A photo is required to register
         </label>
       </section>
+
+      {/* 0264: the NSW voucher. Only with the feature on; off, nothing of it shows. */}
+      <WhenOn feature="active_kids" orgId={academyId}>
+        <section data-active-kids-section>
+          <h2 className="font-semibold">Active &amp; Creative Kids vouchers</h2>
+          <p className="mt-0.5 text-sm text-ink-2">
+            NSW families get two $50 vouchers a year for each child. If the club is a registered provider, a family
+            enters a voucher when they pay and $50 comes off; the Treasurer redeems it in the Service NSW provider
+            portal from the list on Admin → Payments. Squadroom never contacts Service NSW.
+          </p>
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={activeKids}
+              disabled={busy}
+              onChange={async (e) => {
+                setActiveKids(e.target.checked)
+                await update({ active_kids_provider: e.target.checked } as unknown as Patch)
+              }}
+              data-active-kids-provider
+            />
+            We&apos;re a registered Active &amp; Creative Kids provider
+          </label>
+        </section>
+      </WhenOn>
 
       <section>
         <h2 className="font-semibold">Overdue fees and attendance</h2>

@@ -265,6 +265,15 @@ export async function POST(request: Request) {
       await admin.from('payment_requests').update({ archived_at: now }).eq('id', gp.request_id)
     }
   }
+  // 0264: an Active & Creative Kids voucher put on the registration before
+  // the club decided moves the same way, onto the program's fee and the
+  // child, so what is owed reads right and the Treasurer's list names them.
+  if (paidProgram?.payment_request_id) {
+    const { data: held } = await admin.from('vouchers').select('id').eq('registration_request_id', requestId).not('voucher_number', 'is', null)
+    for (const v of held ?? []) {
+      await admin.from('voucher_redemptions').update({ request_id: paidProgram.payment_request_id, player_id: playerId, profile_id: profileId }).eq('voucher_id', v.id)
+    }
+  }
 
   if (teamId) {
     await joinTeam(admin, { academyId: req.academy_id, teamId, profileId, role: hat })
