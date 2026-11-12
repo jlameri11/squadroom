@@ -63,7 +63,8 @@ try {
   const continueBefore = await page.$$eval('button', (bs) => bs.find((b) => /Choose a program/.test(b.textContent))?.disabled)
   continueBefore ? ok('Continue is disabled until a program is chosen') : bad('Continue enabled with nothing chosen')
   // The first program that is not full.
-  const picked = await page.$$eval('button[aria-pressed]', (bs) => {
+  // The programs, not the "Register as" options above them, which are pressed buttons too (0267).
+  const picked = await page.$$eval('button[aria-pressed]:not([data-role-option])', (bs) => {
     const b = bs.find((x) => !/Full/.test(x.textContent))
     if (b) b.click()
     return b?.textContent?.trim().split('\n')[0] ?? null

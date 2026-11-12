@@ -108,13 +108,25 @@ const { error: e7 } = await admin.from('player_guardians').insert({
 })
 e7 ? bad(`a guardian could not be linked: ${e7.message}`) : ok('a parent links to the child normally')
 
-head('8. Nothing in the live database has a player account')
+head('8. Nothing in the live database gives a child a player account')
+// Adults may be players with a login (an over-18 who registers for a senior
+// squad is one — Inner West FC's seniors are a hundred of them). The rule is
+// about children: no roster row under 18 carries a login, and nobody under 18
+// holds the player role.
+const cutoff = new Date(Date.now() - 18 * 365.25 * 864e5).toISOString().slice(0, 10)
 const { count: logins } = await admin.from('players')
-  .select('*', { count: 'exact', head: true }).not('profile_id', 'is', null)
-const { count: members } = await admin.from('academy_members')
-  .select('*', { count: 'exact', head: true }).eq('role', 'player')
-logins === 0 ? ok('no roster row carries a login') : bad(`${logins} players have a profile_id`)
-members === 0 ? ok('no academy member holds the player role') : bad(`${members} player memberships exist`)
+  .select('*', { count: 'exact', head: true }).not('profile_id', 'is', null).gt('dob', cutoff)
+const { data: playerMembers } = await admin.from('academy_members').select('profile_id, academy_id').eq('role', 'player')
+const minorMembers = []
+for (const m of playerMembers ?? []) {
+  const { count } = await admin.from('players')
+    .select('*', { count: 'exact', head: true }).eq('academy_id', m.academy_id).eq('profile_id', m.profile_id).gt('dob', cutoff)
+  if (count) minorMembers.push(m.profile_id)
+}
+logins === 0 ? ok('no roster row under 18 carries a login') : bad(`${logins} children have a profile_id`)
+minorMembers.length === 0
+  ? ok(`no academy member under 18 holds the player role (${(playerMembers ?? []).length} adult player memberships)`)
+  : bad(`${minorMembers.length} children hold the player role`)
 
 await cleanup()
 await admin.auth.admin.deleteUser(kidProfile).catch(() => {})

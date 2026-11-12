@@ -5100,6 +5100,32 @@ begin
     insert into rls_results values (222, 'receipts and the card fee: a payment that lands pushes one receipt to the payer and a refund another, nobody else; the card fee is nothing until the club turns it on, then Stripe''s rate on the quote, the family''s list and the receipt', r222);
   end;
 
+  -- 223 (0271). A coach's join link gets its six-letter code from the column
+  -- DEFAULT, so app_private.new_join_code() runs as the inserting coach. 0261
+  -- had replaced that function and revoked it from authenticated — every join
+  -- link since was refused with "permission denied" and seven suites went red
+  -- before anyone looked (12 Nov 2026). Asserted the way it broke: as the coach.
+  declare
+    r223      text := 'FAIL (never ran)';
+    v_code223 text;
+  begin
+    begin
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      insert into public.join_links (academy_id, team_id, role, label, created_by)
+        values (ACAD_A, null, 'parent', 'rls probe 223', COACH)
+        returning code into v_code223;
+      execute 'reset role';
+      r223 := case when v_code223 ~ '^[ABCDEFGHJKMNPQRSTVWXYZ23456789]{6}$' then 'PASS'
+                   else 'FAIL (code '||coalesce(v_code223, 'null')||')' end;
+    exception when others then
+      r223 := 'FAIL (stopped: '||sqlerrm||')';
+    end;
+    execute 'reset role';
+    delete from public.join_links where label = 'rls probe 223';
+    insert into rls_results values (223, 'a coach''s join link gets its code from the column default (0271): new_join_code runs as the coach and the code fits join_links_code_shape', r223);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

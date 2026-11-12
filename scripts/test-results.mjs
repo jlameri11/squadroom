@@ -32,6 +32,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const TAG = 'TESTRESULT'
+const STARTED = new Date().toISOString()
 
 async function sess(email) {
   // generateLink is rate limited per project too, not just verifyOtp, and
@@ -75,6 +76,10 @@ async function clean() {
     await admin.from('event_rsvps').delete().eq('event_id', e.id)
   }
   await admin.from('events').delete().eq('academy_id', NRIFA).like('title', `${TAG}%`)
+  // A final score is posted to the squad's chat ("🏁 Full time: …") with no
+  // event_id on the message, so deleting the event leaves it behind (the demo
+  // guard found five, 12 Nov 2026). Only what this run posted.
+  await admin.from('messages').delete().eq('academy_id', NRIFA).like('body', '🏁 Full time%').gte('created_at', STARTED)
 }
 await clean()
 

@@ -45,6 +45,9 @@ async function cleanup() {
   const { data: teams } = await admin.from('teams').select('id').eq('academy_id', SPL).like('name', `${TAG} %`)
   for (const t of teams ?? []) await admin.from('teams').delete().eq('id', t.id)
   await admin.from('payment_requests').delete().eq('academy_id', SPL).like('title', `${TAG} %`)
+  // The captain and the mate become players of the organiser's team; deleting
+  // the team leaves their roster rows behind (found by the demo guard, 12 Nov 2026).
+  await admin.from('players').delete().eq('academy_id', SPL).in('full_name', ['Cass Captain', 'Mo Mate'])
   await admin.from('academy_features').delete().eq('academy_id', SPL).eq('feature', 'team_creator')
   const { data: users } = await listAllUsers(admin)
   for (const phone of [CAPTAIN_PHONE, MATE_PHONE]) {

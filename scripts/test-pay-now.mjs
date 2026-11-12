@@ -23,7 +23,8 @@ import { resolveBaseUrl } from './_base-url.mjs'
 import { testStripe, testMerchantAccount, closeTestAccount } from './_stripe-test-accounts.mjs'
 
 if (process.env.STRIPE_E2E !== '1') {
-  console.log('  STRIPE_E2E=1 not set — pay-now needs Stripe test mode and the listener; skipped (exit 2)')
+  // "only runs by hand" is what scripts/test-all.mjs looks for to report this as by hand, not a crash.
+  console.log('  STRIPE_E2E=1 not set — pay-now only runs by hand, with Stripe test mode and the listener up; skipped (exit 2)')
   process.exit(2)
 }
 const BASE = await resolveBaseUrl()

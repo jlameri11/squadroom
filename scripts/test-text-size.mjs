@@ -35,7 +35,8 @@ head('1. No text size in the product is written in px')
 // an image renderer have no root font size to follow.
 // Not the app's pages: emails (read by mail clients, where px is the size
 // that works — the sign-in link, a notice, a confirmation) and share cards.
-const NOT_PAGES = [/^app\/api\/auth\/send-link\//, /^app\/api\/email\//, /^app\/api\/notices\//, /^lib\/mail\//, /^app\/api\/share\//, /^lib\/share\//]
+// lib/two-step/deliver.ts is the two-step code's email, not a page.
+const NOT_PAGES = [/^app\/api\/auth\/send-link\//, /^app\/api\/email\//, /^app\/api\/notices\//, /^lib\/mail\//, /^lib\/two-step\/deliver\.ts$/, /^app\/api\/share\//, /^lib\/share\//]
 const files = []
 const walk = (dir) => {
   for (const name of readdirSync(join(ROOT, dir))) {

@@ -64,7 +64,8 @@ try {
   await page.goto(`${BASE}/admin`, { waitUntil: 'networkidle2', timeout: 60000 })
   await page.waitForSelector('[data-org]', { timeout: 30000 }).catch(() => null)
   const text = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '))
-  for (const row of ['Teams and players', 'Join requests', 'Programs', 'Import fixtures or players', 'Competitions']) {
+  // "Requests" since role requests joined the join requests under one row.
+  for (const row of ['Teams and players', 'Requests', 'Programs', 'Import fixtures or players', 'Competitions']) {
     text.includes(row) ? ok(`shown: ${row}`) : bad(`missing for a coach: ${row}`)
   }
   for (const row of ['New season', 'Venues and pitches', 'Organise a tournament or league', 'Collect payments', 'Members', 'Club settings', 'Sponsors']) {

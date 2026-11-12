@@ -35,7 +35,11 @@ export async function snapshot(admin) {
     all(admin, 'events', 'id, title, type, starts_at, ends_at, arrive_at, venue, cancelled_at, cancellation_reason, team_id', (r) => [`events:${r.id}`, { s: r.starts_at, e: r.ends_at, a: r.arrive_at, v: r.venue, c: r.cancelled_at ? r.cancellation_reason ?? 'off' : null, t: r.team_id }, r.title]),
     all(admin, 'fixtures', 'id, starts_at, status, home_score, away_score, venue_id, pitch_id, field_label, division, round', (r) => [`fixtures:${r.id}`, { s: r.starts_at, st: r.status, h: r.home_score, a: r.away_score, v: r.venue_id, p: r.pitch_id, f: r.field_label }, `${r.division} ${r.round ?? ''}`.trim()]),
     all(admin, 'teams', 'id, name, status, season, academy_id', (r) => [`teams:${r.id}`, { n: r.name, st: r.status, s: r.season }, r.name]),
-    all(admin, 'players', 'id, full_name, team_id, academy_id', (r) => [`players:${r.id}`, { t: r.team_id, a: r.academy_id }, r.full_name]),
+    // team_since and team_told_at too: a suite that moves a demo child off a
+    // squad and back leaves team_id as it was, but team_since moves past
+    // team_told_at (the 0249 trigger) and the Season screen then says the
+    // family has not been told. test-trials found two of them, 12 Nov 2026.
+    all(admin, 'players', 'id, full_name, team_id, academy_id, team_since, team_told_at', (r) => [`players:${r.id}`, { t: r.team_id, a: r.academy_id, s: r.team_since, k: r.team_told_at }, r.full_name]),
     all(admin, 'programs', 'id, name, status, capacity, opens_at, closes_at', (r) => [`programs:${r.id}`, { st: r.status, c: r.capacity, o: r.opens_at, cl: r.closes_at }, r.name]),
     all(admin, 'academy_members', 'academy_id, profile_id, role, status', (r) => [`academy_members:${r.academy_id}:${r.profile_id}`, { r: r.role, st: r.status }, `${r.role}`]),
     all(admin, 'team_members', 'team_id, profile_id, role', (r) => [`team_members:${r.team_id}:${r.profile_id}`, { r: r.role }, `${r.role}`]),

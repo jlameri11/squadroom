@@ -19,6 +19,16 @@ import { join } from 'node:path'
 const APP = 'app'
 const EXTRA = ['components', 'lib']
 
+/**
+ * Pages a person reaches by tapping a NOTIFICATION, not a link in the app.
+ * The URL is written in SQL, where this scan does not look — so each one is
+ * named here with the migration that sends it, and nowhere else.
+ */
+const NOTIFIED = {
+  // A club message's push opens the message itself (0243, club_message notifications).
+  '/messages/[messageId]': '0243_message_the_club.sql',
+}
+
 const ok = (m) => console.log(`  \x1b[32m✓\x1b[0m ${m}`)
 const bad = (m) => {
   console.log(`  \x1b[31m✗\x1b[0m ${m}`)
@@ -107,6 +117,10 @@ for (const route of all) {
   const entryPoint = route.split('/').filter(Boolean)[0]?.startsWith('[')
   if (entryPoint) {
     console.log(`  \x1b[2mentry\x1b[0m     ${route}`)
+    continue
+  }
+  if (NOTIFIED[route]) {
+    console.log(`  \x1b[2mnotified\x1b[0m  ${route} (${NOTIFIED[route]})`)
     continue
   }
   if (reachable(route)) continue

@@ -38,6 +38,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const TAG = 'TESTCARD'
+const STARTED = new Date().toISOString()
 
 async function sess(email) {
   const { data: link } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
@@ -68,6 +69,9 @@ const coach = await sess('joeylameri@outlook.com')
 
 async function clean() {
   await admin.from('events').delete().eq('academy_id', NRIFA).like('title', `${TAG}%`)
+  // The full-time post lands in the squad's chat without an event_id, so it
+  // survives deleting the event (the demo guard, 12 Nov 2026). Only this run's.
+  await admin.from('messages').delete().eq('academy_id', NRIFA).like('body', '🏁 Full time%').gte('created_at', STARTED)
 }
 await clean()
 
