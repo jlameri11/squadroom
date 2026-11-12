@@ -654,8 +654,9 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     13). Next: item 13, the registration brief — gap 1 (pay timing, 0262),
     gap 2 (the photo, 0263), gap 3 (the Active & Creative Kids voucher,
     0264), gap 4 (the family dashboard and the receipt, 0265), gap 5 (Find a club,
-    0266), gap 6 (Register as, 0267), gap 7 (the club's review, 0268) and
-    gap 8 (save and resume, 0269) are done; the table of the rest is in
+    0266), gap 6 (Register as, 0267), gap 7 (the club's review, 0268), gap 8
+    (save and resume, 0269) and gaps 9–10 (receipts and the card fee, 0270)
+    are done — all ten; the table and the brief's test list are in
     `REGISTRATION_BRIEF.md`.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**

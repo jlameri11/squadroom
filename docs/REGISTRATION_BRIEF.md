@@ -14,8 +14,8 @@ hourly; Joey says when the next deploy is.
 | 6. Register as | **Done** — 0267, `register_as` on the form and the queue, `confirm_wwcc_check`, the approval branch in `/api/register/approve`; test-rls 219, `test-register-as` |
 | 7. Club review | **Done** — 0268, filters + Needs info (`request_registration_info`, `/api/register/reply`) + the jersey with the squad + Deregister (`withdraw_registration`); test-rls 220, `test-club-review` |
 | 8. Save and resume | **Done** — 0269, `registration_drafts` (the account), `/api/register/draft` (the code); test-rls 221, `test-save-resume` |
-| 9. Receipts | next — the on-screen receipt is built with gap 4; the push and the email remain |
-| 10. Card fee pass-through | queued |
+| 9. Receipts | **Done** — on screen (0265), the push on landing and on a refund (0270, trigger), the email once Resend exists (`lib/mail/receipt.ts`); test-rls 222, `test-card-fee`, `test-pay-now` §6 |
+| 10. Card fee pass-through | **Done** — 0270, `academies.card_fee_passthrough` (Settings → Club, off), `app_private.card_fee_cents`, its own line on the quote, the Payments row, the Pay now card, Checkout and the receipt; test-rls 222, `test-card-fee`, `test-pay-now` §6 |
 
 ## The brief, verbatim
 

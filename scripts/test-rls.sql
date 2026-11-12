@@ -5044,6 +5044,62 @@ begin
     insert into rls_results values (221, 'a draft saved to the account: a parent keeps and reads their own, not another person''s, cannot write one as somebody else, a code''s draft is nobody''s through the table, a stranger reads none; the public page carries the club''s id', r221);
   end;
 
+  -- 0270. Receipts and the card fee: a payment that lands raises one push
+  -- to the payer, a refund another, nothing to anyone else; the card fee is
+  -- nothing until the club turns it on (and nothing with the feature off),
+  -- then Stripe's rate as its own figure on the quote, the family's list and
+  -- the receipt. Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_fee uuid; v_pay uuid; v_off integer; v_on integer; v_feature_off integer; v_quote jsonb; v_list integer; v_receipt jsonb;
+    v_pushes integer; v_push_url text; v_refund_pushes integer; v_others integer;
+    r222 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.payment_requests (academy_id, title, amount_cents, currency, per_player, team_id, created_by)
+      values (ACAD_A, 'RLS Fee fee', 12000, 'aud', true, U8, COACH) returning id into v_fee;
+      v_off := app_private.card_fee_cents(ACAD_A, 12000);
+      update public.academies set card_fee_passthrough = true where id = ACAD_A;
+      v_on := app_private.card_fee_cents(ACAD_A, 12000);
+      insert into public.academy_features (academy_id, feature, enabled) values (ACAD_A, 'card_fee_passthrough', false);
+      v_feature_off := app_private.card_fee_cents(ACAD_A, 12000);
+      delete from public.academy_features where academy_id = ACAD_A and feature = 'card_fee_passthrough';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_quote := public.quote_payment(v_fee, LEO);
+      select max(t.card_fee_cents) into v_list from public.my_payment_requests(ACAD_A) t where t.request_id = v_fee and t.player_id = LEO;
+      execute 'reset role';
+      -- A payment lands, then is refunded: one push each, to the payer.
+      insert into public.payments (academy_id, request_id, profile_id, player_id, amount_cents, card_fee_cents, currency, status, instalment_seq, stripe_payment_intent)
+      values (ACAD_A, v_fee, PARENT, LEO, 12000, 239, 'aud', 'pending', 1, 'pi_rls_fee') returning id into v_pay;
+      update public.payments set status = 'paid', paid_at = now() where id = v_pay;
+      update public.payments set status = 'paid' where id = v_pay; -- the same again raises nothing more
+      select count(*), max(url) into v_pushes, v_push_url from public.notification_queue n where n.kind = 'receipt' and n.profile_id = PARENT and (n.payload->>'payment_id')::uuid = v_pay and n.payload->>'status' = 'paid';
+      update public.payments set status = 'refunded', refunded_at = now() where id = v_pay;
+      select count(*) into v_refund_pushes from public.notification_queue n where n.kind = 'receipt' and n.profile_id = PARENT and (n.payload->>'payment_id')::uuid = v_pay and n.payload->>'status' = 'refunded';
+      select count(*) into v_others from public.notification_queue n where n.kind = 'receipt' and (n.payload->>'payment_id')::uuid = v_pay and n.profile_id <> PARENT;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_receipt := public.payment_receipt(v_pay);
+      execute 'reset role';
+      r222 := case when v_off = 0 and v_on = 239 and v_feature_off = 0
+                    and (v_quote->>'card_fee_cents')::integer = 239 and v_list = 239
+                    and v_pushes = 1 and v_push_url = '/receipts/' || v_pay::text and v_refund_pushes = 1 and v_others = 0
+                    and (v_receipt->>'card_fee_cents')::integer = 239 and (v_receipt->>'total_cents')::integer = 12239 then 'PASS'
+                   else 'FAIL (fee off '||v_off||' on '||v_on||' feature off '||v_feature_off||'; quote '||coalesce(v_quote->>'card_fee_cents','null')||' list '||coalesce(v_list::text,'null')
+                        ||'; pushes '||v_pushes||' url '||coalesce(v_push_url,'null')||' refund pushes '||v_refund_pushes||' others '||v_others
+                        ||'; receipt '||coalesce(v_receipt->>'card_fee_cents','null')||'/'||coalesce(v_receipt->>'total_cents','null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r222 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (222, 'receipts and the card fee: a payment that lands pushes one receipt to the payer and a refund another, nobody else; the card fee is nothing until the club turns it on, then Stripe''s rate on the quote, the family''s list and the receipt', r222);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

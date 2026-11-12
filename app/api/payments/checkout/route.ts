@@ -97,6 +97,14 @@ export async function POST(request: Request) {
   const zero = parts.filter((p) => p.amount_cents === 0)
   if (zero.length === parts.length) return NextResponse.json({ error: 'Nothing to pay — a voucher covers it.' }, { status: 409 })
 
+  // 0270: the card fee, where the club passes it on — one figure on the
+  // whole payment (Stripe charges per payment), its own line on Checkout,
+  // kept on the first charged part's row. The database works it out.
+  const chargeTotal = parts.reduce((n, p) => n + p.amount_cents, 0)
+  const { data: feeCents } = await admin.rpc('card_fee_cents', { p_academy: req.academy_id, p_amount: chargeTotal })
+  const cardFee = Number(feeCents ?? 0)
+  const feeOn = parts.find((p) => p.amount_cents > 0) ?? null
+
   const session = await stripe.checkout.sessions.create(
     {
       mode: 'payment',
@@ -108,17 +116,22 @@ export async function POST(request: Request) {
       // club's own feature here, on the club's terms, and a family sees one
       // clear total. (Decided 3 Nov 2026.)
       payment_method_types: billing.becs_enabled && req.currency.toLowerCase() === 'aud' ? ['card', 'au_becs_debit'] : ['card'],
-      line_items: parts.filter((p) => p.amount_cents > 0).map((p) => ({
-        quantity: 1,
-        price_data: {
-          currency: req.currency,
-          unit_amount: p.amount_cents,
-          product_data: {
-            name: `${req.title}${p.name ? ` — ${p.name}` : ''}${p.count > 1 ? ` — part ${p.seq} of ${p.count}` : ''}`,
-            description: req.description ?? undefined,
+      line_items: [
+        ...parts.filter((p) => p.amount_cents > 0).map((p) => ({
+          quantity: 1,
+          price_data: {
+            currency: req.currency,
+            unit_amount: p.amount_cents,
+            product_data: {
+              name: `${req.title}${p.name ? ` — ${p.name}` : ''}${p.count > 1 ? ` — part ${p.seq} of ${p.count}` : ''}`,
+              description: req.description ?? undefined,
+            },
           },
-        },
-      })),
+        })),
+        ...(cardFee > 0
+          ? [{ quantity: 1, price_data: { currency: req.currency, unit_amount: cardFee, product_data: { name: 'Card processing fee', description: 'Passed on by the club at Stripe’s rate (1.7% + 30c).' } } }]
+          : []),
+      ],
       success_url: `${siteUrl()}/payments?paid=1`,
       cancel_url: `${siteUrl()}/payments?cancelled=1`,
       // Everything the webhook needs to find the rows again. The webhook must
@@ -145,6 +158,7 @@ export async function POST(request: Request) {
         player_id: p.player_id,
         stripe_session_id: session.id,
         amount_cents: p.amount_cents,
+        card_fee_cents: p === feeOn ? cardFee : 0,
         currency: req.currency,
         status: p.amount_cents === 0 ? 'paid' : 'pending',
         instalment_seq: p.seq,
@@ -154,5 +168,5 @@ export async function POST(request: Request) {
     )
   }
 
-  return NextResponse.json({ url: session.url, session_id: session.id, children: parts.length, amount_cents: parts.reduce((n, p) => n + p.amount_cents, 0) })
+  return NextResponse.json({ url: session.url, session_id: session.id, children: parts.length, amount_cents: chargeTotal, card_fee_cents: cardFee, total_cents: chargeTotal + cardFee })
 }

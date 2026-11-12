@@ -54,6 +54,7 @@ const post = async (path, body, cookie) => {
 }
 
 const { data: akBefore } = await admin.from('academies').select('active_kids_provider').eq('id', NRIFA).single()
+const { data: feeBefore } = await admin.from('academies').select('card_fee_passthrough').eq('id', NRIFA).single()
 // The public form allows twenty registrations an hour from one address; a
 // run of suites from this machine is more than that. The throttle log is
 // not demo data.
@@ -63,13 +64,17 @@ const AK_NUMBERS = ['9876543210987654', '1111222233334444', '5555666677778888']
 async function cleanup() {
   // 0264: the vouchers (their redemptions go with them), and the club's provider setting.
   await admin.from('vouchers').delete().eq('academy_id', NRIFA).in('voucher_number', AK_NUMBERS)
-  await admin.from('academies').update({ active_kids_provider: akBefore?.active_kids_provider ?? false }).eq('id', NRIFA)
+  await admin.from('academies').update({ active_kids_provider: akBefore?.active_kids_provider ?? false, card_fee_passthrough: feeBefore?.card_fee_passthrough ?? false }).eq('id', NRIFA)
   const { data: progs } = await admin.from('programs').select('id, payment_request_id').eq('academy_id', NRIFA).like('name', `${TAG} %`)
   for (const p of progs ?? []) {
     const { data: reqs } = await admin.from('registration_requests').select('id').eq('program_id', p.id)
     for (const r of reqs ?? []) {
       const { data: pays } = await admin.from('payments').select('id').eq('registration_request_id', r.id)
-      for (const pay of pays ?? []) { await admin.from('refunds').delete().eq('payment_id', pay.id); await admin.from('payments').delete().eq('id', pay.id) }
+      for (const pay of pays ?? []) {
+        await admin.from('notification_queue').delete().like('dedupe_key', `receipt:${pay.id}:%`)
+        await admin.from('refunds').delete().eq('payment_id', pay.id)
+        await admin.from('payments').delete().eq('id', pay.id)
+      }
       await admin.from('registration_requests').delete().eq('id', r.id)
     }
     if (p.payment_request_id) { await admin.from('payments').delete().eq('request_id', p.payment_request_id) }
@@ -192,7 +197,8 @@ try {
     const r = await post('/api/register/request', { slug: SLUG, programId: program.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Three`, childDob: '2015-05-05', consents })
     const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
     try {
-      for (const [scheme, query, expect] of [['light', '', 'Pay now'], ['dark', '?paid=1', 'Paid and sent']]) {
+      // 0270: the button names the figure — "Pay $120.00" — rather than "Pay now".
+      for (const [scheme, query, expect] of [['light', '', 'Pay $120.00'], ['dark', '?paid=1', 'Paid and sent']]) {
         const context = await browser.createBrowserContext()
         const page = await context.newPage()
         await page.setViewport({ width: 375, height: 812 })
@@ -261,6 +267,26 @@ try {
     const { count: v7 } = await admin.from('vouchers').select('id', { count: 'exact', head: true }).eq('voucher_number', '5555666677778888')
     d7.status === 200 && refund7?.amount_cents === 7000 && refund7.status === 'issued' && v7 === 0 ? ok('declined: the $70.00 refunded, the voucher given back (its number free again)') : bad(`decline ${d7.status}; refund ${JSON.stringify(refund7)}; vouchers left ${v7}`)
     await admin.from('academies').update({ active_kids_provider: akBefore?.active_kids_provider ?? false }).eq('id', NRIFA)
+  }
+
+  head('6. The card fee passed on (0270): its own line, before the charge')
+  {
+    await admin.from('academies').update({ card_fee_passthrough: true }).eq('id', NRIFA)
+    const r = await post('/api/register/request', { slug: SLUG, programId: program.id, guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'paynow.parent@example.com', childName: `${TAG} Child Eight`, childDob: '2016-10-10', consents })
+    const pay = await post('/api/register/pay', { requestId: r.requestId, secret: r.secret })
+    pay.status === 200 && pay.amount_cents === 12000 && pay.card_fee_cents === 239 && pay.total_cents === 12239 ? ok('the route: $120.00 fee, $2.39 card fee, $122.39 to pay') : bad(`pay with card fee: ${pay.status} ${JSON.stringify(pay).slice(0, 160)}`)
+    const session = pay.session_id ? await stripe.checkout.sessions.retrieve(pay.session_id, {}, { stripeAccount: harness.id }).catch((e) => ({ error: e.message })) : null
+    session?.amount_total === 12239 ? ok('Stripe asks for $122.39 — the fee and the card fee as two lines') : bad(`session total ${session?.amount_total ?? session?.error}`)
+    if (pay.url) await payOnCheckout(pay.url, `${TAG} Child Eight`)
+    const paid = await until(async () => { const { data } = await admin.from('payments').select('id, status, amount_cents, card_fee_cents').eq('registration_request_id', r.requestId).maybeSingle(); return data?.status === 'paid' ? data : null }, 90000, 2000)
+    paid?.amount_cents === 12000 && paid.card_fee_cents === 239 ? ok('paid: the row keeps the fee and the card fee apart') : bad(`paid row ${JSON.stringify(paid)}`)
+    if (paid) {
+      const { data: receipt } = await owner.client.rpc('payment_receipt', { p_payment: paid.id })
+      receipt?.total_cents === 12239 && receipt.card_fee_cents === 239 ? ok('the receipt: $122.39 in all, $2.39 of it the card fee') : bad(`receipt ${JSON.stringify(receipt)?.slice(0, 160)}`)
+      const { data: push } = await admin.from('notification_queue').select('url, title').eq('dedupe_key', `receipt:${paid.id}:paid`).maybeSingle()
+      push?.url === `/receipts/${paid.id}` ? ok(`and the push to the payer: "${push.title}"`) : bad(`push ${JSON.stringify(push)}`)
+    }
+    await admin.from('academies').update({ card_fee_passthrough: feeBefore?.card_fee_passthrough ?? false }).eq('id', NRIFA)
   }
 } catch (e) {
   bad(`threw: ${e.message}`)

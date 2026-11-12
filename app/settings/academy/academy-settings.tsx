@@ -27,6 +27,7 @@ export function AcademySettings({
   photoRequired = false,
   activeKidsProvider = false,
   suburb = null,
+  cardFeePassthrough = false,
 }: {
   academyId: string
   dmPolicy: string
@@ -56,6 +57,8 @@ export function AcademySettings({
   activeKidsProvider?: boolean
   /** 0266: where the club is, for Find a club. */
   suburb?: string | null
+  /** 0270: the club passes Stripe's card fee on to families. */
+  cardFeePassthrough?: boolean
 }) {
   const router = useRouter()
   const [dm, setDm] = useState(dmPolicy)
@@ -73,6 +76,7 @@ export function AcademySettings({
   const [photoReq, setPhotoReq] = useState(photoRequired)
   const [activeKids, setActiveKids] = useState(activeKidsProvider)
   const [where, setWhere] = useState(suburb ?? '')
+  const [cardFee, setCardFee] = useState(cardFeePassthrough)
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
@@ -460,6 +464,31 @@ export function AcademySettings({
               Save
             </button>
           </div>
+        </section>
+      </WhenOn>
+
+      {/* 0270: the card-fee pass-through. Default off; the fee is its own line before paying. */}
+      <WhenOn feature="card_fee_passthrough" orgId={academyId}>
+        <section data-card-fee-section>
+          <h2 className="font-semibold">Card processing fee</h2>
+          <p className="mt-0.5 text-sm text-ink-2">
+            Off, the club absorbs Stripe&apos;s card fee (1.7% + 30c a payment in Australia). On, it is added to what a
+            family pays and shown as its own line before they pay — one total, the fee inside it — so the club nets the
+            fee it set. Families never pay Squadroom anything either way.
+          </p>
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={cardFee}
+              disabled={busy}
+              onChange={async (e) => {
+                setCardFee(e.target.checked)
+                await update({ card_fee_passthrough: e.target.checked } as unknown as Patch)
+              }}
+              data-card-fee-passthrough
+            />
+            Pass the card processing fee on to families
+          </label>
         </section>
       </WhenOn>
 

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ProgramSummary, money, type PublicProgram } from '../program-card'
 import { QuestionField, unanswered } from '@/components/question-field'
 import { clubThemeCss } from '@/lib/brand/colour'
+import { cardFeeCents } from '@/lib/stripe/card-fee'
 import { prepareImage } from '@/lib/adapters/images'
 
 type Program = PublicProgram
@@ -32,6 +33,8 @@ type Data = {
     photo_required?: boolean
     /** 0264: the club takes Active & Creative Kids vouchers (a provider, feature on). */
     active_kids?: boolean
+    /** 0270: the club passes Stripe's card fee on, as its own line before paying. */
+    card_fee_passthrough?: boolean
   }
   programs: Program[]
   consents: Consent[]
@@ -359,6 +362,10 @@ export function RegisterForm({ slug }: { slug: string }) {
   if (sent) {
     const sentProgram = data.programs.find((p) => p.id === chosen) ?? null
     const payNow = sentProgram?.pay_timing === 'now' && sentProgram.payment_required && (sentProgram.amount_cents ?? 0) > 0 && status !== 'declined'
+    // 0270: what the tap will charge — the fee less a voucher, plus the card
+    // fee where the club passes it on (the route works the real figure out).
+    const payNowCharge = Math.max(0, (sentProgram?.amount_cents ?? 0) - (akNumber.trim() ? 5000 : 0))
+    const payNowFee = data.academy.card_fee_passthrough ? cardFeeCents(payNowCharge) : 0
     return (
       <Frame css={clubCss} logo={logo} academy={data.academy.name}>
         <h1 className="display text-xl">
@@ -486,8 +493,18 @@ export function RegisterForm({ slug }: { slug: string }) {
               style={{ background: tint, color: ink }}
               data-pay-now-button
             >
-              {busy ? 'Opening Stripe…' : akNumber.trim() && (sentProgram.amount_cents ?? 0) <= 5000 ? 'Use the voucher' : 'Pay now'}
+              {busy
+                ? 'Opening Stripe…'
+                : akNumber.trim() && (sentProgram.amount_cents ?? 0) <= 5000
+                  ? 'Use the voucher'
+                  : `Pay ${money(payNowCharge + payNowFee)}`}
             </button>
+            {/* 0270: the card fee, said before the tap. */}
+            {payNowFee > 0 && (
+              <p className="mt-2 text-xs text-ink-2" data-card-fee={payNowFee}>
+                Includes a card processing fee of {money(payNowFee)}, passed on by the club at Stripe&apos;s rate (1.7% + 30c).
+              </p>
+            )}
             {error && <p className="mt-2 text-sm" style={{ color: 'var(--no)' }}>{error}</p>}
           </div>
         )}

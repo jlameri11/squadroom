@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           active_kids_provider: boolean
           block_rsvp_when_overdue: boolean
+          card_fee_passthrough: boolean
           club_mode: boolean
           contact_email: string | null
           created_at: string
@@ -50,6 +51,7 @@ export type Database = {
         Insert: {
           active_kids_provider?: boolean
           block_rsvp_when_overdue?: boolean
+          card_fee_passthrough?: boolean
           club_mode?: boolean
           contact_email?: string | null
           created_at?: string
@@ -82,6 +84,7 @@ export type Database = {
         Update: {
           active_kids_provider?: boolean
           block_rsvp_when_overdue?: boolean
+          card_fee_passthrough?: boolean
           club_mode?: boolean
           contact_email?: string | null
           created_at?: string
@@ -5524,6 +5527,7 @@ export type Database = {
         Row: {
           academy_id: string
           amount_cents: number
+          card_fee_cents: number
           created_at: string
           currency: string
           id: string
@@ -5542,6 +5546,7 @@ export type Database = {
         Insert: {
           academy_id: string
           amount_cents: number
+          card_fee_cents?: number
           created_at?: string
           currency?: string
           id?: string
@@ -5560,6 +5565,7 @@ export type Database = {
         Update: {
           academy_id?: string
           amount_cents?: number
+          card_fee_cents?: number
           created_at?: string
           currency?: string
           id?: string
@@ -9261,6 +9267,10 @@ export type Database = {
         Returns: undefined
       }
       captain_teams: { Args: { p_competition: string }; Returns: Json }
+      card_fee_cents: {
+        Args: { p_academy: string; p_amount: number }
+        Returns: number
+      }
       card_sponsors: { Args: { p_academy: string }; Returns: Json }
       cast_poll_vote: {
         Args: {
@@ -10118,11 +10128,13 @@ export type Database = {
         Returns: {
           amount_cents: number
           can_pay: boolean
+          card_fee_cents: number
           closes_at: string
           currency: string
           description: string
           due_on: string
           paid_at: string
+          payment_id: string
           player_id: string
           player_name: string
           promised_by: string

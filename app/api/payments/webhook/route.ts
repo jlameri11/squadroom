@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stripeOrNull } from '@/lib/stripe/client'
 import { syncBillingByAccount } from '@/lib/stripe/billing'
+import { sendReceiptEmail } from '@/lib/mail/receipt'
 
 /**
  * The only thing that may mark a payment paid.
@@ -90,10 +91,14 @@ export async function POST(request: Request) {
           .eq('stripe_session_id', session.id)
         break
       }
-      await admin
+      const { data: landed } = await admin
         .from('payments')
         .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent: intent })
         .eq('stripe_session_id', session.id)
+        .select('id')
+      // 0270: the emailed receipt, when Squadroom has a Resend key. The push
+      // is the database's (the trigger on payments), never this route's.
+      for (const p of landed ?? []) await sendReceiptEmail(admin, p.id)
       break
     }
 

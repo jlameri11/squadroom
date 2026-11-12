@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { WhenOn } from '@/components/when-on'
@@ -24,6 +25,9 @@ export type Owing = {
   voucher_label?: string | null
   /** B-08 (0227): the day the family said they would pay by. */
   promised_by?: string | null
+  /** 0270: the paid row's payment, for its receipt; and the card fee the club passes on. */
+  payment_id?: string | null
+  card_fee_cents?: number
 }
 
 /** A date-only string, read as the reader's own day (never through UTC). */
@@ -332,6 +336,14 @@ export function PaymentsList({
               )}
               {applied?.key === key && <p className="mt-1 text-xs" style={{ color: 'var(--yes)' }}>{applied.text}</p>}
 
+              {/* 0270: the card fee, its own line, before paying — one total with it inside. */}
+              {(row.card_fee_cents ?? 0) > 0 && (
+                <p className="mt-1 text-xs text-ink-2" data-card-fee={row.card_fee_cents}>
+                  Card processing fee {money(row.card_fee_cents ?? 0, row.currency)}, passed on by the club at Stripe&apos;s rate — you pay{' '}
+                  {money(Math.max(0, row.amount_cents - (row.voucher_cents ?? 0)) + (row.card_fee_cents ?? 0), row.currency)}.
+                </p>
+              )}
+
               {row.due_on && (
                 <div className={`mt-2 text-xs ${overdue ? 'font-semibold ' : 'text-ink-2'}`}>
                   {overdue ? 'Was due ' : 'Due '}
@@ -349,7 +361,7 @@ export function PaymentsList({
                   className="mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-brand-ink disabled:opacity-50"
                   style={{ background: BRAND }}
                 >
-                  {busy === key ? 'Opening…' : `Pay ${money(row.amount_cents, row.currency)}`}
+                  {busy === key ? 'Opening…' : `Pay ${money(Math.max(0, row.amount_cents - (row.voucher_cents ?? 0)) + (row.card_fee_cents ?? 0), row.currency)}`}
                 </button>
               ) : (
                 // A dead Pay button is worse than none. If the academy has
@@ -447,8 +459,14 @@ export function PaymentsList({
                   {row.title}
                   {row.player_name ? ` · ${row.player_name}` : ''}
                 </span>
-                <span className="flex-none tabular-nums text-ink-2">
-                  {money(row.amount_cents, row.currency)}
+                <span className="flex flex-none flex-col items-end tabular-nums text-ink-2">
+                  {money(row.amount_cents + (row.card_fee_cents ?? 0), row.currency)}
+                  {/* 0270: the receipt. */}
+                  {row.payment_id && (
+                    <Link href={`/receipts/${row.payment_id}`} className="tap text-xs underline underline-offset-2" style={{ color: 'var(--brand-text)' }} data-receipt={row.payment_id}>
+                      Receipt ›
+                    </Link>
+                  )}
                 </span>
               </li>
             ))}

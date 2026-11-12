@@ -104,6 +104,7 @@ export function AcademyLoader() {
           photoRequired={(academy as { photo_required?: boolean }).photo_required}
           activeKidsProvider={(academy as { active_kids_provider?: boolean }).active_kids_provider}
           suburb={(academy as { suburb?: string | null }).suburb ?? null}
+          cardFeePassthrough={(academy as { card_fee_passthrough?: boolean }).card_fee_passthrough}
         />
         </>
       ) : (

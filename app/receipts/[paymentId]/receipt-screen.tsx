@@ -13,6 +13,9 @@ type Receipt = {
   description: string | null
   program: string | null
   amount_cents: number
+  /** 0270: the card fee the club passed on, and the total with it. */
+  card_fee_cents?: number
+  total_cents?: number
   currency: string
   status: string
   paid_at: string | null
@@ -74,7 +77,12 @@ export function ReceiptScreen({ paymentId }: { paymentId: string }) {
           </span>
         </div>
         <div className="p-4">
-          <p className="display text-3xl leading-none tabular-nums" data-receipt-amount>{money(receipt.amount_cents, receipt.currency)}</p>
+          <p className="display text-3xl leading-none tabular-nums" data-receipt-amount>{money(receipt.total_cents ?? receipt.amount_cents, receipt.currency)}</p>
+          {(receipt.card_fee_cents ?? 0) > 0 && (
+            <p className="mt-1 text-xs text-ink-3" data-receipt-card-fee={receipt.card_fee_cents}>
+              {money(receipt.amount_cents, receipt.currency)} fee + {money(receipt.card_fee_cents ?? 0, receipt.currency)} card processing fee, passed on by the club at Stripe&apos;s rate.
+            </p>
+          )}
           <p className="mt-1 text-sm" style={{ color: receipt.status === 'refunded' ? 'var(--no)' : 'var(--yes)' }} data-receipt-status={receipt.status}>
             {status}
           </p>

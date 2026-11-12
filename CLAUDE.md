@@ -528,6 +528,17 @@ one and is meant to reach hundreds of academies.
     from Admin → Payments and ticks it. No call, no file, no link to Service
     NSW, ever. A voucher on a pay-now registration moves with the payment on
     approval and is given back on a decline.
+  - **The card-fee pass-through is the club's choice, off by default, and
+    never Squadroom's money** (0270, the registration brief). When a club
+    turns it on (Settings → Club, behind the `card_fee_passthrough` switch)
+    Stripe's standard Australian card rate — 1.7% + A$0.30 a payment, worked
+    out in one place, `app_private.card_fee_cents` — is added to what the
+    family pays as its own line on Checkout and shown before they pay (the
+    quote, the Payments row, the Pay now card); `payments.card_fee_cents`
+    keeps it apart from the fee, and the receipt shows both. The family
+    still sees one total, the fee inside it. It goes to the club's account
+    like the rest; there is still no application fee and no code path that
+    could add one.
   - `profiles.phone` is a DOMAIN, not text. A set-returning function
     declaring `text` fails with "structure of query does not match function
     result type", which names neither the column nor the type.

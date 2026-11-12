@@ -147,6 +147,9 @@ export async function POST(request: Request) {
     // registration waits on the club like any other.
     return NextResponse.json({ covered: true, amount_cents: 0, off_cents: off })
   }
+  // 0270: the card fee, where the club passes it on — its own line.
+  const { data: feeCents } = await admin.rpc('card_fee_cents', { p_academy: req.academy_id, p_amount: charge })
+  const cardFee = Number(feeCents ?? 0)
   const session = await stripe.checkout.sessions.create(
     {
       mode: 'payment',
@@ -161,7 +164,11 @@ export async function POST(request: Request) {
             description: (fee.description ?? `${program.name}: refunded in full if the club cannot take the registration.`) + (off ? ` $${(off / 100).toFixed(2)} Active & Creative Kids voucher taken off.` : ''),
           },
         },
-      }],
+      },
+      ...(cardFee > 0
+        ? [{ quantity: 1, price_data: { currency: fee.currency, unit_amount: cardFee, product_data: { name: 'Card processing fee', description: 'Passed on by the club at Stripe’s rate (1.7% + 30c).' } } }]
+        : []),
+      ],
       success_url: `${siteUrl()}/${club?.slug ?? ''}/register?paid=1`,
       cancel_url: `${siteUrl()}/${club?.slug ?? ''}/register?cancelled=1`,
       metadata: { kind: 'registration', academy_id: req.academy_id, request_id: own.id, registration_request_id: req.id, profile_id: profileId },
@@ -176,10 +183,11 @@ export async function POST(request: Request) {
     registration_request_id: req.id,
     stripe_session_id: session.id,
     amount_cents: charge,
+    card_fee_cents: cardFee,
     currency: fee.currency,
     status: 'pending',
     instalment_seq: 1,
   })
   if (payErr) return NextResponse.json({ error: `Could not record the payment: ${payErr.message}` }, { status: 500 })
-  return NextResponse.json({ url: session.url, session_id: session.id, amount_cents: charge, off_cents: off })
+  return NextResponse.json({ url: session.url, session_id: session.id, amount_cents: charge, off_cents: off, card_fee_cents: cardFee, total_cents: charge + cardFee })
 }
