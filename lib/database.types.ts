@@ -7360,6 +7360,8 @@ export type Database = {
           decided_by: string | null
           decision_note: string | null
           expires_at: string
+          family_replied_at: string | null
+          family_reply: string | null
           ffa_number: string | null
           fifa_id: string | null
           for_self: boolean
@@ -7367,6 +7369,9 @@ export type Database = {
           guardian_name: string
           guardian_phone: string | null
           id: string
+          info_note: string | null
+          info_requested_at: string | null
+          info_requested_by: string | null
           official_confirmed_at: string | null
           official_confirmed_by: string | null
           photo_path: string | null
@@ -7396,6 +7401,8 @@ export type Database = {
           decided_by?: string | null
           decision_note?: string | null
           expires_at?: string
+          family_replied_at?: string | null
+          family_reply?: string | null
           ffa_number?: string | null
           fifa_id?: string | null
           for_self?: boolean
@@ -7403,6 +7410,9 @@ export type Database = {
           guardian_name: string
           guardian_phone?: string | null
           id?: string
+          info_note?: string | null
+          info_requested_at?: string | null
+          info_requested_by?: string | null
           official_confirmed_at?: string | null
           official_confirmed_by?: string | null
           photo_path?: string | null
@@ -7432,6 +7442,8 @@ export type Database = {
           decided_by?: string | null
           decision_note?: string | null
           expires_at?: string
+          family_replied_at?: string | null
+          family_reply?: string | null
           ffa_number?: string | null
           fifa_id?: string | null
           for_self?: boolean
@@ -7439,6 +7451,9 @@ export type Database = {
           guardian_name?: string
           guardian_phone?: string | null
           id?: string
+          info_note?: string | null
+          info_requested_at?: string | null
+          info_requested_by?: string | null
           official_confirmed_at?: string | null
           official_confirmed_by?: string | null
           photo_path?: string | null
@@ -7466,6 +7481,13 @@ export type Database = {
           {
             foreignKeyName: "registration_requests_decided_by_fkey"
             columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_info_requested_by_fkey"
+            columns: ["info_requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -10545,16 +10567,22 @@ export type Database = {
           decision_note: string
           existing_official_status: string
           existing_player_id: string
+          family_replied_at: string
+          family_reply: string
           ffa_number: string
           fifa_id: string
           guardian_email: string
           guardian_name: string
           guardian_phone: string
+          info_note: string
+          info_requested_at: string
           official_confirmed_at: string
           photo_path: string
           program_id: string
           program_name: string
           register_as: string
+          registration_id: string
+          registration_status: string
           request_id: string
           requires_official: boolean
           role_note: string
@@ -10659,6 +10687,10 @@ export type Database = {
           p_kind: string
         }
         Returns: string
+      }
+      request_registration_info: {
+        Args: { p_note: string; p_request: string }
+        Returns: undefined
       }
       request_role: {
         Args: {

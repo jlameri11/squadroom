@@ -115,6 +115,11 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [paid, setPaid] = useState(false)
   // 0264: an Active & Creative Kids voucher on a pay-now registration — the
   // number and, if it differs, the child's name as on the voucher.
+  // 0268: the club's question, and the family's answer.
+  const [infoNote, setInfoNote] = useState<string | null>(null)
+  const [familyReply, setFamilyReply] = useState<string | null>(null)
+  const [reply, setReply] = useState('')
+  const [replyBusy, setReplyBusy] = useState(false)
   const [akOpen, setAkOpen] = useState(false)
   const [akNumber, setAkNumber] = useState('')
   const [akName, setAkName] = useState('')
@@ -228,11 +233,27 @@ export function RegisterForm({ slug }: { slug: string }) {
         window.location.replace('/')
         return
       }
-      if (res.status === 202) setStatus('pending')
-      else if (res.status === 403) setStatus('declined')
+      if (res.status === 202) {
+        setStatus('pending')
+        // 0268: the club may have asked for something.
+        const body = (await res.json().catch(() => ({}))) as { info_note?: string | null; family_reply?: string | null }
+        setInfoNote(body.info_note ?? null)
+        setFamilyReply(body.family_reply ?? null)
+      } else if (res.status === 403) setStatus('declined')
       else setStatus('pending')
     })()
   }, [sent])
+
+  // 0268: the family's answer to the club's question, with the request's secret.
+  async function sendReply() {
+    if (!sent || !reply.trim()) return
+    setReplyBusy(true)
+    const res = await fetch('/api/register/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: sent.requestId, secret: sent.secret, reply }) })
+    setReplyBusy(false)
+    if (!res.ok) return setError((await res.json().catch(() => ({}))).error ?? 'Could not send that.')
+    setFamilyReply(reply.trim())
+    setReply('')
+  }
 
   if (data === undefined) {
     return <Frame><p className="text-center text-sm text-ink-2">Loading…</p></Frame>
@@ -271,6 +292,40 @@ export function RegisterForm({ slug }: { slug: string }) {
               ? `Stripe has your payment. ${data.academy.name} confirms the place; if they cannot take it, the fee comes back in full. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`
               : `${data.academy.name} will look at this and come back to you. Keep this page bookmarked on this phone — when they approve it, opening it signs you in.`}
         </p>
+        {/* 0268: the club asked for something. Answered here, with the request's secret. */}
+        {status === 'pending' && infoNote && (
+          <div className="mt-4 rounded-xl border p-3.5" style={{ borderColor: 'var(--accent)' }} data-needs-info>
+            <p className="text-sm">
+              <b>{data.academy.name} asked:</b> “{infoNote}”
+            </p>
+            {familyReply ? (
+              <p className="mt-2 text-sm text-ink-2" data-info-replied>You replied: “{familyReply}”</p>
+            ) : (
+              <>
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  rows={2}
+                  placeholder="Your answer"
+                  aria-label="Your answer to the club"
+                  className="mt-2 w-full rounded-lg border px-3 py-2 text-base"
+                  style={{ borderColor: 'var(--line)' }}
+                  data-info-reply
+                />
+                <button
+                  onClick={() => void sendReply()}
+                  disabled={replyBusy || !reply.trim()}
+                  className="mt-2 w-full rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-50"
+                  style={{ background: tint, color: ink }}
+                  data-info-send
+                >
+                  {replyBusy ? 'Sending…' : 'Send your answer'}
+                </button>
+                {error && <p className="mt-2 text-sm" style={{ color: 'var(--no)' }}>{error}</p>}
+              </>
+            )}
+          </div>
+        )}
         {/* 0264: the voucher covered the fee — nothing to pay, nothing for Stripe. */}
         {payNow && !paid && sent.covered && (
           <p className="mt-4 rounded-xl border p-3.5 text-sm" style={{ borderColor: 'var(--yes)', color: 'var(--yes)' }} data-ak-covered>
@@ -870,10 +925,11 @@ export function RegisterForm({ slug }: { slug: string }) {
                   child's name and date of birth from somebody who has never
                   dealt with us. */}
               <p className="mt-5 text-xs text-ink-3">
-                What you enter goes to {data.academy.name} and to nobody else. Your child is a
-                name on a team sheet — children do not get accounts here, and nothing about
-                them is published. The club decides whether to accept the registration and
-                will contact you either way.
+                What you enter goes to {data.academy.name} and to nobody else.
+                {forSelf || forRole
+                  ? ' Nothing about you is published.'
+                  : ' Your child is a name on a team sheet — children do not get accounts here, and nothing about them is published.'}{' '}
+                The club decides whether to accept the registration and will contact you either way.
               </p>
 
               {error && (

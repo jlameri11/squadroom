@@ -24,11 +24,17 @@ import { issueRefund } from '@/lib/stripe/refund'
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
-  const { requestId, decision, teamId, note } = (body ?? {}) as {
+  const { requestId, decision, teamId, note, number: numberRaw } = (body ?? {}) as {
     requestId?: string
     decision?: 'approve' | 'decline'
     teamId?: string | null
     note?: string
+    /** 0268: the jersey number, in the same step as the squad (one pool per season, 0085). */
+    number?: number | string | null
+  }
+  const number = numberRaw == null || numberRaw === '' ? null : Number(numberRaw)
+  if (number !== null && !(Number.isInteger(number) && number >= 1 && number <= 99)) {
+    return NextResponse.json({ error: 'A squad number is 1 to 99.' }, { status: 400 })
   }
 
   if (!requestId || (decision !== 'approve' && decision !== 'decline')) {
@@ -230,6 +236,22 @@ export async function POST(request: Request) {
   // A player's registration always has its program (the table says so).
   if (!req.program_id) return NextResponse.json({ error: 'This registration has no program.' }, { status: 500 })
 
+  // 0268: the jersey number is checked against the season's pool BEFORE
+  // anything is written, so a taken number is a sentence and not a
+  // half-approved registration. The season is the squad's.
+  let numberSeason: string | null = null
+  if (teamId && number !== null) {
+    const { data: squad } = await admin.from('teams').select('season').eq('id', teamId).maybeSingle()
+    numberSeason = squad?.season ?? String(new Date().getFullYear())
+    const { data: holder } = await admin.from('squad_numbers').select('player_id').eq('academy_id', req.academy_id).eq('season', numberSeason).eq('number', number).maybeSingle()
+    if (holder) {
+      const { data: same } = await admin.from('players').select('id').eq('academy_id', req.academy_id).eq('dob', req.child_dob).ilike('full_name', req.child_name).maybeSingle()
+      if (!same || same.id !== holder.player_id) {
+        return NextResponse.json({ error: `Number ${number} is taken this season. Pick another.` }, { status: 409 })
+      }
+    }
+  }
+
   // 0239: an adult registering themselves is the player; a child's
   // registration makes a parent. Hats, not a single role (0237): someone
   // already here keeps what they are and gains this.
@@ -362,6 +384,15 @@ export async function POST(request: Request) {
 
   if (teamId) {
     await joinTeam(admin, { academyId: req.academy_id, teamId, profileId, role: hat })
+  }
+
+  // 0268: the jersey, in the same step as the squad. One number per player
+  // per season, so a child already holding one this season moves to this one.
+  if (teamId && number !== null && numberSeason) {
+    await admin.from('squad_numbers').upsert(
+      { academy_id: req.academy_id, player_id: playerId, season: numberSeason, number, assigned_by: auth.user.id },
+      { onConflict: 'academy_id,season,player_id' }
+    )
   }
 
   // The registration itself, so the program's roll and its capacity count

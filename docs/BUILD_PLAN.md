@@ -654,8 +654,8 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     13). Next: item 13, the registration brief — gap 1 (pay timing, 0262),
     gap 2 (the photo, 0263), gap 3 (the Active & Creative Kids voucher,
     0264), gap 4 (the family dashboard and the receipt, 0265), gap 5 (Find a club,
-    0266) and gap 6 (Register as, 0267) are done; the table of the rest is
-    in `REGISTRATION_BRIEF.md`.
+    0266), gap 6 (Register as, 0267) and gap 7 (the club's review, 0268)
+    are done; the table of the rest is in `REGISTRATION_BRIEF.md`.
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features

@@ -4943,6 +4943,65 @@ begin
     insert into rls_results values (219, 'register as: a coach''s request with no program sits in the queue with its role and WWCC number; a parent cannot tick the check, the club can; an adult passes the role rules and a 16-year-old does not; a staff photo is the person''s and the staff''s, nobody else''s', r219);
   end;
 
+  -- 0268. The club's review: a parent cannot ask a family for more, the
+  -- club can; the question is on the queue and on the family's dashboard
+  -- (theirs by their mobile); an accepted request carries its registration
+  -- and where it stands, deregistered included. Rolled back.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    LEO constant uuid := '00000000-0000-0000-0000-0000000e0001';
+    v_phone text; v_prog uuid; v_req uuid; v_parent text := 'ok'; v_note text; v_mine jsonb; v_reg uuid; v_state text; v_after text;
+    r220 text := 'FAIL (never ran)';
+  begin
+    begin
+      select p.phone::text into v_phone from public.profiles p where p.id = PARENT;
+      insert into public.programs (academy_id, name, kind, status, season, created_by, born_from_year, born_to_year)
+      values (ACAD_A, 'RLS Review Squad', 'squad', 'open', '2026', COACH, 2015, 2019) returning id into v_prog;
+      insert into public.registration_requests (academy_id, program_id, guardian_name, guardian_phone, guardian_email, child_name, child_dob, secret_hash, status, expires_at)
+      values (ACAD_A, v_prog, 'RLS Parent', v_phone, 'rls.review@example.com', 'RLS Review Child', '2017-03-03', 'x', 'pending', now() + interval '7 days') returning id into v_req;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        perform public.request_registration_info(v_req, 'Which school?');
+        v_parent := 'allowed';
+      exception when others then v_parent := sqlstate; end;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      perform public.request_registration_info(v_req, 'Which school does Leo go to?');
+      select max(t.info_note) into v_note from public.registration_queue(ACAD_A, 'pending') t where t.request_id = v_req;
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_mine := public.my_registrations();
+      execute 'reset role';
+      -- Accepted, then deregistered: the queue says so each time.
+      insert into public.program_registrations (academy_id, program_id, player_id, submitted_by, status)
+      values (ACAD_A, v_prog, LEO, PARENT, 'approved') returning id into v_reg;
+      update public.registration_requests set status = 'approved', registration_id = v_reg, player_id = LEO where id = v_req;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select max(t.registration_status) into v_state from public.registration_queue(ACAD_A, 'approved') t where t.request_id = v_req;
+      execute 'reset role';
+      update public.program_registrations set status = 'withdrawn' where id = v_reg;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      select max(t.registration_status) into v_after from public.registration_queue(ACAD_A, 'approved') t where t.request_id = v_req;
+      execute 'reset role';
+      r220 := case when v_parent = '42501' and v_note = 'Which school does Leo go to?'
+                    and exists (select 1 from jsonb_array_elements(v_mine->'requests') q where (q->>'id')::uuid = v_req and q->>'info_note' = 'Which school does Leo go to?')
+                    and v_state = 'approved' and v_after = 'withdrawn' then 'PASS'
+                   else 'FAIL (parent '||v_parent||'; queue note '||coalesce(v_note,'null')||'; mine '||left(coalesce((v_mine->'requests')::text, 'null'), 200)||'; state '||coalesce(v_state,'null')||' then '||coalesce(v_after,'null')||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r220 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (220, 'the club''s review: a parent cannot ask a family for more, the club can; the question is on the queue and the family''s dashboard; an accepted request carries its registration and where it stands, deregistered included', r220);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

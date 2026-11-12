@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   const { data: req } = await admin
     .from('registration_requests')
-    .select('id, status, secret_hash, claimed_at, profile_id, guardian_phone, expires_at')
+    .select('id, status, secret_hash, claimed_at, profile_id, guardian_phone, expires_at, info_requested_at, info_note, family_reply')
     .eq('id', requestId)
     .maybeSingle()
 
@@ -41,7 +41,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'expired' }, { status: 410 })
   }
   if (req.status === 'pending') {
-    return NextResponse.json({ status: 'pending' }, { status: 202 })
+    // 0268: the club may have asked the family for something; the page
+    // shows the question and takes the answer (/api/register/reply).
+    return NextResponse.json(
+      { status: 'pending', info_requested_at: req.info_requested_at, info_note: req.info_note, family_reply: req.family_reply },
+      { status: 202 }
+    )
   }
   if (req.status !== 'approved' || !req.profile_id || !req.guardian_phone) {
     return NextResponse.json({ status: req.status }, { status: 403 })

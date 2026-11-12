@@ -34,6 +34,13 @@ type Row = {
   wwcc_expires_on?: string | null
   wwcc_checked_at?: string | null
   role_note?: string | null
+  /** 0268: the club's question to the family and their answer; the registration an accepted request became. */
+  info_requested_at?: string | null
+  info_note?: string | null
+  family_reply?: string | null
+  family_replied_at?: string | null
+  registration_id?: string | null
+  registration_status?: string | null
   // R-18
   ffa_number: string | null
   fifa_id: string | null
@@ -124,6 +131,18 @@ export function RegistrationQueue() {
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkTeam, setBulkTeam] = useState('')
+  // 0268: the review — filters, the question to a family, the jersey in the
+  // same step as the squad, and deregistering an accepted one.
+  const [filterText, setFilterText] = useState('')
+  const [filterProgram, setFilterProgram] = useState('')
+  const [asking, setAsking] = useState<string | null>(null)
+  const [askText, setAskText] = useState<Record<string, string>>({})
+  const [number, setNumber] = useState<Record<string, string>>({})
+  const [teamSeasons, setTeamSeasons] = useState<Record<string, string>>({})
+  const [suggested, setSuggested] = useState<Record<string, number | null>>({})
+  const [academyId, setAcademyId] = useState<string | null>(null)
+  const [deregFor, setDeregFor] = useState<string | null>(null)
+  const [deregReason, setDeregReason] = useState<Record<string, string>>({})
   const [progress, setProgress] = useState<{ done: number; total: number; verb: string } | null>(null)
 
   const load = useCallback(async () => {
@@ -164,14 +183,49 @@ export function RegistrationQueue() {
     // RLS lets a member read their own academy, so this is a one-line select
     // and not a new function to keep in step.
     if (s?.academy?.id) {
-      const { data: a } = await supabase
-        .from('academies')
-        .select('slug')
-        .eq('id', s.academy.id)
-        .maybeSingle()
+      setAcademyId(s.academy.id)
+      const [{ data: a }, { data: squads }] = await Promise.all([
+        supabase.from('academies').select('slug').eq('id', s.academy.id).maybeSingle(),
+        // 0268: the jersey pool is per season, and the season is the squad's.
+        supabase.from('teams').select('id, season').eq('academy_id', s.academy.id),
+      ])
       setSlug(a?.slug ?? null)
+      setTeamSeasons(Object.fromEntries((squads ?? []).map((t) => [t.id, t.season ?? ''])))
     }
   }, [])
+
+  // 0268: the lowest free number in the squad's season, as a hint.
+  async function suggestNumber(teamId: string) {
+    if (!teamId || !academyId || suggested[teamId] !== undefined) return
+    const season = teamSeasons[teamId] || String(new Date().getFullYear())
+    const { data } = await createClient().rpc('next_squad_number', { p_academy: academyId, p_season: season })
+    setSuggested((s) => ({ ...s, [teamId]: (data as number | null) ?? null }))
+  }
+
+  // 0268: a question to the family. The request stays pending; the note is
+  // on their page and their dashboard, and their answer comes back here.
+  async function askInfo(row: Row, text: string | null) {
+    setBusy(row.request_id)
+    setError(null)
+    const { error } = await createClient().rpc('request_registration_info', { p_request: row.request_id, p_note: text ?? '' })
+    setBusy(null)
+    if (error) return setError(error.message)
+    setAsking(null)
+    await load()
+  }
+
+  // 0268: after approval it is Deregister (R-15's withdrawal, by the club),
+  // with the program's refund policy applied as it is for a family.
+  async function deregister(row: Row) {
+    if (!row.registration_id) return
+    setBusy(row.request_id)
+    setError(null)
+    const { error } = await createClient().rpc('withdraw_registration', { p_registration: row.registration_id, p_reason: deregReason[row.request_id] || undefined })
+    setBusy(null)
+    if (error) return setError(error.message)
+    setDeregFor(null)
+    await load()
+  }
 
   useEffect(() => {
     void load()
@@ -209,6 +263,7 @@ export function RegistrationQueue() {
         decision,
         teamId: team[row.request_id] || null,
         note: note[row.request_id] || undefined,
+        number: number[row.request_id] || null,
       }),
     })
     setBusy(null)
@@ -283,7 +338,13 @@ export function RegistrationQueue() {
 
   const pending = rows.filter((r) => r.status === 'pending')
   const decided = rows.filter((r) => r.status !== 'pending')
-  const shown = tab === 'pending' ? pending : decided
+  // 0268: the filters — a name, a program (or the roles).
+  const needle = filterText.trim().toLowerCase()
+  const matches = (r: Row) =>
+    (!needle || `${r.child_name} ${r.guardian_name} ${r.guardian_phone ?? ''}`.toLowerCase().includes(needle)) &&
+    (!filterProgram || (filterProgram === 'roles' ? roleOf(r) !== 'player' : r.program_id === filterProgram))
+  const programs = [...new Map(rows.filter((r) => r.program_id).map((r) => [r.program_id as string, r.program_name ?? ''])).entries()]
+  const shown = (tab === 'pending' ? pending : decided).filter(matches)
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
@@ -397,6 +458,38 @@ export function RegistrationQueue() {
           )}
         </div>
 
+        {/* 0268: the filters. Shown once there is anything to filter. */}
+        {rows.length >= 2 && (
+          <div className="flex gap-2 px-3.5 pt-2" data-filters>
+            <input
+              type="search"
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              placeholder="Name or mobile"
+              aria-label="Filter by name or mobile"
+              className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--line)' }}
+              data-filter-text
+            />
+            {(programs.length > 1 || rows.some((r) => roleOf(r) !== 'player')) && (
+              <select
+                value={filterProgram}
+                onChange={(e) => setFilterProgram(e.target.value)}
+                aria-label="Filter by program"
+                className="min-w-0 max-w-[45%] rounded-lg border px-2 py-2 text-sm"
+                style={{ borderColor: 'var(--line)' }}
+                data-filter-program
+              >
+                <option value="">Everything</option>
+                {programs.map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+                {rows.some((r) => roleOf(r) !== 'player') && <option value="roles">Coaches, managers, volunteers, referees</option>}
+              </select>
+            )}
+          </div>
+        )}
+
         {selecting && tab === 'pending' && (
           <div className="card mx-3.5 mt-3 p-3">
             <div className="flex items-center gap-2 text-sm">
@@ -507,6 +600,16 @@ export function RegistrationQueue() {
                           {ROLE_LABEL[roleOf(r)] ?? roleOf(r)}
                         </span>
                       )}
+                      {/* 0268: the question is out, or answered. */}
+                      {r.status === 'pending' && r.info_requested_at && (
+                        <span
+                          className="ml-2 rounded-full px-2.5 py-1 align-middle text-xs font-semibold"
+                          style={r.family_reply ? { background: 'var(--yes-bg)', color: 'var(--yes)' } : { background: 'var(--accent)', color: 'var(--accent-ink)' }}
+                          data-info-state={r.family_reply ? 'replied' : 'asked'}
+                        >
+                          {r.family_reply ? 'Replied' : 'Asked for info'}
+                        </span>
+                      )}
                     </span>
                     <span className="flex-none text-xs text-ink-3">{ago(r.created_at)}</span>
                   </span>
@@ -522,7 +625,7 @@ export function RegistrationQueue() {
                       className="mt-0.5 block text-xs font-semibold"
                       style={{ color: r.status === 'approved' ? 'var(--yes)' : 'var(--no)' }}
                     >
-                      {r.status === 'approved' ? 'Accepted' : 'Declined'}
+                      {r.status === 'approved' ? (r.registration_status === 'withdrawn' ? 'Accepted, then deregistered' : 'Accepted') : 'Declined'}
                       {r.decided_by ? ` by ${r.decided_by}` : ''}
                       {r.decision_note ? ` — ${r.decision_note}` : ''}
                     </span>
@@ -659,6 +762,61 @@ export function RegistrationQueue() {
                       </div>
                     )}
 
+                    {/* 0268: the question to the family, and their answer. */}
+                    {r.info_requested_at && (
+                      <div className="mt-3 rounded-lg p-2.5 text-sm" style={{ background: 'var(--surface-2)' }} data-info-block={r.family_reply ? 'replied' : 'asked'}>
+                        <span className="block text-xs text-ink-3">You asked {dayOf(r.info_requested_at)}</span>
+                        <span className="block">“{r.info_note}”</span>
+                        {r.family_reply ? (
+                          <span className="mt-1 block">
+                            <span className="text-xs text-ink-3">They replied{r.family_replied_at ? ` ${dayOf(r.family_replied_at)}` : ''}: </span>“{r.family_reply}”
+                          </span>
+                        ) : (
+                          <span className="mt-1 block text-xs text-ink-3">No reply yet. They see it on the page they registered from, and on their My registrations.</span>
+                        )}
+                        {r.status === 'pending' && (
+                          <button onClick={() => void askInfo(r, null)} disabled={busy === r.request_id} className="mt-1 text-xs underline underline-offset-2 text-ink-3">
+                            take the question back
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 0268: after approval it is Deregister, not Reject. */}
+                    {r.status === 'approved' && r.registration_id && (
+                      r.registration_status === 'withdrawn' ? (
+                        <span className="mt-3 inline-block rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-deregistered>
+                          Deregistered
+                        </span>
+                      ) : deregFor === r.request_id ? (
+                        <div className="mt-3 rounded-lg border p-2.5" style={{ borderColor: 'var(--no)' }} data-deregister-form>
+                          <p className="text-xs text-ink-2">
+                            Takes {r.child_name} off the program and the squad&apos;s roll. The program&apos;s refund policy applies, as it does when a family withdraws.
+                          </p>
+                          <input
+                            value={deregReason[r.request_id] ?? ''}
+                            onChange={(e) => setDeregReason({ ...deregReason, [r.request_id]: e.target.value })}
+                            placeholder="Why (the family sees this)"
+                            className="mt-2 w-full rounded-lg border px-3 py-2 text-base"
+                            style={{ borderColor: 'var(--line)' }}
+                            data-deregister-reason
+                          />
+                          <div className="mt-2 flex gap-2">
+                            <button onClick={() => void deregister(r)} disabled={busy === r.request_id} className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }} data-deregister-send>
+                              {busy === r.request_id ? 'Working…' : 'Deregister'}
+                            </button>
+                            <button onClick={() => setDeregFor(null)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeregFor(r.request_id)} className="mt-3 rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--no)', color: 'var(--no)' }} data-deregister>
+                          Deregister
+                        </button>
+                      )
+                    )}
+
                     {r.status === 'pending' && (
                       <>
                         <label className="mt-3 block text-sm">
@@ -667,7 +825,10 @@ export function RegistrationQueue() {
                           </span>
                           <select
                             value={team[r.request_id] ?? ''}
-                            onChange={(e) => setTeam({ ...team, [r.request_id]: e.target.value })}
+                            onChange={(e) => {
+                              setTeam({ ...team, [r.request_id]: e.target.value })
+                              void suggestNumber(e.target.value)
+                            }}
                             className="mt-0.5 w-full rounded-lg border px-3 py-2.5 text-sm"
                             style={{ borderColor: 'var(--line)' }}
                             data-squad-select
@@ -687,6 +848,23 @@ export function RegistrationQueue() {
                             fixtures. Left blank, they are in the club but see nothing yet.
                           </span>
                         </label>
+
+                        {/* 0268: the jersey, in the same step as the squad; one pool per season (0085). */}
+                        {roleOf(r) === 'player' && team[r.request_id] && (
+                          <label className="mt-2 block text-sm">
+                            <span className="text-ink-2">Squad number</span>
+                            <input
+                              value={number[r.request_id] ?? ''}
+                              onChange={(e) => setNumber({ ...number, [r.request_id]: e.target.value.replace(/\D/g, '').slice(0, 2) })}
+                              inputMode="numeric"
+                              placeholder={suggested[team[r.request_id]] ? `${suggested[team[r.request_id]]} is free` : 'Leave blank for now'}
+                              className="mt-0.5 w-full rounded-lg border px-3 py-2.5 text-base tabular-nums"
+                              style={{ borderColor: 'var(--line)' }}
+                              data-number
+                            />
+                            <span className="mt-0.5 block text-xs text-ink-3">One pool per season across every age group: a number any squad holds is taken.</span>
+                          </label>
+                        )}
 
                         <input
                           value={note[r.request_id] ?? ''}
@@ -716,6 +894,46 @@ export function RegistrationQueue() {
                             Decline
                           </button>
                         </div>
+
+                        {/* 0268: Needs info — a sentence back to the family, the request still waiting. */}
+                        {asking === r.request_id ? (
+                          <div className="mt-2 rounded-lg border p-2.5" style={{ borderColor: 'var(--accent)' }} data-info-form>
+                            <textarea
+                              value={askText[r.request_id] ?? ''}
+                              onChange={(e) => setAskText({ ...askText, [r.request_id]: e.target.value })}
+                              rows={2}
+                              placeholder="What do you need from them?"
+                              aria-label="What do you need from the family?"
+                              className="w-full rounded-lg border px-3 py-2 text-base"
+                              style={{ borderColor: 'var(--line)' }}
+                              data-info-text
+                            />
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                onClick={() => void askInfo(r, askText[r.request_id] ?? '')}
+                                disabled={busy === r.request_id || !(askText[r.request_id] ?? '').trim()}
+                                className="flex-1 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                                style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+                                data-info-send
+                              >
+                                Send to the family
+                              </button>
+                              <button onClick={() => setAsking(null)} className="rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line)' }}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setAsking(r.request_id)}
+                            disabled={busy === r.request_id}
+                            className="mt-2 w-full rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                            style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                            data-needs-info
+                          >
+                            {r.info_requested_at ? 'Ask something else' : 'Needs info'}
+                          </button>
+                        )}
 
                         {r.guardian_phone && (
                           <a
