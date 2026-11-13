@@ -1,71 +1,21 @@
-import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
-import { createClient, getUserId } from '@/lib/supabase/server'
-import { EventDetail } from './event-detail'
-import { isMiniRoos } from '@/lib/age-group'
+import { redirect } from 'next/navigation'
+import { getUserId } from '@/lib/supabase/server'
+import { GameLoader } from './game-loader'
 
+/**
+ * /calendar/<id> — a thin page (the "Feels instant" pass; 0273).
+ *
+ * It used to read the event and five more things here, on a Netlify
+ * function in us-east-2, two trips to Sydney before the hero. Now it only
+ * checks for a session (getClaims answers that locally) and hands over the
+ * shell; the browser asks Sydney for the screen in one call and keeps it
+ * cached.
+ *
+ * params is a Promise in Next 16.
+ */
 export default async function EventPage(props: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await props.params
-  const supabase = await createClient()
-
   const userId = await getUserId()
   if (!userId) redirect('/signin')
-
-  const { data: event } = await supabase
-    .from('events')
-    .select('id, academy_id, team_id, series_id, type, title, description, starts_at, ends_at, arrive_at, venue, address, opponent, kit_colour, round, notes, cancelled_at, cancellation_reason, cancellation_note, competition_id, fixture_id')
-    .eq('id', eventId)
-    .maybeSingle()
-
-  if (!event) notFound()
-
-  const [{ data: mine }, { data: summary }, { data: roster }, { data: club }, { data: team }] = await Promise.all([
-    supabase.rpc('my_rsvps_for_event', { p_event: eventId }),
-    supabase.rpc('event_rsvp_summary', { p_event: eventId }),
-    // Returns nothing to a parent — the RSVP policy limits it to their own.
-    supabase
-      .from('event_rsvps')
-      .select('status, note, player_id, players(full_name)')
-      .eq('event_id', eventId),
-    // The venue's timezone (the club's — every time on the page is in it,
-    // never the server's UTC or the phone's), and our side for the hero.
-    supabase.from('academies').select('name, logo_url, timezone, miniroos_scores').eq('id', event.academy_id).maybeSingle(),
-    event.team_id
-      ? supabase.from('teams').select('name, age_group').eq('id', event.team_id).maybeSingle()
-      : Promise.resolve({ data: null as { name: string; age_group: string } | null }),
-  ])
-
-  const isCoach = Boolean(summary?.[0])
-
-  return (
-    <main className="mx-auto max-w-md p-5">
-      <Link href="/calendar" className="text-sm text-ink-2">← Fixtures</Link>
-      <EventDetail
-        event={event}
-        mine={(mine ?? []).map((r) => ({
-          playerId: r.player_id,
-          playerName: r.player_name,
-          status: r.status,
-          note: r.note,
-        }))}
-        isCoach={isCoach}
-        // 0251: a competition game keeps its score; a club game in MiniRoos (U5–U11) keeps none unless the club says so.
-        scoresShown={Boolean(event.fixture_id) || !team || !isMiniRoos(team.age_group) || Boolean(club?.miniroos_scores)}
-        tz={club?.timezone || 'Australia/Sydney'}
-        us={{ club: club?.name ?? 'Us', team: team?.name ?? null, logo: club?.logo_url ?? null }}
-        summary={summary?.[0] ?? null}
-        roster={(roster ?? []).map((r) => ({
-          playerId: r.player_id,
-          name: nameOf(r.players),
-          status: r.status,
-          note: r.note,
-        }))}
-      />
-    </main>
-  )
-}
-
-function nameOf(rel: unknown): string {
-  const one = Array.isArray(rel) ? rel[0] : rel
-  return (one as { full_name?: string } | null)?.full_name ?? 'Player'
+  return <GameLoader eventId={eventId} />
 }

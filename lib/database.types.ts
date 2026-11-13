@@ -9203,6 +9203,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_hub: { Args: { p_academy: string }; Returns: Json }
       announcement_reach: { Args: { p_message: string }; Returns: Json }
       answer_fixture_change: {
         Args: { p_agree: boolean; p_note?: string; p_request: string }
@@ -9382,6 +9383,7 @@ export type Database = {
           sender_role: Database["public"]["Enums"]["academy_role"]
         }[]
       }
+      channel_screen: { Args: { p_channel: string }; Returns: Json }
       chat_screen: { Args: { p_academy?: string }; Returns: Json }
       check_join_rate: {
         Args: { p_ip_hash: string; p_link: string }
@@ -9901,6 +9903,7 @@ export type Database = {
           status: string
         }[]
       }
+      game_screen: { Args: { p_event: string }; Returns: Json }
       generate_fixtures: {
         Args: {
           p_competition: string
@@ -9985,6 +9988,7 @@ export type Database = {
       group_channel_info: { Args: { p_channel: string }; Returns: Json }
       group_overview: { Args: { p_academy: string }; Returns: Json }
       help_with: { Args: { p_job: string }; Returns: Json }
+      home_competitions: { Args: { p_academy?: string }; Returns: Json }
       home_jobs: {
         Args: { p_academy?: string; p_persona?: string }
         Returns: Json

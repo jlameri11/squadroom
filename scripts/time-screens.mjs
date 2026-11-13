@@ -2,6 +2,9 @@
 //   TIME_BASE=http://localhost:3100   (default; a production build — npm run serve:test)
 //   RUNS=3                            (cold + warm visits per screen; the median is reported)
 //   JSON=path                         (also write the numbers there)
+//   THROTTLE=fast4g                   (the "Feels instant" brief: Chrome's Fast 4G profile —
+//                                      9 Mbps down, 1.5 up, 165 ms latency — and a 4× slower CPU,
+//                                      which is roughly a mid-range phone on a good mobile signal)
 //
 // The first half of the scale test (Joey, 5 Nov: "time the key screens —
 // parent Home, Chat, Fixtures, Admin, ladder, match centre — target under 1
@@ -21,12 +24,19 @@
 //   repeated  the same call made more than once for one screen — the
 //             pattern that turns 50 messages into 50 requests.
 import { createClient } from '@supabase/supabase-js'
-import puppeteer from 'puppeteer-core'
+import puppeteer, { PredefinedNetworkConditions } from 'puppeteer-core'
 import { writeFileSync } from 'node:fs'
 import { signInBoth } from './_auth.mjs'
 
 const BASE = process.env.TIME_BASE ?? 'http://localhost:3100'
 const RUNS = Math.max(1, Number(process.env.RUNS ?? 3))
+const THROTTLE = process.env.THROTTLE === 'fast4g'
+/** A phone on 4G: Chrome's Fast 4G network profile and a 4× slower CPU. */
+async function throttle(page) {
+  if (!THROTTLE) return
+  await page.emulateNetworkConditions(PredefinedNetworkConditions['Fast 4G'])
+  await page.emulateCPUThrottling(4)
+}
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPA = new URL(URL_).host
 const ref = SUPA.split('.')[0]
@@ -90,6 +100,9 @@ async function visit(page, path) {
   let last = 0 // ms after t0 of the last database request starting or ending
   const onReq = (r) => {
     if (new URL(r.url()).host !== SUPA || r.method() === 'OPTIONS') return
+    // A realtime socket is a request that never finishes: counting it kept
+    // the game page "loading" for the whole thirty seconds (13 Nov 2026).
+    if (r.resourceType() === 'websocket' || new URL(r.url()).pathname.startsWith('/realtime/')) return
     inflight.set(r, Date.now())
     last = Date.now() - t0
   }
@@ -131,7 +144,9 @@ async function visit(page, path) {
 
 const median = (xs) => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)]
 const results = []
-for (const s of SCREENS) {
+// SCREEN=game,admin — only the screens whose name contains one of these.
+const only = (process.env.SCREEN ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+for (const s of SCREENS.filter((s) => only.length === 0 || only.some((o) => s.name.toLowerCase().includes(o)))) {
   const colds = []
   const warms = []
   let detail = null
@@ -139,6 +154,7 @@ for (const s of SCREENS) {
     const context = await browser.createBrowserContext()
     const page = await context.newPage()
     await page.setViewport({ width: 375, height: 812 })
+    await throttle(page)
     const person = who[s.as]
     if (person) {
       await page.setCookie({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(person.session)).toString('base64'), domain: 'localhost', path: '/' })
@@ -156,7 +172,7 @@ for (const s of SCREENS) {
 await browser.close()
 
 const pad = (v, n) => String(v).padEnd(n)
-console.log(`\n  ${BASE} · median of ${RUNS} · target: under 1000 ms\n`)
+console.log(`\n  ${BASE} · median of ${RUNS}${THROTTLE ? ' · Fast 4G, CPU 4× slower' : ''} · target: under 1000 ms cold, 300 ms warm\n`)
 console.log(`  ${pad('screen', 14)}${pad('as', 9)}${pad('cold ms', 9)}${pad('warm ms', 9)}${pad('requests', 10)}slowest`)
 for (const r of results) {
   const flag = r.cold > 1000 || r.warm > 1000 ? ' ◀' : ''

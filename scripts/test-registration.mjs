@@ -67,6 +67,19 @@ const coach = await sess('p61400000002@squadroom.invalid') // Marcus Obi, coach 
 const sam = await sess('p61400000011@squadroom.invalid') // Sam Whitfield, Leo + Zoe
 const other = await sess('p61400000012@squadroom.invalid') // another parent
 
+// Leo and Zoe are re-registered and re-placed below; 0249's trigger moves
+// team_since when a squad is set again, and the Season screen then says the
+// family has not been told (the demo guard watches it, 13 Nov 2026). Their
+// placement is read now and written back at the end, exactly as found.
+const DEMO_KIDS = ['00000000-0000-0000-0000-0000000e0001', '00000000-0000-0000-0000-0000000e0006']
+const { data: kidsBefore } = await admin.from('players').select('id, team_id, team_since, team_told_at').in('id', DEMO_KIDS)
+async function restoreDemoKids() {
+  for (const k of kidsBefore ?? []) {
+    await admin.from('players').update({ team_id: k.team_id }).eq('id', k.id)
+    await admin.from('players').update({ team_since: k.team_since, team_told_at: k.team_told_at }).eq('id', k.id)
+  }
+}
+
 // --- clean up anything a previous run left ---------------------------------
 async function clean() {
   const { data: progs } = await admin
@@ -614,6 +627,7 @@ if (ravens) {
 }
 
 await clean()
+await restoreDemoKids()
 if (!marcusWasOnU8) await admin.from('team_members').delete().eq('team_id', U8).eq('profile_id', coach.id)
 await admin.from('player_medical').delete().eq('player_id', leo.id)
 await admin.from('programs').delete().eq('id', draft.id)

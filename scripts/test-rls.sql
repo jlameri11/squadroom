@@ -5213,6 +5213,95 @@ begin
     insert into rls_results values (224, 'an account for everyone: the codes are nobody''s through PostgREST, the look-ups the service role''s; a person reads their own account; a name in parts makes the whole and a whole is re-split and judged; "Not now" once; the staff fix a member''s odd name, a parent cannot', r224);
   end;
 
+  -- 0273. A chat and a game in one call from the browser, under the old
+  -- rules: the U8 parent reads the U8 chat (not a host) and the U8 game with
+  -- their own answers and no squad roster; the owner hosts the chat and gets
+  -- the roster and the summary; the Ravens parent is told "denied" for both;
+  -- a stranger gets nothing.
+  declare
+    U8 constant uuid := '00000000-0000-0000-0000-0000000d0008';
+    v_chan uuid; v_game uuid;
+    v_pc jsonb; v_pg jsonb; v_oc jsonb; v_og jsonb; v_xc jsonb; v_xg jsonb; v_anon text;
+    r225 text := 'FAIL (never ran)';
+  begin
+    begin
+      select id into v_chan from public.channels where team_id = U8 and type = 'team' limit 1;
+      -- The U8 game with the most answers, so the coach's roster has rows to show.
+      select e.id into v_game from public.events e left join public.event_rsvps r on r.event_id = e.id
+       where e.team_id = U8 and e.type = 'match' group by e.id order by count(r.id) desc, e.starts_at desc limit 1;
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_pc := public.channel_screen(v_chan);
+      v_pg := public.game_screen(v_game);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_oc := public.channel_screen(v_chan);
+      v_og := public.game_screen(v_game);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',OUTSIDER,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_xc := public.channel_screen(v_chan);
+      v_xg := public.game_screen(v_game);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+      execute 'set local role anon';
+      begin
+        v_anon := coalesce(public.channel_screen(v_chan)::text, 'null');
+      exception when others then v_anon := sqlstate; end;
+      execute 'reset role';
+      r225 := case when (v_pc->'channel'->>'id')::uuid = v_chan and (v_pc->>'is_host')::boolean = false and jsonb_typeof(v_pc->'messages') = 'array'
+                    and (v_pg->'event'->>'id')::uuid = v_game and jsonb_array_length(v_pg->'mine') >= 1 and jsonb_array_length(v_pg->'roster') = 0 and jsonb_typeof(v_pg->'summary') = 'null'
+                    and (v_oc->>'is_host')::boolean = true
+                    and (v_og->>'is_coach')::boolean = true and jsonb_array_length(v_og->'roster') >= 1 and (v_og->'summary'->>'going') is not null
+                    and (v_xc->>'denied')::boolean and (v_xg->>'denied')::boolean
+                    and v_anon in ('42501', 'null') then 'PASS'
+                   else 'FAIL (parent chat '||coalesce(left(v_pc::text, 80),'null')||' game mine '||coalesce(jsonb_array_length(v_pg->'mine')::text,'null')||' roster '||coalesce(jsonb_array_length(v_pg->'roster')::text,'null')||' summary '||coalesce(v_pg->'summary'::text,'null')
+                        ||'; owner host '||coalesce(v_oc->>'is_host','null')||' coach '||coalesce(v_og->>'is_coach','null')||' roster '||coalesce(jsonb_array_length(v_og->'roster')::text,'null')
+                        ||'; outsider '||coalesce(v_xc::text,'null')||' / '||coalesce(v_xg::text,'null')||'; anon '||v_anon||')' end;
+    exception when others then
+      r225 := 'FAIL (stopped: '||sqlerrm||')';
+    end;
+    execute 'reset role';
+    insert into rls_results values (225, 'a chat and a game in one call from the browser (0273): the parent reads their chat and game with their own answers and no roster, the owner hosts and sees the squad, the other club is denied, a stranger gets nothing', r225);
+  end;
+
+  -- 0274. Home's competitions and the Admin hub in one call, as the caller:
+  -- the parent's hub counts are what their policies show (nothing of the
+  -- queues), the owner's are the club's; the parent's competitions are an
+  -- array; a stranger is refused.
+  declare
+    v_ph jsonb; v_oh jsonb; v_pc jsonb; v_anon text;
+    r226 text := 'FAIL (never ran)';
+  begin
+    begin
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_ph := public.admin_hub(ACAD_A);
+      v_pc := public.home_competitions(ACAD_A);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_oh := public.admin_hub(ACAD_A);
+      execute 'reset role';
+      perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+      execute 'set local role anon';
+      begin
+        v_anon := coalesce(public.admin_hub(ACAD_A)::text, 'null');
+      exception when others then v_anon := sqlstate; end;
+      execute 'reset role';
+      r226 := case when (v_ph->>'pending')::integer = 0 and (v_ph->>'pending_signups')::integer = 0
+                    and (v_oh->>'pending')::integer >= 0 and jsonb_typeof(v_oh->'two_step_required') = 'boolean'
+                    and jsonb_typeof(v_pc) = 'array'
+                    and v_anon = '42501' then 'PASS'
+                   else 'FAIL (parent hub '||coalesce(v_ph::text,'null')||' owner hub '||coalesce(v_oh::text,'null')||' comps '||coalesce(jsonb_typeof(v_pc),'null')||' anon '||v_anon||')' end;
+    exception when others then
+      r226 := 'FAIL (stopped: '||sqlerrm||')';
+    end;
+    execute 'reset role';
+    insert into rls_results values (226, 'Home''s competitions and the Admin hub in one call (0274), as the caller: a parent''s hub counts nothing of the queues, the owner''s counts the club''s; a stranger is refused', r226);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

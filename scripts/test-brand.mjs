@@ -193,8 +193,12 @@ try {
       const logo = document.querySelector('img[data-brand-logo]')
       return { main, bg: b.backgroundColor, fg: b.color, logo: logo ? logo.naturalWidth > 0 && logo.getBoundingClientRect().height : 0 }
     })
-    toHex(s.main) === '#101012' && toHex(s.bg) === '#ffffff' && toHex(s.fg) === '#101012' && s.logo >= 28
-      ? ok(`${theme}: sign-in is the logo (${Math.round(s.logo)}px tall) on #101012 with a white button`)
+    // The sign-up brief (12 Nov 2026): the form is a card in the page's own
+    // paper on the #101012 ground, so its one button is `--brand`, which
+    // flips with the theme — near-black on the light card, white on the dark.
+    const want = theme === 'light' ? ['#101012', '#ffffff'] : ['#ffffff', '#101012']
+    toHex(s.main) === '#101012' && toHex(s.bg) === want[0] && toHex(s.fg) === want[1] && s.logo >= 28
+      ? ok(`${theme}: sign-in is the logo (${Math.round(s.logo)}px tall) on #101012, the card's button ${want[0]} on ${want[1]}`)
       : bad(`${theme}: sign-in ground ${toHex(s.main)}, button ${toHex(s.bg)}/${toHex(s.fg)}, logo ${s.logo}`)
     await out.close()
   }
