@@ -258,7 +258,8 @@ try {
     link = l?.id
     if (le || !l) bad(`link: ${le?.message}`)
     else {
-      const { page, context } = await open(null, `/join/${l.token}`)
+      // Signed in as the coach: the join form (a stranger would see Create account).
+      const { page, context } = await open('coach', `/join/${l.token}`)
       try {
         await page.waitForSelector('[data-join-wanted-role]', { timeout: 30000 })
         await page.select('[data-join-wanted-role]', 'coach')
@@ -270,8 +271,8 @@ try {
       }
       await context.close()
       const res = await fetch(`${BASE}/api/join/request`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: l.token, fullName: dev.full_name, phone: dev.phone, email: 'iw.coach@squadroom-demo.test', children: [{ name: 'Rolecheck Sharma', dob: '2016-05-05' }], wantedRole: 'volunteer', wantedTeams: [U10BLUE], wantedNote: 'BBQ on home days' }),
+        method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: cookieOf('coach') },
+        body: JSON.stringify({ token: l.token, children: [{ name: 'Rolecheck Sharma', dob: '2016-05-05' }], wantedRole: 'volunteer', wantedTeams: [U10BLUE], wantedNote: 'BBQ on home days' }),
       })
       const body = await res.json().catch(() => ({}))
       res.ok && body.requestId ? ok('he asks to join by U10 Blue\'s link, with a second child, and offers to volunteer') : bad(`join request: ${res.status} ${JSON.stringify(body)}`)

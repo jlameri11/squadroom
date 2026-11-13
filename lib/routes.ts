@@ -25,6 +25,8 @@ export const BARE = [
   '/for-clubs', '/privacy', '/status',
   // Find a club (0266): a family with no account searching for one.
   '/clubs',
+  // The terms, linked under every Create account button (12 Nov 2026).
+  '/terms',
 ]
 
 /**
@@ -40,7 +42,7 @@ export const BARE = [
 export const APP_ROOTS = new Set([
   'admin', 'api', 'auth', 'c', 'calendar', 'card', 'chat', 'clubs', 'competitions', 'directory',
   'for-clubs', 'join', 'join-competition', 'my', 'offer', 'payments', 'platform', 'privacy', 'programs', 'ref', 'referee',
-  'scan', 'settings', 'signin', 'signup', 'start', 'status',
+  'scan', 'settings', 'signin', 'signup', 'start', 'status', 'terms',
 ])
 
 /** A page opened by somebody who must not be offered a sign-in screen. */

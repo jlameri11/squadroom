@@ -19,6 +19,7 @@ import { mkdirSync } from 'node:fs'
 import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 import { listAllUsers } from './_users.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -37,16 +38,22 @@ const TEAM = 'Zz Claim U9'
 const LABEL = 'claim-test'
 const PHONE_A = '+61400008877'
 const PHONE_B = '+61400008866'
+const PHONE_C = '+61400008855'
+// The sign-up brief (12 Nov 2026): each family has an account first.
+const EMAIL_A = 'claimant.parent@squadroom-demo.test'
+const EMAIL_B = 'second.parent@squadroom-demo.test'
+const EMAIL_C = 'claim.viewer@squadroom-demo.test'
 const post = (path, body, cookie) =>
   fetch(`${BASE}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(body) })
 
 async function cleanup() {
+  for (const email of [EMAIL_A, EMAIL_B, EMAIL_C]) await deleteAccount(admin, email)
   const { data: u } = await listAllUsers(admin)
-  for (const phone of [PHONE_A, PHONE_B]) {
+  for (const phone of [PHONE_A, PHONE_B, PHONE_C]) {
     const user = u?.users?.find((x) => x.phone === phone.replace('+', ''))
     if (user) await admin.auth.admin.deleteUser(user.id)
   }
-  await admin.from('join_requests').delete().in('phone', [PHONE_A, PHONE_B])
+  await admin.from('join_requests').delete().in('phone', [PHONE_A, PHONE_B, PHONE_C])
   await admin.from('join_links').delete().eq('label', LABEL)
   await admin.from('players').delete().eq('academy_id', NRIFA).like('full_name', 'Claim Child %')
   await admin.from('teams').delete().eq('academy_id', NRIFA).eq('name', TEAM)
@@ -69,21 +76,34 @@ const { data: two } = await admin.from('players').insert({ academy_id: NRIFA, te
 const { data: link, error: linkErr } = await admin.from('join_links').insert({ academy_id: NRIFA, team_id: team.id, role: 'parent', label: LABEL, created_by: headOf.session.user.id }).select('token, code').single()
 if (linkErr) { bad(`link: ${linkErr.message}`); await cleanup(); process.exit(1) }
 
+// Three accounts, the way a family makes one: two who join here, one who
+// only looks at the screen.
+let claimant, second, viewer
+try {
+  claimant = await createAccount(BASE, { first: 'Claimant', last: 'Parent', email: EMAIL_A, mobile: '0400 008 877' })
+  second = await createAccount(BASE, { first: 'Second', last: 'Parent', email: EMAIL_B, mobile: '0400 008 866' })
+  viewer = await createAccount(BASE, { first: 'Claim', last: 'Viewer', email: EMAIL_C, mobile: '0400 008 855' })
+} catch (e) {
+  bad(`accounts: ${e.message}`)
+  await cleanup()
+  process.exit(1)
+}
+
 try {
   head('1. A family names three children with birthdays')
   {
-    const wrong = await post('/api/join/request', { token: link.token, fullName: 'Claimant Parent', phone: '0400 008 877', email: 'claimant@example.com', children: [{ name: 'Claim Child One', dob: '2090-01-01' }] })
+    const wrong = await post('/api/join/request', { token: link.token, children: [{ name: 'Claim Child One', dob: '2090-01-01' }] }, claimant.cookie)
     const wrongBody = await wrong.json().catch(() => ({}))
     wrong.status === 400 && /Claim Child One/.test(wrongBody.error ?? '') ? ok(`a birthday that cannot be one is refused, naming the child: "${wrongBody.error}"`) : bad(`wrong dob: ${wrong.status} ${JSON.stringify(wrongBody)}`)
 
     const res = await post('/api/join/request', {
-      token: link.token, fullName: 'Claimant Parent', phone: '0400 008 877', email: 'claimant@example.com',
+      token: link.token,
       children: [
         { name: 'claim child one', dob: '2017-05-05' }, // on the squad, spelt differently
         { name: 'Claim Child Two', dob: '2016-02-02' }, // on no squad yet
         { name: 'Claim Child New', dob: '2018-01-01' }, // nobody has them
       ],
-    })
+    }, claimant.cookie)
     const body = await res.json().catch(() => ({}))
     res.ok && body.requestId ? ok('the request is made') : bad(`request: ${res.status} ${JSON.stringify(body)}`)
     const { data: row } = await admin.from('join_requests').select('children, children_names').eq('id', body.requestId).maybeSingle()
@@ -111,7 +131,7 @@ try {
 
   head('2. An older client sends bare names: the old rule, a name within the squad')
   {
-    const res = await post('/api/join/request', { token: link.token, fullName: 'Second Parent', phone: '0400 008 866', email: 'second@example.com', children: ['Claim Child One'] })
+    const res = await post('/api/join/request', { token: link.token, children: ['Claim Child One'] }, second.cookie)
     const body = await res.json().catch(() => ({}))
     res.ok ? ok('the request is made') : bad(`request: ${res.status} ${JSON.stringify(body)}`)
     const appr = await post('/api/join/approve', { requestId: body.requestId, decision: 'approve' }, cookie)
@@ -130,6 +150,11 @@ try {
     const page = await context.newPage()
     await page.setViewport({ width: 375, height: 812 })
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
+    // A stranger is offered an account, not a form (the sign-up brief).
+    await page.goto(`${BASE}/join/${link.token}`, { waitUntil: 'networkidle2', timeout: 90000 })
+    ;(await page.$('[data-join-landing]')) && !(await page.$('[data-join-children]')) ? ok('with no account: the crest, "Join …", Create account — no form') : bad('a stranger saw the join form')
+    // Signed in: the form, asking only for the children.
+    await page.setCookie(...viewer.browserCookies)
     await page.goto(`${BASE}/join/${link.token}`, { waitUntil: 'networkidle2', timeout: 90000 })
     await page.waitForSelector('[data-join-children]', { timeout: 20000 }).catch(() => null)
     const names = await page.$$eval('[data-join-child-name]', (es) => es.length)

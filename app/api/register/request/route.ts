@@ -5,6 +5,7 @@ import { checkEmail } from '@/lib/email'
 import { cleanAnswers } from '@/lib/registration/answers'
 import type { Question } from '@/components/question-field'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { generateSecret, hashSecret, toE164 } from '@/lib/join'
 
 /**
@@ -45,6 +46,16 @@ type RegisterAs = (typeof ROLES)[number]
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
+
+  // The sign-up brief (12 Nov 2026): an account is always required. The
+  // person registering is the signed-in one — their name, mobile and email
+  // come from the account, never from the body.
+  const supabase = await createClient()
+  const { data: claims } = await supabase.auth.getClaims()
+  const sub = claims?.claims?.sub as string | undefined
+  if (!sub) {
+    return NextResponse.json({ error: 'Create an account first — it takes a minute, and everything you filled in is kept.' }, { status: 401 })
+  }
 
   const {
     slug,
@@ -89,9 +100,9 @@ export async function POST(request: Request) {
   const role: RegisterAs = ROLES.includes(registerAs as RegisterAs) ? (registerAs as RegisterAs) : 'player'
   const forRole = role !== 'player'
 
-  if (!slug || (!forRole && !programId) || !guardianName?.trim() || !childName?.trim() || !childDob) {
+  if (!slug || (!forRole && !programId) || !childName?.trim() || !childDob) {
     return NextResponse.json(
-      { error: forRole ? 'Please fill in your name and your date of birth.' : 'Please fill in your name, your child’s name and their date of birth.' },
+      { error: forRole ? 'Please fill in your date of birth.' : 'Please fill in your child’s name and their date of birth.' },
       { status: 400 }
     )
   }
@@ -117,11 +128,10 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
-  // Every account has an email (Joey, 5 Nov 2026), and registering a child
-  // is how a family's account begins: an email is required, any one they
-  // read. The mobile is still how approval makes the account.
-  const mail = checkEmail(guardianEmail)
-  if (!mail.ok) return NextResponse.json({ error: mail.error }, { status: 400 })
+  // Every account has an email (Joey, 5 Nov 2026). The account's own is
+  // used below; one typed on the form is checked only if it is there.
+  const mail = guardianEmail ? checkEmail(guardianEmail) : null
+  if (mail && !mail.ok) return NextResponse.json({ error: mail.error }, { status: 400 })
 
   // 0267: the Working With Children Check. A coach, a manager or a referee
   // gives the number and its expiry; a volunteer may. The club checks the
@@ -140,6 +150,19 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
+
+  // Who is registering: the account. The form's fields are a fallback for an
+  // account that has no mobile or email on record yet.
+  const [{ data: who }, { data: acct }] = await Promise.all([
+    admin.from('profiles').select('full_name, phone').eq('id', sub).maybeSingle(),
+    admin.from('account_emails').select('email').eq('profile_id', sub).maybeSingle(),
+  ])
+  if (!who) return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
+  const guardianFullName = who.full_name || guardianName?.trim() || ''
+  const guardianE164 = ((who.phone as string | null) ?? e164) || null
+  const guardianMail = acct?.email ?? (mail?.ok ? mail.email : null)
+  if (!guardianFullName) return NextResponse.json({ error: 'Add your name in Settings first.' }, { status: 400 })
+  if (!guardianMail) return NextResponse.json({ error: 'Add your email in Settings first.' }, { status: 400 })
 
   // Rate limited BEFORE the eligibility check, so a program's rules cannot be
   // probed for free. The limit counts the attempt whether or not it succeeds.
@@ -234,9 +257,10 @@ export async function POST(request: Request) {
     .insert({
       academy_id: academyId as string,
       program_id: program,
-      guardian_name: guardianName.trim(),
-      guardian_phone: e164,
-      guardian_email: mail.email,
+      profile_id: sub,
+      guardian_name: guardianFullName,
+      guardian_phone: guardianE164,
+      guardian_email: guardianMail,
       child_name: childName.trim(),
       child_dob: childDob,
       for_self: self,

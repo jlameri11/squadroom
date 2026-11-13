@@ -5,6 +5,7 @@
 // and an answer is checked against the question it answers.
 import { createClient } from '@supabase/supabase-js'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -132,16 +133,17 @@ const { data: pub } = await createClient(URL_, PUB, { auth: { persistSession: fa
   { p_slug: 'nrifa' }
 )
 const consents = (pub?.consents ?? []).filter((c) => c.required).map((c) => ({ id: c.id, version: c.version }))
+// The sign-up brief (12 Nov 2026): the family registers signed in.
+const Q_EMAIL = 'questions.parent@squadroom-demo.test'
+await deleteAccount(admin, Q_EMAIL)
+const family = await createAccount(BASE, { first: 'Q Test', last: 'Parent', email: Q_EMAIL, mobile: '0400 777 888' })
 const submit = (answers) =>
   fetch(`${BASE}/api/register/request`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Cookie: family.cookie },
     body: JSON.stringify({
       slug: 'nrifa',
       programId: PID,
-      guardianName: 'Q Test Parent',
-      guardianPhone: '0400 777 888',
-      guardianEmail: 'questions.parent@example.com',
       childName: 'Q Test Child',
       childDob: '2016-04-04',
       answers,
@@ -195,5 +197,6 @@ try {
 }
 
 await admin.from('registration_requests').delete().eq('program_id', PID)
+await deleteAccount(admin, Q_EMAIL)
 await admin.from('programs').delete().eq('id', PID)
 console.log(process.exitCode ? '\n\x1b[31mQUESTIONS ARE WRONG\x1b[0m\n' : '\n\x1b[32mall good\x1b[0m\n')

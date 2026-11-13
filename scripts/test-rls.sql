@@ -5126,6 +5126,93 @@ begin
     insert into rls_results values (223, 'a coach''s join link gets its code from the column default (0271): new_join_code runs as the coach and the code fits join_links_code_shape', r223);
   end;
 
+  -- 0272. An account for everyone: the codes table is nobody's through
+  -- PostgREST (a parent and a stranger read none); the server's look-ups
+  -- are the service role's alone; a person reads their own account and
+  -- nobody else's; a name typed in parts makes the whole and clears the
+  -- flag, a whole written the old way is re-split; "Not now" works once;
+  -- the club's staff set a member's odd name, a parent cannot. Rolled back.
+  declare
+    v_parent_rows text; v_anon_rows text; v_allowed text; v_lookup text;
+    v_mine jsonb; v_set jsonb; v_full text; v_first text; v_last text; v_flag boolean;
+    v_defer1 boolean; v_defer2 boolean; v_staff text; v_parent_set text; v_check jsonb;
+    r224 text := 'FAIL (never ran)';
+  begin
+    begin
+      insert into public.email_codes (email, purpose, code_hash, salt, expires_at) values ('rls-probe@example.com', 'sign_in', 'x', 'y', now() + interval '10 minutes');
+      -- An odd name on the parent, for the club to check.
+      update public.profiles set full_name = 'Madonna' where id = PARENT;
+      select first_name, last_name, name_check_needed into v_first, v_last, v_flag from public.profiles where id = PARENT;
+      if not (v_first = 'Madonna' and v_last = '' and v_flag) then
+        raise exception 'the whole was not re-split: % / % / %', v_first, v_last, v_flag;
+      end if;
+
+      perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      begin
+        select count(*)::text into v_parent_rows from public.email_codes;
+      exception when others then v_parent_rows := sqlstate; end;
+      begin
+        perform public.email_code_allowed('rls-probe@example.com', 'sign_in', null);
+        v_allowed := 'allowed';
+      exception when others then v_allowed := sqlstate; end;
+      begin
+        perform public.account_lookup('rls-probe@example.com', null);
+        v_lookup := 'allowed';
+      exception when others then v_lookup := sqlstate; end;
+      v_mine := public.my_account();
+      v_set := public.set_my_name('Mary Anne', null, 'Whitfield');
+      v_defer1 := public.defer_password();
+      v_defer2 := public.defer_password();
+      begin
+        perform public.set_member_name(ACAD_A, COACH, 'Not', null, 'Allowed');
+        v_parent_set := 'allowed';
+      exception when others then v_parent_set := sqlstate; end;
+      execute 'reset role';
+      select full_name into v_full from public.profiles where id = PARENT;
+
+      perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+      execute 'set local role anon';
+      begin
+        select count(*)::text into v_anon_rows from public.email_codes;
+      exception when others then v_anon_rows := sqlstate; end;
+      execute 'reset role';
+
+      -- The club's owner sees the flagged member and fixes the name.
+      update public.profiles set full_name = 'Cher' where id = PARENT;
+      perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+      execute 'set local role authenticated';
+      v_check := public.names_to_check(ACAD_A);
+      begin
+        perform public.set_member_name(ACAD_A, PARENT, 'Cher', null, 'Bono');
+        v_staff := 'ok';
+      exception when others then v_staff := sqlstate; end;
+      execute 'reset role';
+      select name_check_needed into v_flag from public.profiles where id = PARENT;
+
+      r224 := case when v_parent_rows in ('42501', '0') and v_anon_rows in ('42501', '0')
+                    and v_allowed = '42501' and v_lookup = '42501'
+                    and (v_mine->>'id')::uuid = PARENT and (v_mine->>'full_name') = 'Madonna' and (v_mine->>'name_check_needed')::boolean
+                    and (v_set->>'full_name') = 'Mary Anne Whitfield' and (v_set->>'first_name') = 'Mary Anne' and not (v_set->>'name_check_needed')::boolean
+                    and v_full = 'Mary Anne Whitfield'
+                    and v_defer1 and not v_defer2 and v_parent_set = '42501'
+                    and (select count(*) from jsonb_array_elements(v_check) e where (e->>'profile_id')::uuid = PARENT) = 1
+                    and v_staff = 'ok' and not v_flag then 'PASS'
+                   else 'FAIL (parent rows '||v_parent_rows||' anon '||v_anon_rows||' allowed '||v_allowed||' lookup '||v_lookup
+                        ||'; mine '||coalesce(v_mine->>'full_name','null')||'/'||coalesce(v_mine->>'name_check_needed','null')
+                        ||'; set '||coalesce(v_set->>'full_name','null')||' full '||coalesce(v_full,'null')
+                        ||'; defer '||v_defer1||'/'||v_defer2||' parent set '||v_parent_set
+                        ||'; check '||coalesce(v_check::text,'null')||' staff '||coalesce(v_staff,'null')||' flag '||v_flag||')' end;
+      raise exception 'rolled back on purpose' using errcode = 'P0001';
+    exception when others then
+      if sqlerrm <> 'rolled back on purpose' then
+        r224 := 'FAIL (stopped: '||sqlerrm||')';
+      end if;
+    end;
+    execute 'reset role';
+    insert into rls_results values (224, 'an account for everyone: the codes are nobody''s through PostgREST, the look-ups the service role''s; a person reads their own account; a name in parts makes the whole and a whole is re-split and judged; "Not now" once; the staff fix a member''s odd name, a parent cannot', r224);
+  end;
+
   -- 0132. Two functions were callable by anyone with a uuid. Asserted the
   -- way the holes were found: by calling them as the wrong person.
   --

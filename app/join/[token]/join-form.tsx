@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation'
 type Stage = 'form' | 'pending' | 'done'
 
 /**
- * Name, number, children. No password, no code.
- *
- * The secret we get back is kept in localStorage: it is what proves, later,
- * that this browser is the one the coach approved.
+ * The join request, for somebody signed in (the sign-up brief, 12 Nov 2026):
+ * the account already says who they are, so this asks only what the account
+ * does not know — the children's names and birthdays (or, on an adult team's
+ * link, their own date of birth), whether they would like to help, and the
+ * news opt-in. The coach approves, and they are in: no claim, no second
+ * step, nothing repeated.
  */
 export function JoinForm({
   token,
@@ -18,6 +20,8 @@ export function JoinForm({
   teamId = null,
   squads = [],
   role = 'parent',
+  account,
+  pendingRequestId = null,
 }: {
   token: string
   academyName: string
@@ -28,13 +32,15 @@ export function JoinForm({
   squads?: { id: string; name: string }[]
   /** The link's role (0239): 'player' is an adult team's link — the person joins as themselves. */
   role?: string
+  /** The signed-in person, from their account. */
+  account: { fullName: string }
+  /** A request this person already made on this link and is still waiting on. */
+  pendingRequestId?: string | null
 }) {
   const asPlayer = role === 'player'
   const router = useRouter()
-  const [stage, setStage] = useState<Stage>('form')
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
+  const [stage, setStage] = useState<Stage>(pendingRequestId ? 'pending' : 'form')
+  const [requestId, setRequestId] = useState<string | null>(pendingRequestId)
   // Never pre-ticked, never required (Joey, 5 Nov 2026).
   const [news, setNews] = useState(false)
   // Each child by name and birthday (0248): the birthday is what finds them
@@ -61,9 +67,6 @@ export function JoinForm({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token,
-        fullName,
-        phone,
-        email,
         news,
         children: asPlayer ? [] : kids.filter((k) => k.name.trim()).map((k) => ({ name: k.name.trim(), dob: k.dob || null })),
         dob: asPlayer ? dob : undefined,
@@ -72,42 +75,41 @@ export function JoinForm({
         wantedTeams: squadRole ? wantedTeams : undefined,
       }),
     })
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
     setBusy(false)
 
+    if (res.status === 401) {
+      router.replace(`/signin?next=${encodeURIComponent(`/join/${token}`)}`)
+      return
+    }
     if (!res.ok) return setError(data.error ?? 'Something went wrong.')
 
-    localStorage.setItem('squadroom.join', JSON.stringify({ requestId: data.requestId, secret: data.secret }))
+    setRequestId(data.requestId)
     setStage('pending')
   }
 
   async function checkApproval() {
+    if (!requestId) return setError('Start again — this browser lost the request.')
     setBusy(true)
     setError(null)
-    const stored = localStorage.getItem('squadroom.join')
-    if (!stored) { setBusy(false); return setError('Start again — this browser lost the request.') }
-
     const res = await fetch('/api/join/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(JSON.parse(stored)),
+      body: JSON.stringify({ requestId }),
     })
     setBusy(false)
 
     if (res.status === 202) return setError('Not yet — your coach hasn’t approved it.')
     if (!res.ok) return setError('That didn’t work. Ask your coach to check.')
 
-    localStorage.removeItem('squadroom.join')
     setStage('done')
-    // The session cookies were set by the server during the claim, so the
-    // refresh is what makes the server re-render as the signed-in parent.
     router.replace('/')
     router.refresh()
   }
 
   if (stage === 'pending') {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6" data-join-pending>
         <h1 className="text-2xl font-semibold">Waiting for your coach</h1>
         <p className="text-sm text-ink-2">
           They&apos;ll see that you asked to join {teamName ?? academyName} and tap approve. You can
@@ -118,6 +120,7 @@ export function JoinForm({
           onClick={checkApproval}
           disabled={busy}
           className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
+          data-join-check
         >
           {busy ? 'Checking…' : 'Check again'}
         </button>
@@ -126,53 +129,16 @@ export function JoinForm({
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6" data-join-form>
       <div>
         <h1 className="text-2xl font-semibold">Join {teamName ?? academyName}</h1>
-        <p className="mt-1 text-sm text-ink-2">{academyName}</p>
+        <p className="mt-1 text-sm text-ink-2">
+          {academyName}
+          {account.fullName ? ` · as ${account.fullName}` : ''}
+        </p>
       </div>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Your name</span>
-          <input
-            required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="rounded-xl border border-[var(--line)] px-3 py-3"
-            autoComplete="name"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Mobile</span>
-          <input
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="rounded-xl border border-[var(--line)] px-3 py-3"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="0412 345 678"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Email</span>
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-[var(--line)] px-3 py-3"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            data-join-email
-          />
-          <span className="text-xs text-ink-3">Any email you read — it doesn&apos;t have to match PlayFootball.</span>
-        </label>
-
         {asPlayer ? (
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Your date of birth</span>
@@ -299,11 +265,12 @@ export function JoinForm({
           type="submit"
           disabled={busy || needsSquad}
           className="rounded-xl bg-[var(--brand)] px-4 py-3 font-medium text-brand-ink disabled:opacity-50"
+          data-join-submit
         >
           {busy ? 'Sending…' : 'Request to join'}
         </button>
         <p className="text-center text-xs text-ink-2">
-          No password. No verification code. Your coach approves you.
+          Your coach approves you, and you&apos;re in.
         </p>
       </form>
     </main>

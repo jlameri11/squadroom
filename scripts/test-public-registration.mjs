@@ -17,6 +17,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { resolveBaseUrl } from './_base-url.mjs'
 import { listAllUsers } from './_users.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -54,12 +55,18 @@ const TAG = 'TESTREG2'
 const PHONE = '+61400007777'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 
-const post = (path, body, cookie) =>
-  fetch(`${BASE}${path}`, {
+// The sign-up brief (12 Nov 2026): a family registers signed in. The family's
+// session is the default for a post; the club's people pass theirs.
+const FAMILY_EMAIL = 'public.reg.parent@squadroom-demo.test'
+let familyCookie = ''
+const post = (path, body, cookie) => {
+  const c = cookie ?? familyCookie
+  return fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(c ? { Cookie: c } : {}) },
     body: JSON.stringify(body),
   })
+}
 
 /**
  * A route that is missing returns Next's 404 HTML, and `res.json()` on that
@@ -123,9 +130,12 @@ async function clean() {
     await admin.from('academy_members').delete().eq('profile_id', mine.id)
     await admin.auth.admin.deleteUser(mine.id)
   }
+  await deleteAccount(admin, FAMILY_EMAIL)
   await admin.from('programs').delete().eq('academy_id', NRIFA).like('name', `${TAG}%`)
 }
 await clean()
+const family = await createAccount(BASE, { first: TAG, last: 'Parent', email: FAMILY_EMAIL, mobile: PHONE })
+familyCookie = family.cookie
 
 // A program of our own, so the suite does not depend on how full the seeded
 // ones happen to be.
@@ -262,8 +272,16 @@ head('3. The form refuses what it should')
     ? ok(`a draft and a non-existent program answer identically ("${ghostBody.error}")`)
     : bad(`draft ${draft.status} "${draftBody.error}" vs ghost ${ghost.status} "${ghostBody.error}"`)
 
+  // The sign-up brief (12 Nov 2026): the account IS the way to reach the
+  // family, so a form that sends no contact details still registers — with
+  // the account's mobile and email on the request.
   const noContact = await submit({ guardianPhone: undefined, guardianEmail: undefined })
-  noContact.status === 400 ? ok('and a family with no way to be contacted') : bad(`got ${noContact.status}`)
+  const noContactBody = await jsonOf(noContact)
+  const { data: fromAccount } = noContact.ok ? await admin.from('registration_requests').select('guardian_phone, guardian_email, guardian_name').eq('id', noContactBody.requestId).maybeSingle() : { data: null }
+  noContact.ok && fromAccount?.guardian_phone === PHONE && fromAccount.guardian_email === FAMILY_EMAIL && fromAccount.guardian_name === `${TAG} Parent`
+    ? ok("a form with no contact details still carries the account's mobile, email and name")
+    : bad(`no contact details: ${noContact.status} ${JSON.stringify(fromAccount)}`)
+  if (noContact.ok) await admin.from('registration_requests').delete().eq('id', noContactBody.requestId)
 
   const junkGender = await submit({ childGender: 'wharever' })
   junkGender.status === 400 ? ok('free text in the gender field is refused') : bad(`got ${junkGender.status}`)
@@ -291,9 +309,9 @@ let requestId, secret
       .eq('id', requestId)
       .single()
     row.status === 'pending' ? ok('it is pending') : bad(`status ${row.status}`)
-    !row.profile_id && !row.player_id
-      ? ok('with no account and no roster row — nothing is granted yet')
-      : bad('a submission created an account or a player')
+    row.profile_id && !row.player_id
+      ? ok("tied to the family's own account, with no roster row — nothing is granted yet")
+      : bad('a submission made a player, or lost its account')
     row.secret_hash !== secret
       ? ok('and the database holds only the hash of the secret')
       : bad('the secret is stored in plain text')
@@ -512,9 +530,9 @@ head('11. Declining creates nothing')
       .eq('id', b.requestId)
       .single()
     row.status === 'declined' ? ok('the request is declined') : bad(`status ${row.status}`)
-    !row.profile_id && !row.player_id
-      ? ok('with no account and no roster row')
-      : bad('declining created an account or a player')
+    row.profile_id && !row.player_id
+      ? ok("still the family's own account, and no roster row")
+      : bad('declining made a player, or lost the account')
     row.decision_note === 'Age group full' ? ok('and the reason is kept') : bad('no reason')
 
     const { data: stranger } = await admin

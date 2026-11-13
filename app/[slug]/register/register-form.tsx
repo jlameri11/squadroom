@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { EMAIL_SHAPE } from '@/lib/email'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -129,6 +130,10 @@ export function RegisterForm({ slug }: { slug: string }) {
   // 0269: save and resume beyond this browser — to the account when signed
   // in, by a code when not.
   const [me, setMe] = useState<string | null>(null)
+  // Whether we know yet who (if anyone) is signed in. The "You" fields wait
+  // for the answer so they render already filled from the account — a
+  // prefill landing while somebody types interleaves with their letters.
+  const [meKnown, setMeKnown] = useState(false)
   const [resumeCode, setResumeCode] = useState<string | null>(null)
   const [resumeOpen, setResumeOpen] = useState(false)
   const [enterCode, setEnterCode] = useState('')
@@ -211,8 +216,22 @@ export function RegisterForm({ slug }: { slug: string }) {
       const supabase = createClient()
       const { data: claims } = await supabase.auth.getClaims()
       const uid = claims?.claims?.sub ?? null
-      if (!uid) return
+      if (!uid) {
+        setMeKnown(true)
+        return
+      }
+      // The sign-up brief (12 Nov 2026): the account says who is registering.
+      // Its name, mobile and email fill the "You" fields where they are
+      // empty — BEFORE the fields are shown (meKnown), so nothing lands
+      // under somebody's fingers.
+      const { data: acct } = await supabase.rpc('my_account')
+      const a = acct as unknown as { full_name?: string; phone?: string | null; email?: string | null; sign_in_email?: string | null } | null
+      if (a?.full_name) setGuardianName((v) => v || a.full_name!)
+      if (a?.phone) setGuardianPhone((v) => v || a.phone!)
+      const mail = a?.email ?? a?.sign_in_email
+      if (mail) setGuardianEmail((v) => v || mail)
       setMe(uid)
+      setMeKnown(true)
       const { data: pub } = await supabase.rpc('public_programs', { p_slug: slug })
       const academyId = (pub as unknown as Data | null)?.academy?.id
       if (!academyId) return
@@ -583,6 +602,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const roleLabel = ROLE_OPTIONS.find(([v]) => v === registerAs)?.[1] ?? registerAs
   const step1Ok = Boolean((program || forRole) && childName.trim() && childDob) && (!needsWwcc || Boolean(wwccNumber.trim() && wwccExpiresOn))
   const step2Ok =
+    Boolean(me) &&
     Boolean(guardianName.trim()) &&
     EMAIL_SHAPE.test(guardianEmail.trim()) &&
     missing.length === 0 &&
@@ -920,24 +940,55 @@ export function RegisterForm({ slug }: { slug: string }) {
 
           {step === 2 && (program || forRole) && (
             <>
-              <section className="mt-4">
-                <span className="eyebrow">You</span>
-                <Field label="Your name" value={guardianName} onChange={setGuardianName} />
-                <Field
-                  label="Mobile"
-                  type="tel"
-                  value={guardianPhone}
-                  onChange={setGuardianPhone}
-                  hint="This is how the club replies, and how you sign in later."
-                />
-                <Field
-                  label="Email"
-                  type="email"
-                  value={guardianEmail}
-                  onChange={setGuardianEmail}
-                  hint="Any email you read — it doesn’t have to match PlayFootball."
-                />
-              </section>
+              {!meKnown ? (
+                <section className="mt-4" data-register-you-loading>
+                  <span className="eyebrow">You</span>
+                  <p className="mt-1.5 text-sm text-ink-3">One moment…</p>
+                </section>
+              ) : me ? (
+                <section className="mt-4" data-register-you>
+                  <span className="eyebrow">You</span>
+                  <Field label="Your name" value={guardianName} onChange={setGuardianName} />
+                  <Field
+                    label="Mobile"
+                    type="tel"
+                    value={guardianPhone}
+                    onChange={setGuardianPhone}
+                    hint="This is how the club replies."
+                  />
+                  <Field
+                    label="Email"
+                    type="email"
+                    value={guardianEmail}
+                    onChange={setGuardianEmail}
+                    hint="Any email you read — it doesn’t have to match PlayFootball."
+                  />
+                </section>
+              ) : (
+                // The sign-up brief (12 Nov 2026): an account is always required.
+                // Everything typed so far is kept in this browser, and both doors
+                // come straight back here.
+                <section className="mt-4 rounded-xl border p-4" style={{ borderColor: 'var(--line)' }} data-register-account>
+                  <span className="eyebrow">You</span>
+                  <p className="mt-1.5 text-sm text-ink-2">
+                    Registering needs a Squadroom account — your name, email, mobile and a password. It takes a minute, and you come straight back here with everything you&apos;ve filled in.
+                  </p>
+                  <Link
+                    href={`/signup?next=${encodeURIComponent(`/${slug}/register`)}&why=${encodeURIComponent(`Registering with ${data.academy.name}`)}`}
+                    className="mt-3 block rounded-xl px-4 py-3 text-center font-semibold"
+                    style={{ background: tint, color: ink }}
+                    data-register-create-account
+                  >
+                    Create account
+                  </Link>
+                  <p className="mt-3 text-center text-sm text-ink-2">
+                    I already have an account →{' '}
+                    <Link href={`/signin?next=${encodeURIComponent(`/${slug}/register`)}`} className="font-semibold underline underline-offset-4 text-ink" data-register-sign-in>
+                      Sign in
+                    </Link>
+                  </p>
+                </section>
+              )}
 
               {/* 0263: a passport-style photo — the player card and the referee's ID. */}
               <section className="mt-5" data-photo-step={photo ? 'picked' : data.academy.photo_required ? 'required' : 'optional'}>
@@ -1027,7 +1078,11 @@ export function RegisterForm({ slug }: { slug: string }) {
                   className="flex-1 rounded-xl px-4 py-3 font-semibold disabled:opacity-50"
                   style={{ background: tint, color: ink }}
                 >
-                  {!guardianName.trim()
+                  {!meKnown
+                    ? 'One moment…'
+                    : !me
+                    ? 'Create an account first'
+                    : !guardianName.trim()
                     ? 'Fill in your name'
                     : !EMAIL_SHAPE.test(guardianEmail.trim())
                       ? 'Your email'

@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 import { listAllUsers } from './_users.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const PUB = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -46,6 +47,7 @@ async function cleanup() {
   const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.phone === '61400002602' || x.email?.startsWith('61400002602'))
   if (u) await admin.auth.admin.deleteUser(u.id)
+  await deleteAccount(admin, 'casey.guardian@squadroom-demo.test')
 }
 await cleanup()
 
@@ -98,16 +100,18 @@ let reqId
   // The club's required agreements, as the form would send them.
   const { data: pub } = await createClient(URL_, PUB, { auth: { persistSession: false } }).rpc('public_programs', { p_slug: 'nrifa' })
   const consents = (pub?.consents ?? []).map((c) => ({ id: c.id, version: c.version }))
+  // The sign-up brief (12 Nov 2026): the family registers signed in.
+  const casey = await createAccount(BASE, { first: 'Casey', last: 'Guardian', email: 'casey.guardian@squadroom-demo.test', mobile: '0400 002 602' })
   const res = await fetch(`${BASE}/api/register/request`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, guardianName: 'Casey Guardian', guardianPhone: '0400 002 602', guardianEmail: 'casey.guardian@example.com', childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', childFifa: 'abc', consents }),
+    headers: { 'Content-Type': 'application/json', Cookie: casey.cookie },
+    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', childFifa: 'abc', consents }),
   })
   res.status === 400 ? ok('a FIFA ID that is not digits is refused by the form route') : bad(`bad FIFA ID: ${res.status}`)
   const res2 = await fetch(`${BASE}/api/register/request`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, guardianName: 'Casey Guardian', guardianPhone: '0400 002 602', guardianEmail: 'casey.guardian@example.com', childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', consents }),
+    headers: { 'Content-Type': 'application/json', Cookie: casey.cookie },
+    body: JSON.stringify({ slug: 'nrifa', programId: strict.id, childName: `Riley Form ${TAG}`, childDob: '2018-05-05', childFfa: '1234 5678', consents }),
   })
   res2.ok ? ok('the family registers with FFA 12345678') : bad(`request: ${res2.status} ${await res2.text()}`)
   const { data: req } = await admin.from('registration_requests').select('id, ffa_number, fifa_id, official_confirmed_at').like('child_name', `Riley Form ${TAG}`).single()

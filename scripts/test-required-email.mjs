@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js'
 import puppeteer from 'puppeteer-core'
 import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 import { checkEmail } from '../lib/email.ts'
 
 const BASE = await resolveBaseUrl()
@@ -35,7 +36,8 @@ const U8 = '00000000-0000-0000-0000-0000000d0008'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
 const SAM = '00000000-0000-0000-0000-0000000000b1'
 const PHONE = '0400 009 777'
-const post = (path, body) => fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+const GOOD = 'test.email.parent@squadroom-demo.test'
+const post = (path, body, cookie) => fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(body) })
 
 const { error: no0214 } = await admin.from('account_emails').select('profile_id').limit(1)
 const has0214 = !no0214
@@ -45,6 +47,7 @@ const has0215 = !no0215
 const tidy = async () => {
   await admin.from('join_requests').delete().eq('phone', '+61400009777')
   await admin.from('join_links').delete().eq('label', 'TEST:: required-email')
+  await deleteAccount(admin, GOOD)
 }
 await tidy()
 const { data: link } = await admin.from('join_links')
@@ -57,7 +60,8 @@ async function open(person, path) {
   const page = await context.newPage()
   await page.setViewport({ width: 375, height: 812 })
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
-  if (person) await page.setCookie({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(person.session)).toString('base64'), domain: 'localhost', path: '/' })
+  if (person?.session) await page.setCookie({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(person.session)).toString('base64'), domain: 'localhost', path: '/' })
+  else if (person?.browserCookies) await page.setCookie(...person.browserCookies)
   await page.evaluateOnNewDocument((o) => { try { localStorage.setItem('squadroom.org', o) } catch {} }, NRIFA)
   await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle2', timeout: 90000 })
   return { context, page }
@@ -73,44 +77,52 @@ const shot = async (page, name) => {
 }
 
 try {
-  head('1. No joining without an email')
+  head('1. No joining without an account, and no account without an email')
   {
-    const base = { token: link.token, fullName: 'TEST Email Parent', phone: PHONE, children: [] }
-    const none = await post('/api/join/request', base)
+    // The sign-up brief (12 Nov 2026): the account is the door, and the
+    // account is where the email is asked for — any address, never a
+    // placeholder, never one nobody reads.
+    const none = await post('/api/join/request', { token: link.token, children: [] })
     const noneBody = await none.json().catch(() => ({}))
-    none.status === 400 && /email/i.test(noneBody.error ?? '') ? ok(`no email → refused: “${noneBody.error}”`) : bad(`no email → ${none.status} ${JSON.stringify(noneBody)}`)
-    const junk = await post('/api/join/request', { ...base, email: 'not an email' })
+    none.status === 401 && /account/i.test(noneBody.error ?? '') ? ok(`no account → refused: “${noneBody.error}”`) : bad(`no account → ${none.status} ${JSON.stringify(noneBody)}`)
+    const who = { first: 'TEST', last: 'Email Parent', mobile: PHONE }
+    const noEmail = await post('/api/account/create', who)
+    const noEmailBody = await noEmail.json().catch(() => ({}))
+    noEmail.status === 400 && /email/i.test(noEmailBody.error ?? '') ? ok(`an account with no email → refused: “${noEmailBody.error}”`) : bad(`no email → ${noEmail.status} ${JSON.stringify(noEmailBody)}`)
+    const junk = await post('/api/account/create', { ...who, email: 'not an email' })
     junk.status === 400 ? ok('not an email → refused') : bad(`junk → ${junk.status}`)
-    const placeholder = await post('/api/join/request', { ...base, email: 'p61400009777@squadroom.invalid' })
+    const placeholder = await post('/api/account/create', { ...who, email: 'p61400009777@squadroom.invalid' })
     placeholder.status === 400 ? ok('an address nobody reads → refused') : bad(`placeholder → ${placeholder.status}`)
-    const good = await post('/api/join/request', { ...base, email: 'test.email.parent@gmail.com' })
-    good.ok ? ok('any real address → the request goes (no PlayFootball match asked for)') : bad(`a good email → ${good.status}`)
-    if (has0214) {
-      const { data: row } = await admin.from('join_requests').select('email, news_opt_in_at').eq('phone', '+61400009777').maybeSingle()
-      row?.email === 'test.email.parent@gmail.com' && row.news_opt_in_at === null ? ok('kept on the request, news opt-in off') : bad(`kept: ${JSON.stringify(row)}`)
-    } else note('the email is kept on the request once 0214 adds the column (until then joining still requires it)')
+    const good = await createAccount(BASE, { ...who, email: GOOD })
+    ok('any real address → the account is made (no PlayFootball match asked for)')
 
-    // The form: the field is required, and the box is unticked.
-    const { context, page } = await open(null, `/join/${link.token}`)
-    const field = await page.$eval('[data-join-email]', (i) => ({ required: i.required, type: i.type })).catch(() => null)
-    field?.required && field.type === 'email' ? ok('the join form has a required Email field beside Mobile') : bad(`email field: ${JSON.stringify(field)}`)
-    const valid = await page.evaluate(() => {
-      const f = document.querySelector('form')
-      ;(document.querySelector('input[autocomplete="name"]')).value = 'Someone'
-      return f.checkValidity()
-    })
-    valid === false ? ok('and the form will not send while it is empty') : bad('the form validates with no email')
+    // The screens: a stranger is offered an account; a member sees the form
+    // with no email field — the account has it — and the box unticked.
+    const stranger = await open(null, `/join/${link.token}`)
+    ;(await stranger.page.$('[data-join-landing]')) ? ok('a stranger on the coach\'s link is offered Create account, not a form') : bad('a stranger saw something other than the landing')
+    await shot(stranger.page, 'landing')
+    await stranger.context.close()
+    const { context, page } = await open(good, `/join/${link.token}`)
+    await page.waitForSelector('[data-join-form]', { timeout: 20000 }).catch(() => null)
+    ;(await page.$('[data-join-form]')) ? ok('signed in: the join form') : bad('no join form for the signed-in parent')
+    const field = await page.$('[data-join-email]')
+    !field ? ok('which asks no email — the account already has one') : bad('the join form still asks for an email')
     const ticked = await page.$eval('[data-news-opt-in]', (c) => c.checked).catch(() => null)
     ticked === false ? ok('"Send me news and offers from Squadroom" starts unticked') : bad(`the opt-in starts ${ticked}`)
     await shot(page, 'join')
     await context.close()
+
+    const req = await post('/api/join/request', { token: link.token, children: [] }, good.cookie)
+    req.ok ? ok('and the request goes') : bad(`the request → ${req.status}`)
+    const { data: row } = await admin.from('join_requests').select('email, news_opt_in_at').eq('phone', '+61400009777').maybeSingle()
+    row?.email === GOOD && row.news_opt_in_at === null ? ok("the account's email rides on the request, news opt-in off") : bad(`kept: ${JSON.stringify(row)}`)
   }
 
-  head('2. No registering a child without one')
+  head('2. No registering a child without an account')
   {
     const res = await post('/api/register/request', { slug: 'nrifa', programId: '00000000-0000-0000-0000-000000000000', guardianName: 'TEST Guardian', guardianPhone: PHONE, childName: 'TEST Child', childDob: '2017-01-01', consents: [] })
     const body = await res.json().catch(() => ({}))
-    res.status === 400 && /email/i.test(body.error ?? '') ? ok(`refused: “${body.error}”`) : bad(`no email at registration → ${res.status} ${JSON.stringify(body)}`)
+    res.status === 401 && /account/i.test(body.error ?? '') ? ok(`refused: “${body.error}”`) : bad(`no account at registration → ${res.status} ${JSON.stringify(body)}`)
   }
 
   head('3. Any address, never a placeholder')

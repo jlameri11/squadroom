@@ -70,6 +70,9 @@ for (const m of members ?? []) {
 
   const { error } = await admin.auth.admin.updateUserById(m.profile_id, { password: PASSWORD })
   if (error) throw new Error(`${email}: ${error.message}`)
+  // Recorded with the account (0272): auth.users cannot say whether a
+  // person set a password, so the "Set a password" screen reads this.
+  await admin.from('user_settings').upsert({ profile_id: m.profile_id, password_set_at: new Date().toISOString() }, { onConflict: 'profile_id' })
   rows.push({ name: nameOf[m.profile_id] ?? '(no name)', role: m.role, email })
 }
 

@@ -5,6 +5,7 @@ import { HashSession } from '@/components/hash-session'
 import { TabBar } from '@/components/app-shell'
 import { OfflineBanner } from '@/components/offline-banner'
 import { EmailGate } from '@/components/email-gate'
+import { PasswordGate } from '@/components/password-gate'
 import { TwoStepGate } from '@/components/two-step-gate'
 import { TwoStepWall } from '@/components/two-step-wall'
 import { TEXT_SIZE_SCRIPT } from '@/lib/text-size'
@@ -86,6 +87,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         {/* Every account has an email: one screen, once, for an account
             without one (Joey, 5 Nov 2026; 0214). Renders nothing otherwise. */}
         <EmailGate />
+        {/* An account with a real sign-in address and no password sets one on
+            its next sign-in; "Not now" once (the sign-up brief, 12 Nov 2026). */}
+        <PasswordGate />
         {/*
           Rendered once, above every page, so it survives navigation.
           It used to be rendered BY each screen, which meant it unmounted and

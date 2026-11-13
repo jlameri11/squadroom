@@ -2,19 +2,28 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { secretMatches, syntheticEmail } from '@/lib/join'
+import { mintSession, signInEmailOf } from '@/lib/account/session'
 
 /**
- * The browser that made the request comes back and collects its session.
+ * "Has my coach approved me yet?"
  *
- * This is the one place a session is created without anyone typing anything,
- * so it is the most sensitive route in the app. Four conditions, all required:
- * the request exists, a coach approved it, it has never been claimed before,
- * and the caller holds the secret we issued to that browser.
+ * Since the sign-up brief (12 Nov 2026) a request is made signed in, so the
+ * session is the proof: the person asks about their own request and is told
+ * pending, approved or declined. Approved means they are already in — the
+ * membership rows are theirs — and nothing is minted.
+ *
+ * The older shape stays for requests made before the brief: the browser
+ * that made the request comes back with the secret it was issued and
+ * collects its session. That is one of the two places a session is created
+ * without anyone typing anything, so the four conditions all still hold —
+ * the request exists, a coach approved it, it was never claimed, and the
+ * caller holds the secret — and the address minted for is the account's own
+ * sign-in address, read from the account (0214's hazard), never guessed.
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const { requestId, secret } = (body ?? {}) as { requestId?: string; secret?: string }
-  if (!requestId || !secret) {
+  if (!requestId) {
     return NextResponse.json({ error: 'Bad request' }, { status: 400 })
   }
 
@@ -25,14 +34,25 @@ export async function POST(request: Request) {
     .select('id, status, secret_hash, claimed_at, profile_id, phone')
     .eq('id', requestId)
     .maybeSingle()
+  if (!req) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (!req || !secretMatches(secret, req.secret_hash)) {
+  if (!secret) {
+    const supabase = await createClient()
+    const { data: claims } = await supabase.auth.getClaims()
+    const sub = claims?.claims?.sub as string | undefined
+    if (!sub || req.profile_id !== sub) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (req.status === 'pending') return NextResponse.json({ status: 'pending' }, { status: 202 })
+    if (req.status !== 'approved') return NextResponse.json({ status: req.status }, { status: 403 })
+    return NextResponse.json({ status: 'approved' })
+  }
+
+  if (!secretMatches(secret, req.secret_hash)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
   if (req.status === 'pending') {
     return NextResponse.json({ status: 'pending' }, { status: 202 })
   }
-  if (req.status !== 'approved' || !req.profile_id || !req.phone) {
+  if (req.status !== 'approved' || !req.profile_id) {
     return NextResponse.json({ status: req.status }, { status: 403 })
   }
   // One claim only. A second device with the same secret gets nothing.
@@ -52,26 +72,11 @@ export async function POST(request: Request) {
 
   if (!locked) return NextResponse.json({ error: 'Already used' }, { status: 409 })
 
-  // Generate a one-time token without sending anything anywhere, then redeem
-  // it here on the server so the session never travels as a URL.
-  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
-    email: syntheticEmail(req.phone),
-  })
-  const tokenHash = link?.properties?.hashed_token
-  if (linkErr || !tokenHash) {
+  const authEmail = (await signInEmailOf(admin, req.profile_id)) ?? (req.phone ? syntheticEmail(req.phone) : null)
+  if (!authEmail || !(await mintSession(admin, authEmail))) {
     return NextResponse.json({ error: 'Could not sign you in.' }, { status: 500 })
   }
 
-  const supabase = await createClient()
-  const { error: verifyErr } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: 'email',
-  })
-  if (verifyErr) {
-    return NextResponse.json({ error: 'Could not sign you in.' }, { status: 500 })
-  }
-
-  // verifyOtp on the ssr client writes the session cookies for us.
+  // verifyOtp on the ssr client wrote the session cookies for us.
   return NextResponse.json({ status: 'approved' })
 }

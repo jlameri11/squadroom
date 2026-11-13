@@ -19,6 +19,7 @@ import { deflateSync } from 'node:zlib'
 import { signInBoth } from './_auth.mjs'
 import { listAllUsers } from './_users.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -42,8 +43,13 @@ const until = async (fn, ms = 20000, every = 1000) => {
   while (Date.now() - t0 < ms) { const v = await fn(); if (v) return v; await new Promise((r) => setTimeout(r, every)) }
   return null
 }
+// The sign-up brief (12 Nov 2026): a family registers signed in. The family's
+// session is the default for a post; the club's people pass theirs.
+const FAMILY_EMAIL = 'photo.parent@squadroom-demo.test'
+let familyCookie = ''
 const post = async (path, body, cookie) => {
-  const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body) })
+  const c = cookie ?? familyCookie
+  const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...(c ? { cookie: c } : {}) }, body: JSON.stringify(body) })
   const json = await res.json().catch(() => ({}))
   return { status: res.status, ...json }
 }
@@ -102,9 +108,12 @@ async function cleanup() {
   const { data: users } = await listAllUsers(admin)
   const u = users?.users?.find((x) => x.phone === PHONE.replace('+', ''))
   if (u) await admin.auth.admin.deleteUser(u.id)
+  await deleteAccount(admin, FAMILY_EMAIL)
   await admin.from('academies').update({ photo_required: clubBefore?.photo_required ?? false }).eq('id', IW)
 }
 await cleanup()
+const family = await createAccount(BASE, { first: TAG, last: 'Parent', email: FAMILY_EMAIL, mobile: PHONE })
+familyCookie = family.cookie
 
 const president = await signInBoth(admin, 'iw.president@squadroom-demo.test')
 const coach = await signInBoth(admin, 'iw.coach@squadroom-demo.test')
@@ -131,7 +140,8 @@ async function open(who, path, scheme, { org = IW, seed } = {}) {
   const page = await context.newPage()
   await page.setViewport({ width: 375, height: 812 })
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }])
-  if (who) await page.setCookie({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(who.session)).toString('base64'), domain: 'localhost', path: '/' })
+  if (who?.session) await page.setCookie({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(who.session)).toString('base64'), domain: 'localhost', path: '/' })
+  else if (who?.browserCookies) await page.setCookie(...who.browserCookies)
   await page.evaluateOnNewDocument((o, s) => { try { if (o) localStorage.setItem('squadroom.org', o); for (const [k, v] of Object.entries(s ?? {})) localStorage.setItem(k, v) } catch {} }, org, seed ?? {})
   await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle2', timeout: 90000 })
   return { page, context }
@@ -262,7 +272,8 @@ try {
   {
     const FOUR = `${TAG} Child Four`
     const draft = { step: 2, chosen: program.id, childName: FOUR, childDob: '2016-06-06', childGender: '', guardianName: `${TAG} Parent`, guardianPhone: PHONE, guardianEmail: 'photo.parent@example.com', answers: {}, agreed: Object.fromEntries((pub?.consents ?? []).map((c) => [c.id, true])), savedAt: Date.now() }
-    const { page, context } = await open(null, `/${SLUG}/register`, 'dark', { org: null, seed: { [`squadroom.draft.${SLUG}`]: JSON.stringify(draft) } })
+    // Signed in as the family (the sign-up brief): step 2 asks a stranger to create an account first.
+    const { page, context } = await open(family, `/${SLUG}/register`, 'dark', { org: null, seed: { [`squadroom.draft.${SLUG}`]: JSON.stringify(draft) } })
     const step = await waitFor(page, '[data-photo-step]')
     const state = step ? await step.evaluate((el) => el.getAttribute('data-photo-step')) : 'absent'
     const nextDisabled = () => page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.previousElementSibling?.textContent?.trim() === 'Back')?.disabled ?? null)

@@ -1864,6 +1864,57 @@ export type Database = {
           },
         ]
       }
+      email_codes: {
+        Row: {
+          attempts: number
+          channel: string
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          demo_code: string | null
+          email: string
+          expires_at: string
+          id: string
+          ip_hash: string | null
+          payload: Json
+          purpose: string
+          salt: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          channel?: string
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          demo_code?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          ip_hash?: string | null
+          payload?: Json
+          purpose: string
+          salt: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          demo_code?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          ip_hash?: string | null
+          payload?: Json
+          purpose?: string
+          salt?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_confirmations: {
         Row: {
           created_at: string
@@ -6591,8 +6642,12 @@ export type Database = {
           colour_mode: string
           created_at: string
           erased_at: string | null
+          first_name: string
           full_name: string
           id: string
+          last_name: string
+          middle_name: string | null
+          name_check_needed: boolean
           phone: string | null
           updated_at: string
         }
@@ -6603,8 +6658,12 @@ export type Database = {
           colour_mode?: string
           created_at?: string
           erased_at?: string | null
+          first_name?: string
           full_name?: string
           id: string
+          last_name?: string
+          middle_name?: string | null
+          name_check_needed?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -6615,8 +6674,12 @@ export type Database = {
           colour_mode?: string
           created_at?: string
           erased_at?: string | null
+          first_name?: string
           full_name?: string
           id?: string
+          last_name?: string
+          middle_name?: string | null
+          name_check_needed?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -8729,6 +8792,8 @@ export type Database = {
           notify_reminder_24h: boolean
           notify_reminder_2h: boolean
           notify_rsvp_changes: boolean
+          password_deferred_at: string | null
+          password_set_at: string | null
           profile_id: string
           quiet_hours_enabled: boolean
           quiet_hours_end: string
@@ -8748,6 +8813,8 @@ export type Database = {
           notify_reminder_24h?: boolean
           notify_reminder_2h?: boolean
           notify_rsvp_changes?: boolean
+          password_deferred_at?: string | null
+          password_set_at?: string | null
           profile_id: string
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
@@ -8767,6 +8834,8 @@ export type Database = {
           notify_reminder_24h?: boolean
           notify_reminder_2h?: boolean
           notify_rsvp_changes?: boolean
+          password_deferred_at?: string | null
+          password_set_at?: string | null
           profile_id?: string
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
@@ -9047,6 +9116,10 @@ export type Database = {
       }
       academy_results: { Args: { p_academy: string }; Returns: Json }
       accept_offer: { Args: { p_offer: string }; Returns: Json }
+      account_lookup: {
+        Args: { p_email: string; p_phone: string }
+        Returns: Json
+      }
       accreditation_board: { Args: { p_academy?: string }; Returns: Json }
       active_kids_to_redeem: {
         Args: { p_academy: string }
@@ -9637,10 +9710,15 @@ export type Database = {
         Returns: Json
       }
       decline_offer: { Args: { p_offer: string }; Returns: undefined }
+      defer_password: { Args: never; Returns: boolean }
       discipline_report: { Args: { p_competition: string }; Returns: Json }
       division_table: { Args: { p_team: string }; Returns: Json }
       draw_quality: {
         Args: { p_competition: string; p_division: string }
+        Returns: Json
+      }
+      email_code_allowed: {
+        Args: { p_email: string; p_ip_hash: string; p_purpose: string }
         Returns: Json
       }
       enable_club_mode: { Args: { p_academy: string }; Returns: boolean }
@@ -9999,6 +10077,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_password_set: { Args: never; Returns: boolean }
       mark_referee_run_paid: {
         Args: { p_method?: string; p_run: string }
         Returns: undefined
@@ -10077,6 +10156,7 @@ export type Database = {
         Args: { p_academy: string; p_moves: Json }
         Returns: Json
       }
+      my_account: { Args: never; Returns: Json }
       my_appointments: { Args: never; Returns: Json }
       my_calendar_token: { Args: { p_rotate?: boolean }; Returns: string }
       my_channels: {
@@ -10204,6 +10284,7 @@ export type Database = {
           venue: string
         }[]
       }
+      names_to_check: { Args: { p_academy: string }; Returns: Json }
       nav_badges: { Args: { p_academy?: string }; Returns: Json }
       needs_you: { Args: { p_academy?: string }; Returns: Json }
       next_squad_number: {
@@ -10980,6 +11061,16 @@ export type Database = {
         }
         Returns: string
       }
+      set_member_name: {
+        Args: {
+          p_academy: string
+          p_first: string
+          p_last?: string
+          p_middle?: string
+          p_profile: string
+        }
+        Returns: Json
+      }
       set_my_bank_details: {
         Args: {
           p_details: string
@@ -10991,6 +11082,10 @@ export type Database = {
       }
       set_my_email: {
         Args: { p_email: string; p_news?: boolean }
+        Returns: Json
+      }
+      set_my_name: {
+        Args: { p_first: string; p_last?: string; p_middle?: string }
         Returns: Json
       }
       set_my_news: { Args: { p_news: boolean }; Returns: Json }

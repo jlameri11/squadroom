@@ -657,8 +657,8 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     0266), gap 6 (Register as, 0267), gap 7 (the club's review, 0268), gap 8
     (save and resume, 0269) and gaps 9–10 (receipts and the card fee, 0270)
     are done — all ten, and the brief's test list is covered suite by suite
-    (`REGISTRATION_BRIEF.md`). **Item 13 is done (12 Nov 2026).** Next: item
-    17, the sign-up and account creation brief.
+    (`REGISTRATION_BRIEF.md`). **Item 13 is done (12 Nov 2026).** Item 17,
+    the sign-up and account creation brief, is built (13 Nov 2026).
 
     - **Feature switches (Joey, 10 Nov 2026), across everything from here:**
       every non-core feature gets an on/off switch in Settings → Features
@@ -769,7 +769,13 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     Where it lands on what exists: the join flow (`/join/<token>`, 0010+),
     phone-shaped placeholder accounts and `account_emails` (0214), the
     two-step text code (0232), `EmailGate`, `SetPassword`, `profiles.full_name`
-    (to be split into first/middle/last). Status: queued, after gap 10.
+    (split into first/middle/last by 0272). **Status: built 12–13 Nov 2026
+    (0272, applied to dev)** — the landing off a coach's link, Create
+    account, the code, sign-in with code and reset, the password gate, the
+    names in parts with the club's check, `/terms`; the join and
+    registration routes take the signed-in account; test-rls 224 and
+    `scripts/test-sign-up.mjs` cover the brief's test list (NIGHT_LOG, 13 Nov).
+    Next: item 16, the "Feels instant" pass.
 
 Original order, for reference: M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
 The 29 Oct revision put M1 + M6 first, then M9, M10, M7, M3, M4/M5, M8.

@@ -13,6 +13,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { signInBoth } from './_auth.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const BASE = await resolveBaseUrl()
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -29,6 +30,9 @@ const cookieFor = (session) => `sb-${REF}-auth-token=${'base64-' + Buffer.from(J
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const PHONE = '+61400009140' // nobody's, made for this
 const TAG = 'TEST:: adult player'
+// The sign-up brief (12 Nov 2026): everyone comes through an account.
+const TEEN_EMAIL = 'teen.tryer@squadroom-demo.test'
+const MARCO_EMAIL = 'marco.rossi@squadroom-demo.test'
 const forty = new Date(); forty.setFullYear(forty.getFullYear() - 40)
 const fifteen = new Date(); fifteen.setFullYear(fifteen.getFullYear() - 15)
 const iso = (d) => d.toISOString().slice(0, 10)
@@ -64,7 +68,8 @@ async function tidy() {
   if (linkId) await admin.from('join_links').delete().eq('id', linkId)
   if (teamId) await admin.from('teams').delete().eq('id', teamId)
   if (!ageChatBefore) await admin.from('channels').delete().eq('academy_id', NRIFA).eq('type', 'age_group').eq('age_group', 'Over-35')
-  await admin.from('join_requests').delete().eq('academy_id', NRIFA).eq('phone', PHONE)
+  await admin.from('join_requests').delete().eq('academy_id', NRIFA).in('phone', [PHONE, '+61400009141'])
+  for (const email of [TEEN_EMAIL, MARCO_EMAIL]) await deleteAccount(admin, email)
 }
 await tidy()
 
@@ -78,12 +83,14 @@ try {
   linkErr ? bad(`link: ${linkErr.message}`) : ok("a players' link — adults join as themselves")
 
   head('2. A 15-year-old is turned away; a 40-year-old asks to join')
-  const young = await post('/api/join/request', { token: link.token, fullName: 'Teen Tryer', phone: '+61400009141', email: 'teen.tryer@squadroom-demo.test', dob: iso(fifteen), children: [] })
+  const teen = await createAccount(BASE, { first: 'Teen', last: 'Tryer', email: TEEN_EMAIL, mobile: '+61400009141' })
+  const young = await post('/api/join/request', { token: link.token, dob: iso(fifteen), children: [] }, teen.cookie)
   const youngBody = await young.json().catch(() => ({}))
   young.status === 400 && /parent/i.test(youngBody.error ?? '') ? ok(`under 18: "${youngBody.error}"`) : bad(`teen: ${young.status} ${JSON.stringify(youngBody)}`)
-  const noDob = await post('/api/join/request', { token: link.token, fullName: 'No Date', phone: '+61400009142', email: 'no.date@squadroom-demo.test', children: [] })
+  const noDob = await post('/api/join/request', { token: link.token, children: [] }, teen.cookie)
   noDob.status === 400 ? ok('no date of birth: asked for one') : bad(`no dob: ${noDob.status}`)
-  const ask = await post('/api/join/request', { token: link.token, fullName: `${TAG} Marco Rossi`, phone: PHONE, email: 'marco.rossi@squadroom-demo.test', dob: iso(forty), children: [] })
+  const marco = await createAccount(BASE, { first: 'Marco', last: 'Rossi', email: MARCO_EMAIL, mobile: PHONE })
+  const ask = await post('/api/join/request', { token: link.token, dob: iso(forty), children: [] }, marco.cookie)
   const askBody = await ask.json().catch(() => ({}))
   ask.ok && askBody.requestId ? ok('the 40-year-old asks to join, as a player') : bad(`request: ${ask.status} ${JSON.stringify(askBody)}`)
   const { data: reqRow } = await admin.from('join_requests').select('dob, children_names').eq('id', askBody.requestId).single()
@@ -104,9 +111,9 @@ try {
   const { data: tm } = adultProfile ? await admin.from('team_members').select('role').eq('team_id', teamId).eq('profile_id', adultProfile).maybeSingle() : { data: null }
   tm?.role === 'player' ? ok("a player's place on the squad") : bad(`team row: ${JSON.stringify(tm)}`)
 
-  // Their session, as the claim route would mint it.
-  const claim = await post('/api/join/claim', { requestId: askBody.requestId, secret: askBody.secret })
-  claim.status === 200 ? ok('their browser collects its session') : bad(`claim: ${claim.status}`)
+  // Already signed in: the check says approved, and nothing more is minted.
+  const claim = await post('/api/join/claim', { requestId: askBody.requestId }, marco.cookie)
+  claim.status === 200 ? ok('their check says approved — they were signed in from the start') : bad(`claim: ${claim.status}`)
   const { data: adultUser } = await admin.auth.admin.getUserById(adultProfile)
   const me = await signInBoth(admin, adultUser.user.email)
   if (!me) throw new Error('could not sign the adult in')

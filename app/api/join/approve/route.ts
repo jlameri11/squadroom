@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   // If RLS hides the row, this coach has no business deciding it.
   const { data: req } = await supabase
     .from('join_requests')
-    .select('id, academy_id, team_id, full_name, phone, children_names, status, dob, join_link_id')
+    .select('id, academy_id, team_id, full_name, phone, children_names, status, dob, join_link_id, profile_id')
     .eq('id', requestId)
     .maybeSingle()
 
@@ -51,24 +51,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  if (!req.phone) {
+  // Since the sign-up brief (12 Nov 2026) a request is made signed in and
+  // carries its person from the start: nothing to find, nothing to create.
+  let profileId: string | null = req.profile_id ?? null
+
+  if (!profileId && !req.phone) {
     return NextResponse.json(
       { error: 'This request has no phone number, so an account cannot be created.' },
       { status: 422 }
     )
   }
 
-  // Someone may already exist — a parent with a child in two teams, or a
-  // coach at a second academy. Reuse them rather than creating a duplicate.
-  const { data: existing } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('phone', req.phone)
-    .maybeSingle()
+  // An older request: someone may already exist — a parent with a child in
+  // two teams, or a coach at a second academy. Reuse them rather than
+  // creating a duplicate.
+  if (!profileId && req.phone) {
+    const { data: existing } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('phone', req.phone)
+      .maybeSingle()
+    profileId = existing?.id ?? null
+  }
 
-  let profileId = existing?.id ?? null
-
-  if (!profileId) {
+  if (!profileId && req.phone) {
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: syntheticEmail(req.phone),
       phone: req.phone,
@@ -80,6 +86,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not create the account.' }, { status: 500 })
     }
     profileId = created.user.id
+  }
+  if (!profileId) {
+    return NextResponse.json({ error: 'Could not find or create the account.' }, { status: 500 })
   }
 
   // 0239: a players' link (an adult team) — the person joins as themselves.

@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const { data: req } = await supabase
     .from('registration_requests')
     .select(
-      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path, register_as, wwcc_number, wwcc_expires_on, wwcc_checked_at'
+      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path, register_as, wwcc_number, wwcc_expires_on, wwcc_checked_at, profile_id'
     )
     .eq('id', requestId)
     .maybeSingle()
@@ -129,11 +129,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, refunds })
   }
 
-  if (!req.guardian_phone) {
-    // An account is keyed on a phone number (see lib/join: Supabase Auth is
-    // email-shaped and our parents have phone numbers). A registration with
-    // only an email can be accepted into the program, but the club has to
-    // collect a number before the family can sign in.
+  if (!req.profile_id && !req.guardian_phone) {
+    // An older request (before the sign-up brief) is keyed on a phone number
+    // (see lib/join: Supabase Auth is email-shaped and our parents have phone
+    // numbers). A registration with only an email can be accepted into the
+    // program, but the club has to collect a number before the family can
+    // sign in. A request made signed in carries its account already.
     return NextResponse.json(
       {
         error:
@@ -143,17 +144,22 @@ export async function POST(request: Request) {
     )
   }
 
-  // A parent with a child already here, or a coach at a second academy.
-  // Reuse them rather than creating a duplicate.
-  const { data: existing } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('phone', req.guardian_phone)
-    .maybeSingle()
+  // Since the sign-up brief (12 Nov 2026) a request is made signed in and
+  // carries its account. An older one: a parent with a child already here,
+  // or a coach at a second academy — reuse them rather than creating a
+  // duplicate; failing that, the placeholder account from the mobile.
+  let profileId: string | null = req.profile_id ?? null
 
-  let profileId = existing?.id ?? null
+  if (!profileId && req.guardian_phone) {
+    const { data: existing } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('phone', req.guardian_phone)
+      .maybeSingle()
+    profileId = existing?.id ?? null
+  }
 
-  if (!profileId) {
+  if (!profileId && req.guardian_phone) {
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: syntheticEmail(req.guardian_phone),
       phone: req.guardian_phone,
@@ -165,6 +171,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not create the account.' }, { status: 500 })
     }
     profileId = created.user.id
+  }
+  if (!profileId) {
+    return NextResponse.json({ error: 'Could not find or create the account.' }, { status: 500 })
   }
 
   // The email they registered with becomes the account's (0214), unless the

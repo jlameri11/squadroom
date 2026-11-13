@@ -11,6 +11,7 @@
 // stranger in a channel full of children's names.
 import { createClient } from '@supabase/supabase-js'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { accountId, createAccount, deleteAccount } from './_account.mjs'
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL
 const admin = createClient(URL_, process.env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -29,10 +30,16 @@ const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const LABEL = 'TESTCODE'
 
+// The sign-up brief (12 Nov 2026): a request is made signed in, so every
+// request below is this account's. The link's four properties are what is
+// under test; the account is the door everyone comes through now.
+const CODE_EMAIL = 'test.code.parent@squadroom-demo.test'
+let cookie = ''
+
 async function post(path, body) {
   const response = await fetch(`${SITE}${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify(body),
   })
   return { status: response.status, body: await response.json().catch(() => null) }
@@ -44,6 +51,9 @@ async function page(path) {
 }
 
 await admin.from('join_links').delete().eq('label', LABEL)
+await deleteAccount(admin, CODE_EMAIL)
+const tester = await createAccount(SITE, { first: 'Test Code', last: 'Parent', email: CODE_EMAIL, mobile: '0400 000 114' })
+cookie = tester.cookie
 
 const { data: owner } = await admin
   .from('profiles')
@@ -112,36 +122,21 @@ await admin
   .from('join_links')
   .update({ revoked_at: new Date().toISOString() })
   .eq('id', revoked.id)
-const afterRevoke = await post('/api/join/request', {
-  token: revoked.code,
-  fullName: 'Test Revoked',
-  phone: '0400000111',
-  email: 'test.code.11@example.com',
-})
+const afterRevoke = await post('/api/join/request', { token: revoked.code, children: [] })
 afterRevoke.status >= 400
   ? ok(`a revoked link refuses its code too (${afterRevoke.status})`)
   : bad('a revoked link still accepted its code')
 
 head('6. Expiry applies to the code')
 const expired = await makeLink({ expires_at: new Date(Date.now() - 864e5).toISOString() })
-const afterExpiry = await post('/api/join/request', {
-  token: expired.code,
-  fullName: 'Test Expired',
-  phone: '0400000112',
-  email: 'test.code.12@example.com',
-})
+const afterExpiry = await post('/api/join/request', { token: expired.code, children: [] })
 afterExpiry.status >= 400
   ? ok(`an expired link refuses its code too (${afterExpiry.status})`)
   : bad('an expired link still accepted its code')
 
 head('7. The use limit applies to the code')
 const capped = await makeLink({ max_uses: 1, use_count: 1 })
-const afterCap = await post('/api/join/request', {
-  token: capped.code,
-  fullName: 'Test Capped',
-  phone: '0400000113',
-  email: 'test.code.13@example.com',
-})
+const afterCap = await post('/api/join/request', { token: capped.code, children: [] })
 afterCap.status >= 400
   ? ok(`a spent link refuses its code too (${afterCap.status})`)
   : bad('a spent link still accepted its code')
@@ -152,10 +147,7 @@ head('8. A good code still only creates a PENDING request')
 const live = await makeLink()
 const request = await post('/api/join/request', {
   token: live.code,
-  fullName: 'Test Code Parent',
-  phone: '0400000114',
-  email: 'test.code.14@example.com',
-  children: ['Test Code Child'],
+  children: [{ name: 'Test Code Child', dob: '2017-01-01' }],
 })
 if (request.status !== 200) {
   bad(`joining by code failed: ${request.status} ${JSON.stringify(request.body)}`)
@@ -169,17 +161,18 @@ if (request.status !== 200) {
   row.status === 'pending'
     ? ok('and it is pending — a code is not a way past the coach')
     : bad(`status was ${row.status}`)
-  row.profile_id === null ? ok('no account created yet') : bad('an account was created before approval')
+  row.profile_id === (await accountId(admin, CODE_EMAIL))
+    ? ok('it carries the account that asked — made before, through the code screen, never by the join code')
+    : bad(`the request's account is ${row.profile_id}`)
+  const { count: members } = await admin.from('academy_members').select('*', { count: 'exact', head: true }).eq('academy_id', NRIFA).eq('profile_id', row.profile_id)
+  members === 0 ? ok('and no membership yet') : bad(`${members} membership rows before approval`)
   row.join_link_id === live.id
     ? ok('and it is attributed to the right link, so the audit trail holds')
     : bad('the request is attributed to the wrong link')
 
-  const claim = await post('/api/join/claim', {
-    requestId: request.body.requestId,
-    secret: request.body.secret,
-  })
+  const claim = await post('/api/join/claim', { requestId: request.body.requestId })
   claim.status === 202
-    ? ok('claiming before approval still hands out no session')
+    ? ok('asking before approval still opens nothing')
     : bad(`claim returned ${claim.status}, expected 202`)
 }
 
@@ -203,6 +196,7 @@ await admin
   .in('join_link_id', (mine ?? []).map((l) => l.id))
 await admin.from('join_links').delete().eq('label', LABEL)
 await admin.from('players').delete().eq('full_name', 'Test Code Child')
+await deleteAccount(admin, CODE_EMAIL)
 
 console.log(
   process.exitCode

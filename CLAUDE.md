@@ -319,24 +319,51 @@ one and is meant to reach hundreds of academies.
     player membership, link or squad place without it. This replaces S-06's
     "nobody under 18 has an account" (0078). 0076 still brings guardians into
     any private chat with a child.
-- **Parents never see a signup screen, and onboarding sends no SMS.**
-  The coach pastes the team link or QR into the group parents already use.
-  A parent taps it, enters name and phone, and lands in a PENDING state.
-  The coach approves, and the session binds to that device permanently.
-  - Coach approval REPLACES the OTP as the identity gate, and is stronger
-    for this product: an OTP proves someone holds a phone number, approval
-    proves they belong in a channel full of children's names. The coach
-    already knows every family.
-  - New-device recovery is the same flow: tap, re-approve. Also free.
-  - Consequence, accepted deliberately: without OTP a phone number is a
-    contact detail, not a verified credential. Fine while a coach vouches
-    for every member. Revisit before opening self-serve signup.
-  - Never let a bearer token post messages before approval binds it to an
-    identity. In a product about children, "who sent this" must have a real
-    answer.
-  - Token validation and session minting are server-side with the service
-    role. This is the one sanctioned exception to client-first, and needs
-    its own tests - it is the most likely place in the system to leak.
+- **One account for everyone (Joey's sign-up brief, 12 Nov 2026; 0272).**
+  This replaced "parents never see a signup screen". Every way in — a
+  coach's link, QR or code, a club's own sign-up, a public registration —
+  goes through **Create account**: first, middle (optional) and last name,
+  email, mobile (+61 unless another code is typed), a password of at least
+  8 with a show/hide eye and no other rule, the terms line under the one
+  button; then a **six-digit code to the email** (`email_codes`: ten
+  minutes, five tries, a resend after thirty seconds, five an hour). Nothing
+  opens before the code: the password stays in the browser and is set only
+  when the code proves the address (`/api/account/confirm`), so an account
+  nobody confirmed signs nobody in whatever the mailer settings. Then
+  straight back to where they started (`next`). Signing in: email and
+  password, "Email me a code instead", "Forgot password" (reset by code);
+  owners, admins and league staff still get the two-step code after it.
+  - **Coach approval still decides membership.** A join request is made
+    signed in and carries its account (`join_requests.profile_id`); the
+    coach approves and the membership rows are written — nothing is minted,
+    no secret travels. The claim routes stay for requests made before the
+    brief and now mint for the account's own sign-in address, read from the
+    account, never guessed from a phone (0214's hazard).
+  - **Names are three parts.** `profiles.first_name`, `middle_name`,
+    `last_name`; `full_name` is kept in step by a trigger whichever is
+    written, so the 131 migrations and 44 files that read it are untouched.
+    Existing names were split on the last space and the odd ones flagged
+    (`name_check_needed`) for the club to check on Admin → Members.
+  - **Whether a person has set a password is `user_settings.password_set_at`,
+    never `auth.users`.** Supabase gives an account made without a password
+    a random hash nobody knows, which looks exactly like a real one.
+    Everything that sets a password records it (the account routes,
+    `mark_password_set` from the screens, the demo seed, `_auth.mjs`).
+    An account with a real sign-in address and none is asked to set one on
+    its next sign-in, above every page; "Not now" once (`defer_password`).
+  - A phone-joined parent who signs up with the address they gave their
+    club (`account_emails`) gets THAT account — proving the address claims
+    it, the real address becomes the sign-in — and never a duplicate; a
+    mobile already on an account is never taken over by whoever types it.
+  - A suite makes its people through `scripts/_account.mjs`
+    (`createAccount`: a demo address, whose code comes back in the response)
+    and posts with the session it gets; the public request routes refuse
+    without one.
+  - Still true: never let a bearer token post messages before approval binds
+    it to an identity — in a product about children, "who sent this" must
+    have a real answer; and session minting is server-side with the
+    service role, the one sanctioned exception to client-first, with its
+    own tests. Under-13s never get an account (0215, unchanged).
 - **Contacts are picked, never synced.** There is no bulk address-book
   upload and there must never be one. A coach's phone holds people with no
   relationship to the academy; putting them on our servers is a Privacy Act

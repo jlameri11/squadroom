@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import puppeteer from 'puppeteer-core'
 import { resolveBaseUrl } from './_base-url.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 const BASE = await resolveBaseUrl()
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -19,8 +20,13 @@ const bad = (m) => {
 const head = (m) => console.log(`\n${m}`)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const TAG = 'FLOWTEST'
+// The sign-up brief (12 Nov 2026): the family registers signed in; the
+// account's name is what the request carries.
+const FAMILY_EMAIL = 'flow.parent@squadroom-demo.test'
 
 await admin.from('registration_requests').delete().like('child_name', `${TAG}%`)
+await deleteAccount(admin, FAMILY_EMAIL)
+const family = await createAccount(BASE, { first: TAG, last: 'Parent', email: FAMILY_EMAIL, mobile: '0400 999 777' })
 
 let browser
 try {
@@ -31,6 +37,7 @@ try {
 }
 const page = await browser.newPage()
 await page.setViewport({ width: 375, height: 812 })
+await page.setCookie(...family.browserCookies)
 
 const text = async () => (await page.$eval('main', (m) => m.innerText)).replace(/\s+/g, ' ')
 const has = (t, s) => t.toLowerCase().includes(s.toLowerCase())
@@ -51,7 +58,10 @@ const typeInto = async (labelText, value) => {
   }, labelText)
   const el = handle.asElement()
   if (!el) throw new Error(`no field labelled "${labelText}"`)
-  await el.click({ clickCount: 3 })
+  // Select what is there first: the "You" fields come filled from the
+  // account (the sign-up brief), and a triple-click does not reliably
+  // select a prefilled input, so typing would land in the middle of it.
+  await el.evaluate((i) => { i.focus(); i.select() })
   await el.type(value)
 }
 
@@ -148,5 +158,6 @@ try {
 }
 
 await browser.close()
+await deleteAccount(admin, FAMILY_EMAIL)
 await admin.from('registration_requests').delete().like('child_name', `${TAG}%`)
 console.log(process.exitCode ? '\n\x1b[31mTHE REGISTER FLOW IS WRONG\x1b[0m\n' : '\n\x1b[32mall good\x1b[0m\n')

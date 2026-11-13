@@ -17,6 +17,7 @@ import puppeteer from 'puppeteer-core'
 import { mkdirSync } from 'node:fs'
 import { signInBoth } from './_auth.mjs'
 import { listAllUsers } from './_users.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 
 const BASE = await resolveBaseUrl()
@@ -34,12 +35,14 @@ const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const SLUG = 'nrifa'
 const TAG = 'Zz Role'
+// Each has an account first (the sign-up brief, 12 Nov 2026): demo
+// addresses, whose code is shown rather than sent.
 const PEOPLE = {
-  coach: { phone: '+61400009961', name: `${TAG} Coach`, email: 'role.coach@example.com' },
-  team_manager: { phone: '+61400009962', name: `${TAG} Manager`, email: 'role.manager@example.com' },
-  volunteer: { phone: '+61400009963', name: `${TAG} Volunteer`, email: 'role.volunteer@example.com' },
-  referee: { phone: '+61400009964', name: `${TAG} Referee`, email: 'role.referee@example.com' },
-  browser: { phone: '+61400009965', name: `${TAG} Browser Coach`, email: 'role.browser@example.com' },
+  coach: { phone: '+61400009961', name: `${TAG} Coach`, email: 'role.coach@squadroom-demo.test' },
+  team_manager: { phone: '+61400009962', name: `${TAG} Manager`, email: 'role.manager@squadroom-demo.test' },
+  volunteer: { phone: '+61400009963', name: `${TAG} Volunteer`, email: 'role.volunteer@squadroom-demo.test' },
+  referee: { phone: '+61400009964', name: `${TAG} Referee`, email: 'role.referee@squadroom-demo.test' },
+  browser: { phone: '+61400009965', name: `${TAG} Browser Coach`, email: 'role.browser@squadroom-demo.test' },
 }
 const inTwoYears = new Date(Date.now() + 730 * 864e5).toISOString().slice(0, 10)
 const post = async (path, body, cookie) => {
@@ -72,11 +75,17 @@ async function cleanup() {
     await admin.from('academy_members').delete().eq('profile_id', u.id)
     await admin.auth.admin.deleteUser(u.id)
   }
+  for (const p of Object.values(PEOPLE)) await deleteAccount(admin, p.email)
 }
 await cleanup()
+for (const p of Object.values(PEOPLE)) {
+  const acct = await createAccount(BASE, { first: TAG, last: p.name.slice(TAG.length + 1), email: p.email, mobile: p.phone })
+  p.cookie = acct.cookie
+  p.browserCookies = acct.browserCookies
+}
 
 const register = (role, p, extra = {}) =>
-  post('/api/register/request', { slug: SLUG, registerAs: role, guardianName: p.name, guardianPhone: p.phone, guardianEmail: p.email, childName: p.name, childDob: '1990-05-05', wwccNumber: 'WWC 1234567E', wwccExpiresOn: inTwoYears, roleNote: 'U8s on Saturdays', consents, ...extra })
+  post('/api/register/request', { slug: SLUG, registerAs: role, childName: p.name, childDob: '1990-05-05', wwccNumber: 'WWC 1234567E', wwccExpiresOn: inTwoYears, roleNote: 'U8s on Saturdays', consents, ...extra }, p.cookie)
 const profileOf = async (phone) => (await admin.from('profiles').select('id').eq('phone', phone).maybeSingle()).data?.id ?? null
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
@@ -85,9 +94,11 @@ async function open(who, path, scheme) {
   const page = await context.newPage()
   await page.setViewport({ width: 375, height: 812 })
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }])
-  if (who) {
+  if (who?.session) {
     await page.setCookie({ name: `sb-${ref}-auth-token`, value: 'base64-' + Buffer.from(JSON.stringify(who.session)).toString('base64'), domain: 'localhost', path: '/' })
     await page.evaluateOnNewDocument((o) => { try { localStorage.setItem('squadroom.org', o) } catch {} }, NRIFA)
+  } else if (who?.browserCookies) {
+    await page.setCookie(...who.browserCookies)
   }
   await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle2', timeout: 90000 })
   return { page, context }
@@ -125,7 +136,11 @@ try {
   head('2. Nothing before the WWCC is checked on the register')
   const early = await post('/api/register/approve', { requestId: made.coach.requestId, decision: 'approve', teamId: U8 }, cookie)
   early.status === 422 && /checked on the Service NSW register/.test(early.error ?? '') ? ok('approving the coach is refused until the tick') : bad(`early approve: ${early.status} ${early.error ?? ''}`)
-  ;(await profileOf(PEOPLE.coach.phone)) === null ? ok('and no account was made') : bad('an account was made for a refused approval')
+  // The account exists from the start now (the sign-up brief); a refused
+  // approval must grant it nothing.
+  const coachBefore = await profileOf(PEOPLE.coach.phone)
+  const { count: hats } = coachBefore ? await admin.from('academy_members').select('*', { count: 'exact', head: true }).eq('academy_id', NRIFA).eq('profile_id', coachBefore) : { count: 0 }
+  hats === 0 ? ok('and nothing was granted — their account is still a stranger to the club') : bad(`${hats} membership rows after a refused approval`)
   for (const role of ['coach', 'team_manager', 'referee']) {
     const { error } = await owner.client.rpc('confirm_wwcc_check', { p_request: made[role].requestId, p_checked: true })
     if (error) bad(`tick ${role}: ${error.message}`)
@@ -166,7 +181,8 @@ try {
 
   head('4. The form and the queue, 375px')
   {
-    const { page, context } = await open(null, `/${SLUG}/register`, 'light')
+    // Signed in as the would-be coach: step 2 asks a stranger to create an account first.
+    const { page, context } = await open(PEOPLE.browser, `/${SLUG}/register`, 'light')
     const chooser = await waitFor(page, '[data-register-as]')
     if (!chooser) bad('no Register as chooser')
     else {
@@ -191,8 +207,9 @@ try {
         await page.waitForFunction(() => document.body.innerText.includes('This is how the club replies'), { timeout: 15000 }).catch(() => {})
         const name = await page.$eval(byLabel('Your name'), (i) => i.value).catch(() => '')
         name === PEOPLE.browser.name ? ok('step 2: their name carried over') : bad(`step 2 name "${name}"`)
-        await page.type(byLabel('Mobile'), PEOPLE.browser.phone, { delay: 5 })
-        await page.type(byLabel('Email'), PEOPLE.browser.email, { delay: 5 })
+        // The mobile and email are the account's, filled in already.
+        const mobile = await page.$eval(byLabel('Mobile'), (i) => i.value).catch(() => '')
+        mobile === PEOPLE.browser.phone ? ok('and the mobile is the account\'s, filled in') : bad(`step 2 mobile "${mobile}"`)
         const boxes = await page.$$('input[type=checkbox]')
         for (const b of boxes) if (!(await b.evaluate((e) => e.checked))) await tap(b)
         await page.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.previousElementSibling?.textContent?.trim() === 'Back' && !b.disabled)?.click())

@@ -66,7 +66,28 @@ export async function signInBoth(admin, email) {
   if (!data?.session) return null
   cache[email] = pick(data.session)
   writeCache(cache)
+  await ensurePassword(admin, email, data.session.user.id)
   return { client, session: data.session }
+}
+
+/**
+ * The sign-up brief (12 Nov 2026): an account with a real sign-in address
+ * and no password meets the "Set a password" screen on its next sign-in,
+ * above every page — which would stand in front of every suite that opens
+ * one as a test-made owner. Such an account gets the demo password here,
+ * once. Only a demo or example address: never a real person's.
+ */
+async function ensurePassword(admin, email, userId) {
+  if (!/@(squadroom-demo\.test|example\.com)$/i.test(email)) return
+  try {
+    const { data } = await admin.rpc('account_lookup', { p_email: email, p_phone: '' })
+    if (data?.by_email && data.by_email.has_password === false) {
+      await admin.auth.admin.updateUserById(userId, { password: process.env.DEMO_PASSWORD ?? 'squadroom-demo' })
+      await admin.from('user_settings').upsert({ profile_id: userId, password_set_at: new Date().toISOString() }, { onConflict: 'profile_id' })
+    }
+  } catch {
+    // Before 0272, or a project without the function: nothing to do.
+  }
 }
 
 export async function signInClient(admin, email) {

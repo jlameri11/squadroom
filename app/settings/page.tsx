@@ -26,9 +26,12 @@ export default async function SettingsPage() {
   const email = (claims?.claims?.email as string | undefined) ?? null
 
   // Your own number is only readable through this function: 0012 revoked the
-  // column from the table grant so nobody can read anyone else's.
+  // column from the table grant so nobody can read anyone else's. The name's
+  // parts (0272) come the same way.
   const { data } = await supabase.rpc('my_profile')
   const me = data?.[0]
+  const { data: accountRaw } = await supabase.rpc('my_account')
+  const account = accountRaw as unknown as { first_name?: string; middle_name?: string | null; last_name?: string; name_check_needed?: boolean } | null
   // L-06: only a referee sees the Refereeing row — a parent has no use for
   // it, and the pool row is visible to its own person and nobody else.
   const { count: pools } = await supabase.from('referees').select('id', { count: 'exact', head: true }).eq('profile_id', userId)
@@ -44,8 +47,13 @@ export default async function SettingsPage() {
         Your name is what people see on your messages.
       </p>
       <ProfileForm
-        initialName={me?.full_name ?? ''}
-        initialPhone={me?.phone ?? ''}
+        initial={{
+          first: account?.first_name ?? me?.full_name ?? '',
+          middle: account?.middle_name ?? '',
+          last: account?.last_name ?? '',
+          phone: me?.phone ?? '',
+          checkNeeded: Boolean(account?.name_check_needed),
+        }}
         email={email}
       />
       {/* 0214: every account has an email. Hidden until the migration lands. */}

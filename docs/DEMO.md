@@ -26,6 +26,14 @@ with a phone number and a dead end for a demo. `scripts/demo-passwords.mjs`
 gives them passwords instead; the sign-in screen defaults to a password rather
 than a link. **Dev only.**
 
+**Sign-up and sign-in codes in the demo (0272, the sign-up brief).** Any
+`@squadroom-demo.test` address is a demo account: the six-digit code for
+creating an account, signing in by code or resetting a password is **shown
+on the screen** instead of emailed (nothing is ever sent to a demo
+address), so a demo is never waiting on an inbox. Real addresses need
+Resend (NEEDS JOEY #19). The demo accounts above all have a password, so
+none is asked to set one.
+
 **Two-step sign-in in the demo (0232).** NRIFA and the SPL do not require
 it yet (the switch is in Club settings, one way). Where an organisation does,
 its owners and admins are asked for a six-digit code; a real account is

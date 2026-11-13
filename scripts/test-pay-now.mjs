@@ -21,6 +21,7 @@ import { signInBoth } from './_auth.mjs'
 import { listAllUsers } from './_users.mjs'
 import { resolveBaseUrl } from './_base-url.mjs'
 import { testStripe, testMerchantAccount, closeTestAccount } from './_stripe-test-accounts.mjs'
+import { createAccount, deleteAccount } from './_account.mjs'
 
 if (process.env.STRIPE_E2E !== '1') {
   // "only runs by hand" is what scripts/test-all.mjs looks for to report this as by hand, not a crash.
@@ -48,8 +49,13 @@ const until = async (fn, ms = 30000, every = 1500) => {
   while (Date.now() - t0 < ms) { const v = await fn(); if (v) return v; await new Promise((r) => setTimeout(r, every)) }
   return null
 }
+// The sign-up brief (12 Nov 2026): a family registers signed in. The family's
+// session is the default for a post; the owner's is passed where it decides.
+const FAMILY_EMAIL = 'paynow.parent@squadroom-demo.test'
+let familyCookie = ''
 const post = async (path, body, cookie) => {
-  const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body) })
+  const c = cookie ?? familyCookie
+  const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...(c ? { cookie: c } : {}) }, body: JSON.stringify(body) })
   const json = await res.json().catch(() => ({}))
   return { status: res.status, ...json }
 }
@@ -97,8 +103,11 @@ async function cleanup() {
     await admin.from('academy_members').delete().eq('profile_id', u.id)
     await admin.auth.admin.deleteUser(u.id)
   }
+  await deleteAccount(admin, FAMILY_EMAIL)
 }
 await cleanup()
+const family = await createAccount(BASE, { first: TAG, last: 'Parent', email: FAMILY_EMAIL, mobile: PHONE })
+familyCookie = family.cookie
 
 const owner = await signInBoth(admin, 'head@squadroom-demo.test')
 if (!owner) { console.log("  could not sign in — the project's auth rate limit, not a failure"); process.exit(2) }

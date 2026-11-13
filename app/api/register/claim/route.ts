@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { secretMatches, syntheticEmail } from '@/lib/join'
+import { mintSession, signInEmailOf } from '@/lib/account/session'
 
 /**
  * The family comes back and collects their session.
@@ -69,25 +69,15 @@ export async function POST(request: Request) {
   if (!locked) return NextResponse.json({ error: 'Already used' }, { status: 409 })
 
   // A one-time token generated and redeemed here on the server, so the
-  // session never travels as a URL.
-  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
-    email: syntheticEmail(req.guardian_phone),
-  })
-  const tokenHash = link?.properties?.hashed_token
-  if (linkErr || !tokenHash) {
+  // session never travels as a URL — for the address the account signs in
+  // with, read from the account (0214's hazard: a link for an address nobody
+  // holds makes a brand-new empty account), the placeholder only as a last
+  // resort for a request older than 0214.
+  const authEmail = (await signInEmailOf(admin, req.profile_id)) ?? syntheticEmail(req.guardian_phone)
+  if (!(await mintSession(admin, authEmail))) {
     return NextResponse.json({ error: 'Could not sign you in.' }, { status: 500 })
   }
 
-  const supabase = await createClient()
-  const { error: verifyErr } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: 'email',
-  })
-  if (verifyErr) {
-    return NextResponse.json({ error: 'Could not sign you in.' }, { status: 500 })
-  }
-
-  // verifyOtp on the ssr client writes the session cookies for us.
+  // verifyOtp on the ssr client wrote the session cookies for us.
   return NextResponse.json({ status: 'approved' })
 }

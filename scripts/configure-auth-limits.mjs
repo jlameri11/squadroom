@@ -27,6 +27,10 @@ const WANT = {
   rate_limit_verify: 1000,
   rate_limit_otp: 1000,
   rate_limit_token_refresh: 1000,
+  // The sign-up brief (12 Nov 2026): a password is at least 8. The routes
+  // and screens hold the rule too; this stops a direct call to Supabase
+  // setting a shorter one. Production's setting is Joey's (NEEDS JOEY).
+  password_min_length: 8,
 }
 
 const current = await (await fetch(endpoint('config/auth'), { headers })).json()

@@ -40,15 +40,20 @@ export function SetPassword() {
   async function save() {
     setBusy(true)
     setError(null)
-    const { error } = await createClient().auth.updateUser({ password })
-    setBusy(false)
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password })
     if (error) {
+      setBusy(false)
       return setError(
         /same.*password/i.test(error.message)
           ? 'That is already your password.'
           : error.message
       )
     }
+    // Recorded with the account (0272): auth.users cannot say whether a
+    // person set one, so the "Set a password" screen reads this.
+    await supabase.rpc('mark_password_set')
+    setBusy(false)
     setPassword('')
     setAgain('')
     setDone(true)
