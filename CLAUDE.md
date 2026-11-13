@@ -884,6 +884,40 @@ one and is meant to reach hundreds of academies.
   place bends the program's birth years and dates (the club placed the
   child), never gender, and PlayFootball-first still holds (accepted as
   pending). A returning family's "no" takes the child off the squad.
+- **"Feels instant" (Joey, 11 Nov 2026; built 13 Nov; 0273–0274).** Every
+  main screen is the browser's: the server page is a session gate and a
+  shell, and the screen comes from one function in Sydney through
+  `lib/hooks/use-screen` — memory and IndexedDB, stale-while-revalidate,
+  one request per key shared by whoever asks (Home starts its sections'
+  requests with the SAME arguments the sections use, so the key matches;
+  `home_jobs` was fetched twice for a month because it did not), a quiet
+  refetch when the tab comes back after thirty seconds, and
+  `prefetchScreen` for what a tap leads to (Home warms the four tabs and
+  the next game; a chat row in view warms its chat). A chat is
+  `channel_screen`, a game `game_screen` (definer, under the pages' old
+  rules: the roster only for the game's coach), Home's competitions
+  `home_competitions` and the Admin hub `admin_hub` (invoker: the caller's
+  own policies). A new screen gets its own function, its own skeleton in
+  its own shape (`data-skeleton`, which time-screens waits for) and goes
+  through `useScreen` — never a server read across the Pacific. Netlify
+  will not move this plan's functions to Sydney ("You cannot edit functions
+  regions"; NEEDS JOEY #27), so only the API routes still cross it.
+  - **A tap shows its result at once and rolls back with a sentence.**
+    RSVP (Home, the game, a chat card), a sent message (the bubble stays,
+    with the row's id; it used to vanish until the broadcast), a reaction
+    (put back with a word if refused), a goal (`ahead` on the panel: the
+    higher of the database's score and the taps since; the hero is told by
+    a `squadroom:score` event), approving a join or a registration (the
+    row goes, and returns with the reason), a fee or a referee run marked
+    paid. A refusal is `plainRefusal` (lib/offline/outbox.ts): our own
+    sentences are kept, Postgres's are not shown to a parent.
+  - **Measure before touching it:** `THROTTLE=fast4g scripts/time-screens.mjs`
+    (Fast 4G, CPU 4× slower; `SCREEN=` to pick) and `scripts/time-taps.mjs`
+    (tap to screen change for RSVP, send, score), both against
+    `npm run serve:test` — never alongside a suite run, which the demo
+    guard then blames for the game the timer made. Targets: tap feedback
+    under 100 ms, first content under 1 s cold and 300 ms warm
+    (`docs/SCALE.md` §6).
 - **RLS costs are per row SCANNED, not per row returned.** Measured on
   60,000 messages: filtered by channel it is an index scan at ~1ms; an
   unfiltered `select from messages` is a seq scan at ~836ms, because the

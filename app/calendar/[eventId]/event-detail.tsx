@@ -242,11 +242,15 @@ export function EventDetail({
                   <button
                     key={c.value}
                     onClick={() => a.playerId && answer(a.playerId, c.value)}
-                    disabled={busy === a.playerId}
+                    // Not disabled while it saves: the answer is already on
+                    // the button (optimistic, with a rollback below), and a
+                    // greyed row for up to six seconds read as a tap that
+                    // did nothing (the "Feels instant" pass).
+                    aria-busy={busy === a.playerId || undefined}
                     aria-pressed={on}
                     data-choice={c.value}
                     data-player={a.playerId ?? undefined}
-                    className="flex-1 rounded-lg border py-2 text-sm font-semibold disabled:opacity-60"
+                    className="flex-1 rounded-lg border py-2 text-sm font-semibold"
                     style={on
                       ? { borderColor: c.tint, background: `${c.tint}18`, color: c.tint }
                       : { borderColor: 'var(--line)', color: 'var(--ink-2)' }}

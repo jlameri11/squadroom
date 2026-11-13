@@ -75,6 +75,12 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         {/* The iPhone's text size (Dynamic Type), before the first paint for
             the same reason. Does nothing anywhere else. */}
         <script dangerouslySetInnerHTML={{ __html: TEXT_SIZE_SCRIPT }} />
+        {/* The database is where every screen's data comes from: the TLS
+            handshake to it starts with the page, not with the first query
+            (the "Feels instant" pass; one round trip fewer on a cold open). */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="anonymous" />
+        )}
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <HashSession />

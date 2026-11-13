@@ -253,8 +253,16 @@ export function RegistrationQueue() {
   }
 
   async function decide(row: Row, decision: 'approve' | 'decline') {
+    // The row goes the moment the club decides (the "Feels instant" pass):
+    // the route behind it writes the account, the player, the squad and the
+    // number from a server across the Pacific, and nobody should watch a
+    // greyed sheet for that. It comes back, with the reason, if the database
+    // said no — a taken number, a missing photo, a check not ticked.
+    const was = rows
     setBusy(row.request_id)
     setError(null)
+    setOpen(null)
+    setRows((prev) => (prev ?? []).filter((r) => r.request_id !== row.request_id))
     const res = await fetch('/api/register/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -265,13 +273,14 @@ export function RegistrationQueue() {
         note: note[row.request_id] || undefined,
         number: number[row.request_id] || null,
       }),
-    })
+    }).catch(() => null)
     setBusy(null)
-    if (!res.ok) {
-      const b = await res.json().catch(() => ({}))
-      return setError(b.error ?? 'Could not save that.')
+    if (!res || !res.ok) {
+      const b = res ? await res.json().catch(() => ({})) : {}
+      setRows(was)
+      setOpen(row.request_id)
+      return setError(`${row.child_name}: ${b.error ?? "that didn't save. Try again."}`)
     }
-    setOpen(null)
     await load()
   }
 

@@ -273,12 +273,13 @@ export function Composer({
     const replyId = replyTo?.id ?? (!isHost && postingMode === 'replies_only' ? lastMessageId : null)
 
     const tempId = `temp-${crypto.randomUUID()}`
-    addOptimistic({
+    const temp = {
       id: tempId, body: body || null, attachments: uploaded, sender_id: myId, sender_name: 'You',
       sender_role: null, reply_to_id: replyId, reply_to_body: replyTo?.body ?? null,
       reply_to_name: replyTo?.sender_name ?? null, is_announcement: announcement,
       pinned_at: null, created_at: new Date().toISOString(), edited_at: null, deleted_at: null,
-    })
+    }
+    addOptimistic(temp)
     setText('')
     pending.forEach((p) => { if (p.preview) URL.revokeObjectURL(p.preview) })
     setPending([])
@@ -324,7 +325,12 @@ export function Composer({
     setAnnouncement(false)
     setAboutDay('')
     setMentioned([])
-    replaceOptimistic(tempId, null)
+    // The bubble stays, now with the row's own id and time: it used to be
+    // removed here and come back only when the broadcast or the ten-second
+    // poll delivered it — a sent message that vanished for a beat (the
+    // "Feels instant" pass, 13 Nov 2026). If the catch-up has already landed
+    // it, the temporary one simply goes.
+    replaceOptimistic(tempId, data ? { ...temp, id: data.id, created_at: data.created_at } : null)
   }
 
   async function quickReact(emoji: string) {

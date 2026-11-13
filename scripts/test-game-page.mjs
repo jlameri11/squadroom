@@ -147,8 +147,11 @@ try {
     await context.close()
   }
   {
+    // Since 0273 the server sends a shell and the browser draws the game in
+    // the venue's time (section 2 above). What the server must never do is
+    // print a time of its own — a UTC server once said 3:20 am.
     const html = await fetch(`${BASE}/calendar/${ahead.id}`, { headers: { cookie: `${cookieFor(parent).name}=${cookieFor(parent).value}` } }).then((r) => r.text())
-    html.includes('2:20 pm') && !/2:20\s?am|3:20\s?am/i.test(html) ? ok('the first frame from the server says 2:20 pm') : bad('the server-rendered page does not say 2:20 pm')
+    !/\b\d{1,2}:\d{2}\s?(am|pm)\b/i.test(html) ? ok('the first frame from the server prints no clock time of its own — the browser draws 2:20 pm in the venue\'s time') : bad(`the server-rendered page prints a time: ${html.match(/\b\d{1,2}:\d{2}\s?(am|pm)\b/i)?.[0]}`)
   }
 
   head('3. The hero, through a game\'s life')

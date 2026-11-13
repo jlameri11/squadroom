@@ -5,8 +5,9 @@ import { WhenOn } from '@/components/when-on'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useCurrentOrg } from '@/lib/use-current-org'
+import { useScreen } from '@/lib/hooks/use-screen'
 import { AppShellPage } from '@/components/shell-page'
-import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { AdminHubSkeleton } from '@/components/screen-skeletons'
 
 type Counts = { pending: number; pendingRegistrations: number; pendingSignups: number }
 
@@ -22,21 +23,8 @@ type Counts = { pending: number; pendingRegistrations: number; pendingSignups: n
  * owner is reminded that it is theirs to turn on. Nobody is told to get an
  * authenticator app (Joey, 9 Nov 2026: optional, never required).
  */
-function useTwoStepRequired(orgId: string | null | undefined) {
-  const [required, setRequired] = useState<boolean | null>(null)
-  useEffect(() => {
-    if (!orgId) return
-    let live = true
-    ;(async () => {
-      const { data } = await createClient().from('academies').select('two_step_required').eq('id', orgId).maybeSingle()
-      if (live) setRequired(typeof (data as { two_step_required?: boolean } | null)?.two_step_required === 'boolean' ? Boolean((data as { two_step_required?: boolean }).two_step_required) : null)
-    })()
-    return () => {
-      live = false
-    }
-  }, [orgId])
-  return required
-}
+/** What `admin_hub` (0274) answers in one call: the three queues and the two-step rule. */
+type Hub = { pending: number; pending_registrations: number; pending_signups: number; two_step_required: boolean | null }
 
 /**
  * Where running the club lives.
@@ -51,29 +39,17 @@ function useTwoStepRequired(orgId: string | null | undefined) {
  */
 export function AdminHub() {
   const org = useCurrentOrg()
-  const [counts, setCounts] = useState<Counts | null>(null)
-  const twoStepRequired = useTwoStepRequired(org?.id)
+  // One call, cached (0274; the "Feels instant" pass): the three queues and
+  // whether the club requires two-step. It used to be three counts and a
+  // fourth read, each its own trip, before an orange card could show — and
+  // nothing kept between opens.
+  const { data: hub } = useScreen<Hub>('admin_hub', { p_academy: org?.id }, { enabled: Boolean(org) })
+  const counts: Counts | null = hub
+    ? { pending: hub.pending, pendingRegistrations: hub.pending_registrations, pendingSignups: hub.pending_signups }
+    : null
+  const twoStepRequired = typeof hub?.two_step_required === 'boolean' ? hub.two_step_required : null
 
-  useEffect(() => {
-    if (!org) return
-    let live = true
-    ;(async () => {
-      const supabase = createClient()
-      const [{ count: pending }, { count: pendingRegistrations }, { count: pendingSignups }] = await Promise.all([
-        supabase.from('join_requests').select('id', { count: 'exact', head: true }).eq('academy_id', org.id).eq('status', 'pending'),
-        supabase.from('program_registrations').select('id', { count: 'exact', head: true }).eq('academy_id', org.id).eq('status', 'pending'),
-        // Families who used the public register link. A third queue, and the
-        // only one containing people the club has never met.
-        supabase.from('registration_requests').select('id', { count: 'exact', head: true }).eq('academy_id', org.id).eq('status', 'pending'),
-      ])
-      if (live) setCounts({ pending: pending ?? 0, pendingRegistrations: pendingRegistrations ?? 0, pendingSignups: pendingSignups ?? 0 })
-    })()
-    return () => {
-      live = false
-    }
-  }, [org])
-
-  if (!org) return <ScreenSkeleton />
+  if (!org) return <AdminHubSkeleton />
 
   const isCoach = org.role === 'owner' || org.role === 'admin' || org.role === 'coach'
   const isStaff = org.role === 'owner' || org.role === 'admin'

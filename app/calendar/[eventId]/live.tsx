@@ -59,6 +59,11 @@ export function LiveScore({ eventId }: { eventId: string }) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // A goal shows the moment it is tapped (the "Feels instant" pass): the
+  // score the database last gave, and what has been added since. The screen
+  // shows the higher of the two, so the database catching up never counts a
+  // goal twice and a refusal takes it straight back.
+  const [ahead, setAhead] = useState<{ base: { ours: number; theirs: number }; add: { ours: number; theirs: number } } | null>(null)
 
   // The game from the database; nothing to ask with no signal.
   const read = useCallback(async (): Promise<Live | null> => {
@@ -126,7 +131,16 @@ export function LiveScore({ eventId }: { eventId: string }) {
   }
 
   async function tap(kind: string, extra: { p_player?: string; p_assist?: string; p_note?: string } = {}) {
-    setBusy(true)
+    const goal = kind === 'goal_for' || kind === 'goal_against'
+    if (goal && score) {
+      // The score moves now; the database confirms it below.
+      setAhead((a) => ({
+        base: a?.base ?? { ours: score.ours, theirs: score.theirs },
+        add: { ours: (a?.add.ours ?? 0) + (kind === 'goal_for' ? 1 : 0), theirs: (a?.add.theirs ?? 0) + (kind === 'goal_against' ? 1 : 0) },
+      }))
+    } else {
+      setBusy(true)
+    }
     setError(null)
     const minute = kind === 'kick_off' ? null : minuteNow()
     const tappedAt = Date.now()
@@ -142,10 +156,14 @@ export function LiveScore({ eventId }: { eventId: string }) {
     setBusy(false)
     if (outcome.status === 'refused') {
       if (kind === 'kick_off') forgetKickOff(eventId)
-      return setError(outcome.error)
+      if (goal) setAhead(null)
+      return setError(outcome.error.length > 120 ? "That tap didn't save. Try again." : outcome.error)
     }
     // Queued: the outbox shows it (useWaitingTaps). Sent: read the game back.
     if (outcome.status === 'sent') await reread()
+    if (goal) setAhead(null)
+    // The hero above reads the score on its own timer; told now instead.
+    window.dispatchEvent(new CustomEvent('squadroom:score', { detail: eventId }))
     setPicking(null)
     setScorer('')
     setAssist('')
@@ -192,7 +210,9 @@ export function LiveScore({ eventId }: { eventId: string }) {
       <div className="card p-3">
         <div className="flex items-center justify-center gap-4" data-live-score>
           <span className="display text-4xl tabular-nums" style={{ color: finished ? 'var(--ink)' : 'var(--brand-text)' }}>
-            {score ? `${score.ours} – ${score.theirs}` : 'No score kept'}
+            {score
+              ? `${Math.max(score.ours, ahead ? ahead.base.ours + ahead.add.ours : 0)} – ${Math.max(score.theirs, ahead ? ahead.base.theirs + ahead.add.theirs : 0)}`
+              : 'No score kept'}
           </span>
           {kickedOff && !finished && <span className="rounded-full px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wide text-no-ink" style={{ background: 'var(--no)' }}>Live</span>}
         </div>

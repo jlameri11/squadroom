@@ -101,6 +101,7 @@ export function MessageBubble({
 }) {
   const [counts, setCounts] = useState<Count[]>([])
   const [picking, setPicking] = useState(false)
+  const [reactNote, setReactNote] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [reporting, setReporting] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -157,9 +158,12 @@ export function MessageBubble({
   async function react(emoji: string) {
     setPicking(false)
     const existing = counts.find((c) => c.emoji === emoji)
+    const before = counts
 
     // Optimistic: reacting should feel instant, it is the cheapest thing in
     // the app and the one parents in a broadcast channel can actually do.
+    // Rolled back with a word if the database says no (the "Feels instant"
+    // pass: it used to stay on screen, saved or not).
     setCounts((prev) => {
       if (existing?.reacted_by_me) {
         return prev
@@ -171,12 +175,15 @@ export function MessageBubble({
         : [...prev, { emoji, reaction_count: 1, reacted_by_me: true }]
     })
 
-    if (existing?.reacted_by_me) {
-      await supabase.from('message_reactions').delete()
-        .eq('message_id', message.id).eq('emoji', emoji).eq('profile_id', myId)
-    } else {
-      await supabase.from('message_reactions')
-        .insert({ academy_id: academyId, message_id: message.id, profile_id: myId, emoji })
+    const { error } = existing?.reacted_by_me
+      ? await supabase.from('message_reactions').delete()
+          .eq('message_id', message.id).eq('emoji', emoji).eq('profile_id', myId)
+      : await supabase.from('message_reactions')
+          .insert({ academy_id: academyId, message_id: message.id, profile_id: myId, emoji })
+    if (error) {
+      setCounts(before)
+      setReactNote("That reaction didn't save. Try again.")
+      setTimeout(() => setReactNote(null), 3000)
     }
   }
 
@@ -388,6 +395,7 @@ export function MessageBubble({
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-1">
+          {reactNote && <span className="text-xs" style={{ color: 'var(--no)' }} role="status" data-react-note>{reactNote}</span>}
           {!inNotices && counts.map((c) => (
             <button
               key={c.emoji}

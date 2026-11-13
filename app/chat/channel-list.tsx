@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { prefetchScreen } from '@/lib/hooks/use-screen'
+import { useInViewOnce } from '@/lib/hooks/use-in-view'
 import { DEFAULT_TZ } from '@/lib/time'
 
 type Row = {
@@ -302,8 +304,11 @@ function Highlight({ text, term }: { text: string; term: string }) {
 }
 
 function ChannelRow({ c }: { c: Row }) {
+  // A row in view warms its chat (0273's one call) while the list is still
+  // being read, so the tap paints at once (the "Feels instant" pass).
+  const ref = useInViewOnce<HTMLAnchorElement>(() => prefetchScreen('channel_screen', { p_channel: c.channel_id }))
   return (
-    <Link href={`/chat/${c.channel_id}`} className="chan active:bg-[var(--surface-3)]">
+    <Link ref={ref} href={`/chat/${c.channel_id}`} className="chan active:bg-[var(--surface-3)]">
       <span
         className={`av ${c.status === 'archived' || c.unread_count === 0 ? 'alt' : ''}`}
         data-notices={(c.type as string) === 'notices' ? '' : undefined}

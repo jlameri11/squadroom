@@ -99,11 +99,20 @@ export function RefereePayments({ competitionId }: { competitionId: string }) {
   }
 
   async function markPaid(run: Run, method: 'bank' | 'cash') {
+    // The run reads paid at once and is put back with a word if the database
+    // says no (the "Feels instant" pass).
+    const was = data
     setBusy(run.id)
     setError(null)
+    setData((prev) =>
+      prev ? { ...prev, runs: prev.runs.map((r) => (r.id === run.id ? { ...r, status: 'paid' as const, paid_at: new Date().toISOString(), paid_method: method } : r)) } : prev
+    )
     const { error } = await createClient().rpc('mark_referee_run_paid', { p_run: run.id, p_method: method })
     setBusy(null)
-    if (error) return setError(error.message)
+    if (error) {
+      setData(was)
+      return setError(error.message)
+    }
     await load()
   }
 

@@ -1,20 +1,19 @@
 'use client'
 
 import { Fragment, useEffect, useState } from 'react'
-import { useScreen } from '@/lib/hooks/use-screen'
+import { prefetchScreen, useScreen } from '@/lib/hooks/use-screen'
 import { useOrg, useReconcileOrg, getOrg } from '@/lib/org'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import Link from 'next/link'
 import { AppBar, Screen } from '@/components/app-shell'
 import { SignOut } from '@/components/sign-out'
 import { NeedsYou } from './needs-you'
-import { HomeJobs, type JobsHandoff } from './home-jobs'
+import { HomeJobs, rememberedHat, type JobsHandoff } from './home-jobs'
 import { HomeCalendar } from './home-calendar'
 import { HomeCompetitions } from './home-competitions'
 import { HomeOwing } from './home-owing'
 import { EditHome } from './edit-home'
 import { type SectionId } from '@/lib/home-sections'
-import { startEarly, takeEarly } from '@/lib/early'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrQueue, signedInHere } from '@/lib/offline/use-outbox'
 import { WhyOut } from '@/components/why-out'
@@ -67,14 +66,31 @@ export function Home() {
   const { data, failed } = useScreen<HomeData>('home_screen', { p_academy: org })
 
   // The sections' requests start now, alongside the screen's, instead of
-  // after it has rendered (lib/early.ts; one round trip fewer on every open).
+  // after it has rendered — through the screen cache, with the SAME
+  // arguments each section asks with, so a section joins the request already
+  // on its way rather than making its own (the "Feels instant" pass).
   useEffect(() => {
     const o = getOrg() ?? undefined
-    const supabase = createClient()
-    startEarly(`home_layout:${o ?? ''}`, () => supabase.rpc('home_layout', { p_academy: o }))
-    startEarly(`needs_you:${o ?? ''}`, () => supabase.rpc('needs_you', { p_academy: o }))
-    startEarly(`home_jobs:${o ?? ''}`, () => supabase.rpc('home_jobs', { p_academy: o }))
+    prefetchScreen('home_layout', { p_academy: o })
+    prefetchScreen('needs_you', { p_academy: o })
+    prefetchScreen('home_jobs', { p_academy: o, p_persona: rememberedHat(getOrg()) })
+    prefetchScreen('home_competitions', { p_academy: o })
   }, [])
+
+  // Once Home has drawn: the four tabs and the next game are fetched into
+  // the same cache, so tapping any of them paints at once (item 3 of the
+  // brief). The arguments are exactly those screens' own.
+  useEffect(() => {
+    if (!data) return
+    const t = setTimeout(() => {
+      prefetchScreen('chat_screen', { p_academy: org })
+      prefetchScreen('fixtures_screen', { p_days: 60, p_academy: org })
+      const next = data.events.find((e) => (e.type === 'match' || e.type === 'tournament') && !e.cancelled_at)
+      if (next) prefetchScreen('game_screen', { p_event: next.id })
+      if (data.role === 'owner' || data.role === 'admin' || data.role === 'coach') prefetchScreen('admin_hub', { p_academy: data.academy?.id })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [data, org])
 
   // The server says which organisation it actually served. If that is not the
   // one we asked for, the remembered choice belongs to somewhere this person
@@ -199,23 +215,16 @@ function HomeScreen({
   }>({ sections: ['needs', 'upcoming'], available: [], customised: false })
   const [editing, setEditing] = useState(false)
 
+  // Cached with the screen, so a customised layout is the first thing drawn
+  // rather than a reorder a moment later; asked again after the editor closes.
+  const { data: layoutData } = useScreen<{ sections: SectionId[]; available: SectionId[]; customised: boolean }>(
+    'home_layout',
+    { p_academy: getOrg() ?? undefined },
+    { revalidateKey: editing }
+  )
   useEffect(() => {
-    let live = true
-    ;(async () => {
-      const org = getOrg() ?? undefined
-      const { data } = await takeEarly(`home_layout:${org ?? ''}`, () => createClient().rpc('home_layout', { p_academy: org }))
-      if (!live || !data) return
-      const l = data as unknown as {
-        sections: SectionId[]
-        available: SectionId[]
-        customised: boolean
-      }
-      setLayoutState(l)
-    })()
-    return () => {
-      live = false
-    }
-  }, [editing])
+    if (layoutData) setLayoutState(layoutData)
+  }, [layoutData])
 
   // The Channels list is gone from Home (Joey, 4 Nov 2026): the Chat tab is
   // one tap away and carries the same list with the same counts, and a parent

@@ -58,11 +58,18 @@ export function ActiveKidsPanel({ academyId }: { academyId: string }) {
   }, [load])
 
   async function mark(row: Row, redeemed: boolean) {
+    // The tick shows at once and is taken back with a word if the database
+    // says no (the "Feels instant" pass).
+    const was = rows
     setBusy(row.voucher_id)
     setError(null)
+    setRows((prev) => (prev ?? []).map((r) => (r.voucher_id === row.voucher_id ? { ...r, redeemed_at: redeemed ? new Date().toISOString() : null } : r)))
     const { error } = await createClient().rpc('mark_active_kids_redeemed', { p_voucher: row.voucher_id, p_redeemed: redeemed })
     setBusy(null)
-    if (error) return setError(error.message)
+    if (error) {
+      setRows(was)
+      return setError(`${row.voucher_number}: ${error.message}`)
+    }
     await load()
   }
 

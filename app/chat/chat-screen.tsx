@@ -3,7 +3,7 @@
 import { ChannelList } from './channel-list'
 import { NewChat } from './new-chat'
 import { AppBar, Screen } from '@/components/app-shell'
-import { ScreenSkeleton } from '@/components/screen-skeleton'
+import { ChatListSkeleton } from '@/components/screen-skeletons'
 import { useScreen } from '@/lib/hooks/use-screen'
 import { useOrg } from '@/lib/org'
 
@@ -25,7 +25,7 @@ export function ChatScreen() {
       </div>
     )
   }
-  if (!data) return <ScreenSkeleton />
+  if (!data) return <ChatListSkeleton />
 
   const rows = data.channels ?? []
   const unread = rows.reduce((n, c) => n + (c.muted ? 0 : c.unread_count), 0)

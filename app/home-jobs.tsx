@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { takeEarly } from '@/lib/early'
-import { createClient } from '@/lib/supabase/client'
 import { getOrg, setOrg } from '@/lib/org'
-import { invalidateScreen } from '@/lib/hooks/use-screen'
+import { invalidateScreen, useScreen } from '@/lib/hooks/use-screen'
 import { DEFAULT_TZ } from '@/lib/time'
 import { WhenOn } from '@/components/when-on'
 import { RoleRequests } from '@/app/admin/requests/role-requests'
@@ -76,7 +74,7 @@ const PERSONA_WORD: Record<Persona, string> = {
 
 /** The hat being worn on this organisation's Home, remembered per organisation (0237). */
 const hatKey = (org: string) => `squadroom.hat:${org}`
-function rememberedHat(org: string | null): string | undefined {
+export function rememberedHat(org: string | null): string | undefined {
   try {
     return (org && localStorage.getItem(hatKey(org))) || undefined
   } catch {
@@ -109,32 +107,21 @@ export const isFreshAnnouncement = (createdAt: string, now = Date.now()) =>
   now - new Date(createdAt).getTime() < ANNOUNCEMENT_DAYS * 864e5
 
 export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
-  const [data, setData] = useState<Jobs | null>(null)
-  const [setup, setSetup] = useState<Setup | null>(null)
   const [hat, setHat] = useState<string | undefined>(() => rememberedHat(getOrg()))
-
+  // Cached with the screen (the "Feels instant" pass): the last answer paints
+  // at once. Home starts this request before the card mounts with the SAME
+  // arguments, so the card joins it instead of asking twice — which it did
+  // for months, the early call having no persona (time-screens, 13 Nov 2026).
+  const org = getOrg() ?? undefined
+  const { data } = useScreen<Jobs>('home_jobs', { p_academy: org, p_persona: hat })
+  // G-01: a club still being set up gets the checklist first.
+  const persona = data?.persona
+  const { data: setup } = useScreen<Setup>('setup_progress', { p_academy: org }, { enabled: persona === 'owner' || persona === 'president' })
   useEffect(() => {
-    let live = true
-    ;(async () => {
-      const supabase = createClient()
-      const org = getOrg() ?? undefined
-      const { data } = await takeEarly(`home_jobs:${org ?? ''}:${hat ?? ''}`, () => supabase.rpc('home_jobs', { p_academy: org, p_persona: hat }))
-      if (!live) return
-      const jobs = (data as unknown as Jobs | null) ?? null
-      setData(jobs)
-      if (jobs) onJobs?.({ persona: jobs.persona, jobs: jobs.jobs ?? [] })
-      // G-01: a club still being set up gets the checklist first.
-      if (jobs?.persona === 'owner' || jobs?.persona === 'president') {
-        const { data: s } = await supabase.rpc('setup_progress', { p_academy: getOrg() ?? undefined })
-        if (live) setSetup((s as unknown as Setup | null) ?? null)
-      }
-    })()
-    return () => {
-      live = false
-    }
+    if (data) onJobs?.({ persona: data.persona, jobs: data.jobs ?? [] })
     // onJobs is a state setter from Home; stable for the life of the screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hat])
+  }, [data])
 
   function wear(next: string) {
     try {

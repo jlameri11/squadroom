@@ -729,6 +729,14 @@ security sweep, test reliability and the four-role navigation (CLAUDE.md
     server-rendered page crosses the Pacific twice. The browser's own calls
     go to Supabase (Sydney) directly.
 
+    **Status: built 13 Nov 2026 (0273–0274; NIGHT_LOG, SCALE.md §6).**
+    Items 1, 2, 3 and 5 as written; item 4 by moving the last two
+    server-rendered main screens (a chat, a game) to the browser, because
+    Netlify refuses to move this plan's functions ("You cannot edit
+    functions regions" — NEEDS JOEY #27); item 6 measured before and after
+    on a throttled Fast 4G profile with `time-screens.mjs` and the new
+    `time-taps.mjs`.
+
     **Done (11 Nov 2026; 0255–0256):** `role_requests` with
     `request_role`, `decide_role_request`, `role_requests_pending`,
     `my_role_requests`, `withdraw_role_request`; Settings → Request a role,

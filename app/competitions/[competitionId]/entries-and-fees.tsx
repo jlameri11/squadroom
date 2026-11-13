@@ -161,10 +161,22 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
     await load()
   }
   async function mark(feeId: string, status: 'paid' | 'waived' | 'owed') {
+    // The row changes at once and is put back with a word if the database
+    // says no (the "Feels instant" pass); the totals follow on the reload.
+    const was = fees
     setBusy(feeId)
+    setError(null)
+    setFees((prev) =>
+      prev
+        ? { ...prev, entries: prev.entries.map((e) => (e.fee_id === feeId ? { ...e, status, paid_at: status === 'paid' ? new Date().toISOString() : null } : e)) }
+        : prev
+    )
     const { error } = await createClient().rpc('mark_entry_fee', { p_fee: feeId, p_status: status, p_method: 'bank' })
     setBusy(null)
-    if (error) return setError(error.message)
+    if (error) {
+      setFees(was)
+      return setError(error.message)
+    }
     await load()
   }
 

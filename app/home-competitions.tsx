@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getOrg } from '@/lib/org'
+import { useScreen } from '@/lib/hooks/use-screen'
 
 type Row = {
   id: string
@@ -28,60 +28,12 @@ type Row = {
  * played" tells a parent whether the ladder is worth looking at yet.
  */
 export function HomeCompetitions() {
-  const [rows, setRows] = useState<Row[] | null>(null)
-
-  useEffect(() => {
-    let live = true
-    ;(async () => {
-      const supabase = createClient()
-      // RLS returns competitions you organise or your club has entered, so
-      // there is nothing to filter by academy here — and a competition
-      // SPANS tenants, which is why it is not scoped to one.
-      const { data: comps } = await supabase
-        .from('competitions')
-        .select('id, name, season, status, academies!organiser_id(name)')
-        .neq('status', 'ended')
-        .order('created_at', { ascending: false })
-        .limit(4)
-
-      if (!live || !comps) return setRows([])
-
-      // One round trip per competition, for at most four. Counting fixtures
-      // in the same query would need an aggregate PostgREST cannot express
-      // without a view, and four small counts beat a migration here.
-      const withProgress = await Promise.all(
-        comps.map(async (c) => {
-          const [{ count: total }, { count: played }, { data: divisions }] = await Promise.all([
-            supabase
-              .from('fixtures')
-              .select('id', { count: 'exact', head: true })
-              .eq('competition_id', c.id),
-            supabase
-              .from('fixtures')
-              .select('id', { count: 'exact', head: true })
-              .eq('competition_id', c.id)
-              .eq('status', 'final'),
-            supabase.from('competition_entries').select('division').eq('competition_id', c.id),
-          ])
-          const organiser = Array.isArray(c.academies) ? c.academies[0] : c.academies
-          return {
-            id: c.id,
-            name: c.name,
-            season: c.season,
-            organiser: (organiser as { name?: string } | null)?.name ?? null,
-            divisions: new Set((divisions ?? []).map((d) => d.division).filter(Boolean)).size,
-            played: played ?? 0,
-            total: total ?? 0,
-          }
-        })
-      )
-
-      if (live) setRows(withProgress)
-    })()
-    return () => {
-      live = false
-    }
-  }, [])
+  // One call (0274, as the caller: the competitions you organise or your
+  // club has entered — a competition SPANS tenants, so it is not scoped to
+  // one), cached like the rest of Home. This used to be a request for the
+  // competitions and three more for each of them, thirteen in two rounds,
+  // on every open (time-screens, 13 Nov 2026).
+  const { data: rows } = useScreen<Row[]>('home_competitions', { p_academy: getOrg() ?? undefined })
 
   if (!rows || rows.length === 0) return null
 

@@ -15,6 +15,10 @@ type Status = {
   ok: boolean
   trusted_until: string | null
 }
+
+/** The last answer, for the life of the tab: asked again after a minute, or at once when it was asking for a code. */
+let known: { at: number; status: Status | null } | null = null
+const KNOWN_FOR_MS = 60_000
 type Sent = { channel: 'sms' | 'email' | 'demo'; to: string; dev_code?: string; wait?: number }
 type Enrolling = { factorId: string; qr: string; secret: string }
 type Phase = 'device' | 'sending' | 'code' | 'no-delivery' | 'totp'
@@ -49,23 +53,38 @@ export function TwoStepWall() {
   const [enrolling, setEnrolling] = useState<Enrolling | null>(null)
   const started = useRef(false)
 
-  const check = useCallback(async () => {
+  const check = useCallback(async (force = false) => {
+    // Asked once a minute, not on every page and auth event: it was three
+    // calls per screen, on every screen (time-screens, 13 Nov 2026). A status
+    // that is asking for a code is never reused — that one is answered live.
+    if (!force && known && Date.now() - known.at < KNOWN_FOR_MS) {
+      const s = known.status
+      if (!(s && s.required && !s.enrolled && !s.ok)) return setStatus(s)
+    }
     const supabase = createClient()
     const { data: s } = await supabase.auth.getSession()
-    if (!s.session) return setStatus(null)
+    if (!s.session) {
+      known = null
+      return setStatus(null)
+    }
     const { data } = await supabase.rpc('two_step_status')
-    setStatus((data as unknown as Status | null) ?? null)
+    const status = (data as unknown as Status | null) ?? null
+    known = { at: Date.now(), status }
+    setStatus(status)
   }, [])
 
   useEffect(() => {
     if (isPublicPage(pathname)) return
     let live = true
     ;(async () => {
-      if (live) await check()
+      if (live) await check(false)
     })()
-    // Verifying an authenticator code upgrades the session; ask again when it does.
-    const { data: sub } = createClient().auth.onAuthStateChange(() => {
-      if (live) void check()
+    // Verifying an authenticator code upgrades the session; ask again when it
+    // does. The first event a new listener gets is the session as it stands,
+    // which the call above has just covered.
+    const { data: sub } = createClient().auth.onAuthStateChange((event) => {
+      if (event === 'INITIAL_SESSION') return
+      if (live) void check(true)
     })
     return () => {
       live = false
@@ -114,7 +133,7 @@ export function TwoStepWall() {
       if (device) {
         const { data } = await createClient().rpc('two_step_trust_this_session', { p_device: device })
         if ((data as { trusted?: boolean } | null)?.trusted) {
-          await check()
+          await check(true)
           router.refresh()
           return
         }
@@ -144,7 +163,7 @@ export function TwoStepWall() {
     setBusy(false)
     setCode('')
     if (res.ok && json.ok) {
-      await check()
+      await check(true)
       router.refresh()
       return
     }
@@ -190,7 +209,7 @@ export function TwoStepWall() {
     setCode('')
     if (vErr) return setError('That code did not match. Codes change every thirty seconds — try the current one.')
     setEnrolling(null)
-    await check()
+    await check(true)
   }
 
   async function signOut() {

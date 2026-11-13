@@ -212,11 +212,18 @@ export function useGame(event: GameEvent, us: { club: string; team: string | nul
       const on = g?.live && g.live.window_open && !g.live.finished
       if (on && document.visibilityState === 'visible') void refreshScore()
     }, 15_000)
+    // A tap on the score panel below says so, and the hero follows at once
+    // rather than on its next tick (the "Feels instant" pass).
+    const onScore = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === event.id) void refreshScore()
+    }
+    window.addEventListener('squadroom:score', onScore)
     return () => {
       live = false
       clearInterval(timer)
+      window.removeEventListener('squadroom:score', onScore)
     }
-  }, [load, refreshScore])
+  }, [load, refreshScore, event.id])
 
   // Score taps still on this phone (X-09): the hero counts them too.
   const { taps } = useWaitingTaps(event.id, refreshScore)

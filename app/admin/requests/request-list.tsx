@@ -17,21 +17,28 @@ export function RequestList({ initial }: { initial: PendingRequest[] }) {
   const [error, setError] = useState<string | null>(null)
 
   async function decide(id: string, decision: 'approve' | 'decline') {
+    // The row goes the moment the coach decides (the "Feels instant" pass):
+    // the route behind it is a dozen writes from a server across the
+    // Pacific, and a coach should not watch "Working…" for them. It comes
+    // back, with a sentence, if the database said no.
+    const row = rows.find((x) => x.id === id)
+    const was = rows
     setBusyId(id)
     setError(null)
+    setRows((r) => r.filter((x) => x.id !== id))
 
     const res = await fetch('/api/join/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ requestId: id, decision }),
-    })
+    }).catch(() => null)
 
     setBusyId(null)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      return setError(body.error ?? 'That did not work.')
+    if (!res || !res.ok) {
+      const body = res ? await res.json().catch(() => ({})) : {}
+      setRows(was)
+      return setError(`${row ? `${row.fullName}: ` : ''}${body.error ?? (decision === 'approve' ? "that approval didn't go through. Try again." : "that didn't go through. Try again.")}`)
     }
-    setRows((r) => r.filter((x) => x.id !== id))
   }
 
   if (rows.length === 0) {

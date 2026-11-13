@@ -196,6 +196,26 @@ export async function pending(store: Store, profileId: string): Promise<number> 
  * treated as RETRYABLE, because keeping a write too long is recoverable and
  * dropping one is not.
  */
+/**
+ * A refusal in words a parent can act on (the "Feels instant" brief: "roll
+ * back with a clear message"). The database's own sentences — the ones our
+ * functions raise, like "Under 13s don't have their own login" — are kept;
+ * Postgres's internal ones ("new row violates row-level security policy for
+ * table …") are not something to show at a football ground.
+ */
+export function plainRefusal(message: string, code?: string): string {
+  const m = message.trim()
+  if (/row-level security|permission denied|not allowed|42501/i.test(m) || code === '42501') {
+    return "This account isn't allowed to do that. If that's wrong, ask your coach or the club."
+  }
+  if (/duplicate key|already exists|23505/i.test(m) || code === '23505') return 'That was already saved.'
+  if (/violates (check|foreign key|not-null) constraint|null value in column|invalid input syntax|23502|23503|23514|22P02/i.test(m)) {
+    return "That didn't save — something about it the club's rules don't allow. Try again, or ask the club."
+  }
+  if (/^(PGRST|JWT|FetchError|TypeError)/i.test(m) || m.length > 160) return "That didn't save. Try again in a moment."
+  return m
+}
+
 export function classify(error: unknown): SendResult {
   if (!error) return { ok: true }
 
@@ -211,7 +231,7 @@ export function classify(error: unknown): SendResult {
       e.code === '57014' || e.code.startsWith('08') || e.code === 'PGRST504'
     return transient
       ? { ok: false, retry: true, error: message }
-      : { ok: false, retry: false, error: message }
+      : { ok: false, retry: false, error: plainRefusal(message, e.code) }
   }
 
   // No code at all: a TypeError from fetch, an abort, a timeout — no answer

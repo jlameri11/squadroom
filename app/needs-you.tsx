@@ -1,9 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { takeEarly } from '@/lib/early'
-import { createClient } from '@/lib/supabase/client'
+import { useScreen } from '@/lib/hooks/use-screen'
 import { getOrg } from '@/lib/org'
 import type { JobsHandoff } from './home-jobs'
 
@@ -42,23 +40,12 @@ type Item = {
  * next three weeks that a child of theirs has not been answered for.
  */
 export function NeedsYou({ jobs }: { jobs?: JobsHandoff | null }) {
-  const [items, setItems] = useState<Item[] | null>(null)
-
-  useEffect(() => {
-    let live = true
-    ;(async () => {
-      // `?? undefined`, because getOrg returns null for "no preference" and
-      // the generated signature takes an optional uuid rather than a
-      // nullable one.
-      const org = getOrg() ?? undefined
-      const { data } = await takeEarly(`needs_you:${org ?? ''}`, () => createClient().rpc('needs_you', { p_academy: org }))
-      if (!live) return
-      setItems((data ?? []) as Item[])
-    })()
-    return () => {
-      live = false
-    }
-  }, [])
+  // Cached with the screen (the "Feels instant" pass): the last answer paints
+  // at once, the fresh one replaces it. Home starts this request before the
+  // section mounts, and the hook joins it rather than asking twice.
+  // `?? undefined`, because getOrg returns null for "no preference" and the
+  // generated signature takes an optional uuid rather than a nullable one.
+  const { data: items } = useScreen<Item[]>('needs_you', { p_academy: getOrg() ?? undefined })
 
   if (!items) return null
 
