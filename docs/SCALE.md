@@ -225,3 +225,126 @@ What the numbers say, for 10,000 parents:
   runs on Netlify functions.
 
 The decision, and its cost, is Joey's: NIGHT_LOG, NEEDS JOEY #21.
+
+## 6. "Feels instant" — a phone on 4G (13 Nov 2026)
+
+Joey's brief of 11 Nov: no perceived lag on a phone on 4G — stale-while-
+revalidate on every main screen, optimistic taps, prefetching, server work in
+Sydney, skeletons in the real shape, and the numbers before and after.
+Targets: tap feedback under 100 ms, first content under 1 s cold and under
+300 ms warm. BUILD_PLAN item 16; 0273–0275.
+
+### How it was measured
+
+- `THROTTLE=fast4g node --env-file=.env.local scripts/time-screens.mjs`
+  against the production build (`npm run serve:test`) on this laptop:
+  Chrome's **Fast 4G** profile (9 Mbps down, 1.5 up, 165 ms latency) and a
+  **CPU four times slower** — roughly a mid-range phone on a good mobile
+  signal. Median of three. Since this pass a visit gives two numbers:
+  **first content**, when the skeleton has gone and a person can read
+  something; and **settled**, when no request to the database has been in
+  flight for 400 ms — which now includes the prefetching for the next tap.
+- `scripts/time-taps.mjs`: the three taps people make most, timed inside the
+  page from the tap to the screen changing — an RSVP on Home, a message
+  sent in a chat, a goal on match day — and what followed (the database
+  having it, the bubble staying, the hero agreeing).
+- **Read "before" with care.** A chat and a game were rendered on the
+  server, and the harness timed that frame from a server on this laptop: no
+  Pacific crossing, and the browser's own requests after it were not caught
+  (the old game page even timed out warm, on a realtime socket the harness
+  counted as a request). In production each of those pages paid two trips
+  to Sydney from us-east-2 — 250–700 ms each (NIGHT_LOG, 11 Nov) — before
+  the first byte. So those two rows are not like for like; the request
+  counts are. Fixtures and the Ladder read as ready in ~420 ms in both runs
+  because their shell was the loading placeholder, which carried no skeleton
+  mark and had made no request yet at DOMContentLoaded; the harness now waits
+  for a request, and those two are re-measured below.
+
+### Screens (ms; Fast 4G, CPU 4× slower; median of 3)
+
+| Screen | As | Before: settled cold | Before: settled warm | Before: requests | After: first cold | After: first warm | After: settled cold | After: settled warm | After: requests |
+|---|---|---|---|---|---|---|---|---|---|
+| Home | parent | 1448 | 483 | 15 | 1382 | **255** | 1553 | 472 | 13 |
+| Chat list | parent | 1385 | 437 | 10 | 1206 | **241** | 1324 | 1084 ¹ | 8 |
+| U8 chat | parent | 424 ² | 217 ² | 0 ² | 1266 | **258** | 1568 | 528 | 19 |
+| Fixtures | parent | 419 ³ | 218 ³ | 0 ³ | 418 ³ | 219 ³ | — | — | — |
+| Next game | parent | 443 ² | — ² | 25 | 1219 | **259** | 2147 | 1019 ¹ | 24 |
+| Home | coach | 2000 | 850 | 25 | 1288 | **260** | 1493 | 461 | 13 |
+| Admin | coach | 1587 | 602 | 15 | 1427 | 451 | 1591 | 596 | 10 |
+| Admin | owner | 1553 | 609 | 17 | 1331 | 455 | 1545 | 602 | 12 |
+| Ladder | league | 422 ³ | 250 ³ | 0 ³ | 422 ³ | 368 ³ | — | — | — |
+| Match centre | stranger | 436 | 239 | 1 | 428 | 229 | 441 | 229 | 1 |
+
+¹ Settled late on purpose: the chat list warms each chat whose row is in
+view, and the game page loads its tabs' panels after the hero; both are
+background work after first content.
+² A server-rendered frame from a local server — see above.
+³ The loading placeholder, not content — see above; re-measured below.
+
+**The repeated calls that were there before:** `two_step_status` three times
+on every screen (now once a minute per tab), `home_jobs` twice on every Home
+(the early start and the card asked with different keys), the competitions
+card's one-plus-three-per-competition (thirteen requests on a coach's Home;
+one now), the Admin hub's three counts plus one (one now). Still there and
+noted for later: the game page's `fixtures` ×3 and its 24 requests in all
+(`use-game` plus the preview tab's panels), the chat's `profiles` ×2 and the
+per-poll `poll_results`/`my_poll_votes`, and the Admin hub's `jwks` ×2 and
+`academy_members` ×2 on a cold open (two readers of the current
+organisation before the shared read lands).
+
+### Taps (ms from the tap to the screen; Fast 4G, CPU 4×; median of 3)
+
+| Tap | Before | Then (before) | After | Then (after) |
+|---|---|---|---|---|
+| RSVP on Home | 2 | saved in the database after 22 ms | 2 | saved after 33 ms |
+| Send a message | 19 | **the bubble vanished for a moment, 3 of 3** | 21 | the bubble stayed |
+| +1 Them on match day | **362** | **the hero agreed after 12,657 ms** | **2** | the hero agreed after 2 ms |
+
+### What changed
+
+1. **A chat and a game are the browser's** (0273): `channel_screen` and
+   `game_screen`, one call each from Sydney, through `lib/hooks/use-screen`
+   — the same memory-and-IndexedDB cache Home, the Chat list and Fixtures
+   had — so a chat or a game opened before paints at once and refreshes
+   quietly; the pages are session gates and shells. Netlify refuses to move
+   this plan's functions to Sydney (NEEDS JOEY #27), which is why the pages
+   moved rather than the server.
+2. **One request per screen key**: whoever asks first starts it, anyone
+   else joins (`fetchScreen`); an answer under five seconds old is not asked
+   for again; a screen asks again quietly when the tab comes back after
+   thirty seconds away. Home's sections (`home_layout`, `needs_you`,
+   `home_jobs`, `home_competitions`) and the Admin hub (`admin_hub`, 0274)
+   go through the same cache; `home_competitions` counts a competition's
+   fixtures in one pass (0275).
+3. **Prefetch**: once Home has settled, the four tabs' screens and the next
+   game; a chat row in view warms its chat (`useInViewOnce`); a
+   `preconnect` to the database in the page head.
+4. **Taps show at once and roll back with a sentence**: the sent bubble
+   keeps the row's id instead of vanishing until the broadcast; a reaction
+   is put back with a word if refused; a goal moves the score on the tap
+   (`ahead`), and the hero is told by a `squadroom:score` event instead of
+   waiting for its fifteen-second timer; approving a join or a registration
+   removes the row at once and brings it back with the reason; a fee, a
+   referee run and a voucher marked paid or redeemed the same. The game
+   page's RSVP buttons are no longer greyed for up to six seconds. A refusal
+   is `plainRefusal`: our own sentences kept, Postgres's not shown.
+5. **Skeletons in the real shape**: a chat (bar, bubbles, composer), a game
+   (back link, hero, tabs), the chat list (search, rows), the Admin hub
+   (rows); every loading state carries `data-skeleton`.
+6. **Fewer calls per screen**: `two_step_status` once a minute per tab and
+   shared in flight; one current-organisation read per tab.
+
+### What the numbers say, and what is left
+
+- **Warm, first content is 220–260 ms on every main screen** except the
+  Admin hub (450 ms, which first resolves the current organisation and
+  then asks) — under the 300 ms target. **Cold, first content is 1.2–1.4 s**
+  on this profile against a 1 s target: the database answers in 30–60 ms,
+  the one round trip costs 165 ms, and the rest is the JavaScript itself on
+  a four-times-slower CPU. What would move it: a smaller first chunk (fewer
+  client components on the first paint), and for the game page one
+  `game_context` call in place of `use-game`'s cascade (24 requests).
+- **Every tap is at 2–21 ms**, and what follows a tap now agrees with it:
+  the goal's hero in 2 ms from 12.7 s, the sent message on screen for good.
+- Settled times include the prefetching that makes the *next* tap instant;
+  first content is the number that says what a person sees.

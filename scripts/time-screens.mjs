@@ -131,7 +131,13 @@ async function visit(page, path) {
     // is not what this visit is waiting for (the warm chat list read 30 s
     // for that reason, 13 Nov 2026).
     const active = [...inflight.values()].filter((t) => t >= t0 && Date.now() - t < 10000).length
-    if (!skeleton && active === 0 && Date.now() - t0 - last >= 400) {
+    // Not before the screen has asked for anything: a page whose shell is a
+    // loading placeholder had no skeleton mark and no request yet at
+    // DOMContentLoaded, and read as ready in 400 ms (Fixtures, 13 Nov 2026).
+    // A page that truly asks for nothing (the match centre) is ready after
+    // five quiet seconds.
+    const asked = calls.length > 0 || inflight.size > 0 || Date.now() - t0 > 5000
+    if (!skeleton && asked && active === 0 && Date.now() - t0 - last >= 400) {
       ready = Math.max(dcl, last, skeletonGone ?? 0)
       break
     }
