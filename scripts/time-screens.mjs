@@ -126,7 +126,12 @@ async function visit(page, path) {
     const skeleton = await page.$('[data-skeleton]').catch(() => null)
     if (!skeleton && skeletonGone === null) skeletonGone = Date.now() - t0
     if (skeleton) skeletonGone = null
-    if (!skeleton && inflight.size === 0 && Date.now() - t0 - last >= 400) {
+    // A request the previous page started and the navigation cut off can
+    // stay "in flight" for puppeteer for good; one older than ten seconds
+    // is not what this visit is waiting for (the warm chat list read 30 s
+    // for that reason, 13 Nov 2026).
+    const active = [...inflight.values()].filter((t) => t >= t0 && Date.now() - t < 10000).length
+    if (!skeleton && active === 0 && Date.now() - t0 - last >= 400) {
       ready = Math.max(dcl, last, skeletonGone ?? 0)
       break
     }
@@ -139,7 +144,10 @@ async function visit(page, path) {
   for (const c of calls) counts[c.kind] = (counts[c.kind] ?? 0) + 1
   const repeated = Object.entries(counts).filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1])
   const slowest = calls.slice().sort((a, b) => b.ms - a.ms)[0] ?? null
-  return { ready: ready ?? 30000, requests: calls.length, slowest, repeated }
+  // `first` is when the skeleton went — the first content a person can read
+  // (the brief's "first content under 1 s cold, 300 ms warm"); `ready` is
+  // when the screen had settled, prefetching for the next tap included.
+  return { ready: ready ?? 30000, first: skeletonGone ?? dcl, requests: calls.length, slowest, repeated }
 }
 
 const median = (xs) => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)]
@@ -149,6 +157,8 @@ const only = (process.env.SCREEN ?? '').split(',').map((s) => s.trim().toLowerCa
 for (const s of SCREENS.filter((s) => only.length === 0 || only.some((o) => s.name.toLowerCase().includes(o)))) {
   const colds = []
   const warms = []
+  const firstColds = []
+  const firstWarms = []
   let detail = null
   for (let run = 0; run < RUNS; run++) {
     const context = await browser.createBrowserContext()
@@ -164,19 +174,21 @@ for (const s of SCREENS.filter((s) => only.length === 0 || only.some((o) => s.na
     const warm = await visit(page, s.path)
     colds.push(cold.ready)
     warms.push(warm.ready)
+    firstColds.push(cold.first)
+    firstWarms.push(warm.first)
     if (run === 0) detail = cold
     await context.close()
   }
-  results.push({ ...s, cold: median(colds), warm: median(warms), requests: detail.requests, slowest: detail.slowest, repeated: detail.repeated })
+  results.push({ ...s, cold: median(colds), warm: median(warms), firstCold: median(firstColds), firstWarm: median(firstWarms), requests: detail.requests, slowest: detail.slowest, repeated: detail.repeated })
 }
 await browser.close()
 
 const pad = (v, n) => String(v).padEnd(n)
-console.log(`\n  ${BASE} · median of ${RUNS}${THROTTLE ? ' · Fast 4G, CPU 4× slower' : ''} · target: under 1000 ms cold, 300 ms warm\n`)
-console.log(`  ${pad('screen', 14)}${pad('as', 9)}${pad('cold ms', 9)}${pad('warm ms', 9)}${pad('requests', 10)}slowest`)
+console.log(`\n  ${BASE} · median of ${RUNS}${THROTTLE ? ' · Fast 4G, CPU 4× slower' : ''} · first content: under 1000 ms cold, 300 ms warm\n`)
+console.log(`  ${pad('screen', 14)}${pad('as', 9)}${pad('first cold', 12)}${pad('first warm', 12)}${pad('settled cold', 14)}${pad('settled warm', 14)}${pad('requests', 10)}slowest`)
 for (const r of results) {
-  const flag = r.cold > 1000 || r.warm > 1000 ? ' ◀' : ''
-  console.log(`  ${pad(r.name, 14)}${pad(r.as, 9)}${pad(r.cold, 9)}${pad(r.warm, 9)}${pad(r.requests, 10)}${r.slowest ? `${r.slowest.kind} ${r.slowest.ms} ms` : '—'}${flag}`)
+  const flag = r.firstCold > 1000 || r.firstWarm > 300 ? ' ◀' : ''
+  console.log(`  ${pad(r.name, 14)}${pad(r.as, 9)}${pad(r.firstCold, 12)}${pad(r.firstWarm, 12)}${pad(r.cold, 14)}${pad(r.warm, 14)}${pad(r.requests, 10)}${r.slowest ? `${r.slowest.kind} ${r.slowest.ms} ms` : '—'}${flag}`)
 }
 const repeats = results.filter((r) => r.repeated.length)
 if (repeats.length) {

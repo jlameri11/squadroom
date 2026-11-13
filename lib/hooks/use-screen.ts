@@ -65,6 +65,7 @@ const pending = new Map<string, Promise<Reply>>()
 const fetchedAt = new Map<string, number>()
 const PREFETCH_FRESH_MS = 30_000
 const REVALIDATE_AFTER_MS = 30_000
+const FRESH_MS = 5_000
 
 const keyOf = (fn: string, args?: Record<string, unknown>) => fn + ':' + JSON.stringify(args ?? {})
 
@@ -190,7 +191,12 @@ export function useScreen<T>(
       setData(data as T)
     }
 
-    void fetchScreen(fn, args).then(take)
+    // An answer that landed moments ago — Home's early start, a prefetch
+    // from the screen before — is the answer; asking again would be the
+    // same request twice (time-screens, 13 Nov 2026). Older than that, the
+    // cached copy paints and a fresh one follows.
+    const at = fetchedAt.get(key)
+    if (!(at && Date.now() - at < FRESH_MS && cache.get(key) !== undefined)) void fetchScreen(fn, args).then(take)
 
     // Back to the tab after a while away: ask again, quietly. The screen on
     // display stays until the answer lands.

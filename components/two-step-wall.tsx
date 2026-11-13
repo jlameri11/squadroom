@@ -18,6 +18,7 @@ type Status = {
 
 /** The last answer, for the life of the tab: asked again after a minute, or at once when it was asking for a code. */
 let known: { at: number; status: Status | null } | null = null
+let inflight: Promise<Status | null> | null = null
 const KNOWN_FOR_MS = 60_000
 type Sent = { channel: 'sms' | 'email' | 'demo'; to: string; dev_code?: string; wait?: number }
 type Enrolling = { factorId: string; qr: string; secret: string }
@@ -57,20 +58,27 @@ export function TwoStepWall() {
     // Asked once a minute, not on every page and auth event: it was three
     // calls per screen, on every screen (time-screens, 13 Nov 2026). A status
     // that is asking for a code is never reused — that one is answered live.
-    if (!force && known && Date.now() - known.at < KNOWN_FOR_MS) {
-      const s = known.status
-      if (!(s && s.required && !s.enrolled && !s.ok)) return setStatus(s)
+    // A forced ask moments after another (the sign-in event on load) joins
+    // it rather than asking twice.
+    const asking = (s: Status | null) => Boolean(s && s.required && !s.enrolled && !s.ok)
+    if (known && !asking(known.status) && Date.now() - known.at < (force ? 2_000 : KNOWN_FOR_MS)) return setStatus(known.status)
+    if (!inflight) {
+      inflight = (async () => {
+        const supabase = createClient()
+        const { data: s } = await supabase.auth.getSession()
+        if (!s.session) {
+          known = null
+          return null
+        }
+        const { data } = await supabase.rpc('two_step_status')
+        const status = (data as unknown as Status | null) ?? null
+        known = { at: Date.now(), status }
+        return status
+      })().finally(() => {
+        inflight = null
+      })
     }
-    const supabase = createClient()
-    const { data: s } = await supabase.auth.getSession()
-    if (!s.session) {
-      known = null
-      return setStatus(null)
-    }
-    const { data } = await supabase.rpc('two_step_status')
-    const status = (data as unknown as Status | null) ?? null
-    known = { at: Date.now(), status }
-    setStatus(status)
+    setStatus(await inflight)
   }, [])
 
   useEffect(() => {

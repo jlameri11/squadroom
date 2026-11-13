@@ -37,6 +37,16 @@ the "Feels instant" pass, then the simulation.
   up**: the 6-digit confirmation code goes by email, and Supabase's built-in
   sender is rate-limited to a handful an hour. Commit and push hourly;
 Joey says when the next deploy is.
+- **New NEEDS JOEY #27 (the "Feels instant" pass, 13 Nov):** Netlify runs
+  our server code in **us-east-2** and refuses to move it on this plan
+  (`PATCH /sites/{id} {functions_region: "ap-southeast-2"}` → 422 "You
+  cannot edit functions regions"; Personal / nf_team_dev). Every main screen
+  now loads from the browser straight from Sydney, so this only costs the
+  API routes (approve, pay, account, webhooks) a Pacific crossing — but a
+  plan that allows a Sydney region (Site configuration → Build & deploy →
+  Functions → Region, then a redeploy) would take that away too. Also from
+  the pass: **production's `password_min_length`** is still Supabase's 6
+  (dev is 8 — Authentication → Providers → Email → minimum password length).
 
 ## Day summary — 9 Nov 2026 (Mon): the token, migration day, the deploy
 

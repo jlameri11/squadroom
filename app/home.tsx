@@ -82,13 +82,14 @@ export function Home() {
   // brief). The arguments are exactly those screens' own.
   useEffect(() => {
     if (!data) return
+    // After Home's own requests have settled, never racing them for the 4G.
     const t = setTimeout(() => {
       prefetchScreen('chat_screen', { p_academy: org })
       prefetchScreen('fixtures_screen', { p_days: 60, p_academy: org })
       const next = data.events.find((e) => (e.type === 'match' || e.type === 'tournament') && !e.cancelled_at)
       if (next) prefetchScreen('game_screen', { p_event: next.id })
       if (data.role === 'owner' || data.role === 'admin' || data.role === 'coach') prefetchScreen('admin_hub', { p_academy: data.academy?.id })
-    }, 400)
+    }, 1500)
     return () => clearTimeout(t)
   }, [data, org])
 
