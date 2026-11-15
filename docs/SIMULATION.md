@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:33 UTC · 8 rounds played · 18 PASS · 9 FIXED · 11 FAIL · 4 not run · 36 bugs logged (13 fixed) · 14 min so far
+Last run: 2026-11-15 10:33 UTC · 9 rounds played · 19 PASS · 9 FIXED · 11 FAIL · 4 not run · 36 bugs logged (13 fixed) · 15 min so far
 
 ## What this is
 
@@ -74,6 +74,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps — _the third yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; three yellows: a one-game suspension: expected 1 game, active, got []_ | **FAIL** | 7/9 | #33, #34 | — |
+| OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
 
 ### People & messaging
 
@@ -87,7 +88,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 320 scheduled messages, 24819 RSVPs, 1224 referee appointments, 2168 team sheets, 839 results agreed on the sheets, 82 disputes (83 ruled on), 36 late results, 163 cards.
+Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 360 scheduled messages, 27900 RSVPs, 1374 referee appointments, 2432 team sheets, 967 results agreed on the sheets, 91 disputes (92 ruled on), 43 late results, 188 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -99,6 +100,7 @@ Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reaction
 | 6 | 2027-03-13 | 145 | 105107 | 105107 | 0 | event_reminder 85411, announcement 10531, message 7300, fee_overdue 603, team_sheet_due 289, match_day 289 |
 | 7 | 2027-03-20 | 145 | 50287 | 50287 | 0 | event_reminder 46145, message 2856, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 137 |
 | 8 | 2027-03-27 | 145 | 49097 | 49090 | 0 | event_reminder 46886, message 912, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 141 |
+| 9 | 2027-04-03 | 145 | 9982 | 9981 | 0 | event_reminder 7980, message 912, match_day 289, team_sheet_due 289, fee_overdue 201, helper_reminder 150 |
 
 ## The peak
 
