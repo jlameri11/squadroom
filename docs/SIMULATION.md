@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 11:01 UTC · 9 rounds played · 24 PASS · 15 FIXED · 4 FAIL · 0 not run · 23 bugs logged (17 fixed) · 14 min so far
+Last run: 2026-11-15 11:02 UTC · 10 rounds played · 24 PASS · 15 FIXED · 5 FAIL · 0 not run · 25 bugs logged (17 fixed) · 15 min so far
 
 ## What this is
 
@@ -59,7 +59,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected the player in the report, got listed_ | **FAIL** | 4/8 | #19, #20, #21, #22 | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected the player in the report, got listed; after 3 games without them the ban reads served 2 (done): expected served 2, served, got {"games":2,"served":0,"status":"active"}_ | **FAIL** | 4/9 | #19, #20, #21, #22, #25 | — |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused — _a third game played up is over the division's cap of two — refused (1 on record before this sheet): expected refused, got allowed: "6b9259dc-b108-40c7-b40b-2f0b41d837ea"_ | **FAIL** | 7/8 | #23 | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
@@ -69,12 +69,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
-| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 2/2 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 | OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
+| OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased — _a club treasurer sees what their club owes the league: expected owed fees listed, got []_ | **FAIL** | 17/18 | #24 | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
 
 ### People & messaging
 
@@ -88,7 +89,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 360 scheduled messages, 28017 RSVPs, 1370 referee appointments, 2505 team sheets, 995 results agreed on the sheets, 86 disputes (87 ruled on), 22 late results, 224 cards.
+Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 400 scheduled messages, 31077 RSVPs, 1524 referee appointments, 2770 team sheets, 1121 results agreed on the sheets, 97 disputes (98 ruled on), 26 late results, 248 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -101,6 +102,7 @@ Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reacti
 | 7 | 2027-03-20 | 145 | 50524 | 50524 | 0 | event_reminder 46145, message 2856, fee_overdue 402, match_day 289, team_sheet_due 289, entry_fee_owed 257 |
 | 8 | 2027-03-27 | 145 | 9761 | 9759 | 0 | event_reminder 7980, message 912, match_day 289, team_sheet_due 289, helper_reminder 140, announcement 131 |
 | 9 | 2027-04-03 | 145 | 75830 | 75821 | 0 | event_reminder 46520, announcement 20300, message 7364, fee_overdue 603, match_day 289, team_sheet_due 289 |
+| 10 | 2027-04-10 | 141 | 66737 | 66730 | 0 | event_reminder 46152, announcement 11948, message 7372, match_day 282, team_sheet_due 282, entry_fee_owed 257 |
 
 ## The peak
 
@@ -137,7 +139,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-23 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+25 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 

@@ -27,3 +27,5 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 21 | high | coach | suspend_on_card | OF1 the club is told the player is suspended | >0 | 0 |  |
 | 22 | high | discipline officer | discipline_report | OF1 the discipline officer's report lists the sending-off | the player in the report | listed |  |
 | 23 | high | coach | ineligibility (borrow_cap) | OF2 a third game played up is over the division's cap of two — refused (1 on record before this sheet) | refused | allowed: "6b9259dc-b108-40c7-b40b-2f0b41d837ea" |  |
+| 24 | high | treasurer | my_entry_fees | OFF4 a club treasurer sees what their club owes the league | owed fees listed | [] |  |
+| 25 | high | league | serve_suspensions | OF1 after 3 games without them the ban reads served 2 (done) | served 2, served | {"games":2,"served":0,"status":"active"} |  |
