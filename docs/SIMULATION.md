@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 11:37 UTC · 3 rounds played · 16 PASS · 11 FIXED · 1 FAIL · 0 not run · 19 bugs logged (17 fixed) · 6 min so far
+Last run: 2026-11-15 11:39 UTC · 4 rounds played · 17 PASS · 12 FIXED · 2 FAIL · 0 not run · 20 bugs logged (17 fixed) · 9 min so far
 
 ## What this is
 
@@ -40,6 +40,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
+| WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
+| WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header — _the other 140 games go to the catch-up round on 22 May at their own times: expected 140, got 101 moved; refused: {"Harvey Reyes is on Gumtree United U# Red v Seacliff FC U# Red at # (_ | **FAIL** | 3/4 | #20 | — |
 
 ### Results
 
@@ -79,20 +81,22 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | SC1 | Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them | **FIXED** | 105/105 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits | **FIXED** | 129/129 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
+| SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 129/129 | — | — |
 
 ## The load
 
-Over the run: 6 league notices, 36 club messages, 720 chat lines, 360 reactions, 30 polls, 120 scheduled messages, 9446 RSVPs, 458 referee appointments, 837 team sheets, 341 results agreed on the sheets, 31 disputes (32 ruled on), 13 late results, 72 cards.
+Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 12611 RSVPs, 612 referee appointments, 1114 team sheets, 341 results agreed on the sheets, 31 disputes (32 ruled on), 13 late results, 72 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
 | 1 | 2027-02-06 | 145 | 48670 | 47619 | 0 | event_reminder 46510, message 1017, match_day 289, team_sheet_due 289, entry_fee_owed 255, helper_reminder 146 |
 | 2 | 2027-02-13 | 145 | 49453 | 49453 | 0 | event_reminder 38666, message 7354, announcement 2615, team_sheet_due 289, match_day 289, helper_reminder 152 |
 | 3 | 2027-02-20 | 145 | 77504 | 75425 | 2294 | event_reminder 45100, announcement 19481, message 7365, event_back_on 2040, event_cancelled 2040, team_sheet_due 289 |
+| 4 | 2027-02-27 | 145 | 76101 | 74555 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7357, fee_overdue 402 |
 
 ## Bugs
 
-19 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+20 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
