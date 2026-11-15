@@ -136,9 +136,11 @@ export async function runScreens(ctx, moment) {
 
       // ---- Home against home_jobs.
       const jobs = await rpc(pool, p.id, 'home_jobs', { p_academy: p.org, p_persona: null })
+      // A parent's Home lists a job only while there is something to do (one list, by design); a staff Home shows its tiles always.
       for (const j of (jobs.data?.jobs ?? []).slice(0, 3)) {
         const detail = txt(j.detail).split(' · ')[0]
-        if (detail && detail.length > 3) check(has(seen.home, detail) || has(seen.home, j.label), { what: `${p.role}: Home shows "${j.label}" (${detail})`, expected: detail, actual: txt(seen.home).slice(0, 160), role: p.role, where: `${where} /` , severity: 'medium' })
+        const expectedOnScreen = (j.count ?? 0) > 0 || !/parent/.test(p.role)
+        if (expectedOnScreen && detail && detail.length > 3) check(has(seen.home, detail) || has(seen.home, j.label), { what: `${p.role}: Home shows "${j.label}" (${detail})`, expected: detail, actual: txt(seen.home).slice(0, 160), role: p.role, where: `${where} /` , severity: 'medium' })
       }
       // ---- Fixtures against my_upcoming_events (the first game's opponent).
       if (p.team) {

@@ -160,6 +160,32 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
     if (error) return setError(error.message)
     await load()
   }
+  // 0276: a team withdraws mid-season. Its remaining games become byes for
+  // the other side, what it played stands, and the families of its opponents
+  // see the game is off. Two taps: the name, then the confirmation.
+  const [withdrawing, setWithdrawing] = useState<string | null>(null)
+  const [withdrawn, setWithdrawn] = useState<Record<string, string>>({})
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await createClient().from('competition_entries').select('id, withdrawn_at').eq('competition_id', competitionId).not('withdrawn_at', 'is', null)
+      const map: Record<string, string> = {}
+      for (const r of data ?? []) if (r.withdrawn_at) map[r.id] = r.withdrawn_at
+      setWithdrawn(map)
+    })()
+  }, [competitionId])
+  async function withdraw(entryId: string) {
+    setBusy(entryId)
+    setError(null)
+    const { data, error } = await createClient().rpc('withdraw_entry', { p_entry: entryId, p_note: 'Withdrawn by the league' })
+    setBusy(null)
+    setWithdrawing(null)
+    if (error) return setError(error.message)
+    const r = data as unknown as { byes: number }
+    setWithdrawn((w) => ({ ...w, [entryId]: new Date().toISOString() }))
+    setError(`Withdrawn — ${r?.byes ?? 0} remaining ${r?.byes === 1 ? 'game is a bye' : 'games are byes'} for the other side.`)
+    await load()
+  }
+
   async function mark(feeId: string, status: 'paid' | 'waived' | 'owed') {
     // The row changes at once and is put back with a word if the database
     // says no (the "Feels instant" pass); the totals follow on the reload.
@@ -309,13 +335,25 @@ export function EntriesAndFees({ competitionId, divisions, entriesOpen }: { comp
                       <span className="block truncate">{e.team} <span className="text-ink-3">· {e.division}{e.club ? ` · ${e.club}` : ' · not claimed yet'}</span></span>
                       <span className="block text-ink-3">{money(e.amount_cents)} · {e.status}{e.paid_at ? ` ${day(e.paid_at)}${e.method ? ` by ${e.method}` : ''}` : ''}</span>
                     </span>
-                    {e.status === 'owed' ? (
+                    {withdrawn[e.entry_id] ? (
+                      <span className="flex-none text-ink-3" data-withdrawn>withdrawn</span>
+                    ) : withdrawing === e.entry_id ? (
                       <>
-                        <button onClick={() => mark(e.fee_id, 'paid')} disabled={busy === e.fee_id} className="flex-none rounded-lg px-2 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Paid</button>
-                        <button onClick={() => mark(e.fee_id, 'waived')} disabled={busy === e.fee_id} className="flex-none rounded-lg border px-2 py-1 disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Waive</button>
+                        <button onClick={() => withdraw(e.entry_id)} disabled={busy === e.entry_id} className="flex-none rounded-lg px-2 py-1 font-semibold text-no-ink disabled:opacity-50" style={{ background: 'var(--no)' }} data-withdraw-confirm>Yes, withdraw {e.team}</button>
+                        <button onClick={() => setWithdrawing(null)} className="flex-none rounded-lg border px-2 py-1" style={{ borderColor: 'var(--line)' }}>Keep</button>
                       </>
                     ) : (
-                      <button onClick={() => mark(e.fee_id, 'owed')} disabled={busy === e.fee_id} className="flex-none text-ink-3 underline underline-offset-2">undo</button>
+                      <>
+                        {e.status === 'owed' ? (
+                          <>
+                            <button onClick={() => mark(e.fee_id, 'paid')} disabled={busy === e.fee_id} className="flex-none rounded-lg px-2 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Paid</button>
+                            <button onClick={() => mark(e.fee_id, 'waived')} disabled={busy === e.fee_id} className="flex-none rounded-lg border px-2 py-1 disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>Waive</button>
+                          </>
+                        ) : (
+                          <button onClick={() => mark(e.fee_id, 'owed')} disabled={busy === e.fee_id} className="flex-none text-ink-3 underline underline-offset-2">undo</button>
+                        )}
+                        <button onClick={() => setWithdrawing(e.entry_id)} className="tap flex-none text-ink-3 underline underline-offset-2" aria-label={`Withdraw ${e.team}`} data-withdraw={e.entry_id}>withdraw</button>
+                      </>
                     )}
                   </li>
                 ))}

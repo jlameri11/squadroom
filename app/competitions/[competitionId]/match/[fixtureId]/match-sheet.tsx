@@ -939,12 +939,20 @@ function RuleOnScore({ fixtureId, onDone }: { fixtureId: string; onDone: () => P
   const [home, setHome] = useState('')
   const [away, setAway] = useState('')
   const [note, setNote] = useState('')
+  // 0276: a drawn knockout is settled on penalties; the winner goes through.
+  const [pensHome, setPensHome] = useState('')
+  const [pensAway, setPensAway] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const drawn = home !== '' && away !== '' && Number(home) === Number(away)
   async function rule() {
     setBusy(true)
     setError(null)
-    const { error } = await createClient().rpc('rule_on_score', { p_fixture: fixtureId, p_home: Number(home), p_away: Number(away), p_note: note || undefined })
+    const { error } = await createClient().rpc('rule_on_score', {
+      p_fixture: fixtureId, p_home: Number(home), p_away: Number(away), p_note: note || undefined,
+      p_pens_home: drawn && pensHome !== '' ? Number(pensHome) : undefined,
+      p_pens_away: drawn && pensAway !== '' ? Number(pensAway) : undefined,
+    })
     setBusy(false)
     if (error) return setError(error.message)
     await onDone()
@@ -959,6 +967,15 @@ function RuleOnScore({ fixtureId, onDone }: { fixtureId: string; onDone: () => P
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="why" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--line)' }} />
         <button onClick={rule} disabled={busy || home === '' || away === ''} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Rule</button>
       </div>
+      {drawn && (
+        <div className="mt-1.5 flex items-center gap-2 text-xs" data-shootout>
+          <span className="text-ink-2">Penalties</span>
+          <input value={pensHome} onChange={(e) => setPensHome(e.target.value)} inputMode="numeric" placeholder="home" className="w-14 rounded-lg border px-2 py-1 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Home penalties" />
+          <span className="text-ink-3">–</span>
+          <input value={pensAway} onChange={(e) => setPensAway(e.target.value)} inputMode="numeric" placeholder="away" className="w-14 rounded-lg border px-2 py-1 text-center tabular-nums" style={{ borderColor: 'var(--line)' }} aria-label="Away penalties" />
+          <span className="text-ink-3">a drawn final goes to the shootout&apos;s winner</span>
+        </div>
+      )}
       {error && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
     </div>
   )

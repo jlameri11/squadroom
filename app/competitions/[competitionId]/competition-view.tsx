@@ -539,6 +539,9 @@ function Broadcast({ competitionId, isOrganiser }: { competitionId: string; isOr
 function SetUpFinals({ competitionId, division }: { competitionId: string; division: string }) {
   const router = useRouter()
   const [at, setAt] = useState('')
+  // 0276: the top four of one table — two semi-finals, then a grand final on its own day.
+  const [topFour, setTopFour] = useState(false)
+  const [finalAt, setFinalAt] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -549,6 +552,8 @@ function SetUpFinals({ competitionId, division }: { competitionId: string; divis
     const { error } = await supabase.rpc('create_finals', {
       p_competition: competitionId, p_division: division,
       p_start_at: new Date(at).toISOString(),
+      p_top: topFour ? 4 : 2,
+      p_final_at: topFour && finalAt ? new Date(finalAt).toISOString() : undefined,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -563,7 +568,18 @@ function SetUpFinals({ competitionId, division }: { competitionId: string; divis
         Times and fields now; the teams fill themselves in as results come in.
       </p>
       <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)}
-             className="mt-2 w-full rounded-xl border border-[var(--line)] px-3 py-2.5" />
+             className="mt-2 w-full rounded-xl border border-[var(--line)] px-3 py-2.5" aria-label="Finals kick-off" />
+      <label className="mt-2 flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={topFour} onChange={(e) => setTopFour(e.target.checked)} data-finals-top-four />
+        Top four: two semi-finals, then a grand final
+      </label>
+      {topFour && (
+        <label className="mt-2 block text-xs">
+          <span className="text-ink-2">Grand final kicks off (blank: straight after the semi-finals)</span>
+          <input type="datetime-local" value={finalAt} onChange={(e) => setFinalAt(e.target.value)}
+                 className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm" aria-label="Grand final kick-off" />
+        </label>
+      )}
       {error && <p className="mt-2 text-sm ">{error}</p>}
       <button onClick={build} disabled={busy}
               className="mt-2 w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold disabled:opacity-50">
@@ -584,6 +600,10 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
   // One day, or a round a week. 0081 added the second shape and nothing
   // exposed it, so a league season could only be built by a script.
   const [shape, setShape] = useState<'day' | 'weekly'>('day')
+  // 0276: a season of two legs (home and away reversed), and the weeks the
+  // league leaves out — school holidays, a long weekend.
+  const [legs, setLegs] = useState<1 | 2>(1)
+  const [skipDates, setSkipDates] = useState('')
   const [madeCount, setMadeCount] = useState<number | null>(null)
   // L-29: draw on a venue's pitches of this division's size, inside their
   // hours, instead of typed field names. The league's own grounds.
@@ -605,6 +625,12 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
     })()
   }, [competitionId])
 
+  /** The dates typed as "2027-04-17, 2027-04-24" (or one a line); undefined when none. */
+  function skipList(): string[] | undefined {
+    const list = skipDates.split(/[\s,;]+/).map((d) => d.trim()).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    return list.length ? list : undefined
+  }
+
   async function build() {
     if (!date) return setError('Pick a start time.')
     setBusy(true)
@@ -615,6 +641,8 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
         p_competition: competitionId, p_division: division, p_venue: venueId,
         p_first_date: date.slice(0, 10), p_game_mins: Number(gameMins), p_gap_mins: Number(gapMins),
         p_round_every_days: shape === 'weekly' ? 7 : 0,
+        p_legs: shape === 'weekly' ? legs : 1,
+        p_skip_dates: shape === 'weekly' ? skipList() : undefined,
       })
       setBusy(false)
       if (error) return setError(error.message)
@@ -634,6 +662,8 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
       // 7 puts each round a week after the last; 0 packs everything into one
       // block of play, which is what a gala day is.
       p_round_every_days: shape === 'weekly' ? 7 : 0,
+      p_legs: shape === 'weekly' ? legs : 1,
+      p_skip_dates: shape === 'weekly' ? skipList() : undefined,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -672,6 +702,30 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
           </button>
         ))}
       </div>
+
+      {shape === 'weekly' && (
+        <div className="mt-3 rounded-xl border p-2.5" style={{ borderColor: 'var(--line)' }} data-draw-season>
+          <div className="flex gap-2">
+            {([
+              { value: 1 as const, label: 'Once', hint: 'Each pair meets once' },
+              { value: 2 as const, label: 'Home and away', hint: 'Twice; the second half reversed' },
+            ]).map((o) => (
+              <button key={o.value} onClick={() => setLegs(o.value)} aria-pressed={legs === o.value}
+                      className="min-w-0 flex-1 rounded-xl border p-2 text-left"
+                      style={{ borderColor: legs === o.value ? 'var(--brand)' : 'var(--line)', background: legs === o.value ? 'var(--surface-2)' : 'var(--surface)' }}>
+                <span className="block text-sm font-medium">{o.label}</span>
+                <span className="block text-xs text-ink-3">{o.hint}</span>
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Saturdays with no games</span>
+            <input value={skipDates} onChange={(e) => setSkipDates(e.target.value)} placeholder="2027-04-17, 2027-04-24 — school holidays, a long weekend"
+                   className="mt-1 w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm" aria-label="Saturdays with no games" />
+            <span className="mt-1 block text-xs text-ink-3">Every later round moves on a week. Kick-off stays the same on the clock when daylight saving ends.</span>
+          </label>
+        </div>
+      )}
 
       <label className="mt-3 block">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">

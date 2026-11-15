@@ -14,6 +14,8 @@ type Rules = {
   tie_break: 'gd_then_gf' | 'gf_then_gd'
   match_length_mins: number | null
   squad_size_max: number | null
+  /** 0276: fewer than this on a sheet is refused (the referee or the league can still record who played). */
+  squad_size_min: number | null
   grading_note: string | null
   /** L-17: minutes before kick-off the sheet locks. */
   sheet_lock_mins: number
@@ -38,6 +40,7 @@ const DEFAULTS = (division: string): Rules => ({
   tie_break: 'gd_then_gf',
   match_length_mins: null,
   squad_size_max: null,
+  squad_size_min: null,
   grading_note: null,
   sheet_lock_mins: 30,
   finals_min_games: null,
@@ -71,7 +74,7 @@ export function DivisionSettings({
   const load = useCallback(async () => {
     const { data } = await createClient()
       .from('competition_divisions')
-      .select('division, age_group, scores_public, ladder_enabled, points_win, points_draw, points_loss, tie_break, match_length_mins, squad_size_max, grading_note, sheet_lock_mins, finals_min_games, borrow_cap, born_after, born_before, pitch_size')
+      .select('division, age_group, scores_public, ladder_enabled, points_win, points_draw, points_loss, tie_break, match_length_mins, squad_size_max, squad_size_min, grading_note, sheet_lock_mins, finals_min_games, borrow_cap, born_after, born_before, pitch_size')
       .eq('competition_id', competitionId)
     const map: Record<string, Rules> = {}
     for (const r of (data ?? []) as Rules[]) map[r.division] = r
@@ -112,6 +115,7 @@ export function DivisionSettings({
             r.scores_public ? 'scores public' : 'scores hidden',
             r.ladder_enabled && r.scores_public ? 'ladder' : 'no ladder',
             r.match_length_mins ? `${r.match_length_mins} min` : null,
+            r.squad_size_min ? `at least ${r.squad_size_min} on a sheet` : null,
             `sheets lock T-${r.sheet_lock_mins ?? 30}`,
             r.finals_min_games ? `finals need ${r.finals_min_games} games` : null,
             r.borrow_cap != null ? `play up ×${r.borrow_cap}` : null,
@@ -188,6 +192,10 @@ export function DivisionSettings({
                     <label className="text-xs">
                       <span className="text-ink-2">Squad size (max)</span>
                       <input type="number" min={5} max={30} value={draft.squad_size_max ?? ''} onChange={(e) => setDraft({ ...draft, squad_size_max: e.target.value ? Number(e.target.value) : null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} />
+                    </label>
+                    <label className="text-xs">
+                      <span className="text-ink-2">On a sheet (min)</span>
+                      <input type="number" min={1} max={30} value={draft.squad_size_min ?? ''} onChange={(e) => setDraft({ ...draft, squad_size_min: e.target.value ? Number(e.target.value) : null })} className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm tabular-nums" style={{ borderColor: 'var(--line)' }} data-squad-min />
                     </label>
                   </div>
                   {/* L-17 and L-21: the match-day rules Squadi leagues expect. */}
