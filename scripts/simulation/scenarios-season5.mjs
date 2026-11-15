@@ -56,9 +56,12 @@ export async function season5Plan(ctx, add) {
     // The rollover moves the players and their families; the club puts the coaches and managers back on the new squads.
     let coaches = 0, managers = 0
     for (let c = 1; c <= 60; c++) {
+      // One row a person on a squad (team_members_unique): a coach whose own child plays in the
+      // squad came through the rollover as a parent, and becomes the coach again.
       const cr = await run(pool, who.president(c), `insert into public.team_members (academy_id, team_id, profile_id, role)
-        select nt.academy_id, nt.id, tm.profile_id, 'coach' from public.teams nt join public.team_members tm on tm.team_id = nt.rolled_from and tm.role = 'coach'
-         where nt.academy_id = $1 and nt.season = '2028' and not exists (select 1 from public.team_members x where x.team_id = nt.id and x.profile_id = tm.profile_id)
+        select distinct nt.academy_id, nt.id, tm.profile_id, 'coach'::academy_role from public.teams nt join public.team_members tm on tm.team_id = nt.rolled_from and tm.role = 'coach'
+         where nt.academy_id = $1 and nt.season = '2028'
+        on conflict (team_id, profile_id) do update set role = 'coach' where public.team_members.role <> 'coach'
         returning id`, [ids.club(c)])
       if (cr.ok) coaches += cr.data.length; else note(`coaches for club ${c}: ${cr.error}`)
       const mr = await run(pool, who.president(c), `insert into public.club_roles (academy_id, profile_id, role, scope_kind, team_id, granted_by)

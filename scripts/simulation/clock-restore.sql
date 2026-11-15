@@ -9,3 +9,4 @@ create or replace function pg_catalog.statement_timestamp() returns timestamptz 
 drop function if exists pg_catalog.real_now();
 drop function if exists pg_catalog.real_clock();
 drop function if exists pg_catalog.real_statement();
+drop function if exists public.sim_now();

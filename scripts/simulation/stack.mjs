@@ -18,7 +18,7 @@
 //     NEXT_PUBLIC_SITE_URL=http://localhost:3300 npx next build
 //   … then `DIST_DIR=.next-sim npx next start -p 3300`.
 import { createHmac } from 'node:crypto'
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 import http from 'node:http'
 import { join } from 'node:path'
 import pg from 'pg'
@@ -34,7 +34,10 @@ const LIBPQ = join(process.cwd(), 'node_modules/@embedded-postgres/darwin-arm64/
 
 const b64url = (s) => Buffer.from(s).toString('base64url')
 /** An HS256 JWT the way GoTrue mints them. */
-export function mintJwt(claims, { hours = 24 * 400 } = {}) {
+// Ten years: the browser's clock is moved to the season's moment (2027, then
+// 2028), and supabase-js treats a session whose expiry that clock has passed
+// as dead — 400 days ran out between the finals and Season 5.
+export function mintJwt(claims, { hours = 24 * 3650 } = {}) {
   const now = Math.floor(Date.now() / 1000)
   const payload = { iss: `${SUPABASE_URL}/auth/v1`, iat: now, exp: now + hours * 3600, ...claims }
   const head = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
@@ -75,7 +78,7 @@ export async function sessionFor(db, profileId, { aal = 'aal1' } = {}) {
   if (!user) throw new Error(`no auth user ${profileId}`)
   const sessionId = `${profileId.slice(0, 8)}-0000-4000-8000-${profileId.slice(-12)}`
   const access_token = mintJwt({ sub: profileId, aud: 'authenticated', role: 'authenticated', email: user.email, phone: user.phone ?? '', app_metadata: user.app_metadata, user_metadata: user.user_metadata, aal, amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }], session_id: sessionId, is_anonymous: false })
-  const expires_in = 400 * 24 * 3600
+  const expires_in = 3650 * 24 * 3600
   return { access_token, token_type: 'bearer', expires_in, expires_at: Math.floor(Date.now() / 1000) + expires_in, refresh_token: `rt-${profileId}`, user }
 }
 /** The cookie @supabase/ssr reads: name from the URL's host, value base64url of the session. */
@@ -106,9 +109,30 @@ async function until(fn, { tries = 80, every = 150 } = {}) {
   return false
 }
 
-/** Start PostgREST, the auth stub and the proxy. Returns { stop }. */
-export async function startStack(db, { quiet = true } = {}) {
+/** Whatever still listens on one of our ports is an earlier run's: it goes, or we do not start. */
+async function clearPort(port) {
+  for (let i = 0; i < 24; i++) {
+    let pids = ''
+    try { pids = execSync(`lsof -ti tcp:${port} -sTCP:LISTEN`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() } catch { pids = '' }
+    if (!pids) return
+    for (const pid of pids.split(/\s+/)) { try { process.kill(Number(pid), i < 12 ? 'SIGTERM' : 'SIGKILL') } catch {} }
+    await wait(250)
+  }
+  throw new Error(`port ${port} is still held by another process`)
+}
+
+/**
+ * Start PostgREST, the auth stub and the proxy. Returns { stop }. With
+ * `expectNow` (an ISO moment) the server's clock is read back through
+ * PostgREST and the start fails if it is not within the hour — a stale
+ * server from an aborted run held :54331 for eleven hours on 15 Nov 2026
+ * and every screen check that day looked at the wrong week.
+ */
+export async function startStack(db, { quiet = true, expectNow = null } = {}) {
   await ensureRoles(db)
+  await clearPort(POSTGREST_PORT)
+  await clearPort(AUTH_PORT)
+  await clearPort(PROXY_PORT)
   const env = {
     ...process.env,
     DYLD_LIBRARY_PATH: LIBPQ,
@@ -123,8 +147,20 @@ export async function startStack(db, { quiet = true } = {}) {
     PGRST_LOG_LEVEL: quiet ? 'error' : 'info',
   }
   const postgrest = spawn(POSTGREST, [], { env, stdio: quiet ? 'ignore' : 'inherit' })
-  const upRest = await until(async () => (await fetch(`http://127.0.0.1:${POSTGREST_PORT}/`)).ok)
-  if (!upRest) { postgrest.kill(); throw new Error('PostgREST did not start') }
+  let gone = null
+  postgrest.on('exit', (code, signal) => { gone = `exited (${code ?? signal})` })
+  let upRest = false
+  for (let i = 0; i < 80 && !upRest && !gone; i++) {
+    try { upRest = (await fetch(`http://127.0.0.1:${POSTGREST_PORT}/`)).ok } catch {}
+    if (!upRest) await wait(150)
+  }
+  if (!upRest) { try { postgrest.kill('SIGKILL') } catch {} throw new Error(`PostgREST did not start${gone ? ` — ${gone}` : ''}`) }
+  if (expectNow) {
+    const key = anonKey()
+    const seen = await fetch(`http://127.0.0.1:${POSTGREST_PORT}/rpc/sim_now`, { headers: { apikey: key, authorization: `Bearer ${key}` } }).then((r) => r.json()).catch(() => null)
+    const drift = typeof seen === 'string' ? Math.abs(new Date(seen).getTime() - new Date(expectNow).getTime()) : Infinity
+    if (!(drift < 3600_000)) { try { postgrest.kill('SIGKILL') } catch {} throw new Error(`PostgREST's clock reads ${JSON.stringify(seen)}, not ${expectNow} — a stale server, or sim.now not set for the database`) }
+  }
 
   // The auth stub.
   const auth = http.createServer(async (req, res) => {
@@ -178,9 +214,17 @@ export async function startStack(db, { quiet = true } = {}) {
 
   return {
     async stop() {
+      proxy.closeAllConnections?.()
+      auth.closeAllConnections?.()
       await new Promise((r) => proxy.close(r))
       await new Promise((r) => auth.close(r))
-      postgrest.kill()
+      // Wait for PostgREST to go; after three seconds, make it.
+      await new Promise((resolve) => {
+        if (gone) return resolve()
+        const t = setTimeout(() => { try { postgrest.kill('SIGKILL') } catch {} }, 3000)
+        postgrest.once('exit', () => { clearTimeout(t); resolve() })
+        try { postgrest.kill() } catch { clearTimeout(t); resolve() }
+      })
     },
   }
 }

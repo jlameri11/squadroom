@@ -6,6 +6,43 @@ every item on it is something no amount of building can get past.
 
 ---
 
+**Session log.** 16 Nov 2026 (Mon), Sydney, overnight into the morning: the
+**seed-3 season ran to the end of Season 5** (30 pass · 19 fixed · 4 fail,
+25 bugs logged in 25 minutes, committed after every round). Every one of the
+25 was the harness's, not the product's: a PostgREST left over from an
+aborted run had held the local stack's port for eleven hours, so every
+screen check since noon on the 15th — including seed 3's five moments — had
+looked at the wrong week, and the simulated sessions (400 days) expired once
+the browser's clock reached 2028; the Season 5 checks and screens ran before
+Season 5's first round because the driver ran all remaining steps at once
+when the calendar ran out of Saturdays; fifteen rolled-over squads had no
+coach because a coach whose own child plays came through the rollover as a
+parent; a referee with an unanswered offer was treated as the referee; the
+washout's catch-up moves expected a coach to be in two places. All fixed
+(`stack.mjs` clears its ports, notices a child that dies, waits for the stop,
+mints ten-year sessions and refuses a server whose clock is not the season's
+through `public.sim_now()`; the driver runs the off-season a step at a time;
+the clock never goes backwards and says so; `refereeOf` is the accepted
+referee; the sheet falls to the team manager when the coach may not; the
+ground manager tries later in the day). **Seed 4 is the first run whose
+screen checks count.** `scripts/local-db/serve.mjs` holds the local Postgres
+up for ad-hoc queries. Joey's next brief arrived mid-morning (files through
+real storage, 200 families joining mid-season, role requests, Stripe test
+mode for a sample of clubs, two devices and two parents, admin mistakes,
+feature switches off, a family's export and deletion) — being built as new
+scenario groups.
+
+- **NEEDS JOEY (simulation, 16 Nov):** a referee's offer that nobody
+  answers is never chased — the league's Home counts the game as without a
+  referee, and the coordinator must notice; say if a reminder to the
+  referee (and the coordinator after three days) should exist. After a
+  rollover a coach whose own child is in the squad comes back as a parent
+  on the new squad (one row a person); the club re-adds them as coach, which
+  the role-request path already handles — say if the rollover should carry
+  coaches and managers across by itself.
+
+---
+
 **Session log.** 14–15 Nov 2026 (Sat–Sun), Sydney: **the SPL Season 4
 simulation is built and running** (`docs/SIMULATION.md`, `docs/BUGS.md`,
 `scripts/simulation/`). A made-up league — 60 clubs, 300 teams, 4,500

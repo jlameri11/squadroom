@@ -611,14 +611,24 @@ export async function round4(ctx, S, add) {
     // Everything else to the catch-up Saturday, 22 May, same pitch and time of day.
     const rest = (await gamesOn(pool, S, { status: 'postponed' }))
     const why = {}
+    let later = 0
     for (const g of rest) {
       const t = new Date(g.starts_at)
-      const sameTime = new Date(`2027-05-22T${new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(t)}:00+10:00`).toISOString()
-      const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: sameTime, p_venue_label: null, p_field: null })
-      if (r.ok) catchup++
-      else { const k = r.error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
+      const sameTime = new Date(`2027-05-22T${new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(t)}:00+10:00`)
+      let r = null
+      // The same time of day; when a coach or manager is already on a game then (an earlier
+      // postponement parked on the same Saturday), the ground manager tries later in the day.
+      for (const shift of [0, 60, 120, 180, -60]) {
+        const at = new Date(sameTime.getTime() + shift * 60_000)
+        if (at.getUTCHours() + 10 < 8 || at.getUTCHours() + 10 >= 18) continue
+        r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: at.toISOString(), p_venue_label: null, p_field: null })
+        if (r.ok) { catchup++; if (shift) later++; break }
+        if (r.code !== '23P01') break
+      }
+      if (!r?.ok) { const k = r.error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
     }
-    check(catchup === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
+    if (later) note(`${later} of the catch-up moves went later in the day — a coach or manager was already on a game at the usual time`)
+    check(catchup === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times (or later that day)`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
     backOn = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_back_on' and created_at >= $1`, [new Date(clock.now.getTime() - 60_000).toISOString()])
     check(backOn > 0, { what: 'families are told their game is back on, with the new day', expected: '>0', actual: backOn, role: 'parent', where: 'notify_event_change (event_back_on)' })
     ctx.catchupDate = '2027-05-22'

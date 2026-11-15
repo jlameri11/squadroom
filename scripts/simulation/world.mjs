@@ -2,7 +2,7 @@
 // it: games on a day, the people around a squad, a team sheet, a score, the
 // cron sweeps and the push drain, what the queue holds. Admin reads (outside
 // RLS) for finding things; every ACTION goes through a person (lib.mjs).
-import { asAdmin, asPerson, clock, ids, rpc, run, sql, sydney, sydneyDate, val } from './lib.mjs'
+import { asAdmin, asPerson, clock, ids, note, rpc, run, sql, sydney, sydneyDate, val } from './lib.mjs'
 
 /** The competition the season plays in — Season 4 until the simulation starts Season 5 (setCompetition). A live binding: importers see the change. */
 export let COMP = ids.comp
@@ -98,7 +98,15 @@ export async function submitSheet(pool, fixture, side, opts = {}) {
   if (!entry || !team) return { ok: false, code: 'NOTEAM', error: 'no team behind this side' }
   const sq = await squad(pool, team)
   const players = await sheetFor(pool, entry, opts)
-  const res = await rpc(pool, opts.as ?? sq.coach, 'submit_match_sheet', { p_fixture: fixture.id, p_entry: entry, p_players: JSON.stringify(players), p_captain: players[0]?.player_id ?? null, p_keeper: players[1]?.player_id ?? null })
+  const args = { p_fixture: fixture.id, p_entry: entry, p_players: JSON.stringify(players), p_captain: players[0]?.player_id ?? null, p_keeper: players[1]?.player_id ?? null }
+  const by = opts.as ?? sq.coach ?? sq.manager
+  if (!by) return { ok: false, code: 'NOBODY', error: 'no coach or manager on this squad', entry, coach: null, players }
+  let res = await rpc(pool, by, 'submit_match_sheet', args)
+  // No explicit actor and the coach may not (a lapsed clearance, a coach who has left): the team manager does it, as a club would.
+  if (!res.ok && !opts.as && res.code === '42501' && sq.manager && sq.manager !== by) {
+    const again = await rpc(pool, sq.manager, 'submit_match_sheet', args)
+    if (again.ok) res = { ...again, fallback: 'manager' }
+  }
   return { ...res, entry, coach: sq.coach, players }
 }
 
@@ -113,11 +121,17 @@ export async function enterScores(pool, fixture, home, away, { mismatch = false 
 
 // --------------------------------------------------------------- the referee
 /** The referee appointed (accepted) to a game, with their profile. */
-export async function refereeOf(pool, fixtureId) {
+/**
+ * The game's referee: the ACCEPTED appointment (an offer nobody has answered
+ * is not a referee — the product rightly refuses them the sheet, and the
+ * league's Home counts the game as without one). `accepted: false` also
+ * returns an open offer, for screens that show it.
+ */
+export async function refereeOf(pool, fixtureId, { accepted = true } = {}) {
   const [row] = await sql(pool, `
     select ap.id as appointment_id, ap.referee_id, ap.status, ap.checked_in_at, r.profile_id, r.full_name, r.under_18
       from public.referee_appointments ap join public.referees r on r.id = ap.referee_id
-     where ap.fixture_id = $1 and ap.role = 'referee' and ap.status in ('offered', 'accepted') order by ap.offered_at desc limit 1`, [fixtureId])
+     where ap.fixture_id = $1 and ap.role = 'referee' and ap.status = any($2::text[]) order by ap.status = 'accepted' desc, ap.offered_at desc limit 1`, [fixtureId, accepted ? ['accepted'] : ['offered', 'accepted']])
   return row ?? null
 }
 
@@ -208,6 +222,11 @@ export async function advanceTo(pool, local, { tickMinutes = 15, onTick = null }
   const target = sydney(local)
   const totals = {}
   if (!clock.now) clock.now = target
+  if (target < clock.now) {
+    // A step planned for a moment already passed: the clock stays, and the log says so — never backwards.
+    note(`the clock would go back from ${clock.local()} to ${local} — kept where it is`)
+    return totals
+  }
   let guard = 0
   while (clock.now < target && guard++ < 20000) {
     const next = new Date(Math.min(target.getTime(), clock.now.getTime() + tickMinutes * 60_000))

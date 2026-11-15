@@ -116,12 +116,16 @@ try {
   let lastS = '2027-01-01'
   while (true) {
     if (!S) {
-      // The draw has run out of Saturdays: whatever is still planned runs now
-      // (ending the season, the rollover, the next season's draw), and may
-      // put new Saturdays on the calendar.
+      // The draw has run out of Saturdays: what is planned runs one step at a
+      // time — ending the season, the rollover, the next season's draw — until
+      // the calendar has a Saturday again; the rest waits for its own week
+      // (seed 3 ran the Season 5 checks and screens before Season 5's first
+      // round, with the clock going backwards after them).
       if (!extra.length) break
-      await runExtras(extra.splice(0))
-      S = await nextDay(lastS)
+      while (extra.length && !S) {
+        await runExtras(extra.splice(0, 1))
+        S = await nextDay(lastS)
+      }
       if (!S) break
     }
     if (ctx.stopAfter && S > ctx.stopAfter) break

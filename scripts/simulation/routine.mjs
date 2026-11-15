@@ -123,19 +123,22 @@ export async function weekRsvps(ctx, date, rand, { share = 0.8 } = {}) {
       join public.player_guardians g on g.player_id = pl.id and g.is_primary
      where (e.starts_at at time zone 'Australia/Sydney')::date = $2::date and e.cancelled_at is null`, [COMP, date])
   let n = 0, refused = 0
+  const why = {}
   // Through RLS, in batches of one person's children: a parent answers for each child.
   for (const row of rows) {
     if (!rand.chance(share)) continue
     const res = await rsvp(ctx.pool, row.profile_id, row.academy_id, row.event_id, row.player_id, rand.chance(0.9) ? 'yes' : 'no')
-    if (res.ok) n++; else refused++
+    if (res.ok) n++
+    else { refused++; const k = String(res.error).slice(0, 70); why[k] = (why[k] ?? 0) + 1 }
   }
   ctx.stats.rsvps += n
-  return { answered: n, refused, of: rows.length }
+  const top = Object.entries(why).sort((a, b) => b[1] - a[1]).slice(0, 3)
+  return { answered: n, refused, of: rows.length, ...(top.length ? { why: Object.fromEntries(top) } : {}) }
 }
 
 /** Tuesday: coaches schedule Friday's "game tomorrow" line. */
 export async function scheduleFridayLines(ctx, date, rand, { teams = 40 } = {}) {
-  const rows = await sql(ctx.pool, `select id from public.teams where season = '2027' order by id offset $1 limit $2`, [(teams * 3) % 200, teams])
+  const rows = await sql(ctx.pool, `select t.id from public.teams t where t.season = (select c.season from public.competitions c where c.id = $3) order by t.id offset $1 limit $2`, [(teams * 3) % 200, teams, COMP])
   let n = 0
   const friday = `${plusDays(date, -1)} 18:00`
   for (const t of rows) {

@@ -65,3 +65,11 @@ end $$;
 select 'functions still reading current_date: ' || count(*) as check
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
  where n.nspname in ('public', 'app_private') and p.prosrc ~* '\mcurrent_date\M';
+
+-- What PostgREST's connections think the time is: the local stack
+-- (stack.mjs) reads it on start and refuses a server whose clock is not the
+-- season's (a PostgREST left over from an earlier run answers with the clock
+-- its connections were opened at). Simulation only, never a migration.
+create or replace function public.sim_now() returns timestamptz language sql stable as $$ select now() $$;
+revoke all on function public.sim_now() from public;
+grant execute on function public.sim_now() to anon, authenticated, service_role;
