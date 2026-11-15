@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:36 UTC · 13 rounds played · 21 PASS · 9 FIXED · 14 FAIL · 4 not run · 40 bugs logged (13 fixed) · 18 min so far
+Last run: 2026-11-15 10:37 UTC · 14 rounds played · 21 PASS · 9 FIXED · 14 FAIL · 4 not run · 40 bugs logged (13 fixed) · 18 min so far
 
 ## What this is
 
@@ -93,7 +93,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 26 league notices, 156 club messages, 3108 chat lines, 1554 reactions, 130 polls, 520 scheduled messages, 39974 RSVPs, 1958 referee appointments, 3446 team sheets, 1450 results agreed on the sheets, 142 disputes (143 ruled on), 61 late results, 289 cards.
+Over the run: 28 league notices, 168 club messages, 3344 chat lines, 1672 reactions, 140 polls, 560 scheduled messages, 43004 RSVPs, 2104 referee appointments, 3702 team sheets, 1574 results agreed on the sheets, 155 disputes (156 ruled on), 61 late results, 319 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -110,6 +110,7 @@ Over the run: 26 league notices, 156 club messages, 3108 chat lines, 1554 reacti
 | 11 | 2027-04-24 | 138 | 97202 | 97191 | 0 | event_reminder 77130, announcement 10872, message 7359, fee_overdue 603, match_day 274, team_sheet_due 274 |
 | 12 | 2027-05-01 | 138 | 65314 | 65302 | 0 | event_reminder 45734, announcement 10668, message 7313, fee_overdue 603, match_day 274, team_sheet_due 274 |
 | 13 | 2027-05-08 | 138 | 72911 | 72903 | 0 | event_reminder 45836, announcement 18824, message 7293, match_day 274, team_sheet_due 274, referee_appointment 145 |
+| 14 | 2027-05-15 | 138 | 65294 | 65289 | 0 | event_reminder 45732, announcement 10668, message 7295, fee_overdue 603, match_day 274, team_sheet_due 274 |
 
 ## The peak
 
