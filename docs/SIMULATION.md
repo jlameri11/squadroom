@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:53 UTC · 3 rounds played · 16 PASS · 11 FIXED · 1 FAIL · 0 not run · 44 bugs logged (13 fixed) · 6 min so far
+Last run: 2026-11-15 10:55 UTC · 4 rounds played · 17 PASS · 12 FIXED · 2 FAIL · 0 not run · 18 bugs logged (17 fixed) · 9 min so far
 
 ## What this is
 
@@ -40,6 +40,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
+| WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
+| WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header — _the other 140 games go to the catch-up round on 22 May: expected 140, got 101_ | **FAIL** | 3/4 | #18 | — |
 
 ### Results
 
@@ -75,17 +77,18 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 6 league notices, 36 club messages, 720 chat lines, 360 reactions, 30 polls, 120 scheduled messages, 9255 RSVPs, 462 referee appointments, 840 team sheets, 347 results agreed on the sheets, 34 disputes (35 ruled on), 4 late results, 88 cards.
+Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 12380 RSVPs, 615 referee appointments, 1118 team sheets, 347 results agreed on the sheets, 34 disputes (35 ruled on), 4 late results, 88 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
 | 1 | 2027-02-06 | 145 | 48660 | 47609 | 0 | event_reminder 46510, message 1017, match_day 289, team_sheet_due 289, entry_fee_owed 250, helper_reminder 146 |
 | 2 | 2027-02-13 | 145 | 49489 | 49489 | 0 | event_reminder 38666, message 7353, announcement 2615, team_sheet_due 289, match_day 289, helper_reminder 152 |
 | 3 | 2027-02-20 | 145 | 77394 | 75316 | 2185 | event_reminder 45100, announcement 19481, message 7362, event_back_on 2040, event_cancelled 2040, team_sheet_due 289 |
+| 4 | 2027-02-27 | 145 | 76108 | 74562 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7356, fee_overdue 402 |
 
 ## Bugs
 
-44 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+18 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
