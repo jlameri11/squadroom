@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 09:32 UTC · 6 rounds played · 20 PASS · 2 FIXED · 7 FAIL · 4 not run · 11 bugs logged (3 fixed) · 5 min so far
+Last run: 2026-11-15 09:34 UTC · 7 rounds played · 21 PASS · 2 FIXED · 9 FAIL · 4 not run · 16 bugs logged (3 fixed) · 6 min so far
 
 ## What this is
 
@@ -61,7 +61,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **PASS** | 2/2 | — | — |
 | OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the first yellow of three is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; a blue card is recorded with its minute: expected allowed, got 22023: this game has ended; ask the league for a correction; the sin bin runs from the minute shown: back at 50: expected 50, got null_ | **FAIL** | 5/8 | #9, #10, #11 | — |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
-| OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **PASS** | 3/3 | — | — |
+| OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **PASS** | 4/4 | — | — |
+| OF5 | Injury during a game → incident report → the welfare officer and the President | **PASS** | 6/6 | — | — |
 
 ### Off-field issues
 
@@ -69,6 +70,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet — _the second yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; the club hears the player is one yellow from a suspension: expected >0, got 0_ | **FAIL** | 10/12 | #9, #12 | — |
+| OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed — _each of the four clubs' owners and admins are told a coach's check has expired: expected 4 clubs, got 0 clubs ( people); the club's checks board shows the coach as expired: expected expired, got expiring; a coach whose check has expired cannot submit a sheet: expected refused, got allowed: "2147e298-b089-4d82-ba04-6d4be3fe5114"; nor post to the squad: expected refused, got allowed: [{"id":"9b29cc58-652e-4839-b280-7a8817cdcf7e"}]_ | **FAIL** | 2/6 | #13, #14, #15, #16 | — |
 
 ### People & messaging
 
@@ -82,7 +85,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reactions, 60 polls, 240 scheduled messages, 15560 RSVPs, 761 referee appointments, 1368 team sheets, 462 results agreed on the sheets, 52 disputes (53 ruled on), 20 late results, 89 cards.
+Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 18665 RSVPs, 912 referee appointments, 1638 team sheets, 589 results agreed on the sheets, 64 disputes (65 ruled on), 25 late results, 117 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -92,10 +95,44 @@ Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reaction
 | 4 | 2027-02-27 | 145 | 73720 | 66015 | 7705 | event_reminder 38952, announcement 10667, event_back_on 7560, event_cancelled 7560, message 7356, fee_overdue 402 |
 | 5 | 2027-03-03 | 4 | 32508 | 32508 | 0 | event_reminder 23752, event_back_on 7560, message 912, referee_game_moved 145, announcement 131, match_day 8 |
 | 6 | 2027-03-06 | 145 | 64341 | 64341 | 0 | event_reminder 61922, message 912, fee_overdue 603, team_sheet_due 290, match_day 290, helper_reminder 152 |
+| 7 | 2027-03-13 | 145 | 50524 | 50498 | 0 | event_reminder 46146, message 2880, fee_overdue 402, match_day 289, team_sheet_due 289, fee_due 201 |
+
+## The peak
+
+Round 7, Saturday 10 am (2027-03-13 10:00 Sat): 2000 parents open the app (Home's six calls; four in ten open their chat; one in ten Fixtures) while 74 games take kick-offs, goals and chat lines, through a pool of 15 — 14466 calls in 45.6 s, 317 calls a second. An open of Home costs 308.6 ms of database time under this load.
+
+| call | n | p50 ms | p95 ms | p99 ms |
+|---|---|---|---|---|
+| channel_screen | 800 | 6.1 | 13.2 | 15.8 |
+| chat: line | 370 | 6.3 | 8.7 | 14.5 |
+| fixtures_screen | 200 | 8.7 | 17.7 | 20.9 |
+| home_competitions | 2000 | 268.8 | 301.6 | 321.0 |
+| home_jobs | 2000 | 14.1 | 23.8 | 31.8 |
+| home_layout | 2000 | 1.3 | 9.8 | 12.6 |
+| home_screen | 2000 | 12.7 | 23.1 | 28.4 |
+| live: goal | 296 | 6.1 | 7.7 | 10.5 |
+| mark_channel_read | 800 | 0.4 | 4.8 | 8.2 |
+| nav_badges | 2000 | 5.0 | 12.2 | 16.1 |
+| needs_you | 2000 | 0.9 | 6.7 | 10.4 |
+
+The league's and the clubs' screens at that moment (Postgres execution time, median of 3):
+
+| as | screen | median ms |
+|---|---|---|
+| league | home_jobs | 2.9 |
+| league | competition_run_sheet | 106.8 ◀ |
+| league | competition_ladder | 0.5 |
+| league | competition_appointments | 34.8 |
+| league | admin_hub | 0.1 |
+| coach | home_jobs | 22.7 |
+| owner (biggest club) | home_jobs | 3.4 |
+| owner (biggest club) | admin_hub | 0.2 |
+| owner (biggest club) | outstanding_fees | 0.4 |
+| stranger | public_competition_entry | 0.1 |
 
 ## Bugs
 
-11 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+16 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 

@@ -15,3 +15,8 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 9 | high | referee | record_match_event | OF1 the first yellow of three is recorded | allowed | 22023: this game has ended; ask the league for a correction |  |
 | 10 | high | referee | record_match_event (blue) | OF1 a blue card is recorded with its minute | allowed | 22023: this game has ended; ask the league for a correction |  |
 | 11 | high | referee | record_match_event (blue_minutes) | OF1 the sin bin runs from the minute shown: back at 50 | 50 |  |  |
+| 12 | high | coach | suspend_on_card (L-20) | OFF1 the club hears the player is one yellow from a suspension | >0 | 0 |  |
+| 13 | high | club admin | queue_clearance_warnings | OFF3 each of the four clubs' owners and admins are told a coach's check has expired | 4 clubs | 0 clubs ( people) |  |
+| 14 | high | club admin | clearance_board | OFF3 the club's checks board shows the coach as expired | expired | expiring |  |
+| 15 | high | coach | can_manage_entry → is_team_coach → clearance_lapsed | OFF3 a coach whose check has expired cannot submit a sheet | refused | allowed: "2147e298-b089-4d82-ba04-6d4be3fe5114" |  |
+| 16 | high | coach | can_post_in_channel → clearance_lapsed | OFF3 nor post to the squad | refused | allowed: [{"id":"9b29cc58-652e-4839-b280-7a8817cdcf7e"}] |  |
