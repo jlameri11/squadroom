@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 11:44 UTC · 8 rounds played · 25 PASS · 15 FIXED · 2 FAIL · 0 not run · 20 bugs logged (17 fixed) · 14 min so far
+Last run: 2026-11-15 11:45 UTC · 9 rounds played · 26 PASS · 15 FIXED · 2 FAIL · 0 not run · 20 bugs logged (17 fixed) · 14 min so far
 
 ## What this is
 
@@ -61,7 +61,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 17/17 | — | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 19/19 | — | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -74,6 +74,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
+| OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
 
 ### People & messaging
 
@@ -96,7 +97,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 320 scheduled messages, 25123 RSVPs, 1227 referee appointments, 2226 team sheets, 852 results agreed on the sheets, 66 disputes (67 ruled on), 39 late results, 186 cards.
+Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 360 scheduled messages, 28283 RSVPs, 1379 referee appointments, 2503 team sheets, 978 results agreed on the sheets, 80 disputes (81 ruled on), 43 late results, 212 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -108,6 +109,7 @@ Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reaction
 | 6 | 2027-03-13 | 145 | 66679 | 66679 | 0 | event_reminder 46512, announcement 11131, message 7298, team_sheet_due 289, match_day 289, entry_fee_owed 255 |
 | 7 | 2027-03-20 | 145 | 107541 | 107541 | 0 | event_reminder 85044, announcement 10995, message 9372, fee_overdue 804, match_day 289, team_sheet_due 289 |
 | 8 | 2027-03-27 | 145 | 9788 | 9786 | 0 | event_reminder 7980, message 912, match_day 289, team_sheet_due 289, helper_reminder 142, announcement 131 |
+| 9 | 2027-04-03 | 145 | 75840 | 75831 | 0 | event_reminder 46520, announcement 20300, message 7366, fee_overdue 603, match_day 289, team_sheet_due 289 |
 
 ## The peak
 
