@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 09:34 UTC · 7 rounds played · 21 PASS · 2 FIXED · 9 FAIL · 4 not run · 16 bugs logged (3 fixed) · 6 min so far
+Last run: 2026-11-15 09:34 UTC · 8 rounds played · 22 PASS · 2 FIXED · 10 FAIL · 4 not run · 17 bugs logged (3 fixed) · 7 min so far
 
 ## What this is
 
@@ -72,6 +72,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet — _the second yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; the club hears the player is one yellow from a suspension: expected >0, got 0_ | **FAIL** | 10/12 | #9, #12 | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed — _each of the four clubs' owners and admins are told a coach's check has expired: expected 4 clubs, got 0 clubs ( people); the club's checks board shows the coach as expired: expected expired, got expiring; a coach whose check has expired cannot submit a sheet: expected refused, got allowed: "2147e298-b089-4d82-ba04-6d4be3fe5114"; nor post to the squad: expected refused, got allowed: [{"id":"9b29cc58-652e-4839-b280-7a8817cdcf7e"}]_ | **FAIL** | 2/6 | #13, #14, #15, #16 | — |
+| OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
+| OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps — _a third game played up is over the division's cap of two — refused: expected refused, got allowed: "ec7c6e57-7f0e-446a-9425-a4701bcadcf4"_ | **FAIL** | 7/8 | #17 | — |
 
 ### People & messaging
 
@@ -80,12 +82,12 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM3 | Busy team chats with replies, reactions, photos and polls | **PASS** | 4/4 | — | — |
 | PM5 | Quiet hours and the digest respected — _the quiet-hours parent shares a squad chat with a digest parent: expected a channel, got none_ | **FAIL** | 0/1 | #4 | — |
 | PM4 | Scheduled messages go at their time, not before | **PASS** | 8/8 | — | — |
-| PM6 | No message sent twice; late messages not sent | **PASS** | 14/14 | — | — |
-| PM1 | Notices to everyone / club staff only | **PASS** | 4/4 | — | — |
+| PM6 | No message sent twice; late messages not sent | **PASS** | 18/18 | — | — |
+| PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
 
 ## The load
 
-Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 18665 RSVPs, 912 referee appointments, 1638 team sheets, 589 results agreed on the sheets, 64 disputes (65 ruled on), 25 late results, 117 cards.
+Over the run: 16 league notices, 96 club messages, 1920 chat lines, 960 reactions, 80 polls, 320 scheduled messages, 21784 RSVPs, 1068 referee appointments, 1902 team sheets, 717 results agreed on the sheets, 75 disputes (76 ruled on), 30 late results, 142 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -96,6 +98,7 @@ Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reaction
 | 5 | 2027-03-03 | 4 | 32508 | 32508 | 0 | event_reminder 23752, event_back_on 7560, message 912, referee_game_moved 145, announcement 131, match_day 8 |
 | 6 | 2027-03-06 | 145 | 64341 | 64341 | 0 | event_reminder 61922, message 912, fee_overdue 603, team_sheet_due 290, match_day 290, helper_reminder 152 |
 | 7 | 2027-03-13 | 145 | 50524 | 50498 | 0 | event_reminder 46146, message 2880, fee_overdue 402, match_day 289, team_sheet_due 289, fee_due 201 |
+| 8 | 2027-03-20 | 145 | 49129 | 49124 | 0 | event_reminder 46881, message 938, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 137 |
 
 ## The peak
 
@@ -132,7 +135,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-16 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+17 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 

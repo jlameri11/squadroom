@@ -20,3 +20,4 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 14 | high | club admin | clearance_board | OFF3 the club's checks board shows the coach as expired | expired | expiring |  |
 | 15 | high | coach | can_manage_entry → is_team_coach → clearance_lapsed | OFF3 a coach whose check has expired cannot submit a sheet | refused | allowed: "2147e298-b089-4d82-ba04-6d4be3fe5114" |  |
 | 16 | high | coach | can_post_in_channel → clearance_lapsed | OFF3 nor post to the squad | refused | allowed: [{"id":"9b29cc58-652e-4839-b280-7a8817cdcf7e"}] |  |
+| 17 | high | coach | ineligibility (borrow_cap) | OFF6 a third game played up is over the division's cap of two — refused | refused | allowed: "ec7c6e57-7f0e-446a-9425-a4701bcadcf4" |  |
