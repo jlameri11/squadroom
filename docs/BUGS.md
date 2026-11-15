@@ -10,3 +10,5 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 4 | high | parent | channel_members | PM5 the quiet-hours parent shares a squad chat with a digest parent | a channel | none |  |
 | 5 | high | league | home_jobs (league) | R2 the league's Home shows one disputed result | "1 disputed" | 8 disputed · 1 sheets missing |  |
 | 6 | high | referee | call_off_fixtures / notify_event_change | FV9 Friday night: the 14 referees appointed to those games are told their game is off | 14 | 8 |  |
+| 7 | high | referee | call_off_fixtures / notify_event_change | WS1 Washout: the 124 referees appointed to those games are told their game is off | 124 | 75 |  |
+| 8 | high | competition manager | draw_quality | WS4 the double-header shows in the draw's sanity check | a double header on 2027-03-06 | [] |  |
