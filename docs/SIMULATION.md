@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 11:54 UTC · 18 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 42 bugs logged (17 fixed) · 23 min so far
+Last run: 2026-11-15 11:54 UTC · 19 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 42 bugs logged (17 fixed) · 24 min so far
 
 ## What this is
 
@@ -133,7 +133,7 @@ New here? Crea; club president: Home shows "Registrations" (None waiting): expec
 
 ## The load
 
-Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 49841 RSVPs, 2285 referee appointments, 4410 team sheets, 1862 results agreed on the sheets, 149 disputes (150 ruled on), 88 late results, 381 cards.
+Over the run: 38 league notices, 228 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 52971 RSVPs, 2434 referee appointments, 4673 team sheets, 1984 results agreed on the sheets, 155 disputes (156 ruled on), 91 late results, 408 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -155,6 +155,7 @@ Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reacti
 | 16 | 2027-05-29 | 8 | 50669 | 50664 | 0 | event_reminder 31396, announcement 11270, message 7364, fee_overdue 603, wwcc_expiring 12, referee_appointment 11 |
 | 17 | 2027-06-05 | 4 | 51012 | 51006 | 0 | event_reminder 31396, announcement 11985, message 7361, entry_fee_owed 255, match_correction_requested 6, referee_appointment 5 |
 | 18 | 2028-02-05 | 144 | 0 | 0 | 0 |  |
+| 19 | 2028-02-12 | 144 | 26914 | 26914 | 0 | event_reminder 15066, announcement 10991, match_day 273, team_sheet_due 273, referee_appointment 149, referee_response 137 |
 
 ## The peak
 
