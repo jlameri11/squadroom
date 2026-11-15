@@ -6,6 +6,44 @@ every item on it is something no amount of building can get past.
 
 ---
 
+**Session log.** 14–15 Nov 2026 (Sat–Sun), Sydney: **the SPL Season 4
+simulation is built and running** (`docs/SIMULATION.md`, `docs/BUGS.md`,
+`scripts/simulation/`). A made-up league — 60 clubs, 300 teams, 4,500
+players, 12 grounds, 150 referees, every role — plays February to June 2027
+on the local Postgres with a simulated clock (`clock.sql`), the crons and
+the push drain emulated, every scenario on Joey's list of 13 Nov as timed
+steps, and (from 15 Nov) **the real app opened in a browser at 375px** at
+five moments as nine people, against a small local Supabase (`stack.mjs`:
+PostgREST on the embedded Postgres, an auth stub, a proxy; the app built
+once for it on :3300). A full season takes about 21 minutes; it commits
+after every round. The first full runs found and fixed: **0276** (a draw of
+two legs and bye weeks, round dates in the competition's zone, Joey's draw
+rule of 15 Nov — a coach or manager never in two games, families at two
+grounds a warning, club clashes fine — a game moved by name lands on its
+pitch, the field in the mirrored event, a team withdraws, referees told of
+a call-off or a move, finals of four, a shootout, a minimum sheet, under-18
+referees off U15+, entry-fee reminders, incident and abuse reports pushed),
+**0277** (the league's Home on a Sunday), **0278** (staff read the squad
+chat, team managers read the notices, a forfeit is off for the families, a
+ladder that is off is off). All applied to dev with types and test-rls
+(230 checks). The UI gained the two-leg draw and bye weeks, finals of four,
+the minimum sheet, the shootout on a ruling and "withdraw" on the entries.
+No deploy (Joey says when). **Next:** the seed-2 run is going; then Joey's
+**past seasons + head to head** brief (15 Nov), and a second simulated
+season to prove it.
+
+- **NEEDS JOEY (simulation, 15 Nov):** three rules were assumed and are
+  easy to change — an under-18 referee is kept off U15 and older games
+  (`referee_unavailable_reason`); half an hour is the travel time between
+  grounds in the coach-clash rule (`staff_clash`); a club whose entry fee
+  is still owed is reminded every fortnight after fourteen days
+  (`queue_entry_fee_reminders`). A withdrawn team still shows on the ladder
+  with the games it played and no label yet. The hydration warning in
+  `next dev` and `test-many-hats` timing out on the dev server are still to
+  be looked at (the production build is clean).
+
+---
+
 **Session log.** 11 Nov 2026, evening Sydney: **Big Club Mode Phase 1 is
 done by its own definition** (`test-definition-of-done` on Inner West FC,
 `scale/message-the-club` on the local big dataset), Phase 2 is planned in

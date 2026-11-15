@@ -64,3 +64,34 @@ export async function loadSponsors(slug: string): Promise<PublicSponsor[]> {
   const { data } = await anon.rpc('public_sponsors', { p_slug: slug })
   return (data as unknown as PublicSponsor[]) ?? []
 }
+
+/** 0279: the league's published seasons, newest first — the season switcher. */
+export type PublicSeason = { name: string; season: string | null; slug: string; status: string; starts_on: string | null; current: boolean }
+export async function loadSeasons(slug: string): Promise<PublicSeason[]> {
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const { data } = await anon.rpc('public_competition_seasons', { p_slug: slug })
+  return (data as unknown as PublicSeason[]) ?? []
+}
+
+/** 0279: one game of a published competition, and its head to head. */
+export type PublicGame = {
+  id: string; competition: string; season: string | null; organiser: string; division: string; round: string | null; stage: string | null
+  starts_at: string | null; venue: string | null; field: string | null; address: string | null; home: string | null; away: string | null
+  home_score: number | null; away_score: number | null; pens_home: number | null; pens_away: number | null; scores_hidden: boolean; status: string
+}
+export async function loadGame(slug: string, fixtureId: string): Promise<{ game: PublicGame | null; headToHead: import('@/components/head-to-head').HeadToHeadData | null }> {
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+  const [{ data: game }, { data: h2h }] = await Promise.all([
+    anon.rpc('public_fixture', { p_slug: slug, p_fixture: fixtureId }),
+    anon.rpc('public_head_to_head', { p_slug: slug, p_fixture: fixtureId }),
+  ])
+  return { game: (game as unknown as PublicGame | null) ?? null, headToHead: (h2h as unknown as import('@/components/head-to-head').HeadToHeadData | null) ?? null }
+}

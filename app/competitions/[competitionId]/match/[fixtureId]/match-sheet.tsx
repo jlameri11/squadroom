@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 // (useEffect is also used by ClubAllocate below.)
 import { createClient } from '@/lib/supabase/client'
+import { HeadToHead } from '@/components/head-to-head'
 import { ScreenSkeleton } from '@/components/screen-skeleton'
 import { RespectPanel } from '@/components/respect-marks'
 import Link from 'next/link'
@@ -196,6 +197,8 @@ export function MatchSheet({ fixtureId, competitionId }: { fixtureId: string; co
           </Link>
         )}
       </header>
+      {/* 0279: every meeting of these two, this season and every season before. */}
+      <HeadToHead fixtureId={fixtureId} competitionId={competitionId} />
 
       <div className="mt-3 flex gap-1.5">
         {(['home', 'away'] as const).map((s) => (

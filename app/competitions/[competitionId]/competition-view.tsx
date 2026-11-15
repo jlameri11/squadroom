@@ -58,9 +58,11 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, initialTab, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries, entriesOpen = false,
+  competitionId, initialTab, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries, entriesOpen = false, status,
 }: {
   competitionId: string
+  /** 0279: 'active' or 'ended' — a finished season is read-only, and says so. */
+  status?: string | null
   /** The tab to open first, from `?tab=`; anything unknown opens the first. */
   initialTab?: string
   mode: string
@@ -96,6 +98,8 @@ export function CompetitionView({
 
   return (
     <div>
+      {/* 0279: the league's seasons, newest first; a finished one is read in full, read-only. */}
+      <SeasonSwitcher competitionId={competitionId} tab={tab} status={status ?? null} canEnd={areas.includes('competition') || areas.includes('staff') || isOrganiser} />
       {commsOnly && (
         <p className="border-b border-[var(--line-2)] bg-[var(--surface-3)] px-4 py-2 text-xs text-ink-2">
           Run elsewhere. Squadroom carries the messages and the reminders — the draw and the
@@ -1159,6 +1163,69 @@ function EmbedSnippet({ url, name }: { url: string; name: string }) {
         {copied ? 'Copied' : 'Copy the embed code'}
       </button>
       <p className="mt-1.5 text-[0.6875rem] text-ink-3">Paste it where you want the table. It updates itself; readers can pick a division.</p>
+    </div>
+  )
+}
+
+
+/**
+ * 0279: the season switcher, the read-only badge, and the organiser's "end
+ * the season". A finished season keeps every game, result and table for
+ * good; the database refuses every write to it until the league reopens it.
+ */
+function SeasonSwitcher({ competitionId, tab, status, canEnd }: { competitionId: string; tab: string; status: string | null; canEnd: boolean }) {
+  const router = useRouter()
+  const [seasons, setSeasons] = useState<{ id: string; name: string; season: string | null; status: string; current: boolean; mine: boolean }[]>([])
+  const [confirm, setConfirm] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      const { data } = await createClient().rpc('competition_seasons', { p_competition: competitionId })
+      if (live) setSeasons((data as unknown as typeof seasons | null) ?? [])
+    })()
+    return () => { live = false }
+  }, [competitionId])
+  const ended = status === 'ended'
+  async function end(reopen: boolean) {
+    setBusy(true); setError(null)
+    const supabase = createClient()
+    const { error } = reopen
+      ? await supabase.rpc('reopen_season', { p_competition: competitionId, p_note: 'Reopened from the competition page' })
+      : await supabase.rpc('end_season', { p_competition: competitionId })
+    setBusy(false); setConfirm(false)
+    if (error) return setError(error.message)
+    router.refresh()
+  }
+  if (seasons.length <= 1 && !ended && !canEnd) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--line-2)] px-4 py-2 text-sm" data-season-bar>
+      {seasons.length > 1 && (
+        <label className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-2">Season</span>
+          <select value={competitionId} onChange={(e) => router.push(`/competitions/${e.target.value}?tab=${tab}`)}
+                  className="rounded-lg border px-2 py-1 text-sm" style={{ borderColor: 'var(--line)' }} data-season-switcher>
+            {seasons.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}{s.season && !s.name.includes(s.season) ? ` ${s.season}` : ''}{s.status === 'ended' ? ' · finished' : ''}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      {ended && <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-season-ended>Season over · read-only</span>}
+      {canEnd && !confirm && (
+        <button onClick={() => setConfirm(true)} className="tap ml-auto text-xs underline underline-offset-2 text-ink-3" data-season-end>
+          {ended ? 'Reopen the season' : 'End the season'}
+        </button>
+      )}
+      {canEnd && confirm && (
+        <span className="ml-auto flex items-center gap-2 text-xs">
+          <span className="text-ink-2">{ended ? 'Reopen it for a correction?' : 'Every game, result and table is kept as it stands; nothing can change until it is reopened.'}</span>
+          <button onClick={() => end(ended)} disabled={busy} className="rounded-lg px-2.5 py-1 font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }} data-season-end-confirm>{ended ? 'Reopen' : 'End it'}</button>
+          <button onClick={() => setConfirm(false)} className="rounded-lg border px-2.5 py-1" style={{ borderColor: 'var(--line)' }}>Keep</button>
+        </span>
+      )}
+      {error && <p className="w-full text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
     </div>
   )
 }

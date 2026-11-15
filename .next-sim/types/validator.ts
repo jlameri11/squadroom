@@ -545,6 +545,23 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/c/[slug]/game/[fixtureId]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/c/[slug]/game/[fixtureId]">> = Specific
+  const handler = {} as typeof import("../../app/c/[slug]/game/[fixtureId]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  
+  type __ParamMatchingValue =
+    typeof handler extends { unstable_paramMatching: infer Matcher } ? Matcher :
+    typeof handler extends { unstable_generateParamMatching: (...args: any[]) => infer Matcher } ? Awaited<Matcher> : {}
+  type __InvalidParamMatchingKeys = Exclude<keyof __ParamMatchingValue, keyof ParamMap["/c/[slug]/game/[fixtureId]"]>
+  type __AssertNoInvalidParamMatchingKeys<Invalid extends never> = Invalid
+  const __paramMatchingKeyCheck: __AssertNoInvalidParamMatchingKeys<__InvalidParamMatchingKeys> | undefined = undefined
+  void __paramMatchingKeyCheck
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/c/[slug]/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/c/[slug]">> = Specific

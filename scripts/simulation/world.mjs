@@ -4,8 +4,10 @@
 // RLS) for finding things; every ACTION goes through a person (lib.mjs).
 import { asAdmin, asPerson, clock, ids, rpc, run, sql, sydney, sydneyDate, val } from './lib.mjs'
 
-export const COMP = ids.comp
+/** The competition the season plays in — Season 4 until the simulation starts Season 5 (setCompetition). A live binding: importers see the change. */
+export let COMP = ids.comp
 export const LEAGUE = ids.league
+export function setCompetition(id) { COMP = id }
 
 // ------------------------------------------------------------------ fixtures
 /** The games on a Sydney date, with both sides and where they are. */
@@ -81,9 +83,10 @@ export async function sheetFor(pool, entryId, { n = 13, extra = [], skip = [] } 
   const rows = await sql(pool, `
     select s.player_id from public.entry_squads s join public.players p on p.id = s.player_id
      where s.entry_id = $1 and not (s.player_id = any($2::uuid[]))
+       and not (s.player_id = any($4::uuid[]))
        -- a coach leaves a suspended player off (the scenarios put one on with \`extra\` to see the refusal)
        and not exists (select 1 from public.suspensions x where x.player_id = s.player_id and x.competition_id = s.competition_id and x.status = 'active' and x.served < x.games)
-     order by p.full_name limit $3`, [entryId, skip, n])
+     order by p.full_name limit $3`, [entryId, skip, n, extra])
   const players = [...rows.map((r) => r.player_id), ...extra]
   return players.map((player_id, i) => ({ player_id, number: i + 1, starting: i < 11 }))
 }

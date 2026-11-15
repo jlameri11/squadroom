@@ -925,6 +925,25 @@ one and is meant to reach hundreds of academies.
     guard then blames for the game the timer made. Targets: tap feedback
     under 100 ms, first content under 1 s cold and 300 ms warm
     (`docs/SCALE.md` §6).
+- **Past seasons are always visitable; head to head on every game (Joey,
+  15 Nov 2026; 0279).** A finished season is read-only and nothing in it is
+  ever deleted: `end_season` closes a competition and every table of it
+  (`fixtures`, sheets, events, appointments, entries, squads, adjustments,
+  corrections, forfeits, changes) refuses writes and deletes until
+  `reopen_season`; the competition itself cannot be deleted. The season
+  switchers read `competition_seasons` (the app) and
+  `public_competition_seasons` (the match centre, anon): a league's seasons
+  are its competitions of the same type, newest first. A new season from the
+  last is `new_season_from` (rules, fees, clubs and the rolled-over teams'
+  entries copied; `previous_competition_id` kept). A team's history follows
+  the rollover lineage both ways (`team_lineage`, `team_history`: position,
+  W-D-L, goals, points, how the finals went); a family's Fixtures offers
+  `my_seasons` / `season_fixtures`. Head to head (`head_to_head`,
+  `public_head_to_head`, `public_fixture`, the public game page
+  `/c/{slug}/game/{fixtureId}`) finds every meeting of the two teams across
+  the organiser's competitions — the same team by lineage, or the same club
+  in the same age group — with a summary and the last five; a division that
+  hides scores shows "played", and no player's name is in it.
 - **RLS costs are per row SCANNED, not per row returned.** Measured on
   60,000 messages: filtered by channel it is an index scan at ~1ms; an
   unfiltered `select from messages` is a seq scan at ~836ms, because the

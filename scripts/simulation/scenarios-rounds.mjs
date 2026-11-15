@@ -511,7 +511,7 @@ export async function round3(ctx, S, add) {
       check(told.length > 0 && /Now at/.test(told[0].body ?? ''), { what: 'and was told "Now at …"', expected: `Now at ${h.venue}`, actual: told[0]?.body ?? 'nothing', role: 'parent', where: 'notify_event_change' })
     } else check(false, { what: 'a game with a free pitch of its size at another ground', expected: 'one', actual: 'none today', role: '—', where: 'fixtures', quiet: true })
   })
-  add(`${S} 09:40`, 'FV8 a late kick-off pushes the later games', async () => {
+  add(`${S} 08:30`, 'FV8 a late kick-off pushes the later games', async () => {
     scenario('FV8', 'Fields & venues', 'A late kick-off pushing later games')
     const pitch = await val(pool, `select f.pitch_id from public.fixtures f where f.competition_id = $1 and f.status = 'scheduled' and f.pitch_id is not null and (f.starts_at at time zone 'Australia/Sydney')::date = $2::date and f.starts_at > now() group by f.pitch_id having count(*) >= 3 order by count(*) desc limit 1`, [COMP, S])
     if (!pitch) { check(false, { what: 'a pitch with three games still to play', expected: 'one', actual: 'none', role: '—', where: 'fixtures', quiet: true }); return }
@@ -610,13 +610,15 @@ export async function round4(ctx, S, add) {
     }
     // Everything else to the catch-up Saturday, 22 May, same pitch and time of day.
     const rest = (await gamesOn(pool, S, { status: 'postponed' }))
+    const why = {}
     for (const g of rest) {
       const t = new Date(g.starts_at)
       const sameTime = new Date(`2027-05-22T${new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(t)}:00+10:00`).toISOString()
       const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: sameTime, p_venue_label: null, p_field: null })
       if (r.ok) catchup++
+      else { const k = r.error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
     }
-    check(catchup === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May`, expected: rest.length, actual: catchup, role: 'ground manager', where: 'reschedule_fixture' })
+    check(catchup === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
     backOn = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_back_on' and created_at >= $1`, [new Date(clock.now.getTime() - 60_000).toISOString()])
     check(backOn > 0, { what: 'families are told their game is back on, with the new day', expected: '>0', actual: backOn, role: 'parent', where: 'notify_event_change (event_back_on)' })
     ctx.catchupDate = '2027-05-22'
@@ -757,7 +759,8 @@ export async function round6(ctx, S, add) {
     const noMinute = await rpc(pool, yr, 'record_match_event', { p_fixture: y.id, p_entry: d.yellowEntry, p_kind: 'blue', p_player: (await squad(pool, d.yellowTeam)).players[3], p_minute: null, p_note: null, p_code: null })
     mustRefuse(noMinute, { what: 'a blue card with no minute is refused', role: 'referee', where: 'record_match_event (blue)' })
     const rep = await rpc(pool, who.discipline, 'discipline_report', { p_competition: COMP })
-    check(rep.ok && JSON.stringify(rep.data).includes(d.redPlayer), { what: 'the discipline officer\'s report lists the sending-off', expected: 'the player in the report', actual: rep.ok ? 'listed' : rep.error, role: 'discipline officer', where: 'discipline_report' })
+    const redName = await playerName(pool, d.redPlayer)
+    check(rep.ok && (JSON.stringify(rep.data).includes(d.redPlayer) || JSON.stringify(rep.data).includes(redName)), { what: 'the discipline officer\'s report lists the sending-off', expected: `${redName} in the report`, actual: rep.ok ? JSON.stringify(rep.data).slice(0, 160) : rep.error, role: 'discipline officer', where: 'discipline_report' })
     // Both games finish: the scores go in and the referee ends them (so the bans start serving next week).
     for (const gm of [g, y]) {
       const r = await enterScores(pool, gm, 2, 1)
@@ -767,13 +770,13 @@ export async function round6(ctx, S, add) {
   })
   add(`${S} 13:30`, 'SCREENS after a suspension', () => runScreens(ctx, 'suspension'))
   // OF2 / OF3: the sheets next Friday.
-  add(`${plusDays(S, 6)} 13:00`, 'OF2 the suspended player on a sheet is refused by name; playing up within the rules; over the cap', async () => {
+  add(`${plusDays(S, -1)} 13:20`, 'OF2 the suspended player on a sheet is refused by name; playing up within the rules; over the cap', async () => {
     scenario('OF2', 'On-field issues', 'Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused')
     const d = ctx.discipline
     if (!d) return
     // (the suspended player's refusal by name is checked the week the team next plays: disciplineWeek)
-    // The age band: U13 Division 1 is for 2014–2015; a 2013-born U15 player of the same club is refused by year.
-    const u13 = (await gamesOn(pool, plusDays(S, 7), { division: 'U13 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
+    // The age band: U13 Division 1 is for 2014–2015; a 2012-born U15 player of the same club is refused by year.
+    const u13 = (await gamesOn(pool, S, { division: 'U13 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
     if (u13) {
       const older = await val(pool, `select pl.id from public.players pl join public.teams t on t.id = pl.team_id where pl.academy_id = $1 and t.age_group = 'U15' and extract(year from pl.dob) = 2012 limit 1`, [u13.home_club])
       if (older) {
@@ -783,7 +786,7 @@ export async function round6(ctx, S, add) {
       }
     }
     // Playing up: a U13 player of the same club on the U15 Division 1 sheet, twice within the cap of 2, the third time refused.
-    const u15 = (await gamesOn(pool, plusDays(S, 7), { division: 'U15 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
+    const u15 = (await gamesOn(pool, S, { division: 'U15 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
     if (u15) {
       const junior = await val(pool, `select s.player_id from public.entry_squads s join public.competition_entries e on e.id = s.entry_id join public.competition_divisions d on d.competition_id = e.competition_id and d.division = e.division
         where e.competition_id = $1 and e.academy_id = $2 and d.age_group = 'U13' and not exists (select 1 from public.suspensions x where x.player_id = s.player_id) order by s.player_id limit 1`, [COMP, u15.home_club])
@@ -795,7 +798,7 @@ export async function round6(ctx, S, add) {
       } else note('no U13 player of that club to play up')
     }
     // A division that forbids playing up.
-    const u17 = (await gamesOn(pool, plusDays(S, 7), { division: 'U17 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
+    const u17 = (await gamesOn(pool, S, { division: 'U17 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
     if (u17) {
       const u15p = await val(pool, `select s.player_id from public.entry_squads s join public.competition_entries e on e.id = s.entry_id join public.competition_divisions d on d.competition_id = e.competition_id and d.division = e.division
         where e.competition_id = $1 and e.academy_id = $2 and d.age_group = 'U15' order by s.player_id limit 1`, [COMP, u17.home_club])
@@ -812,9 +815,9 @@ export async function round6(ctx, S, add) {
       mustRefuse(s, { what: 'another club\'s player on the sheet is refused', role: 'coach', where: 'ineligibility' })
     }
   })
-  add(`${plusDays(S, 6)} 13:30`, 'OF3 a team short of players; a team that does not turn up is covered by the walkover', async () => {
+  add(`${plusDays(S, -1)} 13:40`, 'OF3 a team short of players; a team that does not turn up is covered by the walkover', async () => {
     scenario('OF3', 'On-field issues', 'Team short of players (minimum numbers), borrowing players, a team that doesn\'t turn up')
-    const g = (await gamesOn(pool, plusDays(S, 7), { division: 'U11 Division 4', status: 'scheduled' })).find((x) => x.home_team && x.away_team)
+    const g = (await gamesOn(pool, S, { division: 'U11 Division 4', status: 'scheduled' })).find((x) => x.home_team && x.away_team)
     if (!g) return
     const six = await submitSheet(pool, g, 'home', { n: 6 })
     const minRule = await val(pool, `select count(*)::int from information_schema.columns where table_schema = 'public' and table_name = 'competition_divisions' and column_name = 'squad_size_min'`)

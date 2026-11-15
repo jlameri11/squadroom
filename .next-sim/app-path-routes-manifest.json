@@ -76,6 +76,7 @@
   "/auth/confirm-email/route": "/auth/confirm-email",
   "/c/[slug]/embed/page": "/c/[slug]/embed",
   "/c/[slug]/enter/page": "/c/[slug]/enter",
+  "/c/[slug]/game/[fixtureId]/page": "/c/[slug]/game/[fixtureId]",
   "/c/[slug]/page": "/c/[slug]",
   "/c/[slug]/team/[code]/page": "/c/[slug]/team/[code]",
   "/calendar/[eventId]/page": "/calendar/[eventId]",

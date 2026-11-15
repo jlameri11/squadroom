@@ -8,6 +8,7 @@ import { NewSessions } from './new-sessions'
 import { CallOffDay } from './call-off-day'
 import { DrawFilters, applyDrawFilter, type DrawFilter } from './draw-filters'
 import { AcademyTable } from './academy-table'
+import { PastSeasons } from './past-seasons'
 import { Matchdays } from './matchdays'
 import { ShareDraw } from './share-draw'
 import { ShareCard } from '@/components/share-card'
@@ -44,6 +45,8 @@ export function FixturesScreen() {
   // Upcoming | Matchdays: what is coming, and what has been played — the
   // score, the scorers, the video. ?view=matchdays opens the second.
   const [view, setView] = useState<'upcoming' | 'matchdays'>(params.get('view') === 'matchdays' ? 'matchdays' : 'upcoming')
+  // 0279: a past season picked on the chips shows that season's games and the squads' history, read-only.
+  const [pastSeason, setPastSeason] = useState<string | null>(null)
 
   // Screen is the scroll container, so everything sticky inside it sticks to
   // the SAME top. The filter bar and the day headings both did, and the day
@@ -187,14 +190,19 @@ export function FixturesScreen() {
           </details>
         )}
 
-        {/* X-07: every squad's season, folded, above the draw. */}
-        <AcademyTable academyId={data.academy.id} />
+        {/* 0279: this season, or one that has finished — kept in full. */}
+        <PastSeasons academyId={data.academy.id} onSeason={setPastSeason} />
 
+        {/* X-07: every squad's season, folded, above the draw. */}
+        {!pastSeason && <AcademyTable academyId={data.academy.id} />}
+
+        {!pastSeason && (
         <div ref={barRef} className="sticky top-0 z-20">
           <DrawFilters events={all} filter={filter} onChange={setFilter} />
         </div>
+        )}
 
-        {narrowed && shown.length === 0 ? (
+        {pastSeason ? null : narrowed && shown.length === 0 ? (
           <div className="p-6 text-center">
             <p className="text-sm text-ink-3">Nothing matches that.</p>
             <button

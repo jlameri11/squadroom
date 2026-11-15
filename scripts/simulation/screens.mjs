@@ -15,13 +15,14 @@ import { COMP, LEAGUE, eventFor, gamesOn, guardianOf, ladder, noticesChannel, re
 import { APP_URL, sessionCookie, sessionFor, setDbClock, startStack } from './stack.mjs'
 
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-const SC = { draw: 'SC1', washout: 'SC2', dispute: 'SC3', suspension: 'SC4', finals: 'SC5' }
+const SC = { draw: 'SC1', washout: 'SC2', dispute: 'SC3', suspension: 'SC4', finals: 'SC5', season5: 'SC6' }
 const TITLES = {
   draw: 'Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them',
   washout: 'Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee',
   dispute: 'Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits',
   suspension: 'Screens after a suspension: the coach and the club see it, the league\'s discipline page lists it',
   finals: 'Screens at the finals: the grand finals, the finished ladders, the champions',
+  season5: 'Screens in Season 5: the season switcher, last season\'s page and ladders in full, head to head across the seasons',
 }
 
 const txt = (s) => String(s ?? '').replace(/\s+/g, ' ').trim()
@@ -70,7 +71,7 @@ async function visit(browser, db, person, pages, dir, label, simNow) {
   return out
 }
 
-export async function runScreens(ctx, moment) {
+export async function runScreens(ctx, moment, { extraPages = null } = {}) {
   const { pool } = ctx
   const up = await fetch(`${APP_URL}/signin`).then((r) => r.ok).catch(() => false)
   if (!up) { note(`screens (${moment}): the app is not serving at ${APP_URL} — skipped`); ctx.needsJoey?.push(`The screen check at "${moment}" was skipped: the app was not built for the local stack (scripts/simulation/stack.mjs).`); return }
@@ -124,6 +125,9 @@ export async function runScreens(ctx, moment) {
       } else if (p.label === 'referee') {
         pages.referee = '/referee'
       }
+      if (extraPages && (p.label === 'league' || p.label === 'parent-home')) {
+        for (const [k, v] of Object.entries(extraPages(p) ?? {})) if (v) pages[k] = v
+      }
       const seen = await visit(browser, db, p, pages, dir, p.label, simNow)
       const where = `screens (${moment}) · ${p.label}`
       // Every page rendered something that is not an error or a sign-in.
@@ -176,6 +180,15 @@ export async function runScreens(ctx, moment) {
       }
       if (p.label === 'referee') {
         check(has(seen.referee, focus.home_name) || has(seen.referee, focus.away_name), { what: 'referee: their appointment is on the referee screen', expected: `${focus.home_name} v ${focus.away_name}`, actual: txt(seen.referee).slice(0, 200), role: p.role, where: `${where} /referee` })
+      }
+      if (moment === 'season5' && seen.centre5) {
+        check(/Season 4/.test(seen.centre5) && /Season 5/.test(seen.centre5), { what: `${p.role}: the public match centre's season switcher names Season 4 and Season 5`, expected: 'both seasons', actual: txt(seen.centre5).slice(0, 200), role: p.role, where: `${where} /c/spl-season-5` })
+        check(/Final/.test(seen.centre4) && /finished/i.test(seen.centre4), { what: `${p.role}: Season 4's page still reads in full and says it is finished`, expected: 'finals listed, "finished"', actual: txt(seen.centre4).slice(0, 200), role: p.role, where: `${where} /c/spl-season-4`, severity: 'medium' })
+        if (seen.publicGame) check(/Head to head/.test(seen.publicGame) && /2027/.test(seen.publicGame), { what: `${p.role}: a public game page shows head to head with a 2027 meeting`, expected: 'Head to head · 2027', actual: txt(seen.publicGame).slice(0, 240), role: p.role, where: `${where} public game` })
+        if (seen.competition4) check(/Season over|read-only/i.test(seen.competition4) || /Ladder/.test(seen.competition4), { what: `${p.role}: last season's competition page opens read-only with its ladder`, expected: 'Season over · read-only', actual: txt(seen.competition4).slice(0, 200), role: p.role, where: `${where} /competitions/<season 4>`, severity: 'medium' })
+      }
+      if (moment === 'season5' && p.team && seen.fixtures) {
+        check(/2027/.test(seen.fixtures), { what: `${p.role}: Fixtures offers the 2027 season`, expected: 'a 2027 chip', actual: txt(seen.fixtures).slice(0, 200), role: p.role, where: `${where} /calendar`, severity: 'medium' })
       }
     }
     note(`screens (${moment}): ${sample.length} people photographed → ${dir}`)

@@ -7,9 +7,9 @@
     "static/chunks/0cz1d0mv5g_q7.js"
   ],
   "lowPriorityFiles": [
-    "static/s32Z2vmTe1I_Eqh8_GU3x/_buildManifest.js",
-    "static/s32Z2vmTe1I_Eqh8_GU3x/_ssgManifest.js",
-    "static/s32Z2vmTe1I_Eqh8_GU3x/_clientMiddlewareManifest.js"
+    "static/oHFXKmzMdfagGKxY730cT/_buildManifest.js",
+    "static/oHFXKmzMdfagGKxY730cT/_ssgManifest.js",
+    "static/oHFXKmzMdfagGKxY730cT/_clientMiddlewareManifest.js"
   ],
   "rootMainFiles": [
     "static/chunks/1ckvzn7sfprko.js",
@@ -373,6 +373,17 @@
       ]
     },
     "/c/[slug]/enter/page": {
+      "otherChunks": [
+        "static/chunks/1ckvzn7sfprko.js",
+        "static/chunks/13s7zgy75w5h8.js",
+        "static/chunks/2laf0zufr7psq.js",
+        "static/chunks/3w5g7hrmide-q.js"
+      ],
+      "runtimeModuleIds": [
+        94553
+      ]
+    },
+    "/c/[slug]/game/[fixtureId]/page": {
       "otherChunks": [
         "static/chunks/1ckvzn7sfprko.js",
         "static/chunks/13s7zgy75w5h8.js",

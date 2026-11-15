@@ -21,6 +21,7 @@ import { Lineup } from './lineup'
 import { GameHero } from './game-hero'
 import { EditOccurrence } from './edit-occurrence'
 import { FullLadder, MiniLadder, TeamForm } from './game-panels'
+import { HeadToHead } from '@/components/head-to-head'
 import { useGame } from './use-game'
 import { createClient } from '@/lib/supabase/client'
 import { sendOrQueue, signedInHere } from '@/lib/offline/use-outbox'
@@ -426,6 +427,8 @@ export function EventDetail({
         {!cancelled && event.team_id && <WhenOn feature="duty_roster"><EventDuties eventId={event.id} teamId={event.team_id} /></WhenOn>}
           {game && <TeamForm game={game} ourName={ourName} theirName={theirName} />}
           {game && <MiniLadder game={game} onOpen={() => choose('ladder')} />}
+          {/* 0279: every meeting of these two, this season and every season before. */}
+          {event.fixture_id && <HeadToHead fixtureId={event.fixture_id} />}
           {/* F-05 (0228): the division table from the league's file, for a game outside our own competitions. */}
           {event.team_id && !game?.ladder && <DivisionTable teamId={event.team_id} />}
           {isCoach && <EditOccurrence event={event} tz={tz} />}

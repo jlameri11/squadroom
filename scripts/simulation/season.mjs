@@ -22,10 +22,11 @@
 // and docs/SIMULATION.md (report.mjs), bugs in docs/BUGS.md as they are found.
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { ROOT, bugs, clock, head, localDb, note, ok, saveResults, scenarios, sql, val } from './lib.mjs'
+import { ROOT, bugs, clock, head, localDb, note, ok, saveResults, scenarios, sql, sydney, val } from './lib.mjs'
 import { COMP, advanceTo, gamesOn, roundDates, queueTally } from './world.mjs'
 import { appointReferees, checkIns, clubLife, fullTime, leagueNotices, leagueSunday, plusDays, refereesRespond, rescheduleLeftovers, rng, scheduleFridayLines, submitSheets, weekRsvps } from './routine.mjs'
 import { preseason, roundPlan, finalsPlan, closing } from './scenarios.mjs'
+import { season5Plan } from './scenarios-season5.mjs'
 import { writeReport } from './report.mjs'
 
 const args = process.argv.slice(2)
@@ -47,7 +48,7 @@ if (flag('--rebuild')) {
 
 /** Joey (15 Nov 2026): commit and push after every round of the season. */
 function commitRound(r, S) {
-  const label = r <= 14 ? `round ${r}` : r === 15 ? 'the catch-up round' : 'the finals'
+  const label = r <= 14 ? `round ${r}` : r === 15 ? 'the catch-up round' : r <= 17 ? 'the finals' : `Season 5 round ${r - 17}`
   const run = (cmd) => spawnSync('sh', ['-c', cmd], { cwd: ROOT, encoding: 'utf8' })
   run('git add docs/BUGS.md docs/SIMULATION.md scripts/simulation/fixed.json')
   const staged = run('git diff --cached --quiet || echo changed').stdout.trim()
@@ -103,14 +104,40 @@ try {
   let extra = []
   // The next Saturday with games; a mid-week game belongs to the week around it.
   const nextDay = async (after) => (await roundDates(pool)).find((d) => d.d > after && isSaturday(d.d))?.d ?? null
-  while (S) {
+  const runExtras = async (steps) => {
+    for (const step of steps) {
+      // A long jump (the off-season) goes a day at a time; the week's sweeps still run.
+      const far = (sydney(step.at) - clock.now) > 2 * 86400_000
+      await advanceTo(pool, step.at, far ? { tickMinutes: 1440 } : {})
+      const out = await step.run()
+      console.log(`  ${clock.local()}  ${step.name}${out && typeof out === 'object' ? `  ${JSON.stringify(out).slice(0, 200)}` : ''}`)
+    }
+  }
+  let lastS = '2027-01-01'
+  while (true) {
+    if (!S) {
+      // The draw has run out of Saturdays: whatever is still planned runs now
+      // (ending the season, the rollover, the next season's draw), and may
+      // put new Saturdays on the calendar.
+      if (!extra.length) break
+      await runExtras(extra.splice(0))
+      S = await nextDay(lastS)
+      if (!S) break
+    }
+    if (ctx.stopAfter && S > ctx.stopAfter) break
     r++
     if (r > UNTIL) break
     const since = clock.now
-    head(`${r <= 14 ? `ROUND ${r}` : r === 15 ? 'CATCH-UP ROUND' : 'FINALS'} — Saturday ${S}`)
+    head(`${r <= 14 ? `ROUND ${r}` : r === 15 ? 'CATCH-UP ROUND' : r <= 17 ? 'FINALS' : `SEASON 5 · ROUND ${r - 17}`} — Saturday ${S}`)
     const rand = rng(SEED * 1000 + 100 + r)
     const plan = r <= 14 ? await roundPlan(ctx, r, S) : []
-    if (r === 14) extra = await finalsPlan(ctx)
+    if (r === 14) {
+      extra = await finalsPlan(ctx)
+      // Joey (15 Nov): a second season follows, to prove past seasons stay visitable and head to head reaches back.
+      const s5 = []
+      await season5Plan(ctx, (at, name, fn) => s5.push({ at, name, run: fn }))
+      extra = [...extra, ...s5].sort((a, b) => a.at.localeCompare(b.at))
+    }
     const weekEnd = `${plusDays(S, 1)} 23:59`
     const mine = extra.filter((x) => x.at <= weekEnd)
     extra = extra.filter((x) => x.at > weekEnd)
@@ -158,15 +185,12 @@ try {
     ctx.minutes = `${Math.round((Date.now() - t0) / 60000)} min so far`
     try { writeReport(saveResults({ stats: ctx.stats, perRound: ctx.perRound, peak: ctx.peak, seed: SEED }), ctx) } catch (e) { note(`report not written: ${e.message}`) }
     if (COMMIT) commitRound(r, S)
+    lastS = S
     S = await nextDay(S)
   }
-  // Steps left after the last playing day.
+  // Steps left after the last playing day (the season's close), then the close itself.
   if (r <= UNTIL) {
-    for (const step of extra) {
-      await advanceTo(pool, step.at)
-      const out = await step.run()
-      console.log(`  ${clock.local()}  ${step.name}${out && typeof out === 'object' ? `  ${JSON.stringify(out).slice(0, 200)}` : ''}`)
-    }
+    await runExtras(extra.splice(0))
     if (r > 14) await closing(ctx)
   }
 } catch (e) {

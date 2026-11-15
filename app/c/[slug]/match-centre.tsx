@@ -96,6 +96,7 @@ export function MatchCentre({
   switches,
   brand = null,
   clubs = [],
+  seasons = [],
 }: {
   centre: Centre
   /** 0266: the clubs in this competition, each a door to its own page. */
@@ -112,6 +113,8 @@ export function MatchCentre({
   sponsors?: PublicSponsor[]
   /** 0260: the organiser's switches — the ladder breakdown's tap shows only when on. */
   switches?: { ladder_breakdown?: boolean }
+  /** 0279: the league's published seasons, newest first; a past season is read in full, read-only. */
+  seasons?: { name: string; season: string | null; slug: string; status: string; current: boolean }[]
 }) {
   const { competition, fixtures, ladder, divisions } = centre
   const slug = slugOf(shareUrl ?? '')
@@ -146,11 +149,29 @@ export function MatchCentre({
           </div>
           <h1 className="display mt-1 text-[1.875rem] leading-none">{competition.name}</h1>
           <div className="mt-1.5 flex items-center gap-3">
-            {competition.season && (
+            {(seasons ?? []).length > 1 ? (
+              // 0279: every season the league has published, newest first. A finished one is read in full.
+              <label className="text-sm" style={{ opacity: 0.9 }}>
+                <span className="sr-only">Season</span>
+                <select
+                  value={slug}
+                  onChange={(e) => { if (e.target.value) window.location.href = `/c/${e.target.value}` }}
+                  className="rounded-lg border px-2 py-1 text-sm"
+                  style={{ background: 'transparent', borderColor: 'color-mix(in srgb, var(--bar-ink) 35%, transparent)', color: 'inherit' }}
+                  data-season-switcher
+                >
+                  {(seasons ?? []).map((s) => (
+                    <option key={s.slug} value={s.slug} style={{ color: '#111' }}>
+                      {s.name}{s.season && !s.name.includes(s.season) ? ` ${s.season}` : ''}{s.status === 'ended' ? ' · finished' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : competition.season ? (
               <p className="text-sm" style={{ opacity: 0.75 }}>
                 {competition.season}
               </p>
-            )}
+            ) : null}
             {shareUrl && <ShareButton title={competition.name} url={shareUrl} />}
           </div>
           {centre.entries_open && shareUrl && (
@@ -220,7 +241,7 @@ export function MatchCentre({
       </div>
 
       {tab === 'fixtures' ? (
-        <Fixtures fixtures={mine} />
+        <Fixtures fixtures={mine} slug={slug} />
       ) : tab === 'scorers' ? (
         <Scorers rows={centre.top_scorers?.[division] ?? centre.top_scorers?.[divisions[0] ?? ''] ?? []} />
       ) : tab === 'ladder' ? (
@@ -348,7 +369,7 @@ function Squads({
   )
 }
 
-function Fixtures({ fixtures }: { fixtures: Fixture[] }) {
+function Fixtures({ fixtures, slug }: { fixtures: Fixture[]; slug: string }) {
   if (fixtures.length === 0) {
     return <Empty>No draw published yet.</Empty>
   }
@@ -408,10 +429,12 @@ function Fixtures({ fixtures }: { fixtures: Fixture[] }) {
             const homeWon = played && (f.home_score ?? 0) > (f.away_score ?? 0)
             const awayWon = played && (f.away_score ?? 0) > (f.home_score ?? 0)
             return (
-              <div
+              <a
                 key={f.id}
+                href={slug ? `/c/${slug}/game/${f.id}` : undefined}
                 className="flex items-center gap-2.5 border-b px-4 py-3"
                 style={{ borderColor: 'var(--line-2)' }}
+                data-public-fixture={f.id}
               >
                 <span className="w-12 flex-none text-xs tabular-nums text-ink-3">
                   {byRound ? (f.starts_at ? clock(f.starts_at) : '') : (f.field ?? '')}
@@ -440,7 +463,7 @@ function Fixtures({ fixtures }: { fixtures: Fixture[] }) {
                     {f.starts_at && !byRound ? '' : 'to play'}
                   </span>
                 )}
-              </div>
+              </a>
             )
           })}
         </section>

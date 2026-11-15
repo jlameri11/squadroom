@@ -376,7 +376,7 @@ export async function round14(ctx, S, add) {
 export async function finals(ctx, add) {
   const { pool } = ctx
   // The catch-up round (22 May) is played by the routine like any Saturday (the driver finds the date in the draw).
-  add('2027-05-23 10:00', 'R6 the finals are set up: semi-finals 29 May, grand finals 5 June', async () => {
+  add('2027-05-23 12:00', 'R6 the finals are set up: semi-finals 29 May, grand finals 5 June', async () => {
     scenario('R6', 'Results', 'Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded')
     const top4 = await (await import('./scenarios.mjs')).hasParam(pool, 'create_finals', 'p_top')
     let made = 0

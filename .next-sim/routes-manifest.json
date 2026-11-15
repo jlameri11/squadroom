@@ -140,6 +140,15 @@
       "namedRegex": "^/c/(?<nxtPslug>[^/]+?)/enter(?:/)?$"
     },
     {
+      "page": "/c/[slug]/game/[fixtureId]",
+      "regex": "^/c/([^/]+?)/game/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug",
+        "nxtPfixtureId": "nxtPfixtureId"
+      },
+      "namedRegex": "^/c/(?<nxtPslug>[^/]+?)/game/(?<nxtPfixtureId>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/c/[slug]/team/[code]",
       "regex": "^/c/([^/]+?)/team/([^/]+?)(?:/)?$",
       "routeKeys": {

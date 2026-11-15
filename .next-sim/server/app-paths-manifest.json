@@ -76,6 +76,7 @@
   "/auth/confirm-email/route": "app/auth/confirm-email/route.js",
   "/c/[slug]/embed/page": "app/c/[slug]/embed/page.js",
   "/c/[slug]/enter/page": "app/c/[slug]/enter/page.js",
+  "/c/[slug]/game/[fixtureId]/page": "app/c/[slug]/game/[fixtureId]/page.js",
   "/c/[slug]/page": "app/c/[slug]/page.js",
   "/c/[slug]/team/[code]/page": "app/c/[slug]/team/[code]/page.js",
   "/calendar/[eventId]/page": "app/calendar/[eventId]/page.js",

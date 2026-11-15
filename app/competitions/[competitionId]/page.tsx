@@ -85,6 +85,7 @@ export default async function CompetitionPage(props: {
       </header>
 
       <CompetitionView
+        status={comp.status}
         competitionId={comp.id}
         initialTab={initialTab}
         mode={comp.mode}

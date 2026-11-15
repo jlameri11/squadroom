@@ -1530,6 +1530,7 @@ export type Database = {
           club_allocate_hours: number
           created_at: string
           created_by: string | null
+          ended_at: string | null
           ends_on: string | null
           entries_open: boolean
           flowing_until: string | null
@@ -1541,6 +1542,7 @@ export type Database = {
           notes: string | null
           organiser: string | null
           organiser_id: string
+          previous_competition_id: string | null
           public_slug: string | null
           published_at: string | null
           season: string | null
@@ -1556,6 +1558,7 @@ export type Database = {
           club_allocate_hours?: number
           created_at?: string
           created_by?: string | null
+          ended_at?: string | null
           ends_on?: string | null
           entries_open?: boolean
           flowing_until?: string | null
@@ -1567,6 +1570,7 @@ export type Database = {
           notes?: string | null
           organiser?: string | null
           organiser_id: string
+          previous_competition_id?: string | null
           public_slug?: string | null
           published_at?: string | null
           season?: string | null
@@ -1582,6 +1586,7 @@ export type Database = {
           club_allocate_hours?: number
           created_at?: string
           created_by?: string | null
+          ended_at?: string | null
           ends_on?: string | null
           entries_open?: boolean
           flowing_until?: string | null
@@ -1593,6 +1598,7 @@ export type Database = {
           notes?: string | null
           organiser?: string | null
           organiser_id?: string
+          previous_competition_id?: string | null
           public_slug?: string | null
           published_at?: string | null
           season?: string | null
@@ -1617,6 +1623,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_previous_competition_id_fkey"
+            columns: ["previous_competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
             referencedColumns: ["id"]
           },
         ]
@@ -9557,6 +9570,7 @@ export type Database = {
           status: Database["public"]["Enums"]["fixture_status"]
         }[]
       }
+      competition_seasons: { Args: { p_competition: string }; Returns: Json }
       conduct_register: { Args: { p_academy?: string }; Returns: Json }
       confirm_match_sheet: {
         Args: { p_entry: string; p_fixture: string }
@@ -9755,6 +9769,7 @@ export type Database = {
         Returns: string
       }
       end_player_login: { Args: { p_player: string }; Returns: Json }
+      end_season: { Args: { p_competition: string }; Returns: Json }
       enqueue_event_reminders: { Args: never; Returns: number }
       ensure_system_channel: {
         Args: {
@@ -10010,6 +10025,7 @@ export type Database = {
       ground_slots: { Args: { p_venue: string }; Returns: Json }
       group_channel_info: { Args: { p_channel: string }; Returns: Json }
       group_overview: { Args: { p_academy: string }; Returns: Json }
+      head_to_head: { Args: { p_fixture: string }; Returns: Json }
       help_with: { Args: { p_job: string }; Returns: Json }
       home_competitions: { Args: { p_academy?: string }; Returns: Json }
       home_jobs: {
@@ -10284,6 +10300,7 @@ export type Database = {
         }[]
       }
       my_scheduled_messages: { Args: { p_channel: string }; Returns: Json }
+      my_seasons: { Args: { p_academy?: string }; Returns: Json }
       my_upcoming_events: {
         Args: { p_academy: string; p_days?: number }
         Returns: {
@@ -10314,6 +10331,17 @@ export type Database = {
       names_to_check: { Args: { p_academy: string }; Returns: Json }
       nav_badges: { Args: { p_academy?: string }; Returns: Json }
       needs_you: { Args: { p_academy?: string }; Returns: Json }
+      new_season_from: {
+        Args: {
+          p_competition: string
+          p_ends_on?: string
+          p_name: string
+          p_season: string
+          p_slug?: string
+          p_starts_on: string
+        }
+        Returns: Json
+      }
       next_squad_number: {
         Args: { p_academy: string; p_preferred?: number; p_season: string }
         Returns: number
@@ -10563,7 +10591,16 @@ export type Database = {
       }
       public_competition_clubs: { Args: { p_slug: string }; Returns: Json }
       public_competition_entry: { Args: { p_slug: string }; Returns: Json }
+      public_competition_seasons: { Args: { p_slug: string }; Returns: Json }
       public_find_clubs: { Args: { p_query?: string }; Returns: Json }
+      public_fixture: {
+        Args: { p_fixture: string; p_slug: string }
+        Returns: Json
+      }
+      public_head_to_head: {
+        Args: { p_fixture: string; p_slug: string }
+        Returns: Json
+      }
       public_ladder_breakdown: {
         Args: { p_entry: string; p_slug: string }
         Returns: Json
@@ -10808,6 +10845,10 @@ export type Database = {
         Args: { p_fixture: string; p_note: string }
         Returns: undefined
       }
+      reopen_season: {
+        Args: { p_competition: string; p_note?: string }
+        Returns: undefined
+      }
       reping_club_message: { Args: { p_message: string }; Returns: number }
       reping_unread: { Args: { p_message: string }; Returns: Json }
       reply_support: {
@@ -11001,6 +11042,10 @@ export type Database = {
       scores_shown: { Args: { p_team: string }; Returns: boolean }
       search_chat: {
         Args: { p_academy?: string; p_limit?: number; p_query: string }
+        Returns: Json
+      }
+      season_fixtures: {
+        Args: { p_academy: string; p_season: string }
         Returns: Json
       }
       seed_entry_squad: { Args: { p_entry: string }; Returns: number }
@@ -11262,6 +11307,7 @@ export type Database = {
         }[]
       }
       team_form: { Args: { p_n?: number; p_team: string }; Returns: Json }
+      team_history: { Args: { p_team: string }; Returns: Json }
       team_join_code: { Args: { p_team: string }; Returns: Json }
       team_season_stats: { Args: { p_team: string }; Returns: Json }
       team_training: { Args: { p_team: string }; Returns: Json }

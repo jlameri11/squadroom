@@ -5366,6 +5366,35 @@ begin
   insert into rls_results values (230,'the draw check names a coach in two games and a family at two grounds, never a club clash',
     case when b then 'PASS' else 'FAIL' end);
 
+  -- 231–234 (0279): past seasons and head to head. Ending a season is the
+  -- league's; a participant reads a game's head to head; a stranger reads a
+  -- league's published seasons and nothing else; every table of a season
+  -- carries the read-only guard.
+  perform set_config('request.jwt.claims', json_build_object('sub', PARENT, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.end_season(v_comp);
+  exception when others then b := true;
+  end;
+  b2 := (select public.head_to_head((select f.id from public.fixtures f where f.competition_id = v_comp limit 1))) is not null
+        or not exists (select 1 from public.fixtures f where f.competition_id = v_comp);
+  execute 'reset role';
+  insert into rls_results values (231,'a parent cannot end a season', case when b then 'PASS' else 'FAIL' end);
+  insert into rls_results values (232,'a participant reads a game''s head to head', case when b2 then 'PASS' else 'FAIL' end);
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  execute 'set local role anon';
+  b := coalesce((select jsonb_typeof(public.public_competition_seasons((select c.public_slug from public.competitions c where c.published_at is not null and c.public_slug is not null limit 1))) = 'array'), true);
+  b2 := false;
+  begin
+    perform public.competition_seasons(v_comp);
+  exception when others then b2 := true;
+  end;
+  execute 'reset role';
+  insert into rls_results values (233,'a stranger reads a league''s published seasons, not the app''s list', case when b and b2 then 'PASS' else 'FAIL' end);
+  select count(*) into n from pg_trigger where tgname in ('fixtures_season_over', 'match_sheets_season_over', 'match_events_season_over', 'competition_entries_season_over', 'competitions_season_over');
+  insert into rls_results values (234,'a finished season''s tables carry the read-only guard (0279)', case when n = 5 then 'PASS' else 'FAIL' end);
+
   delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');
