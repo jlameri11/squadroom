@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:34 UTC · 10 rounds played · 19 PASS · 9 FIXED · 12 FAIL · 4 not run · 38 bugs logged (13 fixed) · 15 min so far
+Last run: 2026-11-15 10:35 UTC · 11 rounds played · 19 PASS · 9 FIXED · 13 FAIL · 4 not run · 39 bugs logged (13 fixed) · 16 min so far
 
 ## What this is
 
@@ -76,6 +76,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps — _the third yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; three yellows: a one-game suspension: expected 1 game, active, got []_ | **FAIL** | 7/9 | #33, #34 | — |
 | OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
 | OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased — _the 51 clubs whose entry fee is still owed in April have been reminded: expected ≥1 reminder, got 0 reminders; a club treasurer sees what their club owes the league: expected owed fees listed, got listed_ | **FAIL** | 16/18 | #37, #38 | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
+| OFF5a | A team withdraws mid-season: fixtures, ladder and opponents handled — _the remaining games become byes; the played ones stand: expected 5 byes, 8 played, got 6 byes, 8 played_ | **FAIL** | 5/6 | #39 | 0276: withdraw_entry; a bye is mirrored as a called-off game |
 
 ### People & messaging
 
@@ -89,7 +90,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 400 scheduled messages, 30962 RSVPs, 1518 referee appointments, 2685 team sheets, 1089 results agreed on the sheets, 106 disputes (107 ruled on), 47 late results, 215 cards.
+Over the run: 22 league notices, 132 club messages, 2636 chat lines, 1318 reactions, 110 polls, 440 scheduled messages, 33973 RSVPs, 1667 referee appointments, 2934 team sheets, 1204 results agreed on the sheets, 122 disputes (123 ruled on), 53 late results, 239 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -103,6 +104,7 @@ Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reacti
 | 8 | 2027-03-27 | 145 | 49097 | 49090 | 0 | event_reminder 46886, message 912, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 141 |
 | 9 | 2027-04-03 | 145 | 9982 | 9981 | 0 | event_reminder 7980, message 912, match_day 289, team_sheet_due 289, fee_overdue 201, helper_reminder 150 |
 | 10 | 2027-04-10 | 141 | 65867 | 65860 | 0 | event_reminder 46152, announcement 11348, message 7370, match_day 282, team_sheet_due 282, referee_appointment 144 |
+| 11 | 2027-04-24 | 138 | 97202 | 97191 | 0 | event_reminder 77130, announcement 10872, message 7359, fee_overdue 603, match_day 274, team_sheet_due 274 |
 
 ## The peak
 
@@ -139,7 +141,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-38 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+39 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
