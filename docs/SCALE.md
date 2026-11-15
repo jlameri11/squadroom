@@ -267,19 +267,23 @@ Targets: tap feedback under 100 ms, first content under 1 s cold and under
 | Home | parent | 1448 | 483 | 15 | 1382 | **255** | 1553 | 472 | 13 |
 | Chat list | parent | 1385 | 437 | 10 | 1206 | **241** | 1324 | 1084 ¹ | 8 |
 | U8 chat | parent | 424 ² | 217 ² | 0 ² | 1266 | **258** | 1568 | 528 | 19 |
-| Fixtures | parent | 419 ³ | 218 ³ | 0 ³ | 418 ³ | 219 ³ | — | — | — |
+| Fixtures | parent | 419 ³ | 218 ³ | 0 ³ | 1203 | **261** | 1393 | 436 | 9 |
 | Next game | parent | 443 ² | — ² | 25 | 1219 | **259** | 2147 | 1019 ¹ | 24 |
 | Home | coach | 2000 | 850 | 25 | 1288 | **260** | 1493 | 461 | 13 |
 | Admin | coach | 1587 | 602 | 15 | 1427 | 451 | 1591 | 596 | 10 |
 | Admin | owner | 1553 | 609 | 17 | 1331 | 455 | 1545 | 602 | 12 |
-| Ladder | league | 422 ³ | 250 ³ | 0 ³ | 422 ³ | 368 ³ | — | — | — |
+| Ladder | league | 422 ³ | 250 ³ | 0 ³ | 420 | **258** | 1347 | 669 | 10 |
 | Match centre | stranger | 436 | 239 | 1 | 428 | 229 | 441 | 229 | 1 |
 
 ¹ Settled late on purpose: the chat list warms each chat whose row is in
 view, and the game page loads its tabs' panels after the hero; both are
 background work after first content.
 ² A server-rendered frame from a local server — see above.
-³ The loading placeholder, not content — see above; re-measured below.
+³ The loading placeholder, not content — see above. The "after" columns
+for those two rows were measured on 14 Nov 2026 with the harness that waits
+for a request: the Fixtures list is first content in 1203 ms cold (the same
+range as every other screen — a cold open on Fast 4G is the bundle) and 261
+warm; the Ladder (a server-rendered tab on a small page) 420 and 258.
 
 **The repeated calls that were there before:** `two_step_status` three times
 on every screen (now once a minute per tab), `home_jobs` twice on every Home

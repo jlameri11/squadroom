@@ -30,10 +30,12 @@ try {
   const all = Array.isArray(res) ? res : [res]
   const last = [...all].reverse().find((r) => r?.rows?.length) ?? all[all.length - 1]
   if (last?.rows?.length) {
+    // WIDE=1 prints whole values (catalog lookups); otherwise 60 characters a cell.
+    const cap = process.env.WIDE ? Infinity : 60
     const cols = last.fields.map((f) => f.name)
-    const widths = cols.map((c) => Math.min(60, Math.max(c.length, ...last.rows.map((r) => String(r[c] ?? '').length))))
+    const widths = cols.map((c) => Math.min(cap, Math.max(c.length, ...last.rows.map((r) => String(r[c] ?? '').length))))
     console.log(cols.map((c, i) => c.padEnd(widths[i])).join('  '))
-    for (const r of last.rows) console.log(cols.map((c, i) => String(r[c] ?? '').slice(0, 60).padEnd(widths[i])).join('  '))
+    for (const r of last.rows) console.log(cols.map((c, i) => String(r[c] ?? '').slice(0, cap).padEnd(widths[i])).join('  '))
   }
   console.log(`\x1b[2m  ${last?.rowCount ?? 0} rows · ${Date.now() - t} ms\x1b[0m`)
 } catch (e) {

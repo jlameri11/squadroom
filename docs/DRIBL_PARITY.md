@@ -95,7 +95,7 @@ CLAUDE.md, each checked on every screen rather than built once.
 | D2 | Confusing family/child profiles | Profiles are the child's; parents edit their own child's photo | DONE (X-06, R-17) |
 | D3 | Notifications that open the home screen | Every push carries the exact item's URL | DONE (every kind has a `url`) |
 | D4 | Ladders nobody can audit | Tap a ladder row to see how every point was earned | PARTIAL — adjustments listed (L-10); per-row breakdown not yet |
-| D5 | Draws published with holes | A sanity check before publishing (empty slots, travel, same-club clashes) | DONE (L-24, 0189: "Check the draw" on the run sheet) |
+| D5 | Draws published with holes | A sanity check before publishing (empty slots, travel, a coach in two games, families at two grounds; two squads of one club at once is fine) | DONE (L-24, 0189: "Check the draw" on the run sheet) |
 | D6 | "All photos" permission | Ask for selected photos only, never the whole library | DONE (the card asks for one file) |
 | D7 | Support that blames organisers | Fast human replies, a match-day hotline, staged rollouts, never blaming publicly | Operational — G-03 |
 | D8 | Stacked fees | One clear total to a family; Squadroom never charges parents | DONE by rule (CLAUDE.md) |

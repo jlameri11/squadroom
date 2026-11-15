@@ -1,57 +1,49 @@
-# Full season simulation — "SPL Season 4"
+# SPL Season 4 — the simulation
 
-**Status (10 Nov 2026): queued.** Joey's order (10 Nov): the four audit
-fixes → the rest of Big Club Phase 1 (`BIG_CLUB_MODE.md`) → the Dribl gaps
-(`BUILD_PLAN.md` item 12) → registration as close to Dribl as possible
-(`REGISTRATION_BRIEF.md`) → this. Commit and push
-hourly while it runs. No deploy. This file will become the report (section
-"What ran" onward); until then it holds the brief, verbatim.
+Last run: 2026-11-15 09:06 UTC · 0 rounds played · 6 PASS · 2 FIXED · 0 FAIL · 0 not run · 18 bugs logged (3 fixed) · 
 
-## The brief (Joey, 9 Nov 2026)
+## What this is
 
-> FULL SEASON SIMULATION — "SPL Season 4" (Joey, 9 Nov)
-> Goal: prove the whole platform works end to end at real size, and find every bug before real clubs do.
->
-> WHERE: run it on the local Postgres (scripts/local-db), never on squadroom-dev or the demo. All data fake (made-up clubs, people, venues). Reuse the scale-test tooling.
->
-> 1. BUILD THE LEAGUE
-> - A "Tournament & league organiser" (fake: "Harbour Football Group") running "SPL Season 4".
-> - 5 age groups (U9, U11, U13, U15, U17), each split into divisions — 300+ teams total from ~60 clubs and academies (mix of big clubs, small clubs, academies; some clubs with several teams per age group).
-> - 12 venues with pitches and hours (L-29), different sizes per age group.
-> - Referees pool (~150, incl. under-18 refs), league staff with each league role.
-> - Each club: committee roles, coaches, team managers, ~15 players per team, 1–2 guardians per child, some adult staff who are also parents.
->
-> 2. RUN THE SEASON (simulate week by week, ~14 rounds + finals)
-> - Clubs enter, pay entry fees (Stripe test mode or the no-key path), nominate teams.
-> - Draw generated; draw-quality summary checked; Fixture Flowing window used by some home clubs.
-> - Each week: referees allocated, some decline/late-decline; availability answered by parents (incl. two parents disagreeing); coaches select and publish team sheets; sheets lock; ineligible players refused; live score taps (some offline, synced late); both teams submit scores (some mismatched → disputes); cards incl. accumulation → suspensions; forfeits; a washout round called off by venue; a rescheduled round; abandoned game.
-> - Ladders, MiniRoos rules for U9 (no scores/ladder shown), finals eligibility, finals series.
->
-> 3. COMMUNICATION LOAD (throughout)
-> - League: Notices to everyone and to club staff only; the Clubs chat with club heads; DMs organiser↔club heads.
-> - Clubs: "Message the club" to thousands, age-group notices, team chats busy (thousands of messages/week), replies, reactions, photos, polls, scheduled messages.
-> - Safeguarding: coaches trying to DM under-13s (parents auto-added), a reported message, an under-13 trying to make an account (refused), a 13+ awaiting parent approval.
->
-> 4. EVERY SCENARIO
-> - For every role (parent, adult player, 13+ player, coach, team manager, coordinator, club president/registrar/treasurer, welfare officer, volunteer coordinator, league organiser, each league role, referee, stranger on the public page): do every main job they have, AND try things they must NOT be able to do (other clubs' data, other teams, money, medical, posting notices). Every "must not" must be refused.
-> - Edge cases: no signal, double taps, back button, two children in different clubs, a person in three organisations, long names, emoji, wrong inputs, expired WWCC, unpaid fees, timezone around midnight.
->
-> 5. MEASURE AND REPORT
-> - Time every key screen and call during peak (Saturday 8am) — target under 1 second.
-> - Log every failure, error and wrong result in docs/BUGS.md (role, steps, expected vs actual, severity).
-> - Fix all high/medium bugs, re-run the affected weeks until clean.
-> - Write docs/SIMULATION.md: what ran (numbers), what broke, what was fixed, performance at peak, anything that needs Joey.
-> - Then delete the simulated data from the local DB.
->
-> Do this after the current queue (two-step text code → organiser groups → big-club mode). Commit and push hourly. No deploy.
+Joey's brief (9 Nov 2026): build a whole league — Harbour Football Group, SPL Season 4, five age groups in 39 divisions, 300 teams from 60 clubs and academies, 12 grounds with their pitches and hours, 150 referees (30 under 18), every league and committee role, 4,500 players with one or two guardians — and play the season week by week on the local Postgres with every scenario on the list of 13 Nov, as the people who would do it, through the same functions the screens call. Measure at the peak. Log every failure in `docs/BUGS.md`; fix every high and medium.
 
-## Notes taken while queued
+How to run it (local only, never squadroom-dev): `node scripts/simulation/season.mjs --rebuild` — rebuilds the local database from every migration, loads `scripts/simulation/seed.sql` and the clock (`clock.sql`), then plays the season. `--until N` stops after round N. The clock is simulated: every call runs at the season's own moment (February to June 2027), so sheet locks, late declines, reminders, quiet hours, scheduled messages, check expiries and the morning sweeps fire as they would; pg_cron and the push drain are emulated every quarter-hour (`world.mjs`). Everything is done as a person under their RLS; the database is never written as the service role except where the product's own server would (the Stripe webhook's payment rows, the drain marking rows sent). The simulated data is deleted at the end by rebuilding the local database.
 
-- The scale-test tooling to reuse: `scripts/local-db/` (`run.mjs`, `sql.mjs`,
-  `copy-dev.mjs`) and the scale run recorded in `SCALE.md`.
-- Several brief items depend on Big Club Mode landing first (team managers,
-  coordinators, president/registrar/treasurer, welfare and volunteer roles,
-  "Message the club"), which is why it runs after it.
-- Stripe in the simulation: the local Postgres has no webhook; entry fees
-  take the no-key path (recorded by the treasurer) unless the Stripe test
-  harness is pointed at the local app on purpose.
+## The scenarios
+
+PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (the Fixed column names where), passes now. FAIL: still wrong — see the bug number. Every check is in `scripts/simulation/scenarios.mjs`.
+
+### Season build
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| S1 | The draw: 14 rounds home and away, a bye week in the school holidays | **FIXED** | 5/5 | — | 0276: generate_fixtures(… p_legs, p_skip_dates); 0276: p_skip_dates |
+| S2 | The sanity check on the draw: every pair once a leg, no coach in two games, families at two grounds as a warning, no double-headers | **PASS** | 4/4 | — | — |
+
+### Fields & venues
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| FV1 | Pitch allocation by age-group size | **PASS** | 2/2 | — | — |
+| FV3 | Hours limits: nothing drawn outside a pitch's hours, and a move outside them is refused | **PASS** | 2/2 | — | — |
+| FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
+| FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
+
+### Off-field issues
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| OFF5b | A club enters late | **PASS** | 5/5 | — | — |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+
+## The load
+
+Over the run: 0 league notices, 0 club messages, 0 chat lines, 0 reactions, 0 polls, 0 scheduled messages, 0 RSVPs, 0 referee appointments, 0 team sheets, 0 results agreed on the sheets, 0 disputes (0 ruled on), 0 late results, 0 cards.
+
+
+## Bugs
+
+18 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+
+## Needs Joey
+
+- Nothing from this run.

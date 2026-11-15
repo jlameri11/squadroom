@@ -9,7 +9,8 @@ type Quality = {
   pinned: number
   teams: { entry_id: string; name: string; games: number; home: number; away: number; early: number; late: number }[]
   pairs: { min: number; max: number; uneven: { a: string; b: string; games: number }[] }
-  club_clashes: { at: string; club: string; games: string[] }[]
+  staff_clashes: { person: string; at: string; games: string[] }[]
+  family_clashes: { family: string; at: string; games: string[] }[]
   double_headers: { team: string; day: string; games: number }[]
   travel: { team: string; day: string; grounds: string[] }[]
   empty_slots: { at: string; venue: string; field: string }[]
@@ -22,10 +23,13 @@ const when = (iso: string) => new Date(iso).toLocaleString('en-AU', { weekday: '
  * L-24: the sanity check before a draw goes out, and "a field is out".
  *
  * Reads the draw back the way an organiser checks it by hand — who meets
- * whom how often, home and away, the early and late slots, two teams of one
- * club at the same time, a double header, a team at two grounds in a day,
- * an empty field — and says what a closed field on a day would hit before
- * it is closed. Games moved by hand are pinned, and a rebuild keeps them.
+ * whom how often, home and away, the early and late slots, a coach or
+ * manager drawn into two games at once (the one thing that must be fixed:
+ * Joey, 15 Nov 2026 — two squads of one club at the same time is fine), a
+ * family at two grounds at once (a warning), a double header, a team at two
+ * grounds in a day, an empty field — and says what a closed field on a day
+ * would hit before it is closed. Games moved by hand are pinned, and a
+ * rebuild keeps them.
  */
 export function DrawCheck({ competitionId, division }: { competitionId: string; division: string }) {
   const [q, setQ] = useState<Quality | null | undefined>(undefined)
@@ -53,14 +57,14 @@ export function DrawCheck({ competitionId, division }: { competitionId: string; 
     setImpact((data as unknown as Impact[] | null) ?? [])
   }
 
-  const issues = q ? q.pairs.uneven.length + q.club_clashes.length + q.double_headers.length + q.travel.length + q.empty_slots.length : 0
+  const issues = q ? q.pairs.uneven.length + q.staff_clashes.length + q.family_clashes.length + q.double_headers.length + q.travel.length + q.empty_slots.length : 0
 
   return (
     <section className="mx-4 mb-3 rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--line)' }} data-draw-check>
       <div className="flex items-center justify-between gap-2">
         <span>
           <span className="block font-semibold">Check the draw</span>
-          <span className="block text-xs text-ink-3">Pairs, home and away, clashes, double headers, empty slots — before it goes out.</span>
+          <span className="block text-xs text-ink-3">Pairs, home and away, a coach in two games, families at two grounds, double headers, empty slots — before it goes out.</span>
         </span>
         <button onClick={check} disabled={busy} className="flex-none rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>
           {busy ? '…' : q ? 'Check again' : 'Check'}
@@ -79,8 +83,11 @@ export function DrawCheck({ competitionId, division }: { competitionId: string; 
                 {t.name}: {t.games} games, {t.home} home / {t.away} away{t.early > 0 ? `, first slot ${t.early}×` : ''}{t.late > 0 ? `, last slot ${t.late}×` : ''}
               </li>
             ))}
-            {q.club_clashes.map((c, i) => (
-              <li key={`c${i}`} style={{ color: 'var(--no)' }}>⚠ {c.club} has two teams on at {when(c.at)}: {c.games.join('; ')}</li>
+            {q.staff_clashes.map((c, i) => (
+              <li key={`c${i}`} style={{ color: 'var(--no)' }}>✕ {c.person} is drawn into two games at {when(c.at)}: {c.games.join('; ')} — move one</li>
+            ))}
+            {q.family_clashes.map((c, i) => (
+              <li key={`f${i}`} style={{ color: 'var(--maybe)' }}>⚠ The {c.family} family has children at two grounds at {when(c.at)}: {c.games.join('; ')}</li>
             ))}
             {q.double_headers.map((d, i) => (
               <li key={`d${i}`} style={{ color: 'var(--maybe)' }}>⚠ {d.team} plays {d.games} games on {d.day}</li>

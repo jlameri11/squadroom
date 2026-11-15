@@ -55,6 +55,10 @@ const URGENT = new Set([
   'event_cancelled',
   'event_changed',
   'event_back_on',
+  // 0276: a referee's game is off or moved; an injury on the field.
+  'referee_game_off',
+  'referee_game_moved',
+  'incident_report',
 ])
 
 export async function drainNotificationQueue(): Promise<DrainResult> {

@@ -1,0 +1,32 @@
+[
+  {
+    "scenario": "S1",
+    "severity": "medium",
+    "role": "competition manager",
+    "where": "generate_fixtures / generate_fixtures_managed",
+    "steps": "Build the draw for an eight-team division; try to draw the second half of the season",
+    "expected": "Rounds 1\u201314 from one draw, home and away reversed in the second leg",
+    "actual": "One run makes seven rounds; a second run is allowed and labels its games Round 1\u20137 again, with nobody's home game reversed",
+    "fixed": "0276: generate_fixtures(\u2026 p_legs, p_skip_dates)"
+  },
+  {
+    "scenario": "S1",
+    "severity": "medium",
+    "role": "competition manager",
+    "where": "generate_fixtures_managed (p_round_every_days)",
+    "steps": "Draw a season across the NSW autumn school holidays",
+    "expected": "A week the league leaves out (17 April) has no games; later rounds move on a week",
+    "actual": "The generator spaces rounds evenly and cannot leave a week out; the league would move every game of the round by hand",
+    "fixed": "0276: p_skip_dates"
+  },
+  {
+    "scenario": "OFF7a",
+    "severity": "medium",
+    "role": "competition manager",
+    "where": "generate_fixtures_managed (round dates as timestamptz + 'n days')",
+    "steps": "Draw a season whose rounds cross 4 April 2027 (daylight saving ends); compare a division's first kick-off on 27 March and 10 April",
+    "expected": "The same clock time (9 am stays 9 am)",
+    "actual": "Round dates were p_start_at + n days on a timestamptz; in a UTC session (PostgREST) that is n \u00d7 24 hours, so every kick-off after the change was an hour earlier and the pitch fit then pushed it to the next free slot. Found by inspection while fixing the draw; the check that would have caught it is OFF7a",
+    "fixed": "0276: round dates worked out in the competition's zone"
+  }
+]

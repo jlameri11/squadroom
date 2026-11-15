@@ -5332,6 +5332,40 @@ begin
   insert into rls_results values (45,'a stranger cannot re-sync a fixture',
     case when b then 'PASS' else 'FAIL' end);
 
+  -- 227–230 (0276): a season from end to end. Withdrawing a team and ruling
+  -- on a shootout are the league's; the division rules carry a minimum sheet;
+  -- the draw check names a coach in two games and a family at two grounds.
+  perform set_config('request.jwt.claims', json_build_object('sub', PARENT, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.withdraw_entry((select e.id from public.competition_entries e where e.competition_id = v_comp limit 1), 'probe');
+  exception when others then b := true;
+  end;
+  execute 'reset role';
+  insert into rls_results values (227,'a parent cannot withdraw a team from a competition',
+    case when b then 'PASS' else 'FAIL' end);
+  perform set_config('request.jwt.claims', json_build_object('sub', PARENT, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := false;
+  begin
+    perform public.rule_on_score((select f.id from public.fixtures f where f.competition_id = v_comp limit 1), 1, 1, 'probe', 4, 3);
+  exception when others then b := true;
+  end;
+  execute 'reset role';
+  insert into rls_results values (228,'a parent cannot rule on a score or a shootout',
+    case when b then 'PASS' else 'FAIL' end);
+  select count(*) into n from app_private.division_rules(v_comp, 'U8s') r where r.squad_size_min is null or r.squad_size_min is not null;
+  insert into rls_results values (229,'division rules carry a minimum sheet size (0276)',
+    case when n = 1 then 'PASS' else 'FAIL' end);
+  perform set_config('request.jwt.claims', json_build_object('sub', COACH, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := coalesce((select (q ? 'staff_clashes') and (q ? 'family_clashes') and not (q ? 'club_clashes')
+                   from public.draw_quality(v_comp, 'U8s') q), false);
+  execute 'reset role';
+  insert into rls_results values (230,'the draw check names a coach in two games and a family at two grounds, never a club clash',
+    case when b then 'PASS' else 'FAIL' end);
+
   delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');

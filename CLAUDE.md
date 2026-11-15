@@ -64,7 +64,14 @@ one and is meant to reach hundreds of academies.
   - Ladder audit: tap a ladder row to see how every point was earned,
     adjustments included, with reasons.
   - A sanity check before publishing a generated draw: empty slots,
-    travel, same-club clashes.
+    travel, double headers; and the draw rule (Joey, 15 Nov 2026): **a
+    club with several squads on at once is fine** (different teams,
+    different coaches — NRIFA plays four games at 9:10). HARD: the same
+    coach or team manager is never drawn into two games that overlap,
+    counting half an hour's travel between grounds (`staff_clash`, 0276;
+    the generator, the pitch fit and a reschedule all keep it). SOFT: a
+    family with children at two grounds at once is a warning on the draw
+    check, kept down where possible — never a refusal.
   - Ask for selected photos only, never "all photos".
   - Support: fast human replies, a match-day hotline, staged rollouts
     (pilot one division first), and never blaming an organiser publicly.
