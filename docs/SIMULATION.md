@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 11:54 UTC · 19 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 42 bugs logged (17 fixed) · 24 min so far
+Last run: 2026-11-15 11:55 UTC · 20 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 42 bugs logged (17 fixed) · 25 min so far
 
 ## What this is
 
@@ -133,7 +133,7 @@ New here? Crea; club president: Home shows "Registrations" (None waiting): expec
 
 ## The load
 
-Over the run: 38 league notices, 228 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 52971 RSVPs, 2434 referee appointments, 4673 team sheets, 1984 results agreed on the sheets, 155 disputes (156 ruled on), 91 late results, 408 cards.
+Over the run: 40 league notices, 240 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 56095 RSVPs, 2589 referee appointments, 4936 team sheets, 2102 results agreed on the sheets, 166 disputes (167 ruled on), 94 late results, 430 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -156,6 +156,7 @@ Over the run: 38 league notices, 228 club messages, 4064 chat lines, 2032 reacti
 | 17 | 2027-06-05 | 4 | 51012 | 51006 | 0 | event_reminder 31396, announcement 11985, message 7361, entry_fee_owed 255, match_correction_requested 6, referee_appointment 5 |
 | 18 | 2028-02-05 | 144 | 0 | 0 | 0 |  |
 | 19 | 2028-02-12 | 144 | 26914 | 26914 | 0 | event_reminder 15066, announcement 10991, match_day 273, team_sheet_due 273, referee_appointment 149, referee_response 137 |
+| 20 | 2028-02-19 | 144 | 28537 | 28537 | 0 | event_reminder 15066, announcement 10515, entry_fee_owed 1495, fee_overdue 603, match_day 274, team_sheet_due 274 |
 
 ## The peak
 
