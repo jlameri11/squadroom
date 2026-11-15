@@ -1,0 +1,35 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/clubs/layout,_N_T_/clubs/page,_N_T_/clubs"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/_index",
+    "/clubs/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 0,
+    "slots": {
+      "children": {
+        "hints": 64,
+        "slots": {
+          "children": {
+            "hints": 160,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/04f0889cbcae4ca07ea3209051049100ba760d6a60142a13df7ecfafb55263d0/$/clubs",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/clubs/page"
+    },
+    "isFallback": false
+  }
+}

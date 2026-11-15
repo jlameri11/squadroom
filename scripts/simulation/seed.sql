@@ -311,6 +311,10 @@ select pg_temp.sid('sim-entry-' || d.t), pg_temp.sid('sim-comp'), pg_temp.sid('s
 
 -- ------------------------------------------------------------- the history
 set session_replication_role = replica;
+-- Every account's email is on record and confirmed (the email gate would otherwise sit above every screen).
+insert into public.account_emails (profile_id, email, verified_at)
+select u.id, u.email, now() - interval '100 days' from auth.users u where u.email is not null
+on conflict do nothing;
 -- Everyone set a password when they signed up (the password gate would otherwise sit above every screen).
 update public.user_settings set password_set_at = now() - interval '100 days' where password_set_at is null;
 -- Everyone has the app on one phone (the drain sends to a subscription).

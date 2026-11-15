@@ -98,9 +98,11 @@ try {
   // Week by week, taking the next playing day from the draw each time — the
   // catch-up round and the finals appear in it as the season makes them.
   let r = 0
-  let S = firstDates[0]?.d
+  const isSaturday = (d) => new Date(`${d}T12:00:00+10:00`).getUTCDay() === 6
+  let S = firstDates.find((d) => isSaturday(d.d))?.d
   let extra = []
-  const nextDay = async (after) => (await roundDates(pool)).find((d) => d.d > after)?.d ?? null
+  // The next Saturday with games; a mid-week game belongs to the week around it.
+  const nextDay = async (after) => (await roundDates(pool)).find((d) => d.d > after && isSaturday(d.d))?.d ?? null
   while (S) {
     r++
     if (r > UNTIL) break
@@ -119,12 +121,13 @@ try {
       { at: `${plusDays(S, -5)} 19:00`, name: 'club life', run: () => clubLife(ctx, r, rand) },
       { at: `${plusDays(S, -5)} 20:00`, name: 'families answer', run: () => weekRsvps(ctx, S, rand) },
       { at: `${plusDays(S, -4)} 19:00`, name: 'coaches schedule Friday lines', run: () => scheduleFridayLines(ctx, S, rand) },
-      { at: `${plusDays(S, -1)} 12:00`, name: 'team sheets', run: () => submitSheets(ctx, S, rand) },
+      { at: `${plusDays(S, -4)} 12:00`, name: 'mid-week team sheets', run: () => submitSheets(ctx, S, rand, { from: plusDays(S, -5), to: plusDays(S, -1) }), quiet: true },
+      { at: `${plusDays(S, -1)} 12:00`, name: 'team sheets', run: () => submitSheets(ctx, S, rand, { from: S, to: plusDays(S, 1) }) },
       ...plan,
       ...mine,
     ]
-    // Saturday's games, slot by slot: the referees' check-ins and full time.
-    const games = await gamesOn(pool, S)
+    // The week's games (Monday to Sunday), slot by slot: the referees' check-ins and full time.
+    const games = (await Promise.all(Array.from({ length: 7 }, (_, i) => gamesOn(pool, plusDays(S, i - 5))))).flat()
     const slots = [...new Set(games.map((g) => g.starts_at.toISOString()))].sort()
     for (const slot of slots) {
       const these = games.filter((g) => g.starts_at.toISOString() === slot)
@@ -132,7 +135,8 @@ try {
       const minus = (m) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ko.getTime() + m * 60_000)).replace(',', '')
       steps.push({ at: minus(-10), name: `check-ins ${minus(0).slice(11)}`, run: () => checkIns(ctx, these, rand), quiet: true })
       const dur = Math.max(...these.map((g) => g.duration_mins ?? 60))
-      steps.push({ at: minus(dur + 8), name: `full time ${minus(0).slice(11)}`, run: async () => fullTime(ctx, (await gamesOn(pool, S)).filter((g) => these.some((t) => t.id === g.id)), rand), quiet: true })
+      const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit' }).format(ko)
+      steps.push({ at: minus(dur + 8), name: `full time ${minus(0).slice(11)}`, run: async () => fullTime(ctx, (await gamesOn(pool, day)).filter((g) => these.some((t) => t.id === g.id)), rand), quiet: true })
     }
     steps.push({ at: `${plusDays(S, 1)} 10:00`, name: 'the league on Sunday', run: () => leagueSunday(ctx, rand) })
     steps.push({ at: `${plusDays(S, 1)} 11:00`, name: 'ladders', run: async () => { ctx.ladders[r] = await sql(pool, `select division, count(*)::int as teams, sum(played)::int as played from (select d.division, l.* from public.competition_divisions d cross join lateral app_private.ladder($1, d.division) l where d.competition_id = $1) x group by division order by division`, [COMP]) } })

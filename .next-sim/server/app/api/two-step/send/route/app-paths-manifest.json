@@ -1,0 +1,3 @@
+{
+  "/api/two-step/send/route": "app/api/two-step/send/route.js"
+}

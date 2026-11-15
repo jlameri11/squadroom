@@ -28,5 +28,117 @@
     "expected": "The same clock time (9 am stays 9 am)",
     "actual": "Round dates were p_start_at + n days on a timestamptz; in a UTC session (PostgREST) that is n \u00d7 24 hours, so every kick-off after the change was an hour earlier and the pitch fit then pushed it to the next free slot. Found by inspection while fixing the draw; the check that would have caught it is OFF7a",
     "fixed": "0276: round dates worked out in the competition's zone"
+  },
+  {
+    "scenario": [
+      "FV11",
+      "FV5",
+      "FV7"
+    ],
+    "severity": "high",
+    "role": "ground manager",
+    "where": "app_private.apply_reschedule / guard_pitch_booking",
+    "steps": "Move a game onto another field (or ground) by name with reschedule_fixture",
+    "expected": "The game is on that pitch; the run sheet, the fixture and every family's game page say the new field",
+    "actual": "The labels were written and pitch_id stayed on the old pitch, so the booking guard put the old field's name straight back; a move to another ground left venue_id on the old ground while the label said the new one",
+    "fixed": "0276: apply_reschedule resolves the ground and field to the pitch"
+  },
+  {
+    "scenario": [
+      "FV11",
+      "FV5"
+    ],
+    "severity": "high",
+    "role": "parent",
+    "where": "mirror_fixture / game_screen",
+    "steps": "Open the game page as a family after the league moved the game to Field 3",
+    "expected": "\"Harbour Park \u00b7 Field 3\" on the game page, and a push that the field changed",
+    "actual": "The mirrored event carried only the ground, so no family could see which field, and a field change sent nothing",
+    "fixed": "0276: the field in the mirrored event's venue; a field change is a change families hear"
+  },
+  {
+    "scenario": [
+      "FV9",
+      "WS1",
+      "FV6",
+      "FV10"
+    ],
+    "severity": "high",
+    "role": "referee",
+    "where": "call_off_fixtures / reschedule_fixture",
+    "steps": "Call off a ground, a pitch or a round with referees appointed; move a game",
+    "expected": "Every appointed referee is told their game is off or moved, a text inside 24 hours",
+    "actual": "Every family and coach was told; no referee was",
+    "fixed": "0276: notify_referees_of_change"
+  },
+  {
+    "scenario": "OF4",
+    "severity": "medium",
+    "role": "referee coordinator",
+    "where": "submit_referee_report",
+    "steps": "A referee files a report with abuse in it",
+    "expected": "The coordinator and the discipline officer are told at once",
+    "actual": "The report sat on the appointments screen until someone looked",
+    "fixed": "0276: a report of abuse, an injury or an incident is pushed"
+  },
+  {
+    "scenario": "OF4",
+    "severity": "medium",
+    "role": "referee coordinator",
+    "where": "propose_referee_allocation / referee_unavailable_reason",
+    "steps": "Allocate a Saturday with under-18 referees in the pool",
+    "expected": "An under-18 referee is never put on an U15 or older game",
+    "actual": "The allocator did not consider a referee's age",
+    "fixed": "0276: referee_unavailable_reason"
+  },
+  {
+    "scenario": "OF5",
+    "severity": "medium",
+    "role": "welfare officer",
+    "where": "file_incident_report",
+    "steps": "A coach files an injury from the ground",
+    "expected": "The Welfare officer and the President are told at once",
+    "actual": "The report reached nobody until someone opened the register",
+    "fixed": "0276: incident_report pushes"
+  },
+  {
+    "scenario": "OF3",
+    "severity": "medium",
+    "role": "coach",
+    "where": "submit_match_sheet",
+    "steps": "Submit a sheet of six for a nine-a-side division",
+    "expected": "Refused as short, or flagged",
+    "actual": "Accepted with six players, nothing said",
+    "fixed": "0276: competition_divisions.squad_size_min"
+  },
+  {
+    "scenario": "OFF5a",
+    "severity": "high",
+    "role": "competition manager",
+    "where": "competition_entries / fixtures",
+    "steps": "Withdraw a team after round 10",
+    "expected": "Remaining games become byes, played games stand, opponents' families see the game is off, the entry is marked withdrawn",
+    "actual": "No withdraw action: the league would give each game a bye by hand (set_bye), whose mirror left the opponents' game live, or delete the entry and every played game with it",
+    "fixed": "0276: withdraw_entry; a bye is mirrored as a called-off game"
+  },
+  {
+    "scenario": "R6",
+    "severity": "medium",
+    "role": "competition manager",
+    "where": "create_finals / resolve_source",
+    "steps": "Set up finals for a one-table division; a semi-final is drawn after extra time",
+    "expected": "Semi-finals for the top four and a grand final; the shootout winner goes through",
+    "actual": "A one-table division got a final only; a drawn knockout promoted nobody",
+    "fixed": "0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away)"
+  },
+  {
+    "scenario": "OFF4",
+    "severity": "medium",
+    "role": "league treasurer",
+    "where": "queue_fee_reminders",
+    "steps": "Fifty clubs' entry fees still owed in April",
+    "expected": "The clubs are reminded",
+    "actual": "Nothing chased an entry fee",
+    "fixed": "0276: queue_entry_fee_reminders (every fortnight after 14 days)"
   }
 ]

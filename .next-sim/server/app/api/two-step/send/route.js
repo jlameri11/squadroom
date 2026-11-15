@@ -1,0 +1,12 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/two-step/send/route.js")
+R.c("server/chunks/lib_two-step_deliver_ts_15hkhckj659ol._.js")
+R.c("server/chunks/[root-of-the-server]__12w_zpqhmb0sb._.js")
+R.c("server/chunks/node_modules_next_1zdbrneapig6o._.js")
+R.c("server/chunks/_1m0xttkfp0y0u._.js")
+R.c("server/chunks/node_modules_next_dist_0ku_biribeqcf._.js")
+R.c("server/chunks/_11yum5thav1v6._.js")
+R.c("server/chunks/node_modules_@supabase_supabase-js_dist_index_mjs_0u-n9p7vv2xad._.js")
+R.c("server/chunks/[root-of-the-server]__15bjnu5yieigz._.js")
+R.c("server/chunks/_next-internal_server_app_api_two-step_send_route_actions_1toqj4-x0kldm.js")
+R.m(17836)
+module.exports=R.m(17836).exports

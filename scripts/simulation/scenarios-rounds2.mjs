@@ -2,6 +2,7 @@
 import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who, asAnon } from './lib.mjs'
 import { COMP, LEAGUE, enterScores, eventFor, game, gamesOn, guardianOf, ladder, noticesChannel, playerName, queued, refereeOf, rsvp, say, squad, submitSheet } from './world.mjs'
 import { plusDays } from './routine.mjs'
+import { runScreens } from './screens.mjs'
 
 const since = (minutes = 1) => new Date(clock.now.getTime() - minutes * 60_000).toISOString()
 
@@ -19,8 +20,9 @@ export async function round8(ctx, S, add) {
     const u15 = (await gamesOn(pool, S, { division: 'U15 Division 1', status: 'scheduled' })).find((g) => g.home_club === d.juniorClub || g.away_club === d.juniorClub)
     if (!u15) return
     const side = u15.home_club === d.juniorClub ? 'home' : 'away'
+    const priorUps = await val(pool, `select count(distinct s.fixture_id)::int from public.match_sheet_players sp join public.match_sheets s on s.id = sp.sheet_id where s.competition_id = $1 and sp.player_id = $2 and not exists (select 1 from public.entry_squads q where q.entry_id = s.entry_id and q.player_id = $2)`, [COMP, d.junior])
     const up3 = await submitSheet(pool, u15, side, { n: 11, extra: [d.junior] })
-    mustRefuse(up3, { what: 'a third game played up is over the division\'s cap of two — refused', role: 'coach', where: 'ineligibility (borrow_cap)' })
+    mustRefuse(up3, { what: `a third game played up is over the division's cap of two — refused (${priorUps} on record before this sheet)`, role: 'coach', where: 'ineligibility (borrow_cap)' })
     if (!up3.ok) check(/played up 2 times/.test(up3.error), { what: 'the refusal counts the games', expected: 'has already played up 2 times … allows 2', actual: up3.error, role: 'coach', where: 'ineligibility' })
   })
   add(`${S} 12:30`, 'OF1 the third yellow brings a suspension', async () => {
@@ -192,8 +194,7 @@ export async function round10(ctx, S, add) {
       check(q1.ok && q1.data?.outstanding_cents === 12000 && q1.data?.schedule?.[0]?.status === 'failed', { what: 'a failed card leaves the whole levy owing and the first instalment marked failed', expected: 'outstanding 12000, seq 1 failed', actual: q1.ok ? `outstanding ${q1.data?.outstanding_cents}, seq 1 ${q1.data?.schedule?.[0]?.status}` : q1.error, role: 'parent', where: 'quote_payment' })
       const need = await rpc(pool, failer.profile_id, 'needs_you', { p_academy: ids.club(1) })
       check((need.data ?? []).some((x) => x.kind === 'fees'), { what: 'and Needs you shows the fee', expected: 'a fees row', actual: JSON.stringify((need.data ?? []).map((x) => x.kind)), role: 'parent', where: 'needs_you' })
-      await sql(pool, `insert into public.payments (academy_id, request_id, profile_id, player_id, stripe_session_id, stripe_payment_intent, amount_cents, currency, status, paid_at, instalment_seq, created_at)
-                       values ($1, $2, $3, $4, 'cs_sim_ok_1', 'pi_sim_ok_1', 4000, 'aud', 'paid', now() - interval '39 days', 1, now() - interval '39 days')`, [ids.club(1), m.levy, failer.profile_id, failer.player])
+      await sql(pool, `update public.payments set status = 'paid', paid_at = now() - interval '39 days', stripe_session_id = 'cs_sim_ok_1', stripe_payment_intent = 'pi_sim_ok_1' where request_id = $1 and player_id = $2 and instalment_seq = 1`, [m.levy, failer.player])
       const q2 = await rpc(pool, failer.profile_id, 'quote_payment', { p_request: m.levy, p_player: failer.player })
       check(q2.ok && q2.data?.outstanding_cents === 8000, { what: 'paid the next day: 8000 left over two instalments', expected: 8000, actual: q2.data?.outstanding_cents, role: 'parent', where: 'quote_payment' })
       // The misser paid instalment 1 in February and nothing since: instalment 2 was due 22 March.
@@ -451,6 +452,7 @@ export async function finals(ctx, add) {
     const promoted = gf && (gf.home_entry_id === drawn.home_entry_id || gf.away_entry_id === drawn.home_entry_id)
     check(promoted, { what: 'the penalty winner goes through to the grand final', expected: 'home side in the final', actual: promoted ? 'through' : `final has ${gf?.home_entry_id ? 'a home side' : 'NO home side'} / ${gf?.away_entry_id ? 'an away side' : 'NO away side'}${pens ? '' : ' — a drawn knockout has no way to record the shootout'}`, role: 'competition manager', where: 'resolve_source (W:)', severity: 'high' })
   })
+  add('2027-06-05 19:00', 'SCREENS the finals', () => runScreens(ctx, 'finals'))
   add('2027-06-05 18:00', 'R6 the grand finals', async () => {
     const gfs = await sql(pool, `select f.*, h.display_name home_name, a.display_name away_name from public.fixtures f left join public.competition_entries h on h.id = f.home_entry_id left join public.competition_entries a on a.id = f.away_entry_id where f.competition_id = $1 and f.stage = 'final' and f.round = 'Final' order by f.starts_at`, [COMP])
     const played = gfs.filter((g) => g.status === 'final').length

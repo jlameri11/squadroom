@@ -1,0 +1,13 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/app/competitions/[competitionId]/import/page": [
+      "static/media/48eea41d8317494f-s.p.0wiir8udbzjvx.woff2",
+      "static/media/bf56aec03b6c512f-s.p.2-6hkzwn24m5-.woff2",
+      "static/media/066ba92c8fc1c222-s.p.3lj349bs9hfu1.woff2",
+      "static/media/2da4f60ed3b00b11-s.p.0xxdg0o7uh536.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}

@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 09:35 UTC · 9 rounds played · 22 PASS · 2 FIXED · 11 FAIL · 4 not run · 19 bugs logged (3 fixed) · 8 min so far
+Last run: 2026-11-15 09:35 UTC · 9 rounds played · 23 PASS · 2 FIXED · 11 FAIL · 4 not run · 19 bugs logged (3 fixed) · 8 min
 
 ## What this is
 
@@ -69,12 +69,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
-| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 2/2 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet — _the second yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; the club hears the player is one yellow from a suspension: expected >0, got 0_ | **FAIL** | 10/12 | #9, #12 | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed — _each of the four clubs' owners and admins are told a coach's check has expired: expected 4 clubs, got 0 clubs ( people); the club's checks board shows the coach as expired: expected expired, got expiring; a coach whose check has expired cannot submit a sheet: expected refused, got allowed: "2147e298-b089-4d82-ba04-6d4be3fe5114"; nor post to the squad: expected refused, got allowed: [{"id":"9b29cc58-652e-4839-b280-7a8817cdcf7e"}]_ | **FAIL** | 2/6 | #13, #14, #15, #16 | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps — _a third game played up is over the division's cap of two — refused: expected refused, got allowed: "ec7c6e57-7f0e-446a-9425-a4701bcadcf4"_ | **FAIL** | 7/8 | #17 | — |
 | OFF7b | A public-holiday round (Easter Saturday) — _the round falls on Easter Saturday with a full card: expected 2027-04-03, >100 games, got 2027-03-27, 145 games; the league's Home counts the weekend's games: expected N games this weekend, got Nothing this weekend_ | **FAIL** | 1/3 | #18, #19 | — |
+| OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **PASS** | 2/2 | — | — |
 
 ### People & messaging
 
@@ -88,7 +89,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 18 league notices, 108 club messages, 2160 chat lines, 1080 reactions, 90 polls, 360 scheduled messages, 24864 RSVPs, 1218 referee appointments, 2167 team sheets, 848 results agreed on the sheets, 83 disputes (84 ruled on), 35 late results, 164 cards.
+Over the run: 20 league notices, 108 club messages, 2160 chat lines, 1080 reactions, 90 polls, 360 scheduled messages, 24864 RSVPs, 1366 referee appointments, 2167 team sheets, 848 results agreed on the sheets, 83 disputes (84 ruled on), 35 late results, 164 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|

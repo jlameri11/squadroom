@@ -6,6 +6,7 @@
 import { asAnon, check, clock, ids, mustRefuse, mustWork, note, ok, rpc, run, scenario, sql, val, who } from './lib.mjs'
 import { COMP, LEAGUE, gamesOn, ladder, squad, val as v } from './world.mjs'
 import * as rounds from './scenarios-rounds.mjs'
+import { runScreens } from './screens.mjs'
 import * as rounds2 from './scenarios-rounds2.mjs'
 
 const DIVISIONS_BY_VENUE = (division) => {
@@ -203,6 +204,9 @@ export async function preseason(ctx) {
   await rounds.setupMoney(ctx)
   // ---- Duties the volunteer scenarios lean on (OFF6).
   await rounds.setupDuties(ctx)
+  // ---- The first screen check: the draw is out.
+  clock.set('2027-02-01 20:00')
+  await runScreens(ctx, 'draw')
   ok('pre-season done')
 }
 

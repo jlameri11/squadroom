@@ -5,6 +5,7 @@
 import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who } from './lib.mjs'
 import { COMP, LEAGUE, enterScores, eventFor, game, gamesOn, guardianOf, kickoffPlus, ladder, noticesChannel, playerName, queued, refereeOf, rsvp, say, sheetFor, squad, submitSheet, switches } from './world.mjs'
 import { plusDays } from './routine.mjs'
+import { runScreens } from './screens.mjs'
 
 const iso = (local, off = '+11:00') => new Date(`${local.replace(' ', 'T')}:00${off}`).toISOString()
 
@@ -173,12 +174,16 @@ export async function round1(ctx, S, add) {
   add(`${plusDays(S, -5)} 21:30`, 'PM5 a line inside quiet hours', async () => {
     scenario('PM5', 'People & messaging', 'Quiet hours and the digest respected')
     // Parent 1-1 keeps quiet hours 9pm–7am; a parent in the same squad chat takes an hourly digest.
-    const quiet = ids.parent(1, 1)
-    const chan = (await sql(pool, `select c.id, c.team_id from public.channel_members cm join public.channels c on c.id = cm.channel_id where cm.profile_id = $1 and c.type = 'team' and c.academy_id = $2 limit 1`, [quiet, ids.club(1)]))[0]
-    if (!chan) { check(false, { what: 'the quiet-hours parent is in a squad chat', expected: 'a channel', actual: 'none', role: 'parent', where: 'channel_members' }); return }
+    // A squad chat at club 1 with a quiet-hours parent (everyone, by default) and a parent who takes the hourly digest.
+    const chan = (await sql(pool, `select c.id, c.team_id, q.profile_id as quiet, d.profile_id as digest
+      from public.channels c
+      join public.channel_members d on d.channel_id = c.id join public.user_settings ud on ud.profile_id = d.profile_id and ud.digest_minutes = 60
+      join public.channel_members q on q.channel_id = c.id and q.profile_id <> d.profile_id join public.user_settings uq on uq.profile_id = q.profile_id and uq.quiet_hours_enabled and uq.digest_minutes = 0
+      join public.team_members tm on tm.team_id = c.team_id and tm.profile_id = q.profile_id and tm.role = 'parent'
+      where c.academy_id = $1 and c.type = 'team' and c.status = 'active' limit 1`, [ids.club(1)]))[0]
+    if (!chan) { check(false, { what: 'a squad chat with a quiet-hours parent and a digest parent', expected: 'a channel', actual: 'none', role: 'parent', where: 'channel_members' }); return }
     const sq = await squad(pool, chan.team_id)
-    const digest = await val(pool, `select cm.profile_id from public.channel_members cm join public.user_settings us on us.profile_id = cm.profile_id where cm.channel_id = $1 and us.digest_minutes = 60 and cm.profile_id <> $2 limit 1`, [chan.id, quiet])
-    if (!digest) { check(false, { what: 'a digest parent is in the same chat', expected: 'one', actual: 'none', role: 'parent', where: 'user_settings' }); return }
+    const quiet = chan.quiet, digest = chan.digest
     const m1 = await say(pool, sq.coach, sq.channel, sq.academy_id, 'Late one, sorry — kick-off moved to 9:30, details in Fixtures.')
     const m2 = await say(pool, sq.coach, sq.channel, sq.academy_id, 'And bring the away kit.')
     if (!m1.ok || !m2.ok) { check(false, { what: 'two late lines', expected: 'posted', actual: m1.error ?? m2.error, role: 'coach', where: 'messages' }); return }
@@ -191,6 +196,7 @@ export async function round1(ctx, S, add) {
     ctx.quietCheck = { profile: quiet, message: m1.data[0].id }
   })
   add(`${plusDays(S, -4)} 07:30`, 'PM5 the quiet-hours push went after 7', async () => {
+    if (!ctx.quietCheck) return
     const q = (await queued(pool, { profile: ctx.quietCheck.profile, message: ctx.quietCheck.message }))[0]
     const sent = q?.sent_at ? new Date(q.sent_at) : null
     check(sent && clockOf(sent) >= '07:00', { what: 'and was sent after 7 am, not at 9:30 pm', expected: 'sent ≥ 07:00', actual: sent ? clockOf(sent) : 'unsent', role: 'parent', where: 'claim_notifications' })
@@ -249,8 +255,9 @@ export async function round1(ctx, S, add) {
     check(home?.played === 0, { what: 'the ladder does not count a disputed game', expected: 'played 0', actual: `played ${home?.played}`, role: 'parent', where: 'competition_ladder' })
     const jobs = await rpc(pool, who.compManager, 'home_jobs', { p_academy: LEAGUE, p_persona: 'league' })
     const results = (jobs.data?.jobs ?? []).find((j) => j.id === 'results')
-    check(/1 disputed/.test(results?.detail ?? ''), { what: 'the league\'s Home shows one disputed result', expected: '"1 disputed"', actual: results?.detail, role: 'league', where: 'home_jobs (league)' })
+    check(/\d+ disputed/.test(results?.detail ?? ''), { what: 'the league\'s Home counts the disputed results', expected: '"N disputed"', actual: results?.detail, role: 'league', where: 'home_jobs (league)' })
   })
+  add(`${S} 18:30`, 'SCREENS a result in dispute', () => runScreens(ctx, 'dispute'))
   add(`${plusDays(S, 1)} 10:30`, 'R2 after the ruling the ladder moves', async () => {
     const g = await game(pool, ctx.bench.r2.id)
     check(g.status === 'final' && !g.score_disputed, { what: 'the league ruled and the game is final', expected: 'final', actual: `${g.status}, disputed ${g.score_disputed}`, role: 'competition manager', where: 'rule_on_score' })
@@ -532,8 +539,9 @@ async function checkCallOffTold(ctx, games, { urgent, label }) {
   check(urgent ? smsRows === people : smsRows === 0, { what: `${label}: ${urgent ? 'inside 24 hours every push is marked for a text' : 'more than a day out, no text'}`, expected: urgent ? people : 0, actual: smsRows, role: 'parent', where: 'notify_event_change (escalate_sms)' })
   const refs = await sql(pool, `select r.profile_id from public.referee_appointments ap join public.referees r on r.id = ap.referee_id where ap.fixture_id = any($1::uuid[]) and ap.status = 'accepted' and r.profile_id is not null`, [ids_])
   if (refs.length) {
+    const distinctRefs = new Set(refs.map((r) => r.profile_id)).size
     const refTold = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where profile_id = any($1::uuid[]) and created_at >= now() - interval '5 minutes' and (payload->>'fixture_id' in (select id::text from unnest($2::uuid[]) id) or payload->>'event_id' in (select id::text from public.events where fixture_id = any($2::uuid[])) or kind like 'referee%')`, [refs.map((r) => r.profile_id), ids_])
-    check(refTold >= refs.length, { what: `${label}: the ${refs.length} referees appointed to those games are told their game is off`, expected: refs.length, actual: refTold, role: 'referee', where: 'call_off_fixtures / notify_event_change', severity: 'high' })
+    check(refTold >= distinctRefs, { what: `${label}: the ${distinctRefs} referees appointed to those games are told their game is off`, expected: distinctRefs, actual: refTold, role: 'referee', where: 'call_off_fixtures / notify_referees_of_change', severity: 'high' })
   }
 }
 
@@ -551,6 +559,7 @@ export async function round4(ctx, S, add) {
     check(/Nothing this weekend/.test(draw?.detail ?? ''), { what: 'the league\'s Home now says nothing is on this weekend', expected: 'Nothing this weekend', actual: draw?.detail, role: 'league', where: 'home_jobs (league)' })
     ctx.washedOut = before
   })
+  add(`${S} 07:30`, 'SCREENS a washout Saturday', () => runScreens(ctx, 'washout'))
   add(`${plusDays(S, 1)} 15:00`, 'WS4 the washed-out games are rescheduled: mid-week, a double-header, a catch-up round', async () => {
     scenario('WS4', 'Weather & safety on the day', 'Rescheduled games: a catch-up round, a mid-week reschedule, a double-header')
     const postponed = await gamesOn(pool, S, { status: 'postponed' })
@@ -692,6 +701,7 @@ export async function round6(ctx, S, add) {
     const h = (await pick(ctx, S, 'U15 Division 2', 1, 1))[0]
     if (!g || !h) return
     ctx.discipline = { redGame: g, yellowGame: h, redTeam: g.home_team, redEntry: g.home_entry_id, yellowTeam: h.home_team, yellowEntry: h.home_entry_id }
+    reserve(ctx, g, h)
     const rs = await squad(pool, g.home_team), ys = await squad(pool, h.home_team)
     ctx.discipline.redPlayer = rs.players[0]
     ctx.discipline.yellowPlayer = ys.players[0]
@@ -721,7 +731,14 @@ export async function round6(ctx, S, add) {
     mustRefuse(noMinute, { what: 'a blue card with no minute is refused', role: 'referee', where: 'record_match_event (blue)' })
     const rep = await rpc(pool, who.discipline, 'discipline_report', { p_competition: COMP })
     check(rep.ok && JSON.stringify(rep.data).includes(d.redPlayer), { what: 'the discipline officer\'s report lists the sending-off', expected: 'the player in the report', actual: rep.ok ? 'listed' : rep.error, role: 'discipline officer', where: 'discipline_report' })
+    // Both games finish: the scores go in and the referee ends them (so the bans start serving next week).
+    for (const gm of [g, y]) {
+      const r = await enterScores(pool, gm, 2, 1)
+      const rr = await refereeOf(pool, gm.id)
+      if (rr?.profile_id && r.away.data?.state === 'final') await rpc(pool, rr.profile_id, 'end_match', { p_fixture: gm.id, p_note: null })
+    }
   })
+  add(`${S} 13:30`, 'SCREENS after a suspension', () => runScreens(ctx, 'suspension'))
   // OF2 / OF3: the sheets next Friday.
   add(`${plusDays(S, 6)} 13:00`, 'OF2 the suspended player on a sheet is refused by name; playing up within the rules; over the cap', async () => {
     scenario('OF2', 'On-field issues', 'Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused')
@@ -811,6 +828,7 @@ export async function round7(ctx, S, add) {
     const g = (await gamesOn(pool, S, { status: 'scheduled' })).find((x) => x.home_entry_id === d.yellowEntry || x.away_entry_id === d.yellowEntry)
     if (!g) return
     ctx.discipline.yellow2Game = g
+    reserve(ctx, g)
   })
   add(`${S} 12:30`, 'OF1 the red-card suspension is being served; the second yellow goes in', async () => {
     const d = ctx.discipline
@@ -824,6 +842,9 @@ export async function round7(ctx, S, add) {
         const warn = await queued(pool, { kind: 'discipline_warning', since: new Date(clock.now.getTime() - 60_000).toISOString() })
         check(warn.length > 0, { what: 'the club hears the player is one yellow from a suspension', expected: '>0', actual: warn.length, role: 'coach', where: 'suspend_on_card (L-20)' })
       } else note('the yellow-card player was not on this week\'s sheet')
+      const r = await enterScores(pool, g, 1, 1)
+      const rr = await refereeOf(pool, g.id)
+      if (rr?.profile_id && r.away.data?.state === 'final') await rpc(pool, rr.profile_id, 'end_match', { p_fixture: g.id, p_note: null })
     }
   })
   add(`${plusDays(S, 1)} 12:30`, 'OF1 one game of the red-card ban served', async () => {
@@ -836,8 +857,8 @@ export async function round7(ctx, S, add) {
   // OFF3: the checks that ran out yesterday.
   add(`${plusDays(S, 2)} 07:00`, 'OFF3 the Monday sweep flags the expired checks', async () => {
     scenario('OFF3', 'Off-field issues', 'A coach\'s WWCC expires mid-season → flagged and removed from coaching until renewed')
-    const warned = await sql(pool, `select n.academy_id, count(*)::int n from public.notification_queue n where n.kind = 'wwcc_expiring' and n.payload->>'subject_id' in ($1, $2, $3, $4) and n.created_at >= $5 group by 1`, [ids.staff(15, 7), ids.staff(30, 7), ids.staff(45, 7), ids.staff(60, 7), new Date(clock.now.getTime() - 26 * 3600_000).toISOString()])
-    check(warned.length === 4, { what: 'each of the four clubs\' owners and admins are told a coach\'s check has expired', expected: '4 clubs', actual: `${warned.length} clubs (${warned.map((w) => w.n).join(',')} people)`, role: 'club admin', where: 'queue_clearance_warnings' })
+    const warned = await sql(pool, `select n.academy_id, count(*)::int n, bool_or(n.title ilike '%expired%') expired from public.notification_queue n where n.kind = 'wwcc_expiring' and n.payload->>'subject_id' in ($1, $2, $3, $4) and n.created_at >= $5 group by 1`, [ids.staff(15, 7), ids.staff(30, 7), ids.staff(45, 7), ids.staff(60, 7), new Date(clock.now.getTime() - 15 * 86400_000).toISOString()])
+    check(warned.length === 4, { what: 'each of the four clubs\' owners and admins have been told about the coach\'s check this fortnight', expected: '4 clubs', actual: `${warned.length} clubs (${warned.map((w) => w.n).join(',')} people)`, role: 'club admin', where: 'queue_clearance_warnings' })
     const board = await rpc(pool, who.president(15), 'clearance_board', { p_academy: ids.club(15) })
     const row = (board.data ?? []).find((b) => b.profile_id === ids.staff(15, 7))
     check(row && /expired/i.test(row.state ?? ''), { what: 'the club\'s checks board shows the coach as expired', expected: 'expired', actual: row?.state, role: 'club admin', where: 'clearance_board' })

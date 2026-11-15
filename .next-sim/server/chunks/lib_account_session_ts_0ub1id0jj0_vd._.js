@@ -1,0 +1,3 @@
+module.exports=[68753,e=>{"use strict";var t=e.i(89660);async function a(e,a){let{data:i,error:r}=await e.auth.admin.generateLink({type:"magiclink",email:a}),n=i?.properties?.hashed_token;if(r||!n)return!1;let u=await (0,t.g)(),{error:s}=await u.auth.verifyOtp({token_hash:n,type:"email"});return!s}async function i(e,t){let{data:a}=await e.auth.admin.getUserById(t);return a?.user?.email??null}e.s(["k",0,a,"m",0,i])}];
+
+//# sourceMappingURL=lib_account_session_ts_0ub1id0jj0_vd._.js.map

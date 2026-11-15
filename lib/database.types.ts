@@ -1083,6 +1083,7 @@ export type Database = {
           scores_public: boolean
           sheet_lock_mins: number
           squad_size_max: number | null
+          squad_size_min: number | null
           tie_break: string
           updated_at: string
         }
@@ -1108,6 +1109,7 @@ export type Database = {
           scores_public?: boolean
           sheet_lock_mins?: number
           squad_size_max?: number | null
+          squad_size_min?: number | null
           tie_break?: string
           updated_at?: string
         }
@@ -1133,6 +1135,7 @@ export type Database = {
           scores_public?: boolean
           sheet_lock_mins?: number
           squad_size_max?: number | null
+          squad_size_min?: number | null
           tie_break?: string
           updated_at?: string
         }
@@ -1165,6 +1168,8 @@ export type Database = {
           squad_locked_at: string | null
           squad_size: number | null
           team_id: string | null
+          withdrawn_at: string | null
+          withdrawn_note: string | null
         }
         Insert: {
           academy_id?: string | null
@@ -1184,6 +1189,8 @@ export type Database = {
           squad_locked_at?: string | null
           squad_size?: number | null
           team_id?: string | null
+          withdrawn_at?: string | null
+          withdrawn_note?: string | null
         }
         Update: {
           academy_id?: string | null
@@ -1203,6 +1210,8 @@ export type Database = {
           squad_locked_at?: string | null
           squad_size?: number | null
           team_id?: string | null
+          withdrawn_at?: string | null
+          withdrawn_note?: string | null
         }
         Relationships: [
           {
@@ -3495,6 +3504,8 @@ export type Database = {
           home_source: string | null
           id: string
           notes: string | null
+          pens_away: number | null
+          pens_home: number | null
           pinned: boolean
           pitch_id: string | null
           referee_verified_at: string | null
@@ -3530,6 +3541,8 @@ export type Database = {
           home_source?: string | null
           id?: string
           notes?: string | null
+          pens_away?: number | null
+          pens_home?: number | null
           pinned?: boolean
           pitch_id?: string | null
           referee_verified_at?: string | null
@@ -3565,6 +3578,8 @@ export type Database = {
           home_source?: string | null
           id?: string
           notes?: string | null
+          pens_away?: number | null
+          pens_home?: number | null
           pinned?: boolean
           pitch_id?: string | null
           referee_verified_at?: string | null
@@ -9609,9 +9624,11 @@ export type Database = {
           p_competition: string
           p_division: string
           p_fields?: string[]
+          p_final_at?: string
           p_game_mins?: number
           p_gap_mins?: number
           p_start_at: string
+          p_top?: number
           p_venue_label?: string
         }
         Returns: number
@@ -9911,8 +9928,10 @@ export type Database = {
           p_fields?: string[]
           p_game_mins?: number
           p_gap_mins?: number
+          p_legs?: number
           p_replace?: boolean
           p_round_every_days?: number
+          p_skip_dates?: string[]
           p_start_at: string
           p_venue_label?: string
         }
@@ -9925,8 +9944,10 @@ export type Database = {
           p_fields?: string[]
           p_game_mins?: number
           p_gap_mins?: number
+          p_legs?: number
           p_replace?: boolean
           p_round_every_days?: number
+          p_skip_dates?: string[]
           p_start_at: string
           p_venue_label?: string
         }
@@ -9939,8 +9960,10 @@ export type Database = {
           p_first_date: string
           p_game_mins?: number
           p_gap_mins?: number
+          p_legs?: number
           p_replace?: boolean
           p_round_every_days?: number
+          p_skip_dates?: string[]
           p_venue: string
         }
         Returns: Json
@@ -10571,6 +10594,7 @@ export type Database = {
       queue_accreditation_warnings: { Args: never; Returns: number }
       queue_clearance_warnings: { Args: never; Returns: number }
       queue_duty_reminders: { Args: { p_now?: string }; Returns: number }
+      queue_entry_fee_reminders: { Args: never; Returns: number }
       queue_fee_reminders: { Args: never; Returns: number }
       queue_match_day_pushes: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
@@ -10928,6 +10952,8 @@ export type Database = {
           p_fixture: string
           p_home: number
           p_note?: string
+          p_pens_away?: number
+          p_pens_home?: number
         }
         Returns: undefined
       }
@@ -11309,6 +11335,10 @@ export type Database = {
       withdraw_appointment: {
         Args: { p_appointment: string; p_note?: string }
         Returns: undefined
+      }
+      withdraw_entry: {
+        Args: { p_entry: string; p_note?: string }
+        Returns: Json
       }
       withdraw_fixture_change: {
         Args: { p_request: string }

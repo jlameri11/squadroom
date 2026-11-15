@@ -1,0 +1,40 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/admin/layout,_N_T_/admin/clearances/layout,_N_T_/admin/clearances/page,_N_T_/admin/clearances"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/_index",
+    "/admin/clearances/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 0,
+    "slots": {
+      "children": {
+        "hints": 64,
+        "slots": {
+          "children": {
+            "hints": 96,
+            "slots": {
+              "children": {
+                "hints": 160,
+                "slots": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/f359c917d8ac1a987fe4bc7750ad52cb87c7414cd0e20e515f70ff3aa83784e3/$/admin/clearances",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/admin/clearances/page"
+    },
+    "isFallback": false
+  }
+}

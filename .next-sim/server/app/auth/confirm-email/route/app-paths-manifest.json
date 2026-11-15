@@ -1,0 +1,3 @@
+{
+  "/auth/confirm-email/route": "app/auth/confirm-email/route.js"
+}

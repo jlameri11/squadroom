@@ -1,0 +1,3 @@
+{
+  "/api/ics/[eventId]/route": "app/api/ics/[eventId]/route.js"
+}

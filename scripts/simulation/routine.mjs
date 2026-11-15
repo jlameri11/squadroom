@@ -149,8 +149,10 @@ export async function scheduleFridayLines(ctx, date, rand, { teams = 40 } = {}) 
 }
 
 /** Friday: every side's coach submits a sheet; a few forget. */
-export async function submitSheets(ctx, date, rand, { forget = 0.04 } = {}) {
-  const games = await gamesOn(ctx.pool, date, { status: 'scheduled' })
+export async function submitSheets(ctx, date, rand, { forget = 0.04, from = null, to = null } = {}) {
+  const days = []
+  for (let d = from ?? date; d <= (to ?? date); d = plusDays(d, 1)) days.push(d)
+  const games = (await Promise.all(days.map((d) => gamesOn(ctx.pool, d, { status: 'scheduled' })))).flat()
   let ok = 0, refused = 0, forgot = 0
   const refusals = {}
   for (const g of games) {

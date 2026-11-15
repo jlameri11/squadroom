@@ -1,0 +1,35 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/for-clubs/layout,_N_T_/for-clubs/page,_N_T_/for-clubs"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/_index",
+    "/for-clubs/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 0,
+    "slots": {
+      "children": {
+        "hints": 64,
+        "slots": {
+          "children": {
+            "hints": 160,
+            "slots": null
+          }
+        }
+      }
+    }
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/82c1960f090fd81419527de1b2397a9124dfe47b9f171158e4674eda16400916/$/for-clubs",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/for-clubs/page"
+    },
+    "isFallback": false
+  }
+}
