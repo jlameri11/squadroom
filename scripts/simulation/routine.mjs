@@ -252,3 +252,31 @@ export async function leagueSunday(ctx, rand) {
   ctx.stats.lateResults += late
   return { ruled, late }
 }
+
+/**
+ * Sunday afternoon: whatever is still postponed from the week — a closed
+ * ground, a pitch under water, an abandoned game — goes to the catch-up
+ * round (22 May), same clock time and pitch where free, else the next free
+ * quarter-hour that day. A season ends with every group game played, or
+ * the finals cannot be seeded.
+ */
+export async function rescheduleLeftovers(ctx, catchup = '2027-05-22') {
+  const left = await sql(ctx.pool, `
+    select f.id, f.starts_at, f.duration_mins, f.pitch_id, f.venue_label, f.field_label,
+           to_char(f.starts_at at time zone 'Australia/Sydney', 'HH24:MI') as hhmm
+      from public.fixtures f
+     where f.competition_id = $1 and f.status = 'postponed' and f.stage is distinct from 'final'
+       and (f.starts_at at time zone 'Australia/Sydney')::date < $2::date
+     order by f.starts_at`, [COMP, catchup])
+  let moved = 0, stuck = 0
+  for (const f of left) {
+    const slot = await val(ctx.pool, `select min(t)::text from generate_series(($2::date::text || ' 08:00')::timestamp at time zone 'Australia/Sydney', ($2::date::text || ' 17:00')::timestamp at time zone 'Australia/Sydney', interval '15 minutes') t
+      where t >= ($2::date::text || ' ' || $3)::timestamp at time zone 'Australia/Sydney'
+        and ($1::uuid is null or (app_private.pitch_clash($1, t, t + make_interval(mins => $4), $5) is null and app_private.pitch_open($1, t, t + make_interval(mins => $4))))`,
+      [f.pitch_id, catchup, f.hhmm, f.duration_mins ?? 60, f.id])
+    if (!slot) { stuck++; continue }
+    const r = await rpc(ctx.pool, who.grounds, 'reschedule_fixture', { p_fixture: f.id, p_starts_at: new Date(slot).toISOString(), p_venue_label: null, p_field: null })
+    if (r.ok) moved++; else { stuck++; note(`catch-up: ${r.error}`) }
+  }
+  return { moved, stuck }
+}

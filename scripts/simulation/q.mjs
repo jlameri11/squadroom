@@ -7,7 +7,8 @@ const c = new pg.Client({ host: 'localhost', port: 54329, user: 'postgres', pass
 await c.connect()
 try {
   const r = await c.query(process.argv.slice(2).join(' '))
-  const last = Array.isArray(r) ? r[r.length - 1] : r
+  const all = Array.isArray(r) ? r : [r]
+  const last = [...all].reverse().find((x) => x?.rows?.length) ?? all[all.length - 1]
   if (last.rows?.length) {
     const cols = last.fields.map((f) => f.name)
     console.log(cols.join('  '))

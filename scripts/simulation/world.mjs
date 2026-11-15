@@ -80,7 +80,10 @@ export const entryOfTeam = (pool, teamId) => val(pool, `select id from public.co
 export async function sheetFor(pool, entryId, { n = 13, extra = [], skip = [] } = {}) {
   const rows = await sql(pool, `
     select s.player_id from public.entry_squads s join public.players p on p.id = s.player_id
-     where s.entry_id = $1 and not (s.player_id = any($2::uuid[])) order by p.full_name limit $3`, [entryId, skip, n])
+     where s.entry_id = $1 and not (s.player_id = any($2::uuid[]))
+       -- a coach leaves a suspended player off (the scenarios put one on with \`extra\` to see the refusal)
+       and not exists (select 1 from public.suspensions x where x.player_id = s.player_id and x.competition_id = s.competition_id and x.status = 'active' and x.served < x.games)
+     order by p.full_name limit $3`, [entryId, skip, n])
   const players = [...rows.map((r) => r.player_id), ...extra]
   return players.map((player_id, i) => ({ player_id, number: i + 1, starting: i < 11 }))
 }
@@ -164,7 +167,7 @@ export async function sweep(pool) {
     const day = local.slice(0, 10)
     if (local.slice(11, 16) >= '06:15' && !morningDone.has(day)) {
       morningDone.add(day)
-      for (const fn of ['queue_clearance_warnings', 'queue_official_rego_reminders', 'queue_fee_reminders', 'queue_accreditation_warnings']) {
+      for (const fn of ['queue_clearance_warnings', 'queue_official_rego_reminders', 'queue_fee_reminders', 'queue_accreditation_warnings', 'queue_entry_fee_reminders']) {
         out.morning += (await c.query(`select public.${fn}() n`)).rows[0].n
       }
     }

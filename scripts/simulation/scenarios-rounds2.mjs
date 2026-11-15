@@ -3,6 +3,7 @@ import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql,
 import { COMP, LEAGUE, enterScores, eventFor, game, gamesOn, guardianOf, ladder, noticesChannel, playerName, queued, refereeOf, rsvp, say, squad, submitSheet } from './world.mjs'
 import { plusDays } from './routine.mjs'
 import { runScreens } from './screens.mjs'
+import { disciplineWeek } from './scenarios-rounds.mjs'
 
 const since = (minutes = 1) => new Date(clock.now.getTime() - minutes * 60_000).toISOString()
 
@@ -25,42 +26,7 @@ export async function round8(ctx, S, add) {
     mustRefuse(up3, { what: `a third game played up is over the division's cap of two — refused (${priorUps} on record before this sheet)`, role: 'coach', where: 'ineligibility (borrow_cap)' })
     if (!up3.ok) check(/played up 2 times/.test(up3.error), { what: 'the refusal counts the games', expected: 'has already played up 2 times … allows 2', actual: up3.error, role: 'coach', where: 'ineligibility' })
   })
-  add(`${S} 12:30`, 'OF1 the third yellow brings a suspension', async () => {
-    const d = ctx.discipline
-    if (!d) return
-    const g = (await gamesOn(pool, S)).find((x) => x.home_entry_id === d.yellowEntry || x.away_entry_id === d.yellowEntry)
-    if (!g) return
-    const onSheet = await val(pool, `select count(*)::int from public.match_sheet_players sp join public.match_sheets s on s.id = sp.sheet_id where s.fixture_id = $1 and sp.player_id = $2`, [g.id, d.yellowPlayer])
-    if (!onSheet) { note('the yellow-card player is not on the sheet this week'); return }
-    const r = await rpc(pool, (await refereeOf(pool, g.id))?.profile_id ?? who.compManager, 'record_match_event', { p_fixture: g.id, p_entry: d.yellowEntry, p_kind: 'yellow', p_player: d.yellowPlayer, p_minute: 70, p_note: null, p_code: 'Y2' })
-    mustWork(r, { what: 'the third yellow is recorded', role: 'referee', where: 'record_match_event' })
-    const s = await sql(pool, `select games, served, status, reason from public.suspensions where player_id = $1 and competition_id = $2 and reason like '%yellow%'`, [d.yellowPlayer, COMP])
-    check(s.length === 1 && s[0].games === 1 && s[0].status === 'active', { what: 'three yellows: a one-game suspension', expected: '1 game, active', actual: JSON.stringify(s), role: 'league', where: 'suspend_on_card' })
-  })
-  add(`${plusDays(S, 1)} 12:30`, 'OF1 the red-card ban is fully served', async () => {
-    const d = ctx.discipline
-    if (!d) return
-    const s = await sql(pool, `select games, served, status from public.suspensions where player_id = $1 and competition_id = $2 and reason = 'red card'`, [d.redPlayer, COMP])
-    check(s[0]?.served === 2 && s[0]?.status === 'served', { what: 'two games missed: the red-card ban is served', expected: 'served 2, served', actual: JSON.stringify(s[0]), role: 'league', where: 'serve_suspensions' })
-  })
-  add(`${plusDays(S, 6)} 13:00`, 'OF1 the player is back after the ban; the three-yellows player is refused', async () => {
-    const d = ctx.discipline
-    if (!d) return
-    const games = await gamesOn(pool, plusDays(S, 7), { status: 'scheduled' })
-    const back = games.find((x) => x.home_entry_id === d.redEntry || x.away_entry_id === d.redEntry)
-    if (back) {
-      const side = back.home_entry_id === d.redEntry ? 'home' : 'away'
-      const ok1 = await submitSheet(pool, back, side, { n: 12, extra: [d.redPlayer] })
-      mustWork(ok1, { what: 'with the ban served the player is accepted on the sheet again', role: 'coach', where: 'submit_match_sheet' })
-    }
-    const yg = games.find((x) => x.home_entry_id === d.yellowEntry || x.away_entry_id === d.yellowEntry)
-    if (yg) {
-      const side = yg.home_entry_id === d.yellowEntry ? 'home' : 'away'
-      const no = await submitSheet(pool, yg, side, { n: 12, extra: [d.yellowPlayer] })
-      mustRefuse(no, { what: 'the three-yellows player is refused by name for one game', role: 'coach', where: 'ineligibility → suspension_reason' })
-      await submitSheet(pool, yg, side, { n: 12, skip: [d.yellowPlayer] })
-    }
-  })
+  await disciplineWeek(ctx, 8, S, add)
 
   // OFF2: safeguarding.
   add(`${plusDays(S, -4)} 19:00`, 'OFF2 a teenager\'s login: invited, waiting, approved; an under-13 refused; a DM brings the parent in; a message reported', async () => {
@@ -154,6 +120,7 @@ async function clubOf(pool, academyId) {
 // =================================================================== round 9
 export async function round9(ctx, S, add) {
   const { pool } = ctx
+  await disciplineWeek(ctx, 9, S, add)
   add(`${plusDays(S, -6)} 18:10`, 'OFF7b the Easter Saturday round', async () => {
     scenario('OFF7b', 'Off-field issues', 'A public-holiday round (Easter Saturday)')
     const chan = await noticesChannel(pool)
@@ -169,6 +136,7 @@ export async function round9(ctx, S, add) {
 // ================================================================== round 10
 export async function round10(ctx, S, add) {
   const { pool } = ctx
+  await disciplineWeek(ctx, 10, S, add)
   add(`${plusDays(S, -5)} 09:00`, 'OFF7a after the clocks went back the families\' times agree with the draw', async () => {
     scenario('OFF7a', 'Off-field issues', 'Daylight saving: the same kick-off time on the clock after the change')
     const g = (await gamesOn(pool, S, { status: 'scheduled' })).find((x) => x.home_team)
@@ -244,19 +212,21 @@ export async function round10(ctx, S, add) {
     const owed = await val(pool, `select count(*)::int from public.entry_fees where competition_id = $1 and status = 'owed'`, [COMP])
     const chased = await val(pool, `select count(*)::int from public.notification_queue where kind like 'entry_fee%' or (kind in ('fee_due', 'fee_overdue') and payload ? 'entry_fee_id')`)
     check(owed > 0 && chased > 0, { what: `the ${owed} clubs whose entry fee is still owed in April have been reminded`, expected: '≥1 reminder', actual: `${chased} reminders`, role: 'league treasurer', where: 'queue_fee_reminders (entry fees)', severity: 'medium' })
-    const mine = await rpc(pool, who.treasurer(60), 'my_entry_fees', { p_competition: COMP })
-    check(mine.ok && JSON.stringify(mine.data ?? '').includes('owed'), { what: 'a club treasurer sees what their club owes the league', expected: 'owed fees listed', actual: mine.ok ? 'listed' : mine.error, role: 'treasurer', where: 'my_entry_fees' })
+    const owedClub = await val(pool, `select coalesce(ef.club_academy_id, ef.academy_id) from public.entry_fees ef where ef.competition_id = $1 and ef.status = 'owed' limit 1`, [COMP])
+    const mine = await rpc(pool, who.treasurer(await clubOf(pool, owedClub)), 'my_entry_fees', { p_competition: COMP })
+    check(mine.ok && JSON.stringify(mine.data ?? '').includes('"owed"'), { what: 'a club treasurer sees what their club owes the league', expected: 'owed fees listed', actual: mine.ok ? JSON.stringify(mine.data).slice(0, 160) : mine.error, role: 'treasurer', where: 'my_entry_fees' })
   })
 }
 
 // ================================================================== round 11
 export async function round11(ctx, S, add) {
   const { pool } = ctx
+  await disciplineWeek(ctx, 11, S, add)
   add(`${plusDays(S, -4)} 10:00`, 'OFF5a a team withdraws mid-season', async () => {
     scenario('OFF5a', 'Off-field issues', 'A team withdraws mid-season: fixtures, ladder and opponents handled')
     const entry = (await sql(pool, `select e.id, e.display_name, e.academy_id, e.team_id from public.competition_entries e where e.competition_id = $1 and e.division = 'U11 Division 3' and e.team_id is not null order by e.display_name limit 1`, [COMP]))[0]
     if (!entry) return
-    const remaining = await sql(pool, `select f.id from public.fixtures f where f.competition_id = $1 and (f.home_entry_id = $2 or f.away_entry_id = $2) and f.status in ('scheduled', 'postponed') and f.starts_at > now()`, [COMP, entry.id])
+    const remaining = await sql(pool, `select f.id from public.fixtures f where f.competition_id = $1 and (f.home_entry_id = $2 or f.away_entry_id = $2) and f.status in ('scheduled', 'postponed', 'in_progress')`, [COMP, entry.id])
     const played = await val(pool, `select count(*)::int from public.fixtures f where f.competition_id = $1 and (f.home_entry_id = $2 or f.away_entry_id = $2) and f.status in ('final', 'forfeit')`, [COMP, entry.id])
     const hasFn = await val(pool, `select count(*)::int from pg_proc where proname = 'withdraw_entry' and pronamespace = 'public'::regnamespace`)
     if (hasFn) {
@@ -292,6 +262,7 @@ export async function round11(ctx, S, add) {
 // ================================================================== round 12
 export async function round12(ctx, S, add) {
   const { pool } = ctx
+  await disciplineWeek(ctx, 12, S, add)
   add(`${plusDays(S, 1)} 12:00`, 'R5 points deducted; ladder ties; MiniRoos without scores or a ladder', async () => {
     scenario('R5', 'Results', 'Points deduction, ladder ties (goal difference, goals for, head-to-head), hidden scores and no ladder for U9')
     const division = 'U13 Division 2'

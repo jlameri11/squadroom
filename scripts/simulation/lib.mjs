@@ -262,6 +262,15 @@ export function scenario(id, group, title) {
   return s
 }
 
+/** Point the checks at a scenario already registered (a later step of it); nothing if unknown. */
+export function focus(id) {
+  const s = scenarios.get(id)
+  if (!s) return false
+  s.ran = true
+  current = s
+  return true
+}
+
 /** One check inside the current scenario. Logs a bug when it fails (unless `quiet`). */
 export function check(passed, { what, expected, actual, role = '—', where = '—', severity = 'high', quiet = false }) {
   const s = current

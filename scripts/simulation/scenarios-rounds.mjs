@@ -9,6 +9,13 @@ import { runScreens } from './screens.mjs'
 
 const iso = (local, off = '+11:00') => new Date(`${local.replace(' ', 'T')}:00${off}`).toISOString()
 
+/** The first free, open quarter-hour on a pitch between two Sydney times of a day — as an ISO instant, never through the laptop's clock. */
+async function freeSlot(pool, pitchId, date, from, to, mins, except) {
+  return val(pool, `select min(t)::text from generate_series(($2::date::text || ' ' || $3)::timestamp at time zone 'Australia/Sydney', ($2::date::text || ' ' || $4)::timestamp at time zone 'Australia/Sydney', interval '15 minutes') t
+    where app_private.pitch_clash($1, t, t + make_interval(mins => $5), $6) is null
+      and app_private.pitch_open($1, t, t + make_interval(mins => $5))`, [pitchId, date, from, to, mins, except]).then((t) => (t ? new Date(t).toISOString() : null))
+}
+
 /** Games on a date in a division, scheduled, both sides real. */
 async function pick(ctx, date, division, n = 1, offset = 0) {
   const games = (await gamesOn(ctx.pool, date, { division, status: 'scheduled' })).filter((g) => g.home_team && g.away_team)
@@ -283,6 +290,9 @@ export async function round1(ctx, S, add) {
     const m = await game(pool, missing.id)
     check(m.status === 'scheduled' && (await val(pool, `select count(*)::int from public.match_sheets where fixture_id = $1 and our_score is not null`, [m.id])) === 0, { what: 'a game nobody scored stays open for the league to chase', expected: 'scheduled, no scores', actual: m.status, role: 'league', where: 'fixtures' })
     ctx.missingGame = missing.id
+    // Tuesday night, chased by the league, the managers put it in (a season ends with every game scored).
+    const late2 = await enterScores(pool, missing, 2, 2)
+    check(late2.away.data?.state === 'final', { what: 'chased, the missing result comes in on Tuesday and is final', expected: 'final', actual: late2.away.data?.state ?? late2.away.error, role: 'manager', where: 'enter_sheet_score' })
     // A correction: the home side says the second goal was disallowed.
     const c = await enterScores(pool, corr, 2, 1)
     const hs = await squad(pool, corr.home_team)
@@ -453,53 +463,68 @@ export async function round3(ctx, S, add) {
   // FV5 / FV7 / FV8: the morning's moves.
   add(`${S} 07:30`, 'FV5 a pitch changed on the morning; FV7 a game moved to another venue', async () => {
     scenario('FV5', 'Fields & venues', 'A pitch changed on the morning')
-    const g = (await pick(ctx, S, 'U11 Division 5', 1))[0]
+    // Any game today with another pitch of its size free at the same ground at that time.
+    const g = (await sql(pool, `
+      select f.id, p2.name as free_pitch from public.fixtures f
+        join public.pitches p1 on p1.id = f.pitch_id
+        join public.pitches p2 on p2.venue_id = p1.venue_id and p2.size = p1.size and p2.id <> p1.id
+       where f.competition_id = $1 and (f.starts_at at time zone 'Australia/Sydney')::date = $2::date and f.status = 'scheduled'
+         and f.home_entry_id is not null and f.away_entry_id is not null and f.starts_at > now() + interval '30 minutes'
+         and app_private.pitch_clash(p2.id, f.starts_at, f.starts_at + make_interval(mins => coalesce(f.duration_mins, 60)), f.id) is null
+         and app_private.pitch_open(p2.id, f.starts_at, f.starts_at + make_interval(mins => coalesce(f.duration_mins, 60)))
+         and app_private.staff_clash(f.competition_id, f.home_entry_id, f.away_entry_id, f.starts_at, f.starts_at + make_interval(mins => coalesce(f.duration_mins, 60)), f.venue_label, f.id) is null
+       order by f.starts_at limit 1`, [COMP, S]))[0]
     if (g) {
-      const free = await val(pool, `select p.name from public.pitches p where p.venue_id = $1 and p.size = $2 and p.id <> $3
-        and app_private.pitch_clash(p.id, $4::timestamptz, $4::timestamptz + make_interval(mins => $5), null) is null
-        and app_private.pitch_open(p.id, $4::timestamptz, $4::timestamptz + make_interval(mins => $5)) limit 1`, [g.venue_id, g.pitch_size, g.pitch_id, g.starts_at, g.duration_mins ?? 50])
-      if (free) {
-        const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: new Date(g.starts_at).toISOString(), p_venue_label: null, p_field: free })
-        mustWork(mv, { what: `the game moves from ${g.field_label} to ${free} at the same time`, role: 'ground manager', where: 'reschedule_fixture' })
-        const f = await game(pool, g.id)
-        check(f.field_label === free, { what: 'the fixture is on the new pitch', expected: free, actual: f.field_label, role: 'ground manager', where: 'apply_reschedule' })
-        const told = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where created_at >= $2 and payload->>'event_id' in (select id::text from public.events where fixture_id = $1)`, [g.id, clock.iso()])
-        const families = await val(pool, `select count(distinct tm.profile_id)::int from public.team_members tm where tm.team_id in ($1, $2)`, [g.home_team, g.away_team])
-        check(told >= families, { what: 'both squads hear the field changed, an hour before kick-off', expected: `${families}`, actual: told, role: 'parent', where: 'notify_event_change', severity: 'high' })
-      } else note('no free pitch of that size at that time to move to')
-    }
+      const fx = await game(pool, g.id)
+      const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: fx.id, p_starts_at: new Date(fx.starts_at).toISOString(), p_venue_label: null, p_field: g.free_pitch })
+      mustWork(mv, { what: `the game moves from ${fx.field_label} to ${g.free_pitch} at the same time`, role: 'ground manager', where: 'reschedule_fixture' })
+      const f = await game(pool, fx.id)
+      check(f.field_label === g.free_pitch, { what: 'the fixture is on the new pitch', expected: g.free_pitch, actual: f.field_label, role: 'ground manager', where: 'apply_reschedule' })
+      const told = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where created_at >= $2 and payload->>'event_id' in (select id::text from public.events where fixture_id = $1)`, [fx.id, clock.iso()])
+      const families = await val(pool, `select count(distinct tm.profile_id)::int from public.team_members tm where tm.team_id in ($1, $2)`, [fx.home_team, fx.away_team])
+      check(told >= families, { what: 'both squads hear the field changed, an hour before kick-off', expected: `${families}`, actual: told, role: 'parent', where: 'notify_event_change', severity: 'high' })
+    } else check(false, { what: 'a game with a free pitch of its size beside it', expected: 'one', actual: 'none today', role: '—', where: 'fixtures', quiet: true })
+
     scenario('FV7', 'Fields & venues', 'A game moved to another venue')
-    const h = (await pick(ctx, S, 'U15 Division 6', 1))[0]
+    const h = (await sql(pool, `
+      select f.id, p2.id as pitch, p2.name as pitch_name, v2.name as venue from public.fixtures f
+        join public.pitches p1 on p1.id = f.pitch_id
+        join public.pitches p2 on p2.size = p1.size and p2.venue_id <> p1.venue_id and p2.academy_id = p1.academy_id
+        join public.venues v2 on v2.id = p2.venue_id
+       where f.competition_id = $1 and (f.starts_at at time zone 'Australia/Sydney')::date = $2::date and f.status = 'scheduled'
+         and f.home_entry_id is not null and f.away_entry_id is not null and f.starts_at > now() + interval '30 minutes'
+         and app_private.pitch_clash(p2.id, f.starts_at, f.starts_at + make_interval(mins => coalesce(f.duration_mins, 60)), f.id) is null
+         and app_private.pitch_open(p2.id, f.starts_at, f.starts_at + make_interval(mins => coalesce(f.duration_mins, 60)))
+         and app_private.staff_clash(f.competition_id, f.home_entry_id, f.away_entry_id, f.starts_at, f.starts_at + make_interval(mins => coalesce(f.duration_mins, 60)), v2.name, f.id) is null
+       order by f.starts_at desc limit 1`, [COMP, S]))[0]
     if (h) {
-      const target = await sql(pool, `select p.id, p.name, v.name venue from public.pitches p join public.venues v on v.id = p.venue_id where v.id = $1 and p.size = 'full'
-        and app_private.pitch_clash(p.id, $2::timestamptz, $2::timestamptz + make_interval(mins => $3), null) is null limit 1`, [ids.venue(7), h.starts_at, h.duration_mins ?? 70])
-      if (target[0]) {
-        const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: h.id, p_starts_at: new Date(h.starts_at).toISOString(), p_venue_label: target[0].venue, p_field: target[0].name })
-        mustWork(mv, { what: `the game moves to ${target[0].venue} ${target[0].name}`, role: 'ground manager', where: 'reschedule_fixture' })
-        const f = await game(pool, h.id)
-        check(f.venue_id === ids.venue(7) && f.pitch_id === target[0].id && f.venue_label === target[0].venue, { what: 'venue, pitch and label all say the new ground', expected: `${target[0].venue} / ${target[0].name}`, actual: `venue_id ${f.venue_id === ids.venue(7) ? 'new' : 'OLD'}, pitch ${f.pitch_id === target[0].id ? 'new' : 'OLD'}, label ${f.venue_label}`, role: 'ground manager', where: 'apply_reschedule' })
-        const ev = await eventFor(pool, h.id, h.away_club)
-        const parent = await guardianOf(pool, (await squad(pool, h.away_team)).players[0])
-        const screen = await rpc(pool, parent, 'game_screen', { p_event: ev })
-        check((screen.data?.event?.venue ?? '').includes(target[0].venue), { what: 'an away family\'s game page shows the new ground', expected: target[0].venue, actual: screen.data?.event?.venue, role: 'parent', where: 'game_screen' })
-        const told = await queued(pool, { kind: 'event_changed', since: clock.iso(), event: ev })
-        check(told.length > 0 && /Now at/.test(told[0].body ?? ''), { what: 'and was told "Now at …"', expected: 'Now at Marrick Common', actual: told[0]?.body ?? 'nothing', role: 'parent', where: 'notify_event_change' })
-      }
-    }
+      const fx = await game(pool, h.id)
+      const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: fx.id, p_starts_at: new Date(fx.starts_at).toISOString(), p_venue_label: h.venue, p_field: h.pitch_name })
+      mustWork(mv, { what: `the game moves to ${h.venue} ${h.pitch_name}`, role: 'ground manager', where: 'reschedule_fixture' })
+      const f = await game(pool, fx.id)
+      check(f.pitch_id === h.pitch && f.venue_label === h.venue, { what: 'venue, pitch and label all say the new ground', expected: `${h.venue} / ${h.pitch_name}`, actual: `pitch ${f.pitch_id === h.pitch ? 'new' : 'OLD'}, label ${f.venue_label}`, role: 'ground manager', where: 'apply_reschedule' })
+      const ev = await eventFor(pool, fx.id, fx.away_club)
+      const parent = await guardianOf(pool, (await squad(pool, fx.away_team)).players[0])
+      const screen = await rpc(pool, parent, 'game_screen', { p_event: ev })
+      check((screen.data?.event?.venue ?? '').includes(h.venue), { what: "an away family's game page shows the new ground", expected: h.venue, actual: screen.data?.event?.venue, role: 'parent', where: 'game_screen' })
+      const told = await queued(pool, { kind: 'event_changed', since: clock.iso(), event: ev })
+      check(told.length > 0 && /Now at/.test(told[0].body ?? ''), { what: 'and was told "Now at …"', expected: `Now at ${h.venue}`, actual: told[0]?.body ?? 'nothing', role: 'parent', where: 'notify_event_change' })
+    } else check(false, { what: 'a game with a free pitch of its size at another ground', expected: 'one', actual: 'none today', role: '—', where: 'fixtures', quiet: true })
   })
   add(`${S} 09:40`, 'FV8 a late kick-off pushes the later games', async () => {
     scenario('FV8', 'Fields & venues', 'A late kick-off pushing later games')
-    const chain = await sql(pool, `select f.id, f.starts_at, f.duration_mins, f.field_label from public.fixtures f where f.competition_id = $1 and f.status = 'scheduled' and f.pitch_id = $2 and (f.starts_at at time zone 'Australia/Sydney')::date = $3::date order by f.starts_at`, [COMP, ids.pitch(8, 1), S])
-    if (chain.length < 3) { note('not enough games on Ironbark Field 1 for the chain'); return }
+    const pitch = await val(pool, `select f.pitch_id from public.fixtures f where f.competition_id = $1 and f.status = 'scheduled' and f.pitch_id is not null and (f.starts_at at time zone 'Australia/Sydney')::date = $2::date and f.starts_at > now() group by f.pitch_id having count(*) >= 3 order by count(*) desc limit 1`, [COMP, S])
+    if (!pitch) { check(false, { what: 'a pitch with three games still to play', expected: 'one', actual: 'none', role: '—', where: 'fixtures', quiet: true }); return }
+    const chain = await sql(pool, `select f.id, f.starts_at, f.duration_mins, f.field_label from public.fixtures f where f.competition_id = $1 and f.status = 'scheduled' and f.pitch_id = $2 and f.starts_at > now() order by f.starts_at limit 3`, [COMP, pitch])
     const [, second, third] = chain
     const plus30 = (t) => new Date(new Date(t).getTime() + 30 * 60_000).toISOString()
     const wrongOrder = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: second.id, p_starts_at: plus30(second.starts_at), p_venue_label: null, p_field: null })
-    mustRefuse(wrongOrder, { what: 'pushing the 10:15 game first is refused — it would run into the 11:30', role: 'ground manager', where: 'reschedule_fixture → pitch_clash' })
+    mustRefuse(wrongOrder, { what: 'pushing the middle game first is refused — it would run into the next', role: 'ground manager', where: 'reschedule_fixture → pitch_clash' })
     const a = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: third.id, p_starts_at: plus30(third.starts_at), p_venue_label: null, p_field: null })
     const b = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: second.id, p_starts_at: plus30(second.starts_at), p_venue_label: null, p_field: null })
     check(a.ok && b.ok, { what: 'last game first, both move by half an hour', expected: 'both allowed', actual: `${a.ok ? 'ok' : a.error} / ${b.ok ? 'ok' : b.error}`, role: 'ground manager', where: 'reschedule_fixture' })
     const told = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_changed' and created_at >= $1 and payload->>'event_id' in (select id::text from public.events where fixture_id in ($2, $3))`, [clock.iso(), second.id, third.id])
-    check(told > 0, { what: 'both squads\' families hear the new times', expected: '>0', actual: told, role: 'parent', where: 'notify_event_change' })
+    check(told > 0, { what: "both squads' families hear the new times", expected: '>0', actual: told, role: 'parent', where: 'notify_event_change' })
     ctx.pushedGames = [second.id, third.id]
   })
   // WS3: extreme heat.
@@ -514,10 +539,9 @@ export async function round3(ctx, S, add) {
     check(u9.ok && u9.data > 0, { what: 'the U9 round at Fernleigh is postponed for the heat', expected: '>0 games', actual: u9.ok ? u9.data : u9.error, role: 'ground manager', where: 'abandon_round' })
     const late = (await sql(pool, `select f.* from public.fixtures f where f.competition_id = $1 and f.division = 'U17 Division 1' and (f.starts_at at time zone 'Australia/Sydney')::date = $2::date and f.status = 'scheduled' order by f.starts_at desc limit 1`, [COMP, S]))[0]
     if (late) {
-      const early = await val(pool, `select min(t) from generate_series($2::date::timestamp + time '08:00', $2::date::timestamp + time '12:00', interval '15 minutes') t
-        where app_private.pitch_clash($1, (t at time zone 'Australia/Sydney'), (t at time zone 'Australia/Sydney') + make_interval(mins => $3), $4) is null`, [late.pitch_id, S, late.duration_mins ?? 80, late.id])
+      const early = await freeSlot(pool, late.pitch_id, S, '08:00', '12:00', late.duration_mins ?? 80, late.id)
       if (early) {
-        const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: late.id, p_starts_at: new Date(`${early.toISOString ? early.toISOString().slice(0, 19) : early}+11:00`).toISOString(), p_venue_label: null, p_field: null })
+        const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: late.id, p_starts_at: early, p_venue_label: null, p_field: null })
         check(mv.ok, { what: 'the afternoon U17 game moves to the morning', expected: 'moved', actual: mv.ok ? 'moved' : mv.error, role: 'ground manager', where: 'reschedule_fixture' })
       } else note('no free morning slot for the U17 game')
     }
@@ -577,11 +601,9 @@ export async function round4(ctx, S, add) {
     const next = plusDays(S, 7)
     const u13 = postponed.filter((g) => g.division === 'U13 Division 1').slice(0, 1)
     for (const g of u13) {
-      const slot = await val(pool, `select min(t) from generate_series($2::date::timestamp + time '13:00', $2::date::timestamp + time '16:30', interval '15 minutes') t
-        where app_private.pitch_clash($1, (t at time zone 'Australia/Sydney'), (t at time zone 'Australia/Sydney') + make_interval(mins => $3), $4) is null
-          and app_private.pitch_open($1, (t at time zone 'Australia/Sydney'), (t at time zone 'Australia/Sydney') + make_interval(mins => $3))`, [g.pitch_id, next, g.duration_mins ?? 60, g.id])
+      const slot = await freeSlot(pool, g.pitch_id, next, '13:00', '16:30', g.duration_mins ?? 60, g.id)
       if (!slot) { note('no afternoon slot for the double-header'); continue }
-      const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: new Date(`${slot.toISOString().slice(0, 19)}+11:00`).toISOString(), p_venue_label: null, p_field: null })
+      const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: slot, p_venue_label: null, p_field: null })
       if (r.ok) dh++
       const q = await rpc(pool, who.compManager, 'draw_quality', { p_competition: COMP, p_division: 'U13 Division 1' })
       check(r.ok && (q.data?.double_headers ?? []).some((d) => d.day === next), { what: 'the double-header shows in the draw\'s sanity check', expected: `a double header on ${next}`, actual: JSON.stringify(q.data?.double_headers ?? r.error).slice(0, 120), role: 'competition manager', where: 'draw_quality' })
@@ -641,11 +663,9 @@ export async function round5(ctx, S, add) {
     if (!resume || !standing || !replay || !award) { check(false, { what: 'four 8 am games at Bayview to use', expected: 4, actual: games.length, role: '—', where: '—', quiet: true }); return }
     reserve(ctx, resume, standing, replay, award)
     // Resumed at 1 pm on the same pitch.
-    const slot = await val(pool, `select min(t) from generate_series($2::date::timestamp + time '13:00', $2::date::timestamp + time '16:30', interval '15 minutes') t
-      where app_private.pitch_clash($1, (t at time zone 'Australia/Sydney'), (t at time zone 'Australia/Sydney') + make_interval(mins => $3), $4) is null
-        and app_private.pitch_open($1, (t at time zone 'Australia/Sydney'), (t at time zone 'Australia/Sydney') + make_interval(mins => $3))`, [resume.pitch_id, S, resume.duration_mins ?? 60, resume.id])
+    const slot = await freeSlot(pool, resume.pitch_id, S, '13:00', '16:30', resume.duration_mins ?? 60, resume.id)
     if (slot) {
-      const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: resume.id, p_starts_at: new Date(`${slot.toISOString().slice(0, 19)}+11:00`).toISOString(), p_venue_label: null, p_field: null })
+      const mv = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: resume.id, p_starts_at: slot, p_venue_label: null, p_field: null })
       mustWork(mv, { what: 'the suspended game is moved to the afternoon on the same pitch', role: 'ground manager', where: 'reschedule_fixture' })
       const told = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_changed' and created_at >= $1 and payload->>'event_id' in (select id::text from public.events where fixture_id = $2)`, [new Date(clock.now.getTime() - 60_000).toISOString(), resume.id])
       check(told > 0, { what: 'both squads hear the new time at once', expected: '>0', actual: told, role: 'parent', where: 'notify_event_change' })
@@ -710,6 +730,12 @@ export async function round6(ctx, S, add) {
     scenario('OF1', 'On-field issues', 'Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it')
     const d = ctx.discipline
     if (!d) return
+    // The coaches' own sheets, with the players the cards are for on them.
+    const s1 = await submitSheet(pool, d.redGame, 'home', { n: 12, extra: [d.redPlayer] })
+    const s2 = await submitSheet(pool, d.yellowGame, 'home', { n: 12, extra: [d.yellowPlayer] })
+    if (!s1.ok || !s2.ok) note(`discipline sheets: ${s1.error ?? ''} ${s2.error ?? ''}`)
+    d.yellows = 0
+    d.redAt = d.redGame.starts_at
     const g = await game(pool, d.redGame.id)
     const recorder = (await refereeOf(pool, g.id))?.profile_id ?? who.compManager
     const red = await rpc(pool, recorder, 'record_match_event', { p_fixture: g.id, p_entry: d.redEntry, p_kind: 'red', p_player: d.redPlayer, p_minute: 55, p_note: 'Second bookable offence', p_code: 'R2' })
@@ -722,6 +748,7 @@ export async function round6(ctx, S, add) {
     const yr = (await refereeOf(pool, y.id))?.profile_id ?? who.compManager
     const yellow = await rpc(pool, yr, 'record_match_event', { p_fixture: y.id, p_entry: d.yellowEntry, p_kind: 'yellow', p_player: d.yellowPlayer, p_minute: 30, p_note: null, p_code: 'Y1' })
     mustWork(yellow, { what: 'the first yellow of three is recorded', role: 'referee', where: 'record_match_event' })
+    if (yellow.ok) d.yellows = 1
     // A blue card: ten minutes in the sin bin, where the league uses them (it does).
     const blue = await rpc(pool, yr, 'record_match_event', { p_fixture: y.id, p_entry: d.yellowEntry, p_kind: 'blue', p_player: (await squad(pool, d.yellowTeam)).players[2], p_minute: 40, p_note: 'Dissent', p_code: null })
     mustWork(blue, { what: 'a blue card is recorded with its minute', role: 'referee', where: 'record_match_event (blue)' })
@@ -744,16 +771,7 @@ export async function round6(ctx, S, add) {
     scenario('OF2', 'On-field issues', 'Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused')
     const d = ctx.discipline
     if (!d) return
-    const next = (await gamesOn(pool, plusDays(S, 7), { status: 'scheduled' })).find((g) => g.home_entry_id === d.redEntry || g.away_entry_id === d.redEntry)
-    if (!next) { note('the red-carded team has no game next week'); return }
-    const side = next.home_entry_id === d.redEntry ? 'home' : 'away'
-    const withHim = await submitSheet(pool, next, side, { n: 12, extra: [d.redPlayer] })
-    mustRefuse(withHim, { what: 'the suspended player on the sheet is refused', role: 'coach', where: 'submit_match_sheet → ineligibility' })
-    const name = await playerName(pool, d.redPlayer)
-    if (!withHim.ok) check(withHim.error.includes(name) && /suspended/.test(withHim.error), { what: 'the refusal names the player and says why', expected: `${name} is suspended — red card, 2 games still to serve`, actual: withHim.error, role: 'coach', where: 'ineligibility' })
-    const without = await submitSheet(pool, next, side, { n: 12, skip: [d.redPlayer] })
-    mustWork(without, { what: 'without them the sheet goes in', role: 'coach', where: 'submit_match_sheet' })
-    ctx.discipline.nextRed = next
+    // (the suspended player's refusal by name is checked the week the team next plays: disciplineWeek)
     // The age band: U13 Division 1 is for 2014–2015; a 2013-born U15 player of the same club is refused by year.
     const u13 = (await gamesOn(pool, plusDays(S, 7), { division: 'U13 Division 1', status: 'scheduled' })).find((g) => g.home_team && g.away_team)
     if (u13) {
@@ -822,37 +840,7 @@ export async function round7(ctx, S, add) {
     const up2 = await submitSheet(pool, u15, side, { n: 11, extra: [d.junior] })
     mustWork(up2, { what: 'the second game played up is within the cap of two', role: 'coach', where: 'submit_match_sheet (borrow_cap)' })
   })
-  add(`${plusDays(S, -1)} 13:40`, 'OF1 the second yellow', async () => {
-    const d = ctx.discipline
-    if (!d) return
-    const g = (await gamesOn(pool, S, { status: 'scheduled' })).find((x) => x.home_entry_id === d.yellowEntry || x.away_entry_id === d.yellowEntry)
-    if (!g) return
-    ctx.discipline.yellow2Game = g
-    reserve(ctx, g)
-  })
-  add(`${S} 12:30`, 'OF1 the red-card suspension is being served; the second yellow goes in', async () => {
-    const d = ctx.discipline
-    if (!d) return
-    const g = d.yellow2Game
-    if (g) {
-      const sheet = await val(pool, `select count(*)::int from public.match_sheet_players sp join public.match_sheets s on s.id = sp.sheet_id where s.fixture_id = $1 and sp.player_id = $2`, [g.id, d.yellowPlayer])
-      if (sheet) {
-        const r = await rpc(pool, (await refereeOf(pool, g.id))?.profile_id ?? who.compManager, 'record_match_event', { p_fixture: g.id, p_entry: d.yellowEntry, p_kind: 'yellow', p_player: d.yellowPlayer, p_minute: 61, p_note: null, p_code: 'Y3' })
-        mustWork(r, { what: 'the second yellow is recorded', role: 'referee', where: 'record_match_event' })
-        const warn = await queued(pool, { kind: 'discipline_warning', since: new Date(clock.now.getTime() - 60_000).toISOString() })
-        check(warn.length > 0, { what: 'the club hears the player is one yellow from a suspension', expected: '>0', actual: warn.length, role: 'coach', where: 'suspend_on_card (L-20)' })
-      } else note('the yellow-card player was not on this week\'s sheet')
-      const r = await enterScores(pool, g, 1, 1)
-      const rr = await refereeOf(pool, g.id)
-      if (rr?.profile_id && r.away.data?.state === 'final') await rpc(pool, rr.profile_id, 'end_match', { p_fixture: g.id, p_note: null })
-    }
-  })
-  add(`${plusDays(S, 1)} 12:30`, 'OF1 one game of the red-card ban served', async () => {
-    const d = ctx.discipline
-    if (!d) return
-    const s = await sql(pool, `select games, served, status from public.suspensions where player_id = $1 and competition_id = $2 and reason = 'red card'`, [d.redPlayer, COMP])
-    check(s[0]?.served === 1 && s[0]?.status === 'active', { what: 'after this round\'s game without them, one of two games is served', expected: 'served 1, active', actual: JSON.stringify(s[0]), role: 'league', where: 'serve_suspensions' })
-  })
+  await disciplineWeek(ctx, 7, S, add)
 
   // OFF3: the checks that ran out yesterday.
   add(`${plusDays(S, 2)} 07:00`, 'OFF3 the Monday sweep flags the expired checks', async () => {
@@ -949,6 +937,94 @@ export async function round7(ctx, S, add) {
     const { measurePeak } = await import('./peak.mjs')
     ctx.peak = await measurePeak(ctx)
     return { calls: ctx.peak.calls, seconds: ctx.peak.seconds }
+  })
+}
+
+/**
+ * Rounds 7 onward: the red-card ban is served over the team's next two
+ * games (a seven-team division has byes, so not always the next two
+ * Saturdays); the yellow-card player picks up a second and a third card in
+ * their next games, sits one out, and comes back.
+ */
+export async function disciplineWeek(ctx, r, S, add) {
+  const { pool } = ctx
+  add(`${plusDays(S, -1)} 13:05`, `OF1 discipline, round ${r}: the sheets`, async () => {
+    const d = ctx.discipline
+    if (!d) return
+    const games = await gamesOn(pool, S, { status: 'scheduled' })
+    // The red-carded team.
+    const red = games.find((g) => g.home_entry_id === d.redEntry || g.away_entry_id === d.redEntry)
+    const ban = (await sql(pool, `select games, served, status from public.suspensions where player_id = $1 and competition_id = $2 and reason = 'red card'`, [d.redPlayer, COMP]))[0]
+    if (red && ban) {
+      const side = red.home_entry_id === d.redEntry ? 'home' : 'away'
+      if (ban.served < ban.games) {
+        if (!d.refusalChecked) {
+          const withHim = await submitSheet(pool, red, side, { n: 12, extra: [d.redPlayer] })
+          mustRefuse(withHim, { what: 'the suspended player on the sheet is refused', role: 'coach', where: 'submit_match_sheet → ineligibility' })
+          const name = await playerName(pool, d.redPlayer)
+          if (!withHim.ok) check(withHim.error.includes(name) && /suspended/.test(withHim.error), { what: 'the refusal names the player and says why', expected: `${name} is suspended — red card, N games still to serve`, actual: withHim.error, role: 'coach', where: 'ineligibility' })
+          const without = await submitSheet(pool, red, side, { n: 12, skip: [d.redPlayer] })
+          mustWork(without, { what: 'without them the sheet goes in', role: 'coach', where: 'submit_match_sheet' })
+          d.refusalChecked = true
+        }
+      } else if (!d.backChecked) {
+        const back = await submitSheet(pool, red, side, { n: 12, extra: [d.redPlayer] })
+        mustWork(back, { what: 'with the ban served the player is accepted on the sheet again', role: 'coach', where: 'submit_match_sheet' })
+        d.backChecked = true
+      }
+    }
+    // The yellow-card player.
+    const yg = games.find((g) => g.home_entry_id === d.yellowEntry || g.away_entry_id === d.yellowEntry)
+    const ysusp = (await sql(pool, `select games, served, status from public.suspensions where player_id = $1 and competition_id = $2 and reason like '%yellow%'`, [d.yellowPlayer, COMP]))[0]
+    d.yellowGameThisWeek = null
+    if (yg) {
+      const side = yg.home_entry_id === d.yellowEntry ? 'home' : 'away'
+      if (ysusp && ysusp.served < ysusp.games) {
+        if (!d.yellowRefusalChecked) {
+          const no = await submitSheet(pool, yg, side, { n: 12, extra: [d.yellowPlayer] })
+          mustRefuse(no, { what: 'the three-yellows player is refused by name for one game', role: 'coach', where: 'ineligibility → suspension_reason' })
+          await submitSheet(pool, yg, side, { n: 12, skip: [d.yellowPlayer] })
+          d.yellowRefusalChecked = true
+        }
+      } else if ((d.yellows ?? 0) < 3 || (ysusp && ysusp.status === 'served' && !d.yellowBackChecked)) {
+        const ok1 = await submitSheet(pool, yg, side, { n: 12, extra: [d.yellowPlayer] })
+        if ((d.yellows ?? 0) < 3) { if (ok1.ok) { reserve(ctx, yg); d.yellowGameThisWeek = yg; d.yellowSide = side } }
+        else { mustWork(ok1, { what: 'after sitting one out the three-yellows player is back', role: 'coach', where: 'submit_match_sheet' }); d.yellowBackChecked = true }
+      }
+    }
+  })
+  add(`${S} 12:30`, `OF1 discipline, round ${r}: the cards`, async () => {
+    const d = ctx.discipline
+    if (!d?.yellowGameThisWeek) return
+    const g = await game(pool, d.yellowGameThisWeek.id)
+    const entry = d.yellowEntry
+    const by = (await refereeOf(pool, g.id))?.profile_id ?? who.compManager
+    const k = (d.yellows ?? 0) + 1
+    const res = await rpc(pool, by, 'record_match_event', { p_fixture: g.id, p_entry: entry, p_kind: 'yellow', p_player: d.yellowPlayer, p_minute: 40 + k * 10, p_note: null, p_code: `Y${Math.min(6, k + 1)}` })
+    mustWork(res, { what: `yellow card number ${k} is recorded`, role: 'referee', where: 'record_match_event' })
+    if (res.ok) d.yellows = k
+    if (k === 2) {
+      const warn = await queued(pool, { kind: 'discipline_warning', since: new Date(clock.now.getTime() - 60_000).toISOString() })
+      check(warn.length > 0, { what: 'the club hears the player is one yellow from a suspension', expected: '>0', actual: warn.length, role: 'coach', where: 'suspend_on_card (L-20)' })
+    }
+    if (k === 3) {
+      const s3 = await sql(pool, `select games, served, status from public.suspensions where player_id = $1 and competition_id = $2 and reason like '%yellow%'`, [d.yellowPlayer, COMP])
+      check(s3.length === 1 && s3[0].games === 1 && s3[0].status === 'active', { what: 'three yellows: a one-game suspension', expected: '1 game, active', actual: JSON.stringify(s3), role: 'league', where: 'suspend_on_card' })
+    }
+    const r2 = await enterScores(pool, g, 1, 1)
+    const rr = await refereeOf(pool, g.id)
+    if (rr?.profile_id && r2.away.data?.state === 'final') await rpc(pool, rr.profile_id, 'end_match', { p_fixture: g.id, p_note: null })
+  })
+  add(`${plusDays(S, 1)} 12:30`, `OF1 discipline, round ${r}: served`, async () => {
+    const d = ctx.discipline
+    if (!d?.redAt) return
+    const played = await val(pool, `select count(*)::int from public.fixtures f where f.competition_id = $1 and (f.home_entry_id = $2 or f.away_entry_id = $2) and f.status in ('final', 'forfeit') and f.starts_at > $3`, [COMP, d.redEntry, d.redAt])
+    const ban = (await sql(pool, `select games, served, status from public.suspensions where player_id = $1 and competition_id = $2 and reason = 'red card'`, [d.redPlayer, COMP]))[0]
+    const expectServed = Math.min(2, played)
+    if (ban && !d.servedChecked?.[expectServed]) {
+      check(ban.served === expectServed && ban.status === (expectServed >= 2 ? 'served' : 'active'), { what: `after ${played} game${played === 1 ? '' : 's'} without them the ban reads served ${expectServed}${expectServed >= 2 ? ' (done)' : ''}`, expected: `served ${expectServed}, ${expectServed >= 2 ? 'served' : 'active'}`, actual: JSON.stringify(ban), role: 'league', where: 'serve_suspensions' })
+      d.servedChecked = { ...(d.servedChecked ?? {}), [expectServed]: true }
+    }
   })
 }
 

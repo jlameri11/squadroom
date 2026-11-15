@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:39 UTC · 17 rounds played · 21 PASS · 9 FIXED · 16 FAIL · 4 not run · 44 bugs logged (13 fixed) · 21 min so far
+Last run: 2026-11-15 10:39 UTC · 17 rounds played · 21 PASS · 9 FIXED · 16 FAIL · 4 not run · 44 bugs logged (13 fixed) · 21 min
 
 ## What this is
 

@@ -166,5 +166,25 @@
     "expected": "The league's notices, as the person who files the sheet",
     "actual": "\"Not one of your chats \u2014 only its members can open it\"",
     "fixed": "0278: team managers stand with the staff for a competition's Notices"
+  },
+  {
+    "scenario": "R4",
+    "severity": "medium",
+    "role": "parent",
+    "where": "mirror_fixture (forfeit)",
+    "steps": "A forfeit is approved on Thursday for Saturday's game",
+    "expected": "The families of both squads see the game is off (forfeit) and are told",
+    "actual": "The game stayed on their calendar as if it would be played; nobody was told",
+    "fixed": "0278: a forfeit is mirrored as a called-off game with its reason"
+  },
+  {
+    "scenario": "R5",
+    "severity": "medium",
+    "role": "parent",
+    "where": "competition_ladder (ladder_enabled)",
+    "steps": "Ask for a U9 division's ladder as a family (ladder off in the division rules)",
+    "expected": "Nothing \u2014 the division has no ladder",
+    "actual": "Eight rows: the screens hid the tab, the function did not",
+    "fixed": "0278: competition_ladder returns nothing for a division whose ladder is off, except to the league"
   }
 ]

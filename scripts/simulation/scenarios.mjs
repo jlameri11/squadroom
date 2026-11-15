@@ -3,7 +3,7 @@
 // `check`, `mustWork` and `mustRefuse`; a failed check logs a bug. The season
 // driver (season.mjs) asks for the pre-season steps, each round's extra
 // steps, and the finals.
-import { asAnon, check, clock, ids, mustRefuse, mustWork, note, ok, rpc, run, scenario, sql, val, who } from './lib.mjs'
+import { asAnon, check, clock, focus, ids, mustRefuse, mustWork, note, ok, rpc, run, scenario, scenarios, sql, val, who } from './lib.mjs'
 import { COMP, LEAGUE, gamesOn, ladder, squad, val as v } from './world.mjs'
 import * as rounds from './scenarios-rounds.mjs'
 import { runScreens } from './screens.mjs'
@@ -211,9 +211,18 @@ export async function preseason(ctx) {
 }
 
 // ===================================================================== rounds
+/** A step's checks belong to the scenario its name starts with ("OF1 …" → OF1, "FV9a …" → FV9) unless the step names one itself. */
+function stepAdder(plan) {
+  return (at, name, fn) => plan.push({ at, name, run: async () => {
+    const m = /^([A-Z]+\d+[a-z]?)/.exec(name)
+    if (m) { if (!focus(m[1])) focus(m[1].replace(/[a-z]$/, '')) }
+    return fn()
+  } })
+}
+
 export async function roundPlan(ctx, r, S) {
   const plan = []
-  const add = (at, name, fn) => plan.push({ at, name, run: fn })
+  const add = stepAdder(plan)
   await rounds.everyRound(ctx, r, S, add)
   switch (r) {
     case 1: await rounds.round1(ctx, S, add); break
@@ -237,7 +246,7 @@ export async function roundPlan(ctx, r, S) {
 
 export async function finalsPlan(ctx) {
   const plan = []
-  const add = (at, name, fn) => plan.push({ at, name, run: fn })
+  const add = stepAdder(plan)
   await rounds2.finals(ctx, add)
   return plan
 }

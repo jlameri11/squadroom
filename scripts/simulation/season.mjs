@@ -24,7 +24,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { ROOT, bugs, clock, head, localDb, note, ok, saveResults, scenarios, sql, val } from './lib.mjs'
 import { COMP, advanceTo, gamesOn, roundDates, queueTally } from './world.mjs'
-import { appointReferees, checkIns, clubLife, fullTime, leagueNotices, leagueSunday, plusDays, refereesRespond, rng, scheduleFridayLines, submitSheets, weekRsvps } from './routine.mjs'
+import { appointReferees, checkIns, clubLife, fullTime, leagueNotices, leagueSunday, plusDays, refereesRespond, rescheduleLeftovers, rng, scheduleFridayLines, submitSheets, weekRsvps } from './routine.mjs'
 import { preseason, roundPlan, finalsPlan, closing } from './scenarios.mjs'
 import { writeReport } from './report.mjs'
 
@@ -139,6 +139,7 @@ try {
       steps.push({ at: minus(dur + 8), name: `full time ${minus(0).slice(11)}`, run: async () => fullTime(ctx, (await gamesOn(pool, day)).filter((g) => these.some((t) => t.id === g.id)), rand), quiet: true })
     }
     steps.push({ at: `${plusDays(S, 1)} 10:00`, name: 'the league on Sunday', run: () => leagueSunday(ctx, rand) })
+    if (S < '2027-05-22') steps.push({ at: `${plusDays(S, 1)} 16:30`, name: 'leftover games to the catch-up round', run: () => rescheduleLeftovers(ctx) })
     steps.push({ at: `${plusDays(S, 1)} 11:00`, name: 'ladders', run: async () => { ctx.ladders[r] = await sql(pool, `select division, count(*)::int as teams, sum(played)::int as played from (select d.division, l.* from public.competition_divisions d cross join lateral app_private.ladder($1, d.division) l where d.competition_id = $1) x group by division order by division`, [COMP]) } })
     steps.sort((a, b) => a.at.localeCompare(b.at))
 
