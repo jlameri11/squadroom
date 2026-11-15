@@ -44,3 +44,4 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 38 | high | treasurer | my_entry_fees | OFF4 a club treasurer sees what their club owes the league | owed fees listed | listed |  |
 | 39 | high | competition manager | fixtures | OFF5a the remaining games become byes; the played ones stand | 5 byes, 8 played | 6 byes, 8 played |  |
 | 40 | high | parent | competition_ladder (ladder_enabled) | R5 a U9 family sees no ladder (ladder_enabled off) | empty | 8 rows |  |
+| 41 | high | competition manager | resolve_finals | R6 the semi-finals are seeded from the ladders as soon as the season is complete | 8 | 6 |  |
