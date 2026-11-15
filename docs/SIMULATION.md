@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 09:30 UTC · 1 rounds played · 13 PASS · 2 FIXED · 2 FAIL · 0 not run · 5 bugs logged (3 fixed) · 2 min so far
+Last run: 2026-11-15 09:30 UTC · 2 rounds played · 15 PASS · 2 FIXED · 2 FAIL · 0 not run · 5 bugs logged (3 fixed) · 3 min so far
 
 ## What this is
 
@@ -27,6 +27,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | FV3 | Hours limits: nothing drawn outside a pitch's hours, and a move outside them is refused | **PASS** | 2/2 | — | — |
 | FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
 | FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
+| FV11 | Field map, directions and "Field 3" shown correctly to every family affected | **PASS** | 22/22 | — | — |
 
 ### Results
 
@@ -41,6 +42,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 2/2 | — | — |
+| OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **PASS** | 2/2 | — | — |
 
 ### Off-field issues
 
@@ -61,11 +63,12 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 2 league notices, 12 club messages, 240 chat lines, 120 reactions, 10 polls, 40 scheduled messages, 3102 RSVPs, 150 referee appointments, 272 team sheets, 124 results agreed on the sheets, 7 disputes (8 ruled on), 5 late results, 19 cards.
+Over the run: 4 league notices, 24 club messages, 480 chat lines, 240 reactions, 20 polls, 80 scheduled messages, 6209 RSVPs, 303 referee appointments, 547 team sheets, 244 results agreed on the sheets, 25 disputes (26 ruled on), 11 late results, 35 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
 | 1 | 2027-02-06 | 145 | 119404 | 118353 | 0 | event_reminder 54358, event_changed 45038, announcement 11483, message 7478, match_day 289, team_sheet_due 289 |
+| 2 | 2027-02-13 | 145 | 49474 | 49474 | 0 | event_reminder 38666, message 7354, announcement 2615, match_day 289, team_sheet_due 289, helper_reminder 152 |
 
 ## Bugs
 
