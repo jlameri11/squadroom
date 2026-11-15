@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 09:06 UTC · 0 rounds played · 6 PASS · 2 FIXED · 0 FAIL · 0 not run · 18 bugs logged (3 fixed) · 
+Last run: 2026-11-15 09:30 UTC · 1 rounds played · 13 PASS · 2 FIXED · 2 FAIL · 0 not run · 5 bugs logged (3 fixed) · 2 min so far
 
 ## What this is
 
@@ -28,6 +28,20 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
 | FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
 
+### Results
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| R1 | Win, draw, loss; high scores; 0–0 | **PASS** | 7/7 | — | — |
+| R2 | Matching scores → final; mismatched → dispute → the league rules → the ladder moves only then — _the league's Home shows one disputed result: expected "1 disputed", got 8 disputed · 1 sheets missing_ | **FAIL** | 3/4 | #5 | — |
+| R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 4/4 | — | — |
+
+### On-field issues
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 2/2 | — | — |
+
 ### Off-field issues
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -35,14 +49,27 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
 
+### People & messaging
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| PM3 | Busy team chats with replies, reactions, photos and polls | **PASS** | 4/4 | — | — |
+| PM5 | Quiet hours and the digest respected — _the quiet-hours parent shares a squad chat with a digest parent: expected a channel, got none_ | **FAIL** | 0/1 | #4 | — |
+| PM4 | Scheduled messages go at their time, not before | **PASS** | 8/8 | — | — |
+| PM6 | No message sent twice; late messages not sent | **PASS** | 14/14 | — | — |
+| PM1 | Notices to everyone / club staff only | **PASS** | 4/4 | — | — |
+
 ## The load
 
-Over the run: 0 league notices, 0 club messages, 0 chat lines, 0 reactions, 0 polls, 0 scheduled messages, 0 RSVPs, 0 referee appointments, 0 team sheets, 0 results agreed on the sheets, 0 disputes (0 ruled on), 0 late results, 0 cards.
+Over the run: 2 league notices, 12 club messages, 240 chat lines, 120 reactions, 10 polls, 40 scheduled messages, 3102 RSVPs, 150 referee appointments, 272 team sheets, 124 results agreed on the sheets, 7 disputes (8 ruled on), 5 late results, 19 cards.
 
+| Round | Date | Games | Notifications queued | Sent | Texts | By kind |
+|---|---|---|---|---|---|---|
+| 1 | 2027-02-06 | 145 | 119404 | 118353 | 0 | event_reminder 54358, event_changed 45038, announcement 11483, message 7478, match_day 289, team_sheet_due 289 |
 
 ## Bugs
 
-18 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+5 logged in `docs/BUGS.md`, 3 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
