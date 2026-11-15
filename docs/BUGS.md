@@ -29,3 +29,5 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 23 | medium | team manager | screens (washout) · manager-away /chat/101f61ce-bd6d-430e-9d8b-cbc04e974180 | SC2 team manager: Notices shows the latest notice | Round 4 is on this Saturday. Check your  | Not one of your chats Only its members can open it. Back to chats |  |
 | 24 | high | club president | screens (washout) · president-home /chat/49b5c9e1-dc76-4374-89dc-6d928cbc3cb5 | SC2 club president: the squad chat shows the latest message | Game tomorrow. Arrive 30 minutes before  | ‹ U11 Red Everyone can post ⋯ Nothing here yet. Say hello. Send as an announcement Send later… ＋ 📊 📅 🎙 |  |
 | 25 | high | competition manager | draw_quality | WS4 the double-header shows in the draw's sanity check | a double header on 2027-03-06 | [] |  |
+| 26 | medium | parent | notify_event_change | R4 both squads' families hear the game is off (forfeit) | >0 | 0 |  |
+| 27 | high | ground manager | reschedule_fixture | WS2 the suspended game is moved to the afternoon on the same pitch | allowed | 23P01: Field 1 Q1 is not open then — its hours are set in the venue layout |  |

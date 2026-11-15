@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:27 UTC · 4 rounds played · 16 PASS · 8 FIXED · 4 FAIL · 3 not run · 25 bugs logged (13 fixed) · 9 min so far
+Last run: 2026-11-15 10:28 UTC · 5 rounds played · 16 PASS · 8 FIXED · 6 FAIL · 3 not run · 27 bugs logged (13 fixed) · 9 min so far
 
 ## What this is
 
@@ -42,6 +42,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
 | WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
 | WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header — _the double-header shows in the draw's sanity check: expected a double header on 2027-03-06, got []_ | **FAIL** | 3/4 | #25 | — |
+| WS2 | Lightning suspension mid-game → resumed later the same day, and one abandoned — _the suspended game is moved to the afternoon on the same pitch: expected allowed, got 23P01: Field 1 Q1 is not open then — its hours are set in the venue layout; both squads hear the new time at once: expected >0, got 0_ | **FAIL** | 7/9 | #27, #26 | — |
 
 ### Results
 
@@ -50,6 +51,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R1 | Win, draw, loss; high scores; 0–0 | **PASS** | 7/7 | — | — |
 | R2 | Matching scores → final; mismatched → dispute → the league rules → the ladder moves only then | **PASS** | 4/4 | — | — |
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 4/4 | — | — |
+| R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded — _both squads' families hear the game is off (forfeit): expected >0, got 0_ | **FAIL** | 8/9 | #26 | — |
 
 ### On-field issues
 
@@ -77,7 +79,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 12397 RSVPs, 610 referee appointments, 1088 team sheets, 329 results agreed on the sheets, 39 disputes (40 ruled on), 17 late results, 66 cards.
+Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reactions, 50 polls, 200 scheduled messages, 15530 RSVPs, 765 referee appointments, 1362 team sheets, 458 results agreed on the sheets, 45 disputes (46 ruled on), 25 late results, 88 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -85,10 +87,11 @@ Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions,
 | 2 | 2027-02-13 | 145 | 49458 | 49458 | 0 | event_reminder 38666, message 7354, announcement 2615, team_sheet_due 289, match_day 289, helper_reminder 152 |
 | 3 | 2027-02-20 | 145 | 74318 | 74318 | 2079 | event_reminder 45100, announcement 18581, message 7362, event_cancelled 2040, team_sheet_due 289, match_day 231 |
 | 4 | 2027-02-27 | 145 | 73704 | 65999 | 7705 | event_reminder 38952, announcement 10667, event_back_on 7560, event_cancelled 7560, message 7356, fee_overdue 402 |
+| 5 | 2027-03-06 | 149 | 74002 | 74002 | 53 | event_reminder 46774, announcement 10667, event_back_on 7560, message 7334, fee_overdue 402, match_day 298 |
 
 ## Bugs
 
-25 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+27 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
