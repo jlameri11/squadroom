@@ -40,3 +40,5 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 34 | high | league | suspend_on_card | OFF6 three yellows: a one-game suspension | 1 game, active | [] |  |
 | 35 | high | league | serve_suspensions | PM6 two games missed: the red-card ban is served | served 2, served | {"games":2,"served":1,"status":"active"} |  |
 | 36 | high | coach | submit_match_sheet | PM6 with the ban served the player is accepted on the sheet again | allowed | 22023: Amara Hughes is suspended — red card, 1 game still to serve |  |
+| 37 | medium | league treasurer | queue_fee_reminders (entry fees) | OFF4 the 51 clubs whose entry fee is still owed in April have been reminded | ≥1 reminder | 0 reminders |  |
+| 38 | high | treasurer | my_entry_fees | OFF4 a club treasurer sees what their club owes the league | owed fees listed | listed |  |

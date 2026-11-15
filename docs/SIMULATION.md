@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:33 UTC · 9 rounds played · 19 PASS · 9 FIXED · 11 FAIL · 4 not run · 36 bugs logged (13 fixed) · 15 min so far
+Last run: 2026-11-15 10:34 UTC · 10 rounds played · 19 PASS · 9 FIXED · 12 FAIL · 4 not run · 38 bugs logged (13 fixed) · 15 min so far
 
 ## What this is
 
@@ -69,12 +69,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
-| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 2/2 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet — _after this round's game without them, one of two games is served: expected served 1, active, got {"games":2,"served":0,"status":"active"}_ | **FAIL** | 11/12 | #32 | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps — _the third yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; three yellows: a one-game suspension: expected 1 game, active, got []_ | **FAIL** | 7/9 | #33, #34 | — |
 | OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
+| OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased — _the 51 clubs whose entry fee is still owed in April have been reminded: expected ≥1 reminder, got 0 reminders; a club treasurer sees what their club owes the league: expected owed fees listed, got listed_ | **FAIL** | 16/18 | #37, #38 | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
 
 ### People & messaging
 
@@ -88,7 +89,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 360 scheduled messages, 27900 RSVPs, 1374 referee appointments, 2432 team sheets, 967 results agreed on the sheets, 91 disputes (92 ruled on), 43 late results, 188 cards.
+Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 400 scheduled messages, 30962 RSVPs, 1518 referee appointments, 2685 team sheets, 1089 results agreed on the sheets, 106 disputes (107 ruled on), 47 late results, 215 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -101,6 +102,7 @@ Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reacti
 | 7 | 2027-03-20 | 145 | 50287 | 50287 | 0 | event_reminder 46145, message 2856, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 137 |
 | 8 | 2027-03-27 | 145 | 49097 | 49090 | 0 | event_reminder 46886, message 912, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 141 |
 | 9 | 2027-04-03 | 145 | 9982 | 9981 | 0 | event_reminder 7980, message 912, match_day 289, team_sheet_due 289, fee_overdue 201, helper_reminder 150 |
+| 10 | 2027-04-10 | 141 | 65867 | 65860 | 0 | event_reminder 46152, announcement 11348, message 7370, match_day 282, team_sheet_due 282, referee_appointment 144 |
 
 ## The peak
 
@@ -137,7 +139,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-36 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+38 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
