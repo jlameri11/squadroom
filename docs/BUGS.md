@@ -36,3 +36,7 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 30 | high | club president | screens (suspension) · president-home /chat/515ef996-d626-475b-824a-45de04e930c1 | SC4 club president: the squad chat shows the latest message | We can do oranges. | ‹ U11 Blue Everyone can post ⋯ Nothing here yet. Say hello. Send as an announcement Send later… ＋ 📊 📅 🎙 |  |
 | 31 | high | coach | submit_match_sheet | OF3 borrowing a player from a lower squad worked (see OF2) | a borrowed player on a sheet | no |  |
 | 32 | high | league | serve_suspensions | OFF1 after this round's game without them, one of two games is served | served 1, active | {"games":2,"served":0,"status":"active"} |  |
+| 33 | high | referee | record_match_event | OFF6 the third yellow is recorded | allowed | 22023: this game has ended; ask the league for a correction |  |
+| 34 | high | league | suspend_on_card | OFF6 three yellows: a one-game suspension | 1 game, active | [] |  |
+| 35 | high | league | serve_suspensions | PM6 two games missed: the red-card ban is served | served 2, served | {"games":2,"served":1,"status":"active"} |  |
+| 36 | high | coach | submit_match_sheet | PM6 with the ban served the player is accepted on the sheet again | allowed | 22023: Amara Hughes is suspended — red card, 1 game still to serve |  |

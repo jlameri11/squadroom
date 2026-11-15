@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:32 UTC · 7 rounds played · 18 PASS · 9 FIXED · 9 FAIL · 4 not run · 32 bugs logged (13 fixed) · 13 min so far
+Last run: 2026-11-15 10:33 UTC · 8 rounds played · 18 PASS · 9 FIXED · 11 FAIL · 4 not run · 36 bugs logged (13 fixed) · 14 min so far
 
 ## What this is
 
@@ -72,6 +72,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet — _after this round's game without them, one of two games is served: expected served 1, active, got {"games":2,"served":0,"status":"active"}_ | **FAIL** | 11/12 | #32 | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
+| OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
+| OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps — _the third yellow is recorded: expected allowed, got 22023: this game has ended; ask the league for a correction; three yellows: a one-game suspension: expected 1 game, active, got []_ | **FAIL** | 7/9 | #33, #34 | — |
 
 ### People & messaging
 
@@ -80,12 +82,12 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM3 | Busy team chats with replies, reactions, photos and polls | **PASS** | 4/4 | — | — |
 | PM5 | Quiet hours and the digest respected | **PASS** | 3/3 | — | — |
 | PM4 | Scheduled messages go at their time, not before | **PASS** | 8/8 | — | — |
-| PM6 | No message sent twice; late messages not sent | **PASS** | 14/14 | — | — |
-| PM1 | Notices to everyone / club staff only | **PASS** | 4/4 | — | — |
+| PM6 | No message sent twice; late messages not sent — _two games missed: the red-card ban is served: expected served 2, served, got {"games":2,"served":1,"status":"active"}; with the ban served the player is accepted on the sheet again: expected allowed, got 22023: Amara Hughes is suspended — red card, 1 game still to serve_ | **FAIL** | 17/19 | #35, #36 | — |
+| PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
 
 ## The load
 
-Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 21700 RSVPs, 1068 referee appointments, 1906 team sheets, 711 results agreed on the sheets, 71 disputes (72 ruled on), 31 late results, 134 cards.
+Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 320 scheduled messages, 24819 RSVPs, 1224 referee appointments, 2168 team sheets, 839 results agreed on the sheets, 82 disputes (83 ruled on), 36 late results, 163 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -96,6 +98,7 @@ Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reaction
 | 5 | 2027-03-06 | 149 | 74002 | 74002 | 53 | event_reminder 46774, announcement 10667, event_back_on 7560, message 7334, fee_overdue 402, match_day 298 |
 | 6 | 2027-03-13 | 145 | 105107 | 105107 | 0 | event_reminder 85411, announcement 10531, message 7300, fee_overdue 603, team_sheet_due 289, match_day 289 |
 | 7 | 2027-03-20 | 145 | 50287 | 50287 | 0 | event_reminder 46145, message 2856, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 137 |
+| 8 | 2027-03-27 | 145 | 49097 | 49090 | 0 | event_reminder 46886, message 912, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 141 |
 
 ## The peak
 
@@ -132,7 +135,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-32 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+36 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
