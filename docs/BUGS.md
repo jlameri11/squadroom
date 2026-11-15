@@ -21,12 +21,5 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 15 | medium | team manager | notices_standing / notices_people | Open the league's Notices as a team manager (a club role, parent hat) | The league's notices, as the person who files the sheet | "Not one of your chats — only its members can open it" | 0278: team managers stand with the staff for a competition's Notices |
 | 16 | medium | parent | mirror_fixture (forfeit) | A forfeit is approved on Thursday for Saturday's game | The families of both squads see the game is off (forfeit) and are told | The game stayed on their calendar as if it would be played; nobody was told | 0278: a forfeit is mirrored as a called-off game with its reason |
 | 17 | medium | parent | competition_ladder (ladder_enabled) | Ask for a U9 division's ladder as a family (ladder off in the division rules) | Nothing — the division has no ladder | Eight rows: the screens hid the tab, the function did not | 0278: competition_ladder returns nothing for a division whose ladder is off, except to the league |
-| 18 | high | ground manager | reschedule_fixture | WS4 the other 140 games go to the catch-up round on 22 May | 140 | 101 |  |
-| 19 | high | referee | record_match_event | OF1 the referee records a red card (R2) | allowed | 22023: that player is not on this team's sheet for this game |  |
-| 20 | high | league | suspend_on_card | OF1 a two-game suspension is raised at once | 2 games, active | [] |  |
-| 21 | high | coach | suspend_on_card | OF1 the club is told the player is suspended | >0 | 0 |  |
-| 22 | high | discipline officer | discipline_report | OF1 the discipline officer's report lists the sending-off | the player in the report | listed |  |
-| 23 | high | coach | ineligibility (borrow_cap) | OF2 a third game played up is over the division's cap of two — refused (1 on record before this sheet) | refused | allowed: "6b9259dc-b108-40c7-b40b-2f0b41d837ea" |  |
-| 24 | high | treasurer | my_entry_fees | OFF4 a club treasurer sees what their club owes the league | owed fees listed | [] |  |
-| 25 | high | league | serve_suspensions | OF1 after 3 games without them the ban reads served 2 (done) | served 2, served | {"games":2,"served":0,"status":"active"} |  |
-| 26 | high | competition manager | resolve_finals | R6 the semi-finals are seeded from the ladders as soon as the season is complete | 8 | 6 |  |
+| 18 | high | referee | submit_match_sheet | OF6 the referee can change it after the lock | allowed | 42501: only the team's manager or coach can submit its sheet |  |
+| 19 | high | league | match_sheet_log | OF6 the change after the lock is logged as an official's | ≥1 | 0 |  |

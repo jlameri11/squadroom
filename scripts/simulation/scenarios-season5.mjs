@@ -53,6 +53,21 @@ export async function season5Plan(ctx, add) {
       if (r.ok) rolled += r.data?.teams ?? 0; else failed.push(`${c}: ${r.error}`)
     }
     note(`${rolled} squads rolled over to 2028${failed.length ? `; failed: ${failed.slice(0, 3).join(' | ')}` : ''}`)
+    // The rollover moves the players and their families; the club puts the coaches and managers back on the new squads.
+    let coaches = 0, managers = 0
+    for (let c = 1; c <= 60; c++) {
+      const cr = await run(pool, who.president(c), `insert into public.team_members (academy_id, team_id, profile_id, role)
+        select nt.academy_id, nt.id, tm.profile_id, 'coach' from public.teams nt join public.team_members tm on tm.team_id = nt.rolled_from and tm.role = 'coach'
+         where nt.academy_id = $1 and nt.season = '2028' and not exists (select 1 from public.team_members x where x.team_id = nt.id and x.profile_id = tm.profile_id)
+        returning id`, [ids.club(c)])
+      if (cr.ok) coaches += cr.data.length; else note(`coaches for club ${c}: ${cr.error}`)
+      const mr = await run(pool, who.president(c), `insert into public.club_roles (academy_id, profile_id, role, scope_kind, team_id, granted_by)
+        select nt.academy_id, r.profile_id, 'team_manager', 'team', nt.id, $2 from public.teams nt join public.club_roles r on r.team_id = nt.rolled_from and r.role = 'team_manager'
+         where nt.academy_id = $1 and nt.season = '2028' and not exists (select 1 from public.club_roles x where x.team_id = nt.id and x.profile_id = r.profile_id and x.role = 'team_manager')
+        returning id`, [ids.club(c), who.president(c)])
+      if (mr.ok) managers += mr.data.length; else note(`managers for club ${c}: ${mr.error}`)
+    }
+    note(`${coaches} coaches and ${managers} managers back on the 2028 squads`)
     const ns = await rpc(pool, who.compManager, 'new_season_from', { p_competition: comp4, p_name: SEASON5.name, p_season: SEASON5.season, p_starts_on: SEASON5.first, p_ends_on: '2028-06-03', p_slug: SEASON5.slug })
     mustWork(ns, { what: 'the league starts Season 5 from Season 4', role: 'competition manager', where: 'new_season_from' })
     if (!ns.ok) return

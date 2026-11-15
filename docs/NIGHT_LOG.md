@@ -28,9 +28,22 @@ chat, team managers read the notices, a forfeit is off for the families, a
 ladder that is off is off). All applied to dev with types and test-rls
 (230 checks). The UI gained the two-leg draw and bye weeks, finals of four,
 the minimum sheet, the shootout on a ruling and "withdraw" on the entries.
-No deploy (Joey says when). **Next:** the seed-2 run is going; then Joey's
-**past seasons + head to head** brief (15 Nov), and a second simulated
-season to prove it.
+No deploy (Joey says when). The seed-2 season found 9 bugs against the
+first run's 31 — the fixes hold — and **Joey's past seasons + head to head
+brief (15 Nov) is built: 0279** (a finished season is read-only and never
+deleted — `end_season`/`reopen_season` and a guard on every table of it;
+the season switchers on the match centre, the competition page and
+Fixtures; `new_season_from`; a team's history through the rollover lineage;
+a family's past seasons with results; a public game page), **0280** (the
+Treasurer sees the entry fees and the levy — found by the simulation) and
+**0281** (head to head is this season's only, Joey's correction the same
+afternoon). The simulation now plays a **second season**: after the grand
+final the league ends Season 4, the sixty clubs roll over to 2028, SPL
+Season 5 starts from Season 4 and plays three rounds, and PS1/HH1 check
+that Season 4 is reachable from every place and that head to head stays
+inside the season. All applied to dev (234 RLS checks). **Next:** the
+seed-3 run with the second season; reruns with new seeds until a full run
+finds no new high or medium bug.
 
 - **NEEDS JOEY (simulation, 15 Nov):** three rules were assumed and are
   easy to change — an under-18 referee is kept off U15 and older games
