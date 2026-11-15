@@ -43,3 +43,4 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 37 | medium | league treasurer | queue_fee_reminders (entry fees) | OFF4 the 51 clubs whose entry fee is still owed in April have been reminded | ≥1 reminder | 0 reminders |  |
 | 38 | high | treasurer | my_entry_fees | OFF4 a club treasurer sees what their club owes the league | owed fees listed | listed |  |
 | 39 | high | competition manager | fixtures | OFF5a the remaining games become byes; the played ones stand | 5 byes, 8 played | 6 byes, 8 played |  |
+| 40 | high | parent | competition_ladder (ladder_enabled) | R5 a U9 family sees no ladder (ladder_enabled off) | empty | 8 rows |  |
