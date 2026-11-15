@@ -12,3 +12,6 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 6 | high | referee | call_off_fixtures / notify_event_change | FV9 Friday night: the 14 referees appointed to those games are told their game is off | 14 | 8 |  |
 | 7 | high | referee | call_off_fixtures / notify_event_change | WS1 Washout: the 124 referees appointed to those games are told their game is off | 124 | 75 |  |
 | 8 | high | competition manager | draw_quality | WS4 the double-header shows in the draw's sanity check | a double header on 2027-03-06 | [] |  |
+| 9 | high | referee | record_match_event | OF1 the first yellow of three is recorded | allowed | 22023: this game has ended; ask the league for a correction |  |
+| 10 | high | referee | record_match_event (blue) | OF1 a blue card is recorded with its minute | allowed | 22023: this game has ended; ask the league for a correction |  |
+| 11 | high | referee | record_match_event (blue_minutes) | OF1 the sin bin runs from the minute shown: back at 50 | 50 |  |  |
