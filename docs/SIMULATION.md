@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:24 UTC · 2 rounds played · 15 PASS · 4 FIXED · 2 FAIL · 0 not run · 20 bugs logged (13 fixed) · 6 min so far
+Last run: 2026-11-15 10:25 UTC · 3 rounds played · 16 PASS · 7 FIXED · 2 FAIL · 3 not run · 20 bugs logged (13 fixed) · 6 min so far
 
 ## What this is
 
@@ -28,6 +28,18 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
 | FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
 | FV11 | Field map, directions and "Field 3" shown correctly to every family affected | **FIXED** | 22/22 | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
+| FV9 | Ground closures announced Friday night and Saturday 7 am; a whole venue closed | **FIXED** | 11/11 | — | 0276: notify_referees_of_change |
+| FV6 | A whole venue closed | **FIXED** | 1/1 | — | 0276: notify_referees_of_change |
+| FV10 | Partial closure: one pitch only | **FIXED** | 2/2 | — | 0276: notify_referees_of_change |
+| FV5 | A pitch changed on the morning | **NOT RUN** | — | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
+| FV7 | A game moved to another venue | **NOT RUN** | — | — | 0276: apply_reschedule resolves the ground and field to the pitch |
+| FV8 | A late kick-off pushing later games | **NOT RUN** | — | — | — |
+
+### Weather & safety on the day
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
 
 ### Results
 
@@ -63,12 +75,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 4 league notices, 24 club messages, 480 chat lines, 240 reactions, 20 polls, 80 scheduled messages, 6209 RSVPs, 303 referee appointments, 547 team sheets, 244 results agreed on the sheets, 26 disputes (27 ruled on), 10 late results, 40 cards.
+Over the run: 6 league notices, 36 club messages, 720 chat lines, 360 reactions, 30 polls, 120 scheduled messages, 9306 RSVPs, 455 referee appointments, 822 team sheets, 329 results agreed on the sheets, 39 disputes (40 ruled on), 17 late results, 66 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
 | 1 | 2027-02-06 | 145 | 48405 | 47354 | 0 | event_reminder 46510, message 1017, match_day 289, team_sheet_due 289, helper_reminder 146, announcement 131 |
 | 2 | 2027-02-13 | 145 | 49458 | 49458 | 0 | event_reminder 38666, message 7354, announcement 2615, team_sheet_due 289, match_day 289, helper_reminder 152 |
+| 3 | 2027-02-20 | 145 | 74318 | 74318 | 2079 | event_reminder 45100, announcement 18581, message 7362, event_cancelled 2040, team_sheet_due 289, match_day 231 |
 
 ## Bugs
 
