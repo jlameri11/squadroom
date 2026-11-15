@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:55 UTC · 4 rounds played · 17 PASS · 12 FIXED · 2 FAIL · 0 not run · 18 bugs logged (17 fixed) · 9 min so far
+Last run: 2026-11-15 10:55 UTC · 5 rounds played · 18 PASS · 13 FIXED · 2 FAIL · 0 not run · 18 bugs logged (17 fixed) · 9 min so far
 
 ## What this is
 
@@ -42,6 +42,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
 | WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
 | WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header — _the other 140 games go to the catch-up round on 22 May: expected 140, got 101_ | **FAIL** | 3/4 | #18 | — |
+| WS2 | Lightning suspension mid-game → resumed later the same day, and one abandoned | **PASS** | 7/7 | — | — |
 
 ### Results
 
@@ -50,6 +51,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R1 | Win, draw, loss; high scores; 0–0 | **PASS** | 7/7 | — | — |
 | R2 | Matching scores → final; mismatched → dispute → the league rules → the ladder moves only then | **PASS** | 7/7 | — | — |
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
+| R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded | **FIXED** | 11/11 | — | 0278: a forfeit is mirrored as a called-off game with its reason |
 
 ### On-field issues
 
@@ -77,7 +79,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 12380 RSVPs, 615 referee appointments, 1118 team sheets, 347 results agreed on the sheets, 34 disputes (35 ruled on), 4 late results, 88 cards.
+Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reactions, 50 polls, 200 scheduled messages, 15533 RSVPs, 766 referee appointments, 1406 team sheets, 479 results agreed on the sheets, 45 disputes (46 ruled on), 5 late results, 122 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -85,6 +87,7 @@ Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions,
 | 2 | 2027-02-13 | 145 | 49489 | 49489 | 0 | event_reminder 38666, message 7353, announcement 2615, team_sheet_due 289, match_day 289, helper_reminder 152 |
 | 3 | 2027-02-20 | 145 | 77394 | 75316 | 2185 | event_reminder 45100, announcement 19481, message 7362, event_back_on 2040, event_cancelled 2040, team_sheet_due 289 |
 | 4 | 2027-02-27 | 145 | 76108 | 74562 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7356, fee_overdue 402 |
+| 5 | 2027-03-06 | 150 | 68601 | 68548 | 159 | event_reminder 46722, announcement 11267, message 7333, event_back_on 1569, fee_overdue 402, match_day 298 |
 
 ## Bugs
 
