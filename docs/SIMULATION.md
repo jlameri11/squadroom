@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 11:51 UTC · 17 rounds played · 30 PASS · 19 FIXED · 2 FAIL · 0 not run · 20 bugs logged (17 fixed) · 20 min so far
+Last run: 2026-11-15 11:54 UTC · 18 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 42 bugs logged (17 fixed) · 23 min so far
 
 ## What this is
 
@@ -96,7 +96,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
-| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 9/9 | — | — |
+| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 22/22 | — | — |
+| HH1 | Head to head on every match: only the two teams' meetings in the season the game belongs to, a summary and the list; past seasons stay behind the switcher — _a played Season 5 game: expected one, got none_ | **FAIL** | 0/1 | — | — |
 
 ### Screens
 
@@ -107,10 +108,32 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 129/129 | — | — |
 | SC4 | Screens after a suspension: the coach and the club see it, the league's discipline page lists it | **PASS** | 130/130 | — | — |
 | SC5 | Screens at the finals: the grand finals, the finished ladders, the champions | **PASS** | 109/109 | — | — |
+| SC6 | Screens in Season 5: the season switcher, last season's page and ladders in full, head to head for this season — _parent (children at two clubs): Home shows "Answer" (SPL Season 5 — vs Kingsford Park FC U12 Red): expected SPL Season 5 — vs Kingsford Park FC U12 Red, got HA ▾ Harbourside FC Parent · Sunday 6 February ✎ Edit Parent here Bayview FC · Parent Rive; parent: Home shows "Answer" (SPL Season 5 — vs Ashcombe United U12 Red): expected SPL Season 5 — vs Ashcombe United U12 Red, got UN Underwood United Parent · Sunday 6 February ✎ Edit NEEDS YOU Something to sign up to Ca; parent: Fixtures lists the next game (v Ashcombe United U12 Red): expected Ashcombe United U12 Red, got Fixtures Underwood United · next 60 days Upcoming Matchdays This season 2027 DAY All days ; parent: Season 4's page still reads in full and says it is finished: expected finals listed, "finished", got RUN BY HARBOUR FOOTBALL GROUP SPL Season 4 Season SPL Season 5 2028 SPL Season 4 2027 · fi; parent (U9): Home shows "Answer" (SPL Season 5 — vs Gumtree United U10 Red): expected SPL Season 5 — vs Gumtree United U10 Red, got VA Valley Heights FC Parent · Sunday 6 February ✎ Edit NEEDS YOU 3 things to sign up to Ca; parent (U9): Fixtures lists the next game (v Gumtree United U10 Red): expected Gumtree United U10 Red, got Fixtures Valley Heights FC · next 60 days Upcoming Matchdays This season 2027 DAY All days; coach: home opens: expected a screen, got Sign in
+Email *
+Password *
+Sign in
+Email me a code instead
+Forgot password
+
+New here? Crea; coach: Home shows "My teams" (No squads in your groups yet): expected No squads in your groups yet, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; coach: Home shows "This weekend" (No games): expected No games, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; coach: Home shows "Coaches" (Coaches): expected Coaches, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; coach: Fixtures lists the next game (v Ashcombe United U12 Red): expected Ashcombe United U12 Red, got Fixtures Underwood United · next 60 days ＋ Upcoming Matchdays Add, share or call off This ; coach: home opens: expected a screen, got Sign in
+Email *
+Password *
+Sign in
+Email me a code instead
+Forgot password
+
+New here? Crea; coach: Home shows "My teams" (No squads in your groups yet): expected No squads in your groups yet, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; coach: Home shows "This weekend" (No games): expected No games, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; coach: Home shows "Coaches" (Coaches): expected Coaches, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; coach: Fixtures lists the next game (v Underwood United U12 Red): expected Underwood United U12 Red, got Fixtures Ashcombe United · next 60 days ＋ Upcoming Matchdays Add, share or call off This s; club president: home opens: expected a screen, got Sign in
+Email *
+Password *
+Sign in
+Email me a code instead
+Forgot password
+
+New here? Crea; club president: Home shows "Registrations" (None waiting): expected None waiting, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; club president: Home shows "Who owes" (Nobody owes): expected Nobody owes, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; club president: Home shows "Message everyone" (Club Notices): expected Club Notices, got Sign in Email * Password * Sign in Email me a code instead Forgot password New here? Creat; club president: Fixtures lists the next game (v Ashcombe United U12 Red): expected Ashcombe United U12 Red, got Fixtures Underwood United · next 60 days ＋ Upcoming Matchdays Add, share or call off This ; league organiser: Season 4's page still reads in full and says it is finished: expected finals listed, "finished", got RUN BY HARBOUR FOOTBALL GROUP SPL Season 4 Season SPL Season 5 2028 SPL Season 4 2027 · fi_ | **FAIL** | 79/101 | #21, #22, #23, #24, #25, #26, #27, #28, #29, #30, #31, #32, #33, #34, #35, #36, #37, #38, #39, #40, #41, #42 | — |
 
 ## The load
 
-Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 46752 RSVPs, 2131 referee appointments, 4147 team sheets, 1747 results agreed on the sheets, 138 disputes (139 ruled on), 82 late results, 356 cards.
+Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 49841 RSVPs, 2285 referee appointments, 4410 team sheets, 1862 results agreed on the sheets, 149 disputes (150 ruled on), 88 late results, 381 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -131,6 +154,7 @@ Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reacti
 | 15 | 2027-05-22 | 170 | 58547 | 58540 | 0 | event_reminder 39535, announcement 11030, message 7358, match_day 315, entry_fee_owed 255, referee_response 25 |
 | 16 | 2027-05-29 | 8 | 50669 | 50664 | 0 | event_reminder 31396, announcement 11270, message 7364, fee_overdue 603, wwcc_expiring 12, referee_appointment 11 |
 | 17 | 2027-06-05 | 4 | 51012 | 51006 | 0 | event_reminder 31396, announcement 11985, message 7361, entry_fee_owed 255, match_correction_requested 6, referee_appointment 5 |
+| 18 | 2028-02-05 | 144 | 0 | 0 | 0 |  |
 
 ## The peak
 
@@ -167,7 +191,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-20 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+42 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
