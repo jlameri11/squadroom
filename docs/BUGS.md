@@ -26,3 +26,4 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 20 | high | league | suspend_on_card | OF1 a two-game suspension is raised at once | 2 games, active | [] |  |
 | 21 | high | coach | suspend_on_card | OF1 the club is told the player is suspended | >0 | 0 |  |
 | 22 | high | discipline officer | discipline_report | OF1 the discipline officer's report lists the sending-off | the player in the report | listed |  |
+| 23 | high | coach | ineligibility (borrow_cap) | OF2 a third game played up is over the division's cap of two — refused (1 on record before this sheet) | refused | allowed: "6b9259dc-b108-40c7-b40b-2f0b41d837ea" |  |
