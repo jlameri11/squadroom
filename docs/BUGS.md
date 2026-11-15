@@ -22,3 +22,7 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 16 | medium | parent | mirror_fixture (forfeit) | A forfeit is approved on Thursday for Saturday's game | The families of both squads see the game is off (forfeit) and are told | The game stayed on their calendar as if it would be played; nobody was told | 0278: a forfeit is mirrored as a called-off game with its reason |
 | 17 | medium | parent | competition_ladder (ladder_enabled) | Ask for a U9 division's ladder as a family (ladder off in the division rules) | Nothing — the division has no ladder | Eight rows: the screens hid the tab, the function did not | 0278: competition_ladder returns nothing for a division whose ladder is off, except to the league |
 | 18 | high | ground manager | reschedule_fixture | WS4 the other 140 games go to the catch-up round on 22 May | 140 | 101 |  |
+| 19 | high | referee | record_match_event | OF1 the referee records a red card (R2) | allowed | 22023: that player is not on this team's sheet for this game |  |
+| 20 | high | league | suspend_on_card | OF1 a two-game suspension is raised at once | 2 games, active | [] |  |
+| 21 | high | coach | suspend_on_card | OF1 the club is told the player is suspended | >0 | 0 |  |
+| 22 | high | discipline officer | discipline_report | OF1 the discipline officer's report lists the sending-off | the player in the report | listed |  |

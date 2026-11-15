@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:55 UTC · 5 rounds played · 18 PASS · 13 FIXED · 2 FAIL · 0 not run · 18 bugs logged (17 fixed) · 9 min so far
+Last run: 2026-11-15 10:58 UTC · 6 rounds played · 20 PASS · 14 FIXED · 3 FAIL · 0 not run · 22 bugs logged (17 fixed) · 12 min so far
 
 ## What this is
 
@@ -59,6 +59,9 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected the player in the report, got listed_ | **FAIL** | 4/8 | #19, #20, #21, #22 | — |
+| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 6/6 | — | — |
+| OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
 
 ### Off-field issues
 
@@ -79,7 +82,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reactions, 50 polls, 200 scheduled messages, 15533 RSVPs, 766 referee appointments, 1406 team sheets, 479 results agreed on the sheets, 45 disputes (46 ruled on), 5 late results, 122 cards.
+Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reactions, 60 polls, 240 scheduled messages, 18678 RSVPs, 917 referee appointments, 1684 team sheets, 607 results agreed on the sheets, 52 disputes (53 ruled on), 12 late results, 148 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -88,10 +91,11 @@ Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reaction
 | 3 | 2027-02-20 | 145 | 77394 | 75316 | 2185 | event_reminder 45100, announcement 19481, message 7362, event_back_on 2040, event_cancelled 2040, team_sheet_due 289 |
 | 4 | 2027-02-27 | 145 | 76108 | 74562 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7356, fee_overdue 402 |
 | 5 | 2027-03-06 | 150 | 68601 | 68548 | 159 | event_reminder 46722, announcement 11267, message 7333, event_back_on 1569, fee_overdue 402, match_day 298 |
+| 6 | 2027-03-13 | 145 | 105990 | 105990 | 0 | event_reminder 85411, announcement 11131, message 7299, fee_overdue 603, team_sheet_due 289, match_day 289 |
 
 ## Bugs
 
-18 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+22 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
