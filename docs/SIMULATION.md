@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 23:57 UTC · 1 rounds played · 15 PASS · 4 FIXED · 0 FAIL · 0 not run · 42 bugs logged (17 fixed) · 6 min so far
+Last run: 2026-11-15 23:57 UTC · 2 rounds played · 15 PASS · 6 FIXED · 0 FAIL · 0 not run · 42 bugs logged (17 fixed) · 6 min so far
 
 ## What this is
 
@@ -27,6 +27,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | FV3 | Hours limits: nothing drawn outside a pitch's hours, and a move outside them is refused | **PASS** | 2/2 | — | — |
 | FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
 | FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
+| FV11 | Field map, directions and "Field 3" shown correctly to every family affected | **FIXED** | 7/7 | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
 
 ### Results
 
@@ -41,6 +42,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
+| OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 
 ### Off-field issues
 
@@ -68,11 +70,12 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 2 league notices, 12 club messages, 240 chat lines, 120 reactions, 10 polls, 40 scheduled messages, 3446 RSVPs, 155 referee appointments, 279 team sheets, 128 results agreed on the sheets, 5 disputes (6 ruled on), 3 late results, 24 cards.
+Over the run: 4 league notices, 24 club messages, 480 chat lines, 240 reactions, 20 polls, 80 scheduled messages, 6892 RSVPs, 308 referee appointments, 551 team sheets, 256 results agreed on the sheets, 17 disputes (18 ruled on), 7 late results, 53 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
 | 1 | 2027-02-06 | 145 | 75554 | 74503 | 0 | event_reminder 54358, announcement 12083, message 7530, entry_fee_owed 510, team_sheet_due 289, match_day 289 |
+| 2 | 2027-02-13 | 145 | 58825 | 58825 | 0 | event_reminder 38666, announcement 11675, message 7354, match_day 289, team_sheet_due 289, referee_appointment 153 |
 
 ## Bugs
 
