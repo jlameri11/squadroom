@@ -940,10 +940,11 @@ one and is meant to reach hundreds of academies.
   W-D-L, goals, points, how the finals went); a family's Fixtures offers
   `my_seasons` / `season_fixtures`. Head to head (`head_to_head`,
   `public_head_to_head`, `public_fixture`, the public game page
-  `/c/{slug}/game/{fixtureId}`) finds every meeting of the two teams across
-  the organiser's competitions — the same team by lineage, or the same club
-  in the same age group — with a summary and the last five; a division that
-  hides scores shows "played", and no player's name is in it.
+  `/c/{slug}/game/{fixtureId}`) is **this season's only** (Joey, 15 Nov,
+  0281): the two teams' meetings in the season the game belongs to, a
+  summary (played, each side's wins, draws, goals) and the list, each a tap
+  away; past seasons are never mixed in. A division that hides scores shows
+  "played", and no player's name is in it.
 - **RLS costs are per row SCANNED, not per row returned.** Measured on
   60,000 messages: filtered by channel it is an index scan at ~1ms; an
   unfiltered `select from messages` is a seq scan at ~836ms, because the

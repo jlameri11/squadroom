@@ -29,3 +29,6 @@ next-env.d.ts
 
 # A throwaway local Postgres for applying migrations (scripts/local-db)
 .local-db/
+
+# The simulation's build of the app, served on :3300 (scripts/simulation/stack.mjs)
+.next-sim/

@@ -122,26 +122,40 @@ export async function season5Plan(ctx, add) {
     check(!strangerTh.ok || strangerTh.data == null, { what: 'another club\'s parent gets nothing of it', expected: 'null', actual: strangerTh.ok ? (strangerTh.data == null ? 'null' : 'data') : 'refused', role: 'parent (another club)', where: 'team_history' })
   })
 
-  add('2028-02-06 18:30', 'HH1 head to head across the seasons', async () => {
-    scenario('HH1', 'Past seasons', 'Head to head on every match: this season\'s meetings, then every previous season\'s, hidden scores kept hidden')
+  add('2028-02-06 18:30', 'HH1 head to head is this season\'s only', async () => {
+    scenario('HH1', 'Past seasons', 'Head to head on every match: only the two teams\' meetings in the season the game belongs to, a summary and the list; past seasons stay behind the switcher')
     if (!ctx.comp5) return
-    const g = (await gamesOn(pool, '2028-02-05', { division: 'U12 Division 1' })).find((x) => x.status === 'final') ?? (await gamesOn(pool, '2028-02-05')).find((x) => x.status === 'final' && x.home_team && x.away_team)
+    // A Season 5 round-one game: the same two teams met twice in Season 4 — none of that is in it.
+    const g = (await gamesOn(pool, '2028-02-05')).find((x) => x.status === 'final' && x.home_team && x.away_team && x.division === 'U12 Division 1') ?? (await gamesOn(pool, '2028-02-05')).find((x) => x.status === 'final' && x.home_team && x.away_team)
     if (!g) { check(false, { what: 'a played Season 5 game', expected: 'one', actual: 'none', role: '—', where: 'fixtures', quiet: true }); return }
     const parent = await guardianOf(pool, (await squad(pool, g.home_team)).players[0])
     const h = await rpc(pool, parent, 'head_to_head', { p_fixture: g.id })
-    const prev = h.data?.previous ?? []
-    check(h.ok && prev.length >= 1 && prev.every((m) => m.season === '2027'), { what: 'a Season 5 game\'s head to head lists the Season 4 meetings of the same two teams (by lineage)', expected: '≥1 meeting from 2027 (two legs when both played)', actual: h.ok ? `${prev.length} previous (${prev.map((m) => `${m.season} ${m.round} ${m.home_score}–${m.away_score}`).join('; ')})` : h.error, role: 'parent', where: 'head_to_head' })
-    check(h.ok && h.data.summary.played === prev.length + (h.data.this_season ?? []).filter((m) => m.status === 'final').length, { what: 'the summary counts every played meeting', expected: 'played = meetings', actual: JSON.stringify(h.data?.summary), role: 'parent', where: 'head_to_head' })
+    const met4 = await val(pool, `select count(*)::int from public.fixtures f4 where f4.competition_id = $1 and f4.status in ('final', 'forfeit')
+      and ((f4.home_entry_id = (select e.id from public.competition_entries e join public.teams t on t.id = e.team_id where t.id = (select rolled_from from public.teams where id = $2) and e.competition_id = $1 limit 1)
+            and f4.away_entry_id = (select e.id from public.competition_entries e join public.teams t on t.id = e.team_id where t.id = (select rolled_from from public.teams where id = $3) and e.competition_id = $1 limit 1))
+        or (f4.away_entry_id = (select e.id from public.competition_entries e join public.teams t on t.id = e.team_id where t.id = (select rolled_from from public.teams where id = $2) and e.competition_id = $1 limit 1)
+            and f4.home_entry_id = (select e.id from public.competition_entries e join public.teams t on t.id = e.team_id where t.id = (select rolled_from from public.teams where id = $3) and e.competition_id = $1 limit 1)))`, [comp4, g.home_team, g.away_team])
+    const meetings = h.data?.meetings ?? []
+    check(h.ok && meetings.every((m) => m.competition_id === ctx.comp5 && m.season === '2028'), { what: `a Season 5 game's head to head holds only Season 5 meetings (these two met ${met4} times in Season 4 — not shown)`, expected: 'only 2028', actual: h.ok ? `${meetings.length} meetings: ${meetings.map((m) => m.season).join(',') || 'none'}; previous key ${'previous' in (h.data ?? {}) ? 'present' : 'absent'}` : h.error, role: 'parent', where: 'head_to_head' })
+    check(h.ok && !('previous' in (h.data ?? {})) && h.data?.season === '2028', { what: 'the card says which season it is and carries no past-season list', expected: 'season 2028, no previous', actual: JSON.stringify({ season: h.data?.season, keys: Object.keys(h.data ?? {}) }), role: 'parent', where: 'head_to_head' })
+    check(h.ok && h.data.summary.played === meetings.filter((m) => m.status === 'final' || m.status === 'forfeit').length, { what: 'the summary counts the played meetings of this season', expected: 'played = played meetings', actual: JSON.stringify(h.data?.summary), role: 'parent', where: 'head_to_head' })
+    // A Season 4 game in round 9 shows its round-2 meeting, scores and all.
+    const g4 = (await sql(pool, `select f.id from public.fixtures f where f.competition_id = $1 and f.division = 'U11 Division 1' and f.round = 'Round 9' and f.status = 'final' limit 1`, [comp4]))[0]
+    if (g4) {
+      const h4 = await rpc(pool, parent, 'head_to_head', { p_fixture: g4.id })
+      const m4 = h4.data?.meetings ?? []
+      check(h4.ok && m4.length >= 1 && m4.every((m) => m.season === '2027') && m4.some((m) => m.round === 'Round 2' && m.home_score != null), { what: 'a Season 4 game (round 9) shows the round-2 meeting of the same two, with its score, and nothing from another season', expected: 'Round 2, 2027, scored', actual: h4.ok ? m4.map((m) => `${m.season} ${m.round} ${m.home_score}–${m.away_score}`).join('; ') : h4.error, role: 'parent', where: 'head_to_head' })
+    }
     const pub = await asAnon(pool, async (c) => (await c.query(`select public.public_head_to_head('spl-season-5', $1) j`, [g.id])).rows[0].j)
-    check(pub.ok && pub.data && (pub.data.previous ?? []).length === prev.length, { what: 'the public match centre shows the same head to head', expected: `${prev.length} previous`, actual: pub.ok ? `${(pub.data?.previous ?? []).length}` : pub.error, role: 'stranger', where: 'public_head_to_head' })
+    check(pub.ok && pub.data && (pub.data.meetings ?? []).length === meetings.length, { what: 'the public match centre shows the same head to head', expected: `${meetings.length} meetings`, actual: pub.ok ? `${(pub.data?.meetings ?? []).length}` : pub.error, role: 'stranger', where: 'public_head_to_head' })
     const names = JSON.stringify(pub.data ?? {})
     const anyPlayer = await val(pool, `select count(*)::int from public.players pl where pl.academy_id in ($1, $2) and position(pl.full_name in $3) > 0`, [g.home_club, g.away_club, names])
     check(anyPlayer === 0, { what: 'no player\'s name is in it', expected: 0, actual: anyPlayer, role: 'stranger', where: 'public_head_to_head' })
-    // MiniRoos: played, no score.
-    const u9 = (await gamesOn(pool, '2028-02-05')).find((x) => x.division.startsWith('U10') && x.status === 'final' && x.home_team)
+    // MiniRoos: played, no score — a Season 4 U9 game late in the season has an earlier meeting.
+    const u9 = (await sql(pool, `select f.id, h.team_id as home_team from public.fixtures f join public.competition_entries h on h.id = f.home_entry_id where f.competition_id = $1 and f.division = 'U9 Division 1' and f.round = 'Round 9' and f.status = 'final' and h.team_id is not null limit 1`, [comp4]))[0]
     if (u9) {
       const h9 = await rpc(pool, await guardianOf(pool, (await squad(pool, u9.home_team)).players[0]), 'head_to_head', { p_fixture: u9.id })
-      const all9 = [...(h9.data?.previous ?? []), ...(h9.data?.this_season ?? [])]
+      const all9 = h9.data?.meetings ?? []
       check(h9.ok && all9.length >= 1 && all9.every((m) => m.scores_hidden && m.home_score == null), { what: 'a MiniRoos head to head shows the meetings without scores', expected: 'played, no scores', actual: h9.ok ? `${all9.length} meetings, scores ${all9.some((m) => m.home_score != null) ? 'shown' : 'hidden'}` : h9.error, role: 'parent', where: 'head_to_head (scores_public)' })
     }
     ctx.h2hGame = g

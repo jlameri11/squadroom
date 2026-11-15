@@ -70,6 +70,7 @@ expect. Same statuses as above.
 | S19 | Shop at checkout and standalone, inventory, variants, shipping, partial refunds | Kit add-ons at checkout (catalogue) | PARTIAL | B-14 |
 | S20 | Mandatory 2FA for admins | Magic link / password | MISSING | S-07 |
 | S21 | Registration dashboard: new vs returning, age, gender, targets | Admin → Programs dashboard (4 Nov; places against capacity, the only target a club writes down) | DONE | R-21 (was a second R-20 until 4 Nov) |
+| S22 | Past seasons always visitable; head to head on every match (Joey, 15 Nov) | A finished season is read-only and never deleted (`end_season`); season switchers on the match centre, the competition page and Fixtures; a team's history by rollover lineage; head to head for the season the game is in (0281), hidden scores kept hidden, no player's name | **DONE** (0279, 15 Nov) | — |
 
 ## Beyond both (added 30 Oct 2026 from `SQUADI_INTEL.md` §6C–D)
 

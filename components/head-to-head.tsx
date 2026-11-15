@@ -5,12 +5,13 @@ import { createClient } from '@/lib/supabase/client'
 import { gameDayShort, kickOff } from '@/lib/time'
 
 /**
- * Head to head (Joey, 15 Nov 2026): the two teams' meetings this season,
- * then every previous season's — the same team by its rollover lineage, or
- * the same club in the same age group — with a summary and the last five.
- * A MiniRoos game shows "played", not a score; no player's name is here.
- * The same card serves the app's game page, the competition's match page
- * and the public match centre (which loads the data on the server).
+ * Head to head (Joey, 15 Nov 2026): the two teams' meetings in THIS season
+ * — the season the game belongs to — with a summary (played, each side's
+ * wins, draws, goals) and the list, each a tap away. Past seasons stay
+ * reachable through the season switcher and are never mixed in. A MiniRoos
+ * game shows "played", not a score; no player's name is here. The same card
+ * serves the app's game page, the competition's match page and the public
+ * match centre (which loads the data on the server).
  */
 export type Meeting = {
   fixture_id: string
@@ -36,9 +37,10 @@ export type Meeting = {
 export type HeadToHeadData = {
   first: string | null
   second: string | null
+  season: string | null
+  competition: string | null
   summary: { played: number; first_wins: number; second_wins: number; draws: number; first_goals: number; second_goals: number; hidden: number }
-  this_season: Meeting[]
-  previous: Meeting[]
+  meetings: Meeting[]
   last5: Meeting[]
 }
 
@@ -46,17 +48,19 @@ const short = (name: string | null) => (name ?? '?').replace(/\s+(U\d+|Open|Over
 
 export function HeadToHeadCard({ data, href }: { data: HeadToHeadData; href?: (m: Meeting) => string | null }) {
   const s = data.summary
-  if (!s || (s.played === 0 && data.this_season.length === 0 && data.previous.length === 0)) {
+  const meetings = data.meetings ?? []
+  const label = `Head to head${data.season ? ` · ${data.season}` : ' · this season'}`
+  if (!s || (s.played === 0 && meetings.length === 0)) {
     return (
       <section className="mt-4" data-head-to-head="empty">
-        <h3 className="eyebrow px-1 pb-1.5">Head to head</h3>
-        <div className="card px-3.5 py-3 text-sm text-ink-3">These two have not met before.</div>
+        <h3 className="eyebrow px-1 pb-1.5">{label}</h3>
+        <div className="card px-3.5 py-3 text-sm text-ink-3">These two have not met yet this season.</div>
       </section>
     )
   }
   return (
     <section className="mt-4" data-head-to-head={s.played}>
-      <h3 className="eyebrow px-1 pb-1.5">Head to head</h3>
+      <h3 className="eyebrow px-1 pb-1.5">{label}</h3>
       <div className="card overflow-hidden">
         <div className="grid grid-cols-3 items-center gap-2 px-3.5 py-3 text-center">
           <div>
@@ -73,12 +77,12 @@ export function HeadToHeadCard({ data, href }: { data: HeadToHeadData; href?: (m
           </div>
         </div>
         <p className="border-t px-3.5 py-2 text-center text-xs text-ink-3" style={{ borderColor: 'var(--line-2)' }}>
-          {s.played} {s.played === 1 ? 'meeting' : 'meetings'}
+          {s.played} {s.played === 1 ? 'meeting' : 'meetings'} this season
           {s.played - s.hidden > 0 ? ` · goals ${s.first_goals}–${s.second_goals}` : ''}
           {s.hidden > 0 ? ` · ${s.hidden} without a score kept` : ''}
-          {data.this_season.length ? ` · ${data.this_season.length} this season` : ''}
+          {meetings.length > s.played ? ` · ${meetings.length - s.played} still to play` : ''}
         </p>
-        {[...data.this_season, ...data.previous].slice(0, 5).map((m) => {
+        {meetings.map((m) => {
           const link = href?.(m) ?? null
           const row = (
             <div className="flex items-center gap-2.5 border-t px-3.5 py-2.5 text-sm" style={{ borderColor: 'var(--line-2)' }} data-meeting={m.fixture_id}>

@@ -259,6 +259,7 @@ still registers the *player*. R-14 tracks that status and no more.
 | L-26 | Match-day ops dashboard (§6A.10) | Live: missing sheets, unverified results, pending reports, suspensions, unfilled referees |
 | L-27 | Nominations (§6A.11) | Clubs drag players into teams and propose a division with a comment; the league sets the final division; lock on submit; date-of-birth override by admins |
 | L-28 | Bulk tools (§6A.12) | Bulk score upload, bulk reschedule (push a round back, double headers, abandon), move a competition in bulk |
+| L-29 | Past seasons + head to head (Joey, 15 Nov 2026) | Nothing from a finished season deleted or hidden; `end_season`/`reopen_season`; `competition_seasons` and `public_competition_seasons` switchers; `new_season_from`; `team_history` through `teams.rolled_from`; `my_seasons`/`season_fixtures` on Fixtures; `head_to_head` (this season's meetings only, 0281), `public_head_to_head`, `public_fixture` and `/c/{slug}/game/{id}`. Proven by the simulation's second season (PS1, HH1). | **DONE** 0279–0281 (15 Nov) |
 
 **Acceptance — `scripts/test-league-season.mjs`: PASSES (1 Nov 2026, 44
 assertions as five people; the Stripe halves of L-02, L-07 and L-16 wait on

@@ -22,7 +22,7 @@ const TITLES = {
   dispute: 'Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits',
   suspension: 'Screens after a suspension: the coach and the club see it, the league\'s discipline page lists it',
   finals: 'Screens at the finals: the grand finals, the finished ladders, the champions',
-  season5: 'Screens in Season 5: the season switcher, last season\'s page and ladders in full, head to head across the seasons',
+  season5: 'Screens in Season 5: the season switcher, last season\'s page and ladders in full, head to head for this season',
 }
 
 const txt = (s) => String(s ?? '').replace(/\s+/g, ' ').trim()
@@ -184,7 +184,7 @@ export async function runScreens(ctx, moment, { extraPages = null } = {}) {
       if (moment === 'season5' && seen.centre5) {
         check(/Season 4/.test(seen.centre5) && /Season 5/.test(seen.centre5), { what: `${p.role}: the public match centre's season switcher names Season 4 and Season 5`, expected: 'both seasons', actual: txt(seen.centre5).slice(0, 200), role: p.role, where: `${where} /c/spl-season-5` })
         check(/Final/.test(seen.centre4) && /finished/i.test(seen.centre4), { what: `${p.role}: Season 4's page still reads in full and says it is finished`, expected: 'finals listed, "finished"', actual: txt(seen.centre4).slice(0, 200), role: p.role, where: `${where} /c/spl-season-4`, severity: 'medium' })
-        if (seen.publicGame) check(/Head to head/.test(seen.publicGame) && /2027/.test(seen.publicGame), { what: `${p.role}: a public game page shows head to head with a 2027 meeting`, expected: 'Head to head · 2027', actual: txt(seen.publicGame).slice(0, 240), role: p.role, where: `${where} public game` })
+        if (seen.publicGame) check(/Head to head/.test(seen.publicGame) && !/2027/.test(seen.publicGame.split('Head to head')[1] ?? ''), { what: `${p.role}: a public game page shows this season's head to head and nothing from 2027`, expected: 'Head to head · 2028', actual: txt(seen.publicGame).slice(0, 240), role: p.role, where: `${where} public game` })
         if (seen.competition4) check(/Season over|read-only/i.test(seen.competition4) || /Ladder/.test(seen.competition4), { what: `${p.role}: last season's competition page opens read-only with its ladder`, expected: 'Season over · read-only', actual: txt(seen.competition4).slice(0, 200), role: p.role, where: `${where} /competitions/<season 4>`, severity: 'medium' })
       }
       if (moment === 'season5' && p.team && seen.fixtures) {
