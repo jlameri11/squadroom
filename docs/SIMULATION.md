@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:30 UTC · 6 rounds played · 17 PASS · 8 FIXED · 8 FAIL · 4 not run · 31 bugs logged (13 fixed) · 12 min so far
+Last run: 2026-11-15 10:32 UTC · 7 rounds played · 18 PASS · 9 FIXED · 9 FAIL · 4 not run · 32 bugs logged (13 fixed) · 13 min so far
 
 ## What this is
 
@@ -62,6 +62,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 8/8 | — | — |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **NOT RUN** | — | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up — _borrowing a player from a lower squad worked (see OF2): expected a borrowed player on a sheet, got no_ | **FAIL** | 2/3 | #31 | 0276: competition_divisions.squad_size_min |
+| OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
 
@@ -69,6 +70,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet — _after this round's game without them, one of two games is served: expected served 1, active, got {"games":2,"served":0,"status":"active"}_ | **FAIL** | 11/12 | #32 | — |
+| OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 
 ### People & messaging
 
@@ -82,7 +85,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reactions, 60 polls, 240 scheduled messages, 18595 RSVPs, 916 referee appointments, 1633 team sheets, 584 results agreed on the sheets, 60 disputes (61 ruled on), 26 late results, 115 cards.
+Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 21700 RSVPs, 1068 referee appointments, 1906 team sheets, 711 results agreed on the sheets, 71 disputes (72 ruled on), 31 late results, 134 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -92,10 +95,44 @@ Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reaction
 | 4 | 2027-02-27 | 145 | 73704 | 65999 | 7705 | event_reminder 38952, announcement 10667, event_back_on 7560, event_cancelled 7560, message 7356, fee_overdue 402 |
 | 5 | 2027-03-06 | 149 | 74002 | 74002 | 53 | event_reminder 46774, announcement 10667, event_back_on 7560, message 7334, fee_overdue 402, match_day 298 |
 | 6 | 2027-03-13 | 145 | 105107 | 105107 | 0 | event_reminder 85411, announcement 10531, message 7300, fee_overdue 603, team_sheet_due 289, match_day 289 |
+| 7 | 2027-03-20 | 145 | 50287 | 50287 | 0 | event_reminder 46145, message 2856, fee_overdue 402, team_sheet_due 289, match_day 289, helper_reminder 137 |
+
+## The peak
+
+Round 7, Saturday 10 am (2027-03-20 10:00 Sat): 2000 parents open the app (Home's six calls; four in ten open their chat; one in ten Fixtures) while 74 games take kick-offs, goals and chat lines, through a pool of 15 — 14466 calls in 41.9 s, 345 calls a second. An open of Home costs 283.4 ms of database time under this load.
+
+| call | n | p50 ms | p95 ms | p99 ms |
+|---|---|---|---|---|
+| channel_screen | 800 | 5.6 | 11.7 | 15.3 |
+| chat: line | 370 | 6.0 | 8.0 | 11.6 |
+| fixtures_screen | 200 | 7.8 | 14.7 | 17.8 |
+| home_competitions | 2000 | 245.7 | 280.1 | 330.7 |
+| home_jobs | 2000 | 13.2 | 21.9 | 27.3 |
+| home_layout | 2000 | 0.3 | 8.1 | 11.8 |
+| home_screen | 2000 | 11.1 | 21.7 | 26.6 |
+| live: goal | 296 | 5.8 | 7.3 | 9.0 |
+| mark_channel_read | 800 | 0.4 | 5.2 | 7.2 |
+| nav_badges | 2000 | 4.4 | 11.7 | 16.0 |
+| needs_you | 2000 | 0.8 | 6.1 | 10.3 |
+
+The league's and the clubs' screens at that moment (Postgres execution time, median of 3):
+
+| as | screen | median ms |
+|---|---|---|
+| league | home_jobs | 2.6 |
+| league | competition_run_sheet | 101.6 ◀ |
+| league | competition_ladder | 0.4 |
+| league | competition_appointments | 36.3 |
+| league | admin_hub | 0.1 |
+| coach | home_jobs | 20.6 |
+| owner (biggest club) | home_jobs | 3.2 |
+| owner (biggest club) | admin_hub | 0.2 |
+| owner (biggest club) | outstanding_fees | 0.4 |
+| stranger | public_competition_entry | 0.1 |
 
 ## Bugs
 
-31 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+32 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 

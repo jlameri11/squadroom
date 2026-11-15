@@ -140,5 +140,31 @@
     "expected": "The clubs are reminded",
     "actual": "Nothing chased an entry fee",
     "fixed": "0276: queue_entry_fee_reminders (every fortnight after 14 days)"
+  },
+  {
+    "scenario": [
+      "SC1",
+      "SC3"
+    ],
+    "severity": "high",
+    "role": "club president",
+    "where": "channel_messages / channel_screen",
+    "steps": "Open a squad chat you are not a member of as the club's owner",
+    "expected": "The club's staff read the club's channels (the screen already makes them a host)",
+    "actual": "\"Nothing here yet. Say hello.\" above a working composer: the message list hid every line from a non-member; a direct chat between two others opened the same way",
+    "fixed": "0278: staff_reads_channel \u2014 staff read team, age-group, coaches, club-wide and custom chats, never a direct one"
+  },
+  {
+    "scenario": [
+      "SC1",
+      "SC3"
+    ],
+    "severity": "medium",
+    "role": "team manager",
+    "where": "notices_standing / notices_people",
+    "steps": "Open the league's Notices as a team manager (a club role, parent hat)",
+    "expected": "The league's notices, as the person who files the sheet",
+    "actual": "\"Not one of your chats \u2014 only its members can open it\"",
+    "fixed": "0278: team managers stand with the staff for a competition's Notices"
   }
 ]
