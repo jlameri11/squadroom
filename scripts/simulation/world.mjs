@@ -253,9 +253,12 @@ export async function react(pool, profile, messageId, academyId, emoji = '👍')
 }
 
 /** An RSVP by a parent for their child. */
-export function rsvp(pool, profile, academyId, eventId, playerId, status = 'yes') {
-  return run(pool, profile, `insert into public.event_rsvps (academy_id, event_id, profile_id, player_id, status) values ($1, $2, $3, $4, $5)
-    on conflict (event_id, profile_id, player_id) do update set status = excluded.status returning id`, [academyId, eventId, profile, playerId, status])
+/** A family's answer. A "no" needs a reason (0111: "the coach needs to know"); one is given when none is passed. */
+const NO_REASONS = ['Away that weekend', 'Not well', 'Family do', 'Working', 'Injured — resting the ankle']
+export function rsvp(pool, profile, academyId, eventId, playerId, status = 'yes', note = null) {
+  const why = status === 'no' && !note ? NO_REASONS[(profile.charCodeAt(profile.length - 1) + eventId.charCodeAt(0)) % NO_REASONS.length] : note
+  return run(pool, profile, `insert into public.event_rsvps (academy_id, event_id, profile_id, player_id, status, note) values ($1, $2, $3, $4, $5, $6)
+    on conflict (event_id, profile_id, player_id) do update set status = excluded.status, note = excluded.note returning id`, [academyId, eventId, profile, playerId, status, why])
 }
 
 /** The notices channel of the competition. */

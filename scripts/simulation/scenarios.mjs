@@ -204,8 +204,8 @@ export async function preseason(ctx) {
   await rounds.setupMoney(ctx)
   // ---- Duties the volunteer scenarios lean on (OFF6).
   await rounds.setupDuties(ctx)
-  // ---- The first screen check: the draw is out.
-  clock.set('2027-02-01 20:00')
+  // ---- The first screen check: the draw is out (Sunday afternoon, before round 1's week begins at 18:00).
+  clock.set('2027-01-31 17:00')
   await runScreens(ctx, 'draw')
   ok('pre-season done')
 }
