@@ -131,7 +131,7 @@ export async function refereeOf(pool, fixtureId, { accepted = true } = {}) {
   const [row] = await sql(pool, `
     select ap.id as appointment_id, ap.referee_id, ap.status, ap.checked_in_at, r.profile_id, r.full_name, r.under_18
       from public.referee_appointments ap join public.referees r on r.id = ap.referee_id
-     where ap.fixture_id = $1 and ap.role = 'referee' and ap.status = any($2::text[]) order by ap.status = 'accepted' desc, ap.offered_at desc limit 1`, [fixtureId, accepted ? ['accepted'] : ['offered', 'accepted']])
+     where ap.fixture_id = $1 and ap.role = 'referee' and ap.status::text = any($2::text[]) order by (ap.status = 'accepted') desc, ap.offered_at desc limit 1`, [fixtureId, accepted ? ['accepted'] : ['offered', 'accepted']])
   return row ?? null
 }
 
