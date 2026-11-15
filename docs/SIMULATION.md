@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-15 10:38 UTC · 16 rounds played · 21 PASS · 9 FIXED · 15 FAIL · 4 not run · 41 bugs logged (13 fixed) · 19 min so far
+Last run: 2026-11-15 10:39 UTC · 17 rounds played · 21 PASS · 9 FIXED · 16 FAIL · 4 not run · 44 bugs logged (13 fixed) · 21 min so far
 
 ## What this is
 
@@ -53,7 +53,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 4/4 | — | — |
 | R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded — _both squads' families hear the game is off (forfeit): expected >0, got 0_ | **FAIL** | 8/9 | #26 | — |
 | R5 | Points deduction, ladder ties (goal difference, goals for, head-to-head), hidden scores and no ladder for U9 — _a U9 family sees no ladder (ladder_enabled off): expected empty, got 8 rows_ | **FAIL** | 7/8 | #40 | — |
-| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded — _the semi-finals are seeded from the ladders as soon as the season is complete: expected 8, got 6_ | **FAIL** | 3/4 | #41 | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
+| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded — _the semi-finals are seeded from the ladders as soon as the season is complete: expected 8, got 6_ | **FAIL** | 5/6 | #41 | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
 
 ### On-field issues
 
@@ -94,7 +94,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 32 league notices, 192 club messages, 3824 chat lines, 1912 reactions, 160 polls, 640 scheduled messages, 46024 RSVPs, 2113 referee appointments, 3970 team sheets, 1709 results agreed on the sheets, 161 disputes (162 ruled on), 66 late results, 347 cards.
+Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 46024 RSVPs, 2118 referee appointments, 3976 team sheets, 1712 results agreed on the sheets, 162 disputes (163 ruled on), 66 late results, 347 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -114,6 +114,7 @@ Over the run: 32 league notices, 192 club messages, 3824 chat lines, 1912 reacti
 | 14 | 2027-05-15 | 138 | 65294 | 65289 | 0 | event_reminder 45732, announcement 10668, message 7295, fee_overdue 603, match_day 274, team_sheet_due 274 |
 | 15 | 2027-05-22 | 141 | 56832 | 56825 | 0 | event_reminder 38698, announcement 10430, message 7355, match_day 279, discipline_suspension 30, discipline_warning 20 |
 | 16 | 2027-05-29 | 8 | 50063 | 50058 | 0 | event_reminder 31396, announcement 10670, message 7366, fee_overdue 603, wwcc_expiring 12, referee_appointment 8 |
+| 17 | 2027-06-05 | 4 | 50154 | 50148 | 0 | event_reminder 31396, announcement 11385, message 7358, match_correction_requested 6, referee_appointment 5, referee_response 4 |
 
 ## The peak
 
@@ -150,7 +151,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-41 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+44 logged in `docs/BUGS.md`, 13 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
