@@ -838,6 +838,13 @@ one and is meant to reach hundreds of academies.
   `page.setOfflineMode`, and request interception for bars that carry
   nothing) — the pure test of the queue passed the whole time it was
   broken.
+- **A migration's name after the number must be new** (16 Nov 2026).
+  `scripts/migrate.mjs` recognises an applied migration by its name with
+  the number stripped (three tools wrote the ledger three ways), so a
+  `0284_playfootball_first.sql` read as already applied because
+  `0162_playfootball_first.sql` was — "Up to date" with nothing run, and
+  test-rls failing on a table that did not exist. Check `ls
+  supabase/migrations | grep <name>` before naming one.
 - **Every migration must replay from empty, and is tried locally before
   it is committed** (6 Nov 2026). A Supabase branch — and the scale test —
   is built by replaying the migrations folder; a change made on the database

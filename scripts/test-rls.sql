@@ -5402,6 +5402,22 @@ begin
   select count(*) into n from pg_trigger where tgname in ('fixtures_season_over', 'match_sheets_season_over', 'match_events_season_over', 'competition_entries_season_over', 'competitions_season_over');
   insert into rls_results values (234,'a finished season''s tables carry the read-only guard (0279)', case when n = 5 then 'PASS' else 'FAIL' end);
 
+  -- 236–237 (0284): the club's PlayFootball import is the registrations
+  -- people's to read, not a parent's; a family claims their child only with
+  -- name, birthday AND FFA number together.
+  insert into public.playfootball_rows (academy_id, full_name, dob, ffa_number, status)
+  values (ACAD_A, 'Rls Probe Child', '2016-03-04', '99900001', 'registered');
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  select count(*) into n from public.playfootball_rows where ffa_number = '99900001';
+  b := coalesce((public.claim_playfootball_child(ACAD_A, 'rls probe child', '2016-03-04', '999 00001')->>'found')::boolean, false);
+  b2 := not coalesce((public.claim_playfootball_child(ACAD_A, 'rls probe child', '2016-03-04', '99900002')->>'found')::boolean, false)
+        and not coalesce((public.claim_playfootball_child(ACAD_A, 'someone else', '2016-03-04', '99900001')->>'found')::boolean, false);
+  execute 'reset role';
+  insert into rls_results values (236,'a parent reads none of the club''s PlayFootball import (0284)', case when n = 0 then 'PASS' else 'FAIL ('||n||' visible)' end);
+  insert into rls_results values (237,'a family claims their child with name, birthday and FFA number together, and nothing less (0284)', case when b and b2 then 'PASS' else 'FAIL' end);
+  delete from public.playfootball_rows where ffa_number = '99900001';
+
   -- 235 (0282): the committee that runs the club reads the setup checklist —
   -- a President who is not an owner gets it; a parent still gets nothing.
   perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);

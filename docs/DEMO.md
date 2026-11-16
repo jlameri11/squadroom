@@ -14,9 +14,9 @@ what is thin before a club does.
 
 | Who | Email | Password |
 |---|---|---|
-| You — owner of the academy **and** the league | `joeylameri@outlook.com` | yours |
+| You — **NRIFA's owner**, and nothing at the league (Joey, 16 Nov: NRIFA and the SPL are separate organisations with separate owners). NRIFA is entered in the SPL, so you see the league as a club head — its notices, the Clubs chat, fixtures, results, ladders, fees owed — never its admin tools | `joeylameri@outlook.com` | yours |
 | **Head of academy** — NRIFA's owner, nothing else (Joey, 9 Nov) | `head@squadroom-demo.test` | `squadroom-demo` |
-| **League organiser** — the Sydney Premier League's staff, nothing else | `organiser@squadroom-demo.test` | `squadroom-demo` |
+| **League organiser** — **owns the Sydney Premier League** (the organiser organisation is the organiser group, 0246), with the SPL's own staff beside them | `organiser@squadroom-demo.test` | `squadroom-demo` |
 | Marcus Obi — coach only, no admin rights | `p61400000002@squadroom.invalid` | `squadroom-demo` |
 | Sam Whitfield — parent of Leo and Zoe | `p61400000011@squadroom.invalid` | `squadroom-demo` |
 
@@ -53,12 +53,18 @@ The home screen is the three things you are here to do, what needs you, and
 the next fixtures — a screen and a half at most. Nothing to navigate to; the
 chats are one tap away on the Chat tab.
 
-### 2. One account, two organisations — tap the crest, top left
-NRIFA Football Academy (an academy) and Sydney Premier League (a league).
-Switch and everything follows: chats, fixtures, teams, badges.
+### 2. Two organisations, two owners — and one account that sits in both
+NRIFA Football Academy (an academy, yours) and Sydney Premier League (a
+league, the League organiser's). Since 16 Nov your crest menu shows NRIFA
+only: the SPL reaches you as a club head, through NRIFA's entry — Home's
+competitions, the league's Notices, the Clubs chat, fixtures, results,
+ladders and the entry fees owed — with none of the league's admin tools.
+Sign in as `organiser@squadroom-demo.test` for the league's side, or as
+`head@squadroom-demo.test` to see a second person who sits in both worlds.
 
 > Dribl has no equivalent. A league secretary whose own child plays needs two
-> logins there.
+> logins there; here one account wears whatever hats it holds, and the
+> switcher (tap the crest) lists every organisation a person is in.
 
 ### 3. Chat — the WhatsApp half
 **Chat → U8 SPL.** Messages with sender names and roles, two polls with real
@@ -272,9 +278,10 @@ could add one.
    phones underneath (light and dark), and nothing changes for anyone until
    **Save colours**. Pick yellow to see the note: the header stays yellow
    with black text, buttons and links use a deeper shade on white screens.
-2. Switch to **Sydney Premier League** (tap the crest): the bar turns the
-   league's green with its logo. (That logo is a stand-in until the league
-   sends theirs — NEEDS JOEY #16.)
+2. Sign in as the **League organiser** (`organiser@squadroom-demo.test`):
+   the bar turns the league's green with its logo. (That logo is a stand-in
+   until the league sends theirs — NEEDS JOEY #16.) Your own account is
+   NRIFA's only, so the SPL is not in your crest menu.
 3. As Sam: **Settings → Appearance** — Club colours or Black & white, and
    Match my phone, Light or Dark. It changes at once, for Sam only.
 4. Sign-in and **/for-clubs** stay Squadroom's black and white, whatever the

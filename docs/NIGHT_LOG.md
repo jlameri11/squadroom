@@ -49,8 +49,27 @@ auth service (the admin API, the password grant, magic links — accounts are
 rows in `auth.users`, the 0272 triggers do the rest) and a storage service
 (files on disk, rows in `storage.objects` written as the caller so the real
 policies decide; `stack-services.mjs`, smoke-tested end to end), and the
-four product areas have been mapped; **(b) the registration flow,
-PlayFootball first** — being built next.
+four product areas have been mapped, and the first groups are built and
+green on their own (role requests; two parents and two devices — which found
+**0283**, one answer a child: the register, the game screen's roster, a
+parent's own view, the Saturday view, the manager's tile and a parent's
+reply count had five different ideas of a child two guardians answered for,
+and a coach whose join link is used is now told; 208 families joining
+through the real sign-up routes in two seconds, all approved and in their
+squads); **(b) the registration flow, PlayFootball first** — **0284** is on
+dev (the club-level switch, the import kept as rows to claim from, a
+family's claim by name + birthday + FFA number, "PlayFootball pending"
+admission with the team sheet as the gate, the Registrar's weekly import
+reminder, the chase for every pending child, the Registrar reading the
+queue, fees as extras on the front door; test-rls 236–237, all 237 pass),
+the screens follow; **(c) the ownership fix** (NRIFA and the SPL are
+separate organisations): applied on dev by `scripts/demo-spl-ownership.mjs`
+— Joey owns NRIFA only, the League organiser account owns the Sydney
+Premier League beside SPL Admin, NRIFA stays entered in SPL Season 3 with
+its three squads, so Joey sees the league as a club head; `docs/DEMO.md`
+updated. A trap found on the way, now in CLAUDE.md: `migrate.mjs` knows a
+migration by its name without the number, so `0284_playfootball_first`
+read as 0162 and "applied" nothing until renamed.
 
 - **NEEDS JOEY (simulation, 16 Nov):** a referee's offer that nobody
   answers is never chased — the league's Home counts the game as without a

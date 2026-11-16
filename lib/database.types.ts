@@ -35,8 +35,10 @@ export type Database = {
           plan: string
           playfootball_fees_disclosed_at: string | null
           playfootball_fees_disclosed_season: string | null
+          playfootball_url: string | null
           primary_colour: string
           public_player_names: Database["public"]["Enums"]["public_names_mode"]
+          requires_playfootball: boolean
           secondary_colour: string | null
           setup_completed_at: string | null
           setup_started_at: string
@@ -68,8 +70,10 @@ export type Database = {
           plan?: string
           playfootball_fees_disclosed_at?: string | null
           playfootball_fees_disclosed_season?: string | null
+          playfootball_url?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          requires_playfootball?: boolean
           secondary_colour?: string | null
           setup_completed_at?: string | null
           setup_started_at?: string
@@ -101,8 +105,10 @@ export type Database = {
           plan?: string
           playfootball_fees_disclosed_at?: string | null
           playfootball_fees_disclosed_season?: string | null
+          playfootball_url?: string | null
           primary_colour?: string
           public_player_names?: Database["public"]["Enums"]["public_names_mode"]
+          requires_playfootball?: boolean
           secondary_colour?: string | null
           setup_completed_at?: string | null
           setup_started_at?: string
@@ -6454,6 +6460,128 @@ export type Database = {
           },
         ]
       }
+      playfootball_imports: {
+        Row: {
+          academy_id: string
+          id: string
+          imported_at: string
+          imported_by: string | null
+          matched: number
+          rows_sent: number
+          unmatched: number
+        }
+        Insert: {
+          academy_id: string
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          matched?: number
+          rows_sent?: number
+          unmatched?: number
+        }
+        Update: {
+          academy_id?: string
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          matched?: number
+          rows_sent?: number
+          unmatched?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playfootball_imports_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playfootball_imports_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playfootball_rows: {
+        Row: {
+          academy_id: string
+          claimed_at: string | null
+          claimed_by: string | null
+          dob: string | null
+          ffa_number: string | null
+          fifa_id: string | null
+          full_name: string | null
+          id: string
+          import_id: string | null
+          imported_at: string
+          player_id: string | null
+          status: Database["public"]["Enums"]["official_rego_status"]
+          updated_at: string
+        }
+        Insert: {
+          academy_id: string
+          claimed_at?: string | null
+          claimed_by?: string | null
+          dob?: string | null
+          ffa_number?: string | null
+          fifa_id?: string | null
+          full_name?: string | null
+          id?: string
+          import_id?: string | null
+          imported_at?: string
+          player_id?: string | null
+          status?: Database["public"]["Enums"]["official_rego_status"]
+          updated_at?: string
+        }
+        Update: {
+          academy_id?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
+          dob?: string | null
+          ffa_number?: string | null
+          fifa_id?: string | null
+          full_name?: string | null
+          id?: string
+          import_id?: string | null
+          imported_at?: string
+          player_id?: string | null
+          status?: Database["public"]["Enums"]["official_rego_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playfootball_rows_academy_id_fkey"
+            columns: ["academy_id"]
+            isOneToOne: false
+            referencedRelation: "academies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playfootball_rows_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playfootball_rows_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "playfootball_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playfootball_rows_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poll_votes: {
         Row: {
           academy_id: string
@@ -7504,6 +7632,9 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_note: string | null
+          emergency_name: string | null
+          emergency_phone: string | null
+          emergency_relation: string | null
           expires_at: string
           family_replied_at: string | null
           family_reply: string | null
@@ -7521,12 +7652,15 @@ export type Database = {
           official_confirmed_by: string | null
           photo_path: string | null
           player_id: string | null
+          playfootball_row_id: string | null
           profile_id: string | null
           program_id: string | null
           register_as: string
           registration_id: string | null
           role_note: string | null
           secret_hash: string
+          shirt_size: Database["public"]["Enums"]["kit_size"] | null
+          shorts_size: Database["public"]["Enums"]["kit_size"] | null
           status: string
           wwcc_checked_at: string | null
           wwcc_checked_by: string | null
@@ -7545,6 +7679,9 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          emergency_name?: string | null
+          emergency_phone?: string | null
+          emergency_relation?: string | null
           expires_at?: string
           family_replied_at?: string | null
           family_reply?: string | null
@@ -7562,12 +7699,15 @@ export type Database = {
           official_confirmed_by?: string | null
           photo_path?: string | null
           player_id?: string | null
+          playfootball_row_id?: string | null
           profile_id?: string | null
           program_id?: string | null
           register_as?: string
           registration_id?: string | null
           role_note?: string | null
           secret_hash: string
+          shirt_size?: Database["public"]["Enums"]["kit_size"] | null
+          shorts_size?: Database["public"]["Enums"]["kit_size"] | null
           status?: string
           wwcc_checked_at?: string | null
           wwcc_checked_by?: string | null
@@ -7586,6 +7726,9 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          emergency_name?: string | null
+          emergency_phone?: string | null
+          emergency_relation?: string | null
           expires_at?: string
           family_replied_at?: string | null
           family_reply?: string | null
@@ -7603,12 +7746,15 @@ export type Database = {
           official_confirmed_by?: string | null
           photo_path?: string | null
           player_id?: string | null
+          playfootball_row_id?: string | null
           profile_id?: string | null
           program_id?: string | null
           register_as?: string
           registration_id?: string | null
           role_note?: string | null
           secret_hash?: string
+          shirt_size?: Database["public"]["Enums"]["kit_size"] | null
+          shorts_size?: Database["public"]["Enums"]["kit_size"] | null
           status?: string
           wwcc_checked_at?: string | null
           wwcc_checked_by?: string | null
@@ -7649,6 +7795,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registration_requests_playfootball_row_id_fkey"
+            columns: ["playfootball_row_id"]
+            isOneToOne: false
+            referencedRelation: "playfootball_rows"
             referencedColumns: ["id"]
           },
           {
@@ -9456,6 +9609,15 @@ export type Database = {
         }[]
       }
       claim_player_login: { Args: never; Returns: Json }
+      claim_playfootball_child: {
+        Args: {
+          p_academy: string
+          p_dob: string
+          p_ffa: string
+          p_name: string
+        }
+        Returns: Json
+      }
       claim_referee: { Args: { p_token: string }; Returns: Json }
       claim_sms_escalations: {
         Args: { p_limit?: number }
@@ -10512,6 +10674,7 @@ export type Database = {
       player_card: { Args: { p_player: string }; Returns: Json }
       player_development: { Args: { p_player: string }; Returns: Json }
       player_season_stats: { Args: { p_player: string }; Returns: Json }
+      playfootball_import_status: { Args: { p_academy: string }; Returns: Json }
       poll_counts: {
         Args: { p_poll: string }
         Returns: {
@@ -10636,6 +10799,7 @@ export type Database = {
       queue_fee_reminders: { Args: never; Returns: number }
       queue_match_day_pushes: { Args: never; Returns: number }
       queue_official_rego_reminders: { Args: never; Returns: number }
+      queue_playfootball_import_reminders: { Args: never; Returns: number }
       queue_team_sheet_reminders: { Args: { p_now?: string }; Returns: number }
       quote_payment: {
         Args: { p_player?: string; p_request: string }
