@@ -196,5 +196,45 @@
     "expected": "The game, its score and this season's head to head",
     "actual": "“This page couldn’t load — a server error occurred”: the server page handed the head-to-head card a function, which cannot cross into a client component; the parent's and the organiser's screens logged React error #441",
     "fixed": "components/head-to-head.tsx (hrefBase, a string) + app/c/[slug]/game/[fixtureId]/page.tsx"
+  },
+  {
+    "scenario": "TP1",
+    "severity": "medium",
+    "role": "coach",
+    "where": "event_register",
+    "steps": "Two guardians answer for the same child: the first yes, the second no two minutes later; open the register",
+    "expected": "The family's latest answer (no)",
+    "actual": "Whichever row came first (yes)",
+    "fixed": "0283: the register takes the latest answer a child"
+  },
+  {
+    "scenario": "TP1",
+    "severity": "medium",
+    "role": "coach",
+    "where": "game_screen (roster)",
+    "steps": "The same two answers; open the game page's Who's coming",
+    "expected": "The child once, with the latest answer",
+    "actual": "The child twice (yes, no)",
+    "fixed": "0283: one row a child, the latest, and who gave it"
+  },
+  {
+    "scenario": "TP1",
+    "severity": "medium",
+    "role": "parent",
+    "where": "my_rsvps_for_event",
+    "steps": "The first parent opens the game after the second said no",
+    "expected": "The family's current answer (no), and who gave it",
+    "actual": "Only their own yes — a family could disagree without knowing",
+    "fixed": "0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children"
+  },
+  {
+    "scenario": "JF1",
+    "severity": "medium",
+    "role": "coach",
+    "where": "join_requests (notification)",
+    "steps": "Two hundred families ask to join through the coaches' links",
+    "expected": "Each coach told, the way the committee is told of a role request",
+    "actual": "Nobody's phone buzzed; the requests waited until a coach opened Home",
+    "fixed": "0283: join_requests_tell_the_coach (kind join_request)"
   }
 ]

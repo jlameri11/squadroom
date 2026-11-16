@@ -10293,6 +10293,7 @@ export type Database = {
       my_rsvps_for_event: {
         Args: { p_event: string }
         Returns: {
+          by_name: string
           note: string
           player_id: string
           player_name: string

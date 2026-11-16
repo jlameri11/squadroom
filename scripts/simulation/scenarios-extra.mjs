@@ -191,12 +191,13 @@ async function parallel(items, width, fn) {
 }
 
 /** One family through the HTTP flow the screens use: create account → code → join request → claim. */
-async function joinOne(link, i, tag) {
+async function joinOne(link, i, tag, seed = 0) {
   // One address a family (the rate limits key on it): Next keeps an x-forwarded-for it is given.
   const ip = `10.${60 + Math.floor(i / 2500)}.${Math.floor(i / 10) % 250}.${(i % 10) + 1}`
   const first = FIRST[i % FIRST.length], last = LAST[(i * 7 + 3) % LAST.length]
   const email = `sim-join-${tag}-${i}@squadroom-demo.test`
-  const mobile = `+6145${String(1000000 + i).slice(-7)}`
+  // A mobile is one account's for good (0272), so each run's families have their own numbers.
+  const mobile = `+6145${seed % 10}${String(100000 + i).slice(-6)}`
   const child = { name: `${CHILD[(i * 5) % CHILD.length]} ${last}`, dob: `201${5 + (i % 4)}-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 27)).padStart(2, '0')}` }
   const post = async (path, body, cookie) => {
     const r = await fetch(`${APP_URL}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': ip, ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body) })
@@ -243,19 +244,19 @@ async function joiningFamilies(ctx, S, add, rand) {
       for (const l of links) for (let k = 0; k < per; k++) flows.push({ l, i: n++ })
       const t0 = Date.now()
       const tag = `${S.replace(/-/g, '')}-${ctx.seed ?? 0}`
-      const families = await parallel(flows, 4, ({ l, i }) => joinOne(l, i, tag))
+      const families = await parallel(flows, 4, ({ l, i }) => joinOne(l, i, tag, ctx.seed ?? 0))
       const joined = families.filter((f) => f.ok)
       const why = {}
       for (const f of families) if (!f.ok) { const k = `${f.step} ${f.status}: ${f.error}`; why[k] = (why[k] ?? 0) + 1 }
       note(`${joined.length} of ${families.length} families signed up and asked to join in ${Math.round((Date.now() - t0) / 1000)} s${Object.keys(why).length ? `; refused: ${JSON.stringify(why).slice(0, 300)}` : ''}`)
       check(joined.length === families.length && families.length >= 200, { what: 'every family gets through create account → code → join request', expected: `${families.length} of ${families.length}`, actual: `${joined.length} of ${families.length}${Object.keys(why).length ? ` — ${JSON.stringify(why).slice(0, 160)}` : ''}`, role: 'parent (new)', where: '/api/account/create → /api/account/confirm → /api/join/request' })
+      if (!joined.length) return
       // The coaches are told, and see the requests waiting on Home.
       const since = new Date(clock.now.getTime() - 60_000).toISOString()
-      const told = await sql(pool, `select distinct profile_id from public.notification_queue where created_at >= $1 and (kind::text like '%join%' or title ilike '%join%' or title ilike '%wants to join%')`, [since])
-      check(told.length >= links.length, { what: 'each coach is told of the requests', expected: `≥${links.length} coaches`, actual: `${told.length}`, role: 'coach', where: 'notification_queue', severity: 'medium' })
-      const coachJobs = (await rpc(pool, links[0].coach, 'home_jobs', { p_academy: links[0].club, p_persona: 'coach' })).data
-      const waiting = (coachJobs?.jobs ?? []).find((j) => /request|join|approve/i.test(`${j.id} ${j.label}`))
-      check(Boolean(waiting), { what: 'the coach\'s Home shows the join requests waiting', expected: 'a requests job', actual: (coachJobs?.jobs ?? []).map((j) => `${j.id}: ${j.detail}`).join(' | ').slice(0, 160), role: 'coach', where: 'home_jobs (coach)', severity: 'medium' })
+      const told = await sql(pool, `select distinct profile_id from public.notification_queue where created_at >= $1 and kind = 'join_request'`, [since])
+      check(told.length >= links.length, { what: 'each coach is told that families asked to join', expected: `≥${links.length} coaches`, actual: `${told.length}`, role: 'coach', where: 'notification_queue (join_request)', severity: 'medium' })
+      const coachHome = (await rpc(pool, links[0].coach, 'home_screen', { p_academy: links[0].club })).data
+      check(Number(coachHome?.pending_requests ?? 0) >= per, { what: 'the coach\'s Home shows the join requests waiting', expected: `≥${per} waiting`, actual: String(coachHome?.pending_requests), role: 'coach', where: 'home_screen (pending_requests)', severity: 'medium' })
       // Each coach approves their squad's families through the route the Requests screen posts to.
       let approved = 0
       const approveWhy = {}
@@ -290,7 +291,8 @@ async function joiningFamilies(ctx, S, add, rand) {
       const n2 = joined.length
       check(w.accounts === n2 && w.members === n2 && w.on_team === n2 && w.guardians === n2 && w.in_chat === n2 && w.verified === n2 && w.password_set === n2 && w.named === n2,
         { what: 'every approved family is a member, on the squad, the child\'s guardian, in the squad chat, with a verified email, a password and a three-part name', expected: `${n2} each`, actual: JSON.stringify(w), role: 'coach', where: 'approve (membership rows)' })
-      const kids = await val(pool, `select count(*)::int from public.players pl where pl.full_name = any($1::text[]) and pl.team_id = any($2::uuid[])`, [joined.map((f) => f.child.name), links.map((l) => l.team)])
+      const kids = await val(pool, `select count(distinct pl.id)::int from public.players pl join public.player_guardians g on g.player_id = pl.id join auth.users u on u.id = g.profile_id
+        where lower(u.email) = any($1::text[]) and pl.team_id = any($2::uuid[])`, [emails, links.map((l) => l.team)])
       check(kids === n2, { what: 'every child is on the roster of the squad whose link was used', expected: n2, actual: kids, role: 'coach', where: 'players' })
       // A new family's Fixtures lists the squad's next game; the team chat has them.
       const one = joined[0]
