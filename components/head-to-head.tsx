@@ -46,7 +46,14 @@ export type HeadToHeadData = {
 
 const short = (name: string | null) => (name ?? '?').replace(/\s+(U\d+|Open|Over-\d+).*$/, '').trim()
 
-export function HeadToHeadCard({ data, href }: { data: HeadToHeadData; href?: (m: Meeting) => string | null }) {
+/**
+ * `hrefBase` is where a meeting opens — the app's match page
+ * (`/competitions/<id>/match/`) or the public game page (`/c/<slug>/game/`) —
+ * as a string, never a function: the public page renders this card on the
+ * server, and a function cannot cross into a client component (seed 4 of the
+ * simulation found the public game page failing on exactly that).
+ */
+export function HeadToHeadCard({ data, hrefBase }: { data: HeadToHeadData; hrefBase?: string | null }) {
   const s = data.summary
   const meetings = data.meetings ?? []
   const label = `Head to head${data.season ? ` · ${data.season}` : ' · this season'}`
@@ -83,7 +90,7 @@ export function HeadToHeadCard({ data, href }: { data: HeadToHeadData; href?: (m
           {meetings.length > s.played ? ` · ${meetings.length - s.played} still to play` : ''}
         </p>
         {meetings.map((m) => {
-          const link = href?.(m) ?? null
+          const link = hrefBase ? `${hrefBase}${m.fixture_id}` : null
           const row = (
             <div className="flex items-center gap-2.5 border-t px-3.5 py-2.5 text-sm" style={{ borderColor: 'var(--line-2)' }} data-meeting={m.fixture_id}>
               <span className="w-[4.5rem] flex-none text-xs leading-tight text-ink-3">
@@ -122,5 +129,6 @@ export function HeadToHead({ fixtureId, competitionId }: { fixtureId: string; co
     return () => { live = false }
   }, [fixtureId])
   if (!data) return null
-  return <HeadToHeadCard data={data} href={(m) => (competitionId ? `/competitions/${m.competition_id}/match/${m.fixture_id}` : m.public_slug ? `/c/${m.public_slug}/game/${m.fixture_id}` : null)} />
+  const slug = data.meetings?.find((m) => m.public_slug)?.public_slug ?? null
+  return <HeadToHeadCard data={data} hrefBase={competitionId ? `/competitions/${competitionId}/match/` : slug ? `/c/${slug}/game/` : null} />
 }

@@ -612,22 +612,31 @@ export async function round4(ctx, S, add) {
     const rest = (await gamesOn(pool, S, { status: 'postponed' }))
     const why = {}
     let later = 0
+    const sameTimeOn = (g) => new Date(`2027-05-22T${new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(g.starts_at))}:00+10:00`).toISOString()
+    // First pass: every game at its own time of day. Second pass: a game refused — a coach or
+    // manager already on a game then (an earlier postponement parked on the same Saturday), or
+    // the pitch taken — goes into a free slot on its own pitch that day, as the ground manager would.
+    const refused = []
     for (const g of rest) {
-      const t = new Date(g.starts_at)
-      const sameTime = new Date(`2027-05-22T${new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(t)}:00+10:00`)
-      let r = null
-      // The same time of day; when a coach or manager is already on a game then (an earlier
-      // postponement parked on the same Saturday), the ground manager tries later in the day.
-      for (const shift of [0, 60, 120, 180, -60]) {
-        const at = new Date(sameTime.getTime() + shift * 60_000)
-        if (at.getUTCHours() + 10 < 8 || at.getUTCHours() + 10 >= 18) continue
-        r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: at.toISOString(), p_venue_label: null, p_field: null })
-        if (r.ok) { catchup++; if (shift) later++; break }
-        if (r.code !== '23P01') break
-      }
-      if (!r?.ok) { const k = r.error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
+      const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: sameTimeOn(g), p_venue_label: null, p_field: null })
+      if (r.ok) catchup++; else refused.push({ g, error: r.error })
     }
-    if (later) note(`${later} of the catch-up moves went later in the day — a coach or manager was already on a game at the usual time`)
+    for (const { g, error } of refused) {
+      let ok = false
+      for (const [from, to] of [['08:00', '12:00'], ['12:00', '17:30']]) {
+        for (let tries = 0; tries < 4 && !ok; tries++) {
+          const slot = await freeSlot(pool, g.pitch_id, '2027-05-22', from, to, g.duration_mins ?? 60, g.id)
+          if (!slot) break
+          const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: slot, p_venue_label: null, p_field: null })
+          if (r.ok) { ok = true; catchup++; later++ }
+          else if (r.code !== '23P01') break
+          else from = new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(new Date(slot).getTime() + 30 * 60_000))
+        }
+        if (ok) break
+      }
+      if (!ok) { const k = error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
+    }
+    if (later) note(`${later} of the catch-up moves went to another time that day — a coach or manager was already on a game, or the pitch was taken, at the usual time`)
     check(catchup === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times (or later that day)`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
     backOn = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_back_on' and created_at >= $1`, [new Date(clock.now.getTime() - 60_000).toISOString()])
     check(backOn > 0, { what: 'families are told their game is back on, with the new day', expected: '>0', actual: backOn, role: 'parent', where: 'notify_event_change (event_back_on)' })

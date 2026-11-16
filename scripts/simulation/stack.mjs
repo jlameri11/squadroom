@@ -6,7 +6,8 @@
 // and storage. Here that URL is a small proxy on :54330 that sends
 //   /rest/v1/*   → PostgREST (:54331) on the local Postgres (:54329)
 //   /auth/v1/*   → a stub that answers for the accounts the simulation minted
-//   everything else (realtime, storage) → 404; the app degrades quietly.
+//   /storage/v1/* → a storage service (files on disk, rows in storage.objects, the real policies)
+//   everything else (realtime) → 404; the app degrades quietly.
 // Sessions are HS256 JWTs signed with a secret only this machine knows;
 // PostgREST verifies them and sets request.jwt.claims, exactly as Supabase
 // does, so RLS and auth.uid() behave as in production.
@@ -22,6 +23,7 @@ import { execSync, spawn } from 'node:child_process'
 import http from 'node:http'
 import { join } from 'node:path'
 import pg from 'pg'
+import { createServices } from './stack-services.mjs'
 
 export const SECRET = 'squadroom-simulation-only-jwt-secret-not-for-any-real-project-0123456789'
 export const PROXY_PORT = 54330
@@ -162,39 +164,17 @@ export async function startStack(db, { quiet = true, expectNow = null } = {}) {
     if (!(drift < 3600_000)) { try { postgrest.kill('SIGKILL') } catch {} throw new Error(`PostgREST's clock reads ${JSON.stringify(seen)}, not ${expectNow} — a stale server, or sim.now not set for the database`) }
   }
 
-  // The auth stub.
-  const auth = http.createServer(async (req, res) => {
-    const url = new URL(req.url, `http://localhost:${AUTH_PORT}`)
-    const send = (code, body) => { res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*' }); res.end(JSON.stringify(body)) }
-    const bearer = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '')
-    try {
-      if (req.method === 'OPTIONS') { res.writeHead(204, { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }); return res.end() }
-      if (url.pathname.endsWith('/user') && req.method === 'GET') {
-        const claims = verifyJwt(bearer)
-        if (!claims?.sub) return send(401, { code: 401, msg: 'invalid JWT' })
-        const user = await userRecord(db, claims.sub)
-        return user ? send(200, user) : send(404, { code: 404, msg: 'no such user' })
-      }
-      if (url.pathname.endsWith('/token') && req.method === 'POST') {
-        let body = ''
-        for await (const chunk of req) body += chunk
-        const json = body ? JSON.parse(body) : {}
-        const sub = String(json.refresh_token ?? '').replace(/^rt-/, '') || verifyJwt(bearer)?.sub
-        if (!sub) return send(400, { error: 'invalid_grant', error_description: 'no such session' })
-        return send(200, await sessionFor(db, sub))
-      }
-      if (url.pathname.endsWith('/jwks.json')) return send(200, { keys: [] })
-      if (url.pathname.endsWith('/settings')) return send(200, { external: { email: true, phone: false }, disable_signup: true, mailer_autoconfirm: true, phone_autoconfirm: false, sms_provider: '' })
-      if (url.pathname.endsWith('/logout')) { res.writeHead(204); return res.end() }
-      send(404, { code: 404, msg: `the simulation's auth stub has no ${url.pathname}` })
-    } catch (e) {
-      send(500, { msg: e.message })
-    }
-  })
+  // The auth stub and the storage service (stack-services.mjs): accounts in
+  // auth.users, files on disk with their rows in storage.objects, the real
+  // policies deciding as the caller.
+  const services = createServices({ secret: SECRET, supabaseUrl: SUPABASE_URL, sessionFor: (sub) => sessionFor(db, sub), userRecord: (sub) => userRecord(db, sub), verifyJwt, root: process.cwd() })
+  await services.ensure()
+  const auth = http.createServer((req, res) => { services.auth(req, res).catch((e) => { try { res.writeHead(500, { 'content-type': 'application/json' }); res.end(JSON.stringify({ msg: e.message })) } catch {} }) })
   await new Promise((r) => auth.listen(AUTH_PORT, '127.0.0.1', r))
 
   // The proxy: one origin for the app.
   const proxy = http.createServer((req, res) => {
+    if (req.url.startsWith('/storage/v1/')) return services.storage(req, res).catch((e) => { try { res.writeHead(500, { 'content-type': 'application/json' }); res.end(JSON.stringify({ message: e.message })) } catch {} })
     const target = req.url.startsWith('/rest/v1/') ? { port: POSTGREST_PORT, path: req.url.slice('/rest/v1'.length) }
       : req.url.startsWith('/auth/v1/') ? { port: AUTH_PORT, path: req.url }
       : null
@@ -218,6 +198,7 @@ export async function startStack(db, { quiet = true, expectNow = null } = {}) {
       auth.closeAllConnections?.()
       await new Promise((r) => proxy.close(r))
       await new Promise((r) => auth.close(r))
+      await services.stop()
       // Wait for PostgREST to go; after three seconds, make it.
       await new Promise((resolve) => {
         if (gone) return resolve()

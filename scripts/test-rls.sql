@@ -5395,6 +5395,26 @@ begin
   select count(*) into n from pg_trigger where tgname in ('fixtures_season_over', 'match_sheets_season_over', 'match_events_season_over', 'competition_entries_season_over', 'competitions_season_over');
   insert into rls_results values (234,'a finished season''s tables carry the read-only guard (0279)', case when n = 5 then 'PASS' else 'FAIL' end);
 
+  -- 235 (0282): the committee that runs the club reads the setup checklist —
+  -- a President who is not an owner gets it; a parent still gets nothing.
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.grant_club_role(ACAD_A, MARCUS, 'president');
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',MARCUS,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := public.setup_progress(ACAD_A) is not null;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b2 := public.setup_progress(ACAD_A) is null;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.revoke_club_role((select id from public.club_roles where academy_id = ACAD_A and profile_id = MARCUS and role = 'president'));
+  execute 'reset role';
+  insert into rls_results values (235,'a President who is not an owner reads the setup checklist; a parent still does not (0282)', case when b and b2 then 'PASS' else 'FAIL' end);
+
   delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');

@@ -7,7 +7,7 @@ import { clubThemeCss } from '@/lib/brand/colour'
 /**
  * One game of a public match centre (0279): the two teams, the time and
  * the ground, the score where the division shows scores, and the head to
- * head — every meeting of these two this season and before. Teams and
+ * head — the two teams' meetings this season (0281). Teams and
  * scores only; never a child's name. No cookies, cached a minute, like the
  * match centre it belongs to.
  */
@@ -65,7 +65,7 @@ export default async function PublicGamePage(ctx: { params: Promise<{ slug: stri
         {game.address && <p className="mt-0.5 text-xs" style={{ opacity: 0.7 }}>{game.address}</p>}
       </header>
       <div className="px-3.5">
-        {headToHead && <HeadToHeadCard data={headToHead} href={(m) => (m.public_slug ? `/c/${m.public_slug}/game/${m.fixture_id}` : null)} />}
+        {headToHead && <HeadToHeadCard data={headToHead} hrefBase={`/c/${slug}/game/`} />}
         <p className="mt-6 text-center text-xs text-ink-3">Run by {game.organiser} · <a href={`/c/${slug}`} className="underline underline-offset-2">{game.competition} on Squadroom</a></p>
       </div>
     </main>

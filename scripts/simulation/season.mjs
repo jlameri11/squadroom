@@ -143,6 +143,10 @@ try {
       extra = [...extra, ...s5].sort((a, b) => a.at.localeCompare(b.at))
     }
     const weekEnd = `${plusDays(S, 1)} 23:59`
+    // A round's own step planned beyond its Sunday (a late result on the Monday, a check renewed
+    // the Friday after, a ban served two weeks on) waits for that week, so the clock never has to go back.
+    const thisWeek = plan.filter((x) => x.at <= weekEnd)
+    extra = [...extra, ...plan.filter((x) => x.at > weekEnd)].sort((a, b) => a.at.localeCompare(b.at))
     const mine = extra.filter((x) => x.at <= weekEnd)
     extra = extra.filter((x) => x.at > weekEnd)
     const steps = [
@@ -154,7 +158,7 @@ try {
       { at: `${plusDays(S, -4)} 19:00`, name: 'coaches schedule Friday lines', run: () => scheduleFridayLines(ctx, S, rand) },
       { at: `${plusDays(S, -4)} 12:00`, name: 'mid-week team sheets', run: () => submitSheets(ctx, S, rand, { from: plusDays(S, -5), to: plusDays(S, -1) }), quiet: true },
       { at: `${plusDays(S, -1)} 12:00`, name: 'team sheets', run: () => submitSheets(ctx, S, rand, { from: S, to: plusDays(S, 1) }) },
-      ...plan,
+      ...thisWeek,
       ...mine,
     ]
     // The week's games (Monday to Sunday), slot by slot: the referees' check-ins and full time.

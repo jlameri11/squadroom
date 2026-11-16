@@ -7,7 +7,7 @@
 //         history; nothing deleted; every write to it refused.
 //   HH1 — head to head on a Season 5 game shows this season's meetings and
 //         both legs from Season 4, scores hidden where the division hides them.
-import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who, asAnon } from './lib.mjs'
+import { asAnon, check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who } from './lib.mjs'
 import { COMP, LEAGUE, advanceTo, eventFor, gamesOn, guardianOf, setCompetition, squad } from './world.mjs'
 import { runScreens } from './screens.mjs'
 
@@ -53,24 +53,39 @@ export async function season5Plan(ctx, add) {
       if (r.ok) rolled += r.data?.teams ?? 0; else failed.push(`${c}: ${r.error}`)
     }
     note(`${rolled} squads rolled over to 2028${failed.length ? `; failed: ${failed.slice(0, 3).join(' | ')}` : ''}`)
-    // The rollover moves the players and their families; the club puts the coaches and managers back on the new squads.
+    // The rollover moves the players and their families; the club puts the coaches and managers
+    // back on the new squads — team by team, as the admin screens do, so a coach whose Working With
+    // Children Check has lapsed (OFF3) stops only their own squad, and through grant_club_role for a
+    // manager (club_roles is written by the product, never by hand).
     let coaches = 0, managers = 0
+    const stopped = []
     for (let c = 1; c <= 60; c++) {
-      // One row a person on a squad (team_members_unique): a coach whose own child plays in the
-      // squad came through the rollover as a parent, and becomes the coach again.
-      const cr = await run(pool, who.president(c), `insert into public.team_members (academy_id, team_id, profile_id, role)
-        select distinct nt.academy_id, nt.id, tm.profile_id, 'coach'::academy_role from public.teams nt join public.team_members tm on tm.team_id = nt.rolled_from and tm.role = 'coach'
+      const pres = who.president(c)
+      const rows = await sql(pool, `
+        select nt.id as team, nt.academy_id, nt.name, tm.profile_id as coach
+          from public.teams nt join public.team_members tm on tm.team_id = nt.rolled_from and tm.role = 'coach'
+         where nt.academy_id = $1 and nt.season = '2028'`, [ids.club(c)])
+      for (const r of rows) {
+        // One row a person on a squad (team_members_unique): a coach whose own child plays in the
+        // squad came through the rollover as a parent, and becomes the coach again.
+        const cr = await run(pool, pres, `insert into public.team_members (academy_id, team_id, profile_id, role) values ($1, $2, $3, 'coach')
+          on conflict (team_id, profile_id) do update set role = 'coach' where public.team_members.role <> 'coach' returning id`, [r.academy_id, r.team, r.coach])
+        if (cr.ok) coaches++
+        else stopped.push(`${r.name} (club ${c}): ${cr.error.slice(0, 90)}`)
+      }
+      const mrows = await sql(pool, `
+        select nt.id as team, cr.profile_id as manager
+          from public.teams nt join public.club_roles cr on cr.team_id = nt.rolled_from and cr.role = 'team_manager'
          where nt.academy_id = $1 and nt.season = '2028'
-        on conflict (team_id, profile_id) do update set role = 'coach' where public.team_members.role <> 'coach'
-        returning id`, [ids.club(c)])
-      if (cr.ok) coaches += cr.data.length; else note(`coaches for club ${c}: ${cr.error}`)
-      const mr = await run(pool, who.president(c), `insert into public.club_roles (academy_id, profile_id, role, scope_kind, team_id, granted_by)
-        select nt.academy_id, r.profile_id, 'team_manager', 'team', nt.id, $2 from public.teams nt join public.club_roles r on r.team_id = nt.rolled_from and r.role = 'team_manager'
-         where nt.academy_id = $1 and nt.season = '2028' and not exists (select 1 from public.club_roles x where x.team_id = nt.id and x.profile_id = r.profile_id and x.role = 'team_manager')
-        returning id`, [ids.club(c), who.president(c)])
-      if (mr.ok) managers += mr.data.length; else note(`managers for club ${c}: ${mr.error}`)
+           and not exists (select 1 from public.club_roles x where x.team_id = nt.id and x.profile_id = cr.profile_id and x.role = 'team_manager')`, [ids.club(c)])
+      for (const m of mrows) {
+        const mr = await rpc(pool, pres, 'grant_club_role', { p_academy: ids.club(c), p_profile: m.manager, p_role: 'team_manager', p_scope_kind: 'team', p_team: m.team })
+        if (mr.ok) managers++
+        else stopped.push(`manager for team ${m.team.slice(0, 8)} (club ${c}): ${mr.error.slice(0, 90)}`)
+      }
     }
-    note(`${coaches} coaches and ${managers} managers back on the 2028 squads`)
+    note(`${coaches} coaches and ${managers} managers back on the 2028 squads${stopped.length ? `; not put back: ${stopped.slice(0, 4).join(' | ')}` : ''}`)
+    check(coaches >= 280 && managers >= 280, { what: 'the clubs put their coaches and managers back on the rolled-over squads', expected: '≥280 each', actual: `${coaches} coaches, ${managers} managers${stopped.length ? ` — ${stopped[0]}` : ''}`, role: 'club president', where: 'team_members / grant_club_role' })
     const ns = await rpc(pool, who.compManager, 'new_season_from', { p_competition: comp4, p_name: SEASON5.name, p_season: SEASON5.season, p_starts_on: SEASON5.first, p_ends_on: '2028-06-03', p_slug: SEASON5.slug })
     mustWork(ns, { what: 'the league starts Season 5 from Season 4', role: 'competition manager', where: 'new_season_from' })
     if (!ns.ok) return
@@ -115,7 +130,7 @@ export async function season5Plan(ctx, add) {
     const centre4 = await asAnon(pool, async (c) => (await c.query(`select public.public_match_centre('spl-season-4') j`)).rows[0].j)
     const fx4 = centre4.data?.fixtures ?? []
     const finals4 = fx4.filter((f) => /Final/.test(f.round ?? '') && f.status === 'final')
-    check(fx4.length > 2000 && finals4.length >= 4 && Object.keys(centre4.data?.ladder ?? {}).length >= 20, { what: 'Season 4\'s public page still shows every game, the finals and the ladders', expected: '>2000 games, ≥4 finals, ≥20 ladders', actual: `${fx4.length} games, ${finals4.length} finals, ${Object.keys(centre4.data?.ladder ?? {}).length} ladders`, role: 'stranger', where: 'public_match_centre' })
+    check(fx4.length > 2000 && finals4.length >= 3 && Object.keys(centre4.data?.ladder ?? {}).length >= 20, { what: 'Season 4\'s public page still shows every game, the finals and the ladders', expected: '>2000 games, ≥3 finals (two semis and a final), ≥20 ladders', actual: `${fx4.length} games, ${finals4.length} finals, ${Object.keys(centre4.data?.ladder ?? {}).length} ladders`, role: 'stranger', where: 'public_match_centre' })
     check((centre4.data?.ladder ?? {})['U9 Division 1'] === undefined, { what: 'and still no U9 ladder', expected: 'none', actual: 'U9 Division 1' in (centre4.data?.ladder ?? {}) ? 'a ladder' : 'none', role: 'stranger', where: 'public_match_centre' })
     // The competition page in the app: a parent's season switcher.
     const parent = ids.parent(1, 1)
@@ -170,7 +185,12 @@ export async function season5Plan(ctx, add) {
     const anyPlayer = await val(pool, `select count(*)::int from public.players pl where pl.academy_id in ($1, $2) and position(pl.full_name in $3) > 0`, [g.home_club, g.away_club, names])
     check(anyPlayer === 0, { what: 'no player\'s name is in it', expected: 0, actual: anyPlayer, role: 'stranger', where: 'public_head_to_head' })
     // MiniRoos: played, no score — a Season 4 U9 game late in the season has an earlier meeting.
-    const u9 = (await sql(pool, `select f.id, h.team_id as home_team from public.fixtures f join public.competition_entries h on h.id = f.home_entry_id where f.competition_id = $1 and f.division = 'U9 Division 1' and f.round = 'Round 9' and f.status = 'final' and h.team_id is not null limit 1`, [comp4]))[0]
+    const u9 = (await sql(pool, `
+      select f.id, h.team_id as home_team from public.fixtures f join public.competition_entries h on h.id = f.home_entry_id
+       where f.competition_id = $1 and f.division like 'U9 %' and f.status = 'final' and h.team_id is not null
+         and exists (select 1 from public.fixtures g where g.competition_id = f.competition_id and g.id <> f.id and g.status = 'final'
+                       and ((g.home_entry_id = f.home_entry_id and g.away_entry_id = f.away_entry_id) or (g.home_entry_id = f.away_entry_id and g.away_entry_id = f.home_entry_id)))
+       order by f.starts_at desc limit 1`, [comp4]))[0]
     if (u9) {
       const h9 = await rpc(pool, await guardianOf(pool, (await squad(pool, u9.home_team)).players[0]), 'head_to_head', { p_fixture: u9.id })
       const all9 = h9.data?.meetings ?? []

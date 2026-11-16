@@ -5,7 +5,9 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT } from './lib.mjs'
 
-const GROUPS = ['Season build', 'Fields & venues', 'Weather & safety on the day', 'Results', 'On-field issues', 'Off-field issues', 'People & messaging', 'Past seasons', 'Screens']
+// Joey's lists: 13 Nov (fields to messaging), 15 Nov (past seasons, screens), 16 Nov (files to a family's data).
+const GROUPS = ['Season build', 'Fields & venues', 'Weather & safety on the day', 'Results', 'On-field issues', 'Off-field issues', 'People & messaging', 'Past seasons', 'Screens',
+  'Files & storage', 'Joining mid-season', 'Role requests', 'Payments (Stripe test mode)', 'Two devices, two parents', 'Admin mistakes', 'Feature switches', "A family's data"]
 
 export function writeReport(rows, ctx) {
   const bugsMd = existsSync(join(ROOT, 'docs', 'BUGS.md')) ? readFileSync(join(ROOT, 'docs', 'BUGS.md'), 'utf8') : ''

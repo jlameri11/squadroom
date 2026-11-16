@@ -173,7 +173,16 @@ export function useScreen<T>(
       // token is missing or expired — both mean the same thing here.
       const unauthenticated = data === null || error?.code === 'PGRST301' || error?.code === '401'
       if (unauthenticated && !error) {
-        window.location.replace('/signin')
+        // A null answer is also what a screen gives a person it is not for —
+        // the setup checklist to a President who is not an owner, say — so
+        // the session decides. Sending every null to /signin bounced anyone
+        // wearing several hats between Home and sign-in, forever
+        // (test-many-hats, 16 Nov 2026).
+        void createClient().auth.getSession().then(({ data: s }) => {
+          if (!live) return
+          if (!s.session) window.location.replace('/signin')
+          else setData(null as T)
+        })
         return
       }
       if (error || data == null) {

@@ -5,9 +5,9 @@
     "role": "competition manager",
     "where": "generate_fixtures / generate_fixtures_managed",
     "steps": "Build the draw for an eight-team division; try to draw the second half of the season",
-    "expected": "Rounds 1\u201314 from one draw, home and away reversed in the second leg",
-    "actual": "One run makes seven rounds; a second run is allowed and labels its games Round 1\u20137 again, with nobody's home game reversed",
-    "fixed": "0276: generate_fixtures(\u2026 p_legs, p_skip_dates)"
+    "expected": "Rounds 1–14 from one draw, home and away reversed in the second leg",
+    "actual": "One run makes seven rounds; a second run is allowed and labels its games Round 1–7 again, with nobody's home game reversed",
+    "fixed": "0276: generate_fixtures(… p_legs, p_skip_dates)"
   },
   {
     "scenario": "S1",
@@ -26,7 +26,7 @@
     "where": "generate_fixtures_managed (round dates as timestamptz + 'n days')",
     "steps": "Draw a season whose rounds cross 4 April 2027 (daylight saving ends); compare a division's first kick-off on 27 March and 10 April",
     "expected": "The same clock time (9 am stays 9 am)",
-    "actual": "Round dates were p_start_at + n days on a timestamptz; in a UTC session (PostgREST) that is n \u00d7 24 hours, so every kick-off after the change was an hour earlier and the pitch fit then pushed it to the next free slot. Found by inspection while fixing the draw; the check that would have caught it is OFF7a",
+    "actual": "Round dates were p_start_at + n days on a timestamptz; in a UTC session (PostgREST) that is n × 24 hours, so every kick-off after the change was an hour earlier and the pitch fit then pushed it to the next free slot. Found by inspection while fixing the draw; the check that would have caught it is OFF7a",
     "fixed": "0276: round dates worked out in the competition's zone"
   },
   {
@@ -52,7 +52,7 @@
     "role": "parent",
     "where": "mirror_fixture / game_screen",
     "steps": "Open the game page as a family after the league moved the game to Field 3",
-    "expected": "\"Harbour Park \u00b7 Field 3\" on the game page, and a push that the field changed",
+    "expected": "\"Harbour Park · Field 3\" on the game page, and a push that the field changed",
     "actual": "The mirrored event carried only the ground, so no family could see which field, and a field change sent nothing",
     "fixed": "0276: the field in the mirrored event's venue; a field change is a change families hear"
   },
@@ -152,7 +152,7 @@
     "steps": "Open a squad chat you are not a member of as the club's owner",
     "expected": "The club's staff read the club's channels (the screen already makes them a host)",
     "actual": "\"Nothing here yet. Say hello.\" above a working composer: the message list hid every line from a non-member; a direct chat between two others opened the same way",
-    "fixed": "0278: staff_reads_channel \u2014 staff read team, age-group, coaches, club-wide and custom chats, never a direct one"
+    "fixed": "0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one"
   },
   {
     "scenario": [
@@ -164,7 +164,7 @@
     "where": "notices_standing / notices_people",
     "steps": "Open the league's Notices as a team manager (a club role, parent hat)",
     "expected": "The league's notices, as the person who files the sheet",
-    "actual": "\"Not one of your chats \u2014 only its members can open it\"",
+    "actual": "\"Not one of your chats — only its members can open it\"",
     "fixed": "0278: team managers stand with the staff for a competition's Notices"
   },
   {
@@ -183,8 +183,18 @@
     "role": "parent",
     "where": "competition_ladder (ladder_enabled)",
     "steps": "Ask for a U9 division's ladder as a family (ladder off in the division rules)",
-    "expected": "Nothing \u2014 the division has no ladder",
+    "expected": "Nothing — the division has no ladder",
     "actual": "Eight rows: the screens hid the tab, the function did not",
     "fixed": "0278: competition_ladder returns nothing for a division whose ladder is off, except to the league"
+  },
+  {
+    "scenario": "SC6",
+    "severity": "high",
+    "role": "parent, league organiser",
+    "where": "/c/{slug}/game/{fixtureId} (public game page)",
+    "steps": "Open a public game page in Season 5 from the match centre",
+    "expected": "The game, its score and this season's head to head",
+    "actual": "“This page couldn’t load — a server error occurred”: the server page handed the head-to-head card a function, which cannot cross into a client component; the parent's and the organiser's screens logged React error #441",
+    "fixed": "components/head-to-head.tsx (hrefBase, a string) + app/c/[slug]/game/[fixtureId]/page.tsx"
   }
 ]
