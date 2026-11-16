@@ -16,9 +16,9 @@
 // browser whose clock is the season's). A step can be run on its own with
 // scripts/simulation/step.mjs while it is being built.
 import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who } from './lib.mjs'
-import { COMP, LEAGUE, eventFor, gamesOn, guardianOf, playerName, queued, rsvp, squad } from './world.mjs'
+import { COMP, LEAGUE, eventFor, gamesOn, guardianOf, playerName, queued, rsvp, say, squad } from './world.mjs'
 import { plusDays } from './routine.mjs'
-import { openSettled, pageAs, withStack } from './live.mjs'
+import { apiAs, has, openSettled, pageAs, text, withStack } from './live.mjs'
 import { APP_URL, sessionCookie, sessionFor } from './stack.mjs'
 
 /** The steps for round r (Saturday S). `add(at, name, fn)`; a step's checks file under the scenario its name starts with. */
@@ -30,6 +30,15 @@ export async function extraPlan(ctx, r, S, add, rand) {
       break
     case 5:
       await joiningFamilies(ctx, S, add, rand)
+      break
+    case 8:
+      await featureSwitches(ctx, S, add, rand)
+      break
+    case 9:
+      await adminMistakes(ctx, S, add, rand)
+      break
+    case 11:
+      await familyData(ctx, S, add, rand)
       break
     default:
       break
@@ -368,6 +377,268 @@ async function joiningFamilies(ctx, S, add, rand) {
         await context.close().catch(() => null)
       }
     }, { browser: true })
+  })
+}
+
+// ============================================ SW · feature switches off
+const SWITCHES = ['scheduled_messages', 'polls', 'match_photos', 'match_video', 'helpers', 'duty_roster', 'role_requests', 'scan', 'digest', 'training_slots', 'kit', 'sponsors', 'game_day', 'club_health', 'development', 'accreditations', 'bans', 'registrations_csv', 'trial_ratings']
+
+async function featureSwitches(ctx, S, add, rand) {
+  const { pool } = ctx
+  const c = 31 + rand.int(9)
+  const club = ids.club(c)
+  const other = ids.club(c === 39 ? 31 : c + 1)
+  add(`${plusDays(S, -5)} 19:00`, 'SW1 the president switches every non-core feature off', async () => {
+    scenario('SW1', 'Feature switches', 'Feature switches off: the President turns every non-core feature off for the club; the switches hold, and a switched-off feature refuses through its functions, not only its screens')
+    const pres = who.president(c)
+    let off = 0
+    for (const key of SWITCHES) {
+      const r = await rpc(pool, pres, 'set_feature', { p_academy: club, p_feature: key, p_enabled: false })
+      if (r.ok) off++; else note(`${key}: ${r.error}`)
+    }
+    check(off === SWITCHES.length, { what: 'the President switches the features off', expected: SWITCHES.length, actual: off, role: 'club president', where: 'set_feature' })
+    const list = (await rpc(pool, pres, 'features_off', { p_academy: club })).data ?? []
+    check(SWITCHES.every((k) => list.includes(k)), { what: 'features_off lists them all', expected: `${SWITCHES.length} keys`, actual: `${list.length}`, role: 'club president', where: 'features_off' })
+    const parent = ids.parent(c, 2)
+    const no = await rpc(pool, parent, 'set_feature', { p_academy: club, p_feature: 'polls', p_enabled: true })
+    mustRefuse(no, { what: 'a parent cannot switch a feature back on', role: 'parent', where: 'set_feature' })
+    // Switched off means off through the functions too, not only hidden on a screen.
+    const team = await val(pool, `select id from public.teams where academy_id = $1 and season = '2027' order by name limit 1`, [club])
+    const sq = await squad(pool, team)
+    const later = await rpc(pool, sq.coach, 'schedule_message', { p_channel: sq.channel, p_body: 'A line for later, with the switch off', p_at: new Date(clock.now.getTime() + 3600_000).toISOString(), p_announcement: false })
+    mustRefuse(later, { what: 'with Scheduled messages off, a coach cannot schedule one through the function', role: 'coach', where: 'schedule_message (feature off)', severity: 'medium' })
+    if (later.ok) await sql(pool, `delete from public.scheduled_messages where id = $1`, [later.data]).catch(() => null)
+    const ask = await rpc(pool, sq.parents[0], 'request_role', { p_academy: club, p_kind: 'volunteer', p_teams: [team], p_area: null, p_note: 'with the switch off' })
+    mustRefuse(ask, { what: 'with Role requests off, a parent cannot file one through the function', role: 'parent', where: 'request_role (feature off)', severity: 'medium' })
+    if (ask.ok) await sql(pool, `delete from public.role_requests where id = $1`, [ask.data]).catch(() => null)
+    ctx.switchesOff = { club, c, team, coach: sq.coach, parent: sq.parents[0], channel: sq.channel, other }
+  })
+  add(`${plusDays(S, -5)} 19:20`, 'SW2 the switched-off features are gone from every screen for that club', async () => {
+    scenario('SW2', 'Feature switches', 'Feature switches off: the composer, the game page, Settings, the Admin hub and Fixtures show nothing of a switched-off feature for that club — and another club still has them')
+    const sw = ctx.switchesOff
+    if (!sw) { note('SW1 did not run'); return }
+    await withStack(ctx, 'SW2 switched-off screens', async ({ db, browser }) => {
+      const ev = await val(pool, `select e.id from public.events e where e.team_id = $1 and e.fixture_id is not null and e.cancelled_at is null and e.starts_at > now() order by e.starts_at limit 1`, [sw.team])
+      const absent = (txt, words, where, role) => {
+        for (const w of words) check(!has(txt, w), { what: `${role}: "${w}" is gone with its switch off`, expected: 'absent', actual: 'still shown', role, where, severity: 'medium' })
+      }
+      const dir = `.cache/screens/${ctx.seed ?? 1}-switches`
+      const { mkdirSync } = await import('node:fs')
+      mkdirSync(dir, { recursive: true })
+      // The coach: the composer and the game page.
+      const co = await pageAs(browser, db, sw.coach, { org: sw.club })
+      try {
+        const chat = await openSettled(co.page, `/chat/${sw.channel}`)
+        absent(chat, ['Send later'], `/chat (club ${sw.c})`, 'coach')
+        const poll = await co.page.$('[aria-label="Create a poll"]')
+        check(!poll, { what: 'coach: the poll button is gone with Polls off', expected: 'absent', actual: poll ? 'a Create a poll button' : 'absent', role: 'coach', where: '/chat composer', severity: 'medium' })
+        await co.page.screenshot({ path: `${dir}/coach-chat.png`, fullPage: true }).catch(() => null)
+        if (ev) {
+          const game = await openSettled(co.page, `/calendar/${ev}?tab=sheet`)
+          absent(game, ['Game video', 'Duties', 'Helpers'], `/calendar/${ev}`, 'coach')
+          const photos = await co.page.$('[data-photos-file]')
+          check(!photos, { what: 'coach: the photo picker is gone with Game photos off', expected: 'absent', actual: photos ? 'shown' : 'absent', role: 'coach', where: '/calendar (match sheet)', severity: 'medium' })
+          await co.page.screenshot({ path: `${dir}/coach-game.png`, fullPage: true }).catch(() => null)
+        }
+        const fixtures = await openSettled(co.page, '/calendar')
+        absent(fixtures, ['From a screenshot'], '/calendar', 'coach')
+      } finally { await co.context.close() }
+      // A parent: Settings.
+      const pa = await pageAs(browser, db, sw.parent, { org: sw.club })
+      try {
+        const settings = await openSettled(pa.page, '/settings')
+        absent(settings, ['Request a role', 'Message pushes'], '/settings', 'parent')
+        await pa.page.screenshot({ path: `${dir}/parent-settings.png`, fullPage: true }).catch(() => null)
+      } finally { await pa.context.close() }
+      // The President: the Admin hub, here and at the club next door.
+      const pr = await pageAs(browser, db, who.president(sw.c), { org: sw.club })
+      try {
+        const hub = await openSettled(pr.page, '/admin')
+        absent(hub, ['Club health', 'Game day', 'Rosters', 'Kit list', 'Sponsors'], '/admin', 'club president')
+        await pr.page.screenshot({ path: `${dir}/president-admin.png`, fullPage: true }).catch(() => null)
+      } finally { await pr.context.close() }
+      const nx = await pageAs(browser, db, who.president(sw.c === 39 ? 31 : sw.c + 1), { org: sw.other })
+      try {
+        const hub2 = await openSettled(nx.page, '/admin')
+        check(has(hub2, 'Kit list') && has(hub2, 'Sponsors'), { what: 'the club next door still has every feature', expected: 'Kit list, Sponsors', actual: text(hub2).slice(0, 120), role: 'club president (another club)', where: '/admin' })
+      } finally { await nx.context.close() }
+    }, { browser: true })
+  })
+  add(`${plusDays(S, 1)} 20:00`, 'SW3 the features come back on', async () => {
+    const sw = ctx.switchesOff
+    if (!sw) return
+    let on = 0
+    for (const key of SWITCHES) { const r = await rpc(pool, who.president(sw.c), 'set_feature', { p_academy: sw.club, p_feature: key, p_enabled: true }); if (r.ok) on++ }
+    const list = (await rpc(pool, who.president(sw.c), 'features_off', { p_academy: sw.club })).data ?? []
+    check(on === SWITCHES.length && list.length === 0, { what: 'switched back on, nothing is off', expected: 'features_off empty', actual: `${list.length} still off`, role: 'club president', where: 'set_feature' })
+  })
+}
+
+// ================================================== AM · admin mistakes
+async function adminMistakes(ctx, S, add, rand) {
+  const { pool } = ctx
+  const c = 51 + rand.int(9)
+  const club = ids.club(c)
+  const staff = (job) => (typeof who[job] === 'function' ? who[job](c) : who.president(c))
+  add(`${plusDays(S, -5)} 19:45`, 'AM1 a wrong import, undone', async () => {
+    scenario('AM1', 'Admin mistakes', 'A wrong import undone: a roster import of the wrong file is undone in one tap and nothing else moves; a wrong draw import can be undone the same way')
+    const registrar = staff('registrar')
+    const team = await val(pool, `select id from public.teams where academy_id = $1 and season = '2027' order by name limit 1`, [club])
+    const before = await val(pool, `select count(*)::int from public.players where team_id = $1`, [team])
+    const batch = await rpc(pool, registrar, 'start_import_batch', { p_academy: club, p_kind: 'players', p_file: 'wrong-season.xlsx' })
+    mustWork(batch, { what: 'the Registrar starts an import', role: 'registrar', where: 'start_import_batch' })
+    if (!batch.ok) return
+    const rows = Array.from({ length: 10 }, (_, i) => ({ full_name: `Wrong Import ${i + 1} ${S}`, dob: `2015-0${1 + (i % 9)}-1${i % 9}` }))
+    const imp = await rpc(pool, registrar, 'import_players', { p_academy: club, p_team: team, p_rows: JSON.stringify(rows), p_season: '2027', p_batch: batch.data })
+    mustWork(imp, { what: 'the wrong file goes in', role: 'registrar', where: 'import_players' })
+    check(imp.data?.created === 10, { what: 'ten strangers land on the squad', expected: 10, actual: imp.data?.created, role: 'registrar', where: 'import_players' })
+    const undo = await rpc(pool, registrar, 'undo_import_batch', { p_batch: batch.data })
+    mustWork(undo, { what: 'the Registrar undoes the import', role: 'registrar', where: 'undo_import_batch' })
+    check(undo.data?.removed === 10, { what: 'all ten are removed', expected: 10, actual: JSON.stringify(undo.data).slice(0, 80), role: 'registrar', where: 'undo_import_batch' })
+    const after = await val(pool, `select count(*)::int from public.players where team_id = $1`, [team])
+    check(after === before, { what: 'the roster is as it was', expected: before, actual: after, role: 'registrar', where: 'players' })
+    const again = await rpc(pool, registrar, 'undo_import_batch', { p_batch: batch.data })
+    mustRefuse(again, { what: 'an import cannot be undone twice', role: 'registrar', where: 'undo_import_batch' })
+    // The same mistake with a draw file.
+    const coach = (await squad(pool, team)).coach
+    const refs = [1, 2, 3].map((i) => `WRONG-${S}-${i}`)
+    const evs = refs.map((ref, i) => ({ external_ref: ref, title: `Wrong import game ${i + 1}`, starts_at: new Date(clock.now.getTime() + (i + 20) * 86400_000).toISOString(), venue: 'Nowhere Park', opponent: 'Nobody FC', round: `W${i + 1}`, was_home: true, type: 'match' }))
+    const fx = await rpc(pool, coach, 'create_imported_events', { p_academy: club, p_team: team, p_events: JSON.stringify(evs), p_cancel_missing: false })
+    mustWork(fx, { what: 'a coach imports a draw file — the wrong one', role: 'coach', where: 'create_imported_events' })
+    const made = await val(pool, `select count(*)::int from public.events where academy_id = $1 and external_ref = any($2::text[])`, [club, refs])
+    const undoFx = await rpc(pool, coach, 'undo_event_import', { p_academy: club, p_team: team, p_refs: refs })
+    check(undoFx.ok && undoFx.data === made, { what: 'a wrong draw import can be undone too, in one call', expected: `${made} games removed`, actual: undoFx.ok ? `${undoFx.data} removed` : `${undoFx.code}: ${undoFx.error}`.slice(0, 120), role: 'coach', where: 'undo_event_import', severity: 'medium' })
+    const left = await val(pool, `select count(*)::int from public.events where academy_id = $1 and external_ref = any($2::text[])`, [club, refs])
+    if (left) await sql(pool, `delete from public.events where academy_id = $1 and external_ref = any($2::text[])`, [club, refs])
+    check(left === 0, { what: 'the wrong games are gone from the families\' calendars', expected: 0, actual: left, role: 'parent', where: 'events' })
+  })
+  add(`${plusDays(S, -4)} 19:45`, 'AM2 the draw re-published mid-season', async () => {
+    scenario('AM2', 'Admin mistakes', 'The draw re-published mid-season: played games, moved games and call-offs survive; only unplayed, unpinned games are redrawn, from today on; no pair meets more than the draw allows')
+    const division = 'U13 Division 2'
+    const before = await sql(pool, `select id, round, status::text, starts_at, pinned, home_entry_id, away_entry_id from public.fixtures where competition_id = $1 and division = $2`, [COMP, division])
+    const played = before.filter((f) => f.status === 'final' || f.status === 'forfeit')
+    const pinned = before.filter((f) => f.pinned && f.status === 'scheduled')
+    const offs = before.filter((f) => f.status === 'postponed' || f.status === 'cancelled')
+    const venue = await val(pool, `select venue_id from public.fixtures where competition_id = $1 and division = $2 and venue_id is not null limit 1`, [COMP, division])
+    // Re-published from the season's first Saturday: the rounds already played are skipped, the rest keep their calendar.
+    const first = await val(pool, `select min((starts_at at time zone 'Australia/Sydney')::date)::text from public.fixtures where competition_id = $1 and division = $2`, [COMP, division])
+    const r = await rpc(pool, who.compManager, 'generate_fixtures_on_pitches', { p_competition: COMP, p_division: division, p_venue: venue, p_first_date: first, p_game_mins: null, p_gap_mins: 5, p_replace: true, p_round_every_days: 7, p_legs: 2, p_skip_dates: ['2027-04-17'] })
+    mustWork(r, { what: 'the competition manager re-publishes the division\'s draw with results already in', role: 'competition manager', where: 'generate_fixtures_on_pitches (p_replace)' })
+    const after = await sql(pool, `select id, round, status::text, starts_at, pinned, home_entry_id, away_entry_id from public.fixtures where competition_id = $1 and division = $2`, [COMP, division])
+    const keptPlayed = played.filter((p) => after.some((a) => a.id === p.id && a.status === p.status))
+    check(keptPlayed.length === played.length, { what: 'every played game is still there, as it finished', expected: `${played.length} kept`, actual: `${keptPlayed.length} kept`, role: 'competition manager', where: 'generate_fixtures (p_replace)' })
+    const keptPinned = pinned.filter((p) => after.some((a) => a.id === p.id && new Date(a.starts_at).getTime() === new Date(p.starts_at).getTime()))
+    check(keptPinned.length === pinned.length, { what: 'every moved game keeps its new time', expected: `${pinned.length} kept`, actual: `${keptPinned.length} kept`, role: 'ground manager', where: 'generate_fixtures (p_replace)' })
+    const keptOff = offs.filter((p) => after.some((a) => a.id === p.id))
+    check(keptOff.length === offs.length, { what: 'called-off games are still on record', expected: `${offs.length}`, actual: `${keptOff.length}`, role: 'competition manager', where: 'generate_fixtures (p_replace)' })
+    const dup = await sql(pool, `select least(home_entry_id, away_entry_id) a, greatest(home_entry_id, away_entry_id) b, count(*)::int n from public.fixtures where competition_id = $1 and division = $2 and status <> 'bye' and home_entry_id is not null and away_entry_id is not null group by 1, 2 having count(*) > 2`, [COMP, division])
+    check(dup.length === 0, { what: 'no pair of teams meets more than twice', expected: 'none', actual: `${dup.length} pairs meet ${dup[0]?.n ?? ''} times`, role: 'competition manager', where: 'generate_fixtures (p_replace)' })
+    const future = after.filter((a) => a.status === 'scheduled' && !a.pinned)
+    const past = future.filter((a) => new Date(a.starts_at) < clock.now)
+    // A game that was already unplayed in the past before the redraw (a round the season never got to — the
+    // step runner's data, not a real season) keeps its slot; only a NEW past date is wrong.
+    const pastBefore = before.filter((f) => f.status === 'scheduled' && !f.pinned && new Date(f.starts_at) < clock.now).length
+    if (pastBefore) note(`${pastBefore} unplayed games were already in the past before the redraw (data at an earlier round)`)
+    else check(past.length === 0, { what: 'the redrawn games are all ahead of today', expected: 'none in the past', actual: `${past.length} dated before today`, role: 'competition manager', where: 'generate_fixtures (p_replace)' })
+    const games = after.filter((a) => a.status !== 'bye').length
+    const teams = await val(pool, `select count(*)::int from public.competition_entries where competition_id = $1 and division = $2 and withdrawn_at is null`, [COMP, division]).catch(() => null)
+    if (teams) check(games === teams * (teams - 1), { what: 'the division still has a full home-and-away season', expected: teams * (teams - 1), actual: games, role: 'competition manager', where: 'generate_fixtures (p_replace)', severity: 'medium' })
+  })
+  add(`${plusDays(S, -3)} 19:45`, 'AM3 a team deleted by mistake', async () => {
+    scenario('AM3', 'Admin mistakes', 'A team deleted by mistake: a squad with players, games or money cannot be deleted outright — the club ends its season instead and nothing is lost')
+    const team = await val(pool, `select id from public.teams where academy_id = $1 and season = '2027' order by name offset 1 limit 1`, [club])
+    const counts = async () => ({
+      players: await val(pool, `select count(*)::int from public.players where team_id = $1`, [team]),
+      events: await val(pool, `select count(*)::int from public.events where team_id = $1`, [team]),
+      members: await val(pool, `select count(*)::int from public.team_members where team_id = $1`, [team]),
+      team: await val(pool, `select count(*)::int from public.teams where id = $1`, [team]),
+    })
+    const b = await counts()
+    const del = await run(pool, who.president(c), `delete from public.teams where id = $1 returning id`, [team])
+    mustRefuse(del, { what: 'deleting a squad with players and games is refused', role: 'club president', where: 'teams (delete)' })
+    if (!del.ok) check(/end|season|players|games|instead/i.test(del.error), { what: 'the refusal says what to do instead', expected: 'end its season instead', actual: del.error.slice(0, 120), role: 'club president', where: 'teams (delete)', severity: 'low' })
+    const a = await counts()
+    check(a.team === 1 && a.players === b.players && a.events === b.events && a.members === b.members, { what: 'nothing was lost', expected: JSON.stringify(b), actual: JSON.stringify(a), role: 'club president', where: 'teams' })
+    const end = await run(pool, who.president(c), `update public.teams set status = 'ended', ended_at = now() where id = $1 returning id`, [team])
+    mustWork(end, { what: 'ending the squad\'s season works instead', role: 'club president', where: 'teams (status ended)' })
+    await sql(pool, `update public.teams set status = 'active', ended_at = null where id = $1`, [team])
+  })
+}
+
+// ================================================= MD · a family's data
+async function familyData(ctx, S, add, rand) {
+  const { pool } = ctx
+  const c = 41 + rand.int(9)
+  const club = ids.club(c)
+  add(`${plusDays(S, -4)} 20:30`, 'MD1 a family downloads their data', async () => {
+    scenario('MD1', "A family's data", 'A family downloads their data: the export carries their children, their answers, their messages and their payments, and nothing of anyone else')
+    const row = (await sql(pool, `
+      select g.profile_id, count(*)::int as kids, array_agg(pl.full_name) as names
+        from public.player_guardians g join public.players pl on pl.id = g.player_id
+       where pl.academy_id = $1 group by g.profile_id order by count(*) desc, g.profile_id limit 1`, [club]))[0]
+    if (!row) { note('no family at this club'); return }
+    const sq = await squad(pool, (await val(pool, `select team_id from public.players pl join public.player_guardians g on g.player_id = pl.id where g.profile_id = $1 limit 1`, [row.profile_id])))
+    const said = await say(pool, row.profile_id, sq.channel, club, 'A line of mine, for the export')
+    mustWork(said, { what: 'the parent posts a line in the squad chat', role: 'parent', where: 'messages' })
+    const ex = await rpc(pool, row.profile_id, 'export_my_data', {})
+    mustWork(ex, { what: 'a parent asks for a copy of their data', role: 'parent', where: 'export_my_data' })
+    const d = ex.data ?? {}
+    check(Array.isArray(d.children) && d.children.length === row.kids && row.names.every((n) => d.children.some((k) => k.name === n)), { what: 'the export names their children, all of them', expected: row.names.join(', '), actual: (d.children ?? []).map((k) => k.name).join(', '), role: 'parent', where: 'export_my_data (children)' })
+    check(JSON.stringify(d.your_messages ?? []).includes('for the export'), { what: 'and their own messages', expected: 'the line just posted', actual: `${(d.your_messages ?? []).length} messages: ${JSON.stringify((d.your_messages ?? [])[0] ?? {}).slice(0, 120)}`, role: 'parent', where: 'export_my_data (your_messages)' })
+    check((d.your_answers ?? []).length >= 1, { what: 'and their answers for games', expected: '≥1', actual: (d.your_answers ?? []).length, role: 'parent', where: 'export_my_data (your_answers)' })
+    const othersNames = await sql(pool, `select pl.full_name from public.players pl where pl.academy_id = $1 and pl.id not in (select player_id from public.player_guardians where profile_id = $2) limit 200`, [club, row.profile_id])
+    const blob = JSON.stringify(d)
+    const leaked = othersNames.filter((o) => blob.includes(o.full_name)).map((o) => o.full_name)
+    check(leaked.length === 0, { what: 'nothing of another family is in it', expected: 'no other child named', actual: leaked.slice(0, 3).join(', ') || 'none', role: 'parent', where: 'export_my_data' })
+    check(!('account_email' in d) || Boolean(d.account_email), { what: 'the export says which email the account has (0214)', expected: 'the account email', actual: 'account_email' in d ? d.account_email : 'not included', role: 'parent', where: 'export_my_data', severity: 'low' })
+  })
+  add(`${plusDays(S, -3)} 20:30`, 'MD2 a family deletes their data mid-season', async () => {
+    scenario('MD2', "A family's data", 'A family deletes their data mid-season through the real route: their messages become tombstones, their answers and guardian links go, the club keeps the roster record and the money records, the owners are told of a child with no contact, and the person is gone from the club')
+    const row = (await sql(pool, `
+      select g.profile_id, pl.id as player, pl.full_name, pl.team_id,
+             (select count(*) from public.payments pm where pm.profile_id = g.profile_id) as paid
+        from public.player_guardians g join public.players pl on pl.id = g.player_id
+       where pl.academy_id = $1 and (select count(*) from public.player_guardians x where x.player_id = pl.id) = 1
+         and (select count(*) from public.player_guardians y where y.profile_id = g.profile_id) = 1
+       order by paid desc, g.profile_id limit 1`, [club]))[0]
+    if (!row) { note('no sole guardian of one child at this club'); return }
+    const me = row.profile_id
+    const sq = await squad(pool, row.team_id)
+    const said = await say(pool, me, sq.channel, club, 'A line I will take with me')
+    const msgId = said.data?.[0]?.id ?? null
+    const payments = await val(pool, `select count(*)::int from public.payments where profile_id = $1`, [me])
+    if (!payments) note('this family has no payment on record — the "money kept" check is trivial here')
+    const before = { msgs: await val(pool, `select count(*)::int from public.messages where sender_id = $1`, [me]), rsvps: await val(pool, `select count(*)::int from public.event_rsvps where profile_id = $1`, [me]) }
+    const out = await withStack(ctx, 'MD2 erase through the route', async ({ db }) => {
+      const r = await apiAs(db, me, '/api/me/erase', { method: 'POST', body: {} })
+      return r
+    })
+    if (!out) return
+    check(out.status === 200 && out.data?.manifest, { what: 'the route erases and hands back a manifest', expected: '200 + manifest', actual: `${out.status} ${JSON.stringify(out.data).slice(0, 120)}`, role: 'parent', where: '/api/me/erase' })
+    const after = {
+      guardian: await val(pool, `select count(*)::int from public.player_guardians where profile_id = $1`, [me]),
+      rsvps: await val(pool, `select count(*)::int from public.event_rsvps where profile_id = $1`, [me]),
+      msgBody: msgId ? await val(pool, `select body from public.messages where id = $1`, [msgId]) : 'n/a',
+      msgRow: msgId ? await val(pool, `select count(*)::int from public.messages where id = $1`, [msgId]) : 0,
+      member: await val(pool, `select count(*)::int from public.academy_members where profile_id = $1 and status = 'active'`, [me]),
+      profile: await val(pool, `select full_name from public.profiles where id = $1`, [me]),
+      authUser: await val(pool, `select count(*)::int from auth.users where id = $1`, [me]),
+      email: await val(pool, `select count(*)::int from public.account_emails where profile_id = $1`, [me]),
+      payments: await val(pool, `select count(*)::int from public.payments where profile_id = $1`, [me]),
+      child: await val(pool, `select count(*)::int from public.players where id = $1`, [row.player]),
+      told: await val(pool, `select count(*)::int from public.notification_queue where kind = 'guardian_erased' and payload->>'player_id' = $1`, [row.player]),
+    }
+    check(after.guardian === 0 && after.rsvps === 0, { what: 'their guardian links and answers are gone', expected: '0 and 0', actual: `${after.guardian} links, ${after.rsvps} answers (had ${before.rsvps})`, role: 'parent', where: 'erase_me' })
+    check(after.msgRow === 1 && after.msgBody == null, { what: 'their messages stay as tombstones with no words', expected: 'row kept, body null', actual: `row ${after.msgRow}, body ${JSON.stringify(after.msgBody)}`, role: 'parent', where: 'erase_me (messages)' })
+    check(after.member === 0, { what: 'they are no longer a member of the club', expected: 0, actual: after.member, role: 'club president', where: 'academy_members' })
+    check(after.child === 1, { what: "the child's roster record stays with the club", expected: 1, actual: after.child, role: 'coach', where: 'players' })
+    check(after.told >= 1, { what: 'the owners are told the child has no contact now', expected: '≥1', actual: after.told, role: 'club president', where: 'notification_queue (guardian_erased)' })
+    check(after.payments === payments, { what: 'the money records are kept, as the manifest promises', expected: payments, actual: after.payments, role: 'treasurer', where: 'payments' })
+    check(after.email === 0 && (after.profile === 'Removed' || after.profile == null), { what: 'no email or name is left behind', expected: 'no account email; profile Removed or gone', actual: `${after.email} emails, profile ${after.profile}`, role: 'parent', where: 'erase_me / the route' })
+    const roster = (await rpc(pool, sq.coach, 'who_hasnt_answered', { p_event: await val(pool, `select e.id from public.events e where e.team_id = $1 and e.starts_at > now() and e.cancelled_at is null order by e.starts_at limit 1`, [row.team_id]) })).data ?? []
+    const mine = roster.find((x) => x.player_id === row.player)
+    check(!mine || mine.guardian_id == null, { what: 'the coach sees the child with nobody to nudge', expected: 'no guardian', actual: JSON.stringify(mine ?? 'not listed').slice(0, 80), role: 'coach', where: 'who_hasnt_answered' })
+    ctx.erased = { me, player: row.player, authUser: after.authUser }
   })
 }
 

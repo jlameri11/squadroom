@@ -5619,7 +5619,7 @@ export type Database = {
           instalment_seq: number
           paid_at: string | null
           player_id: string | null
-          profile_id: string
+          profile_id: string | null
           refunded_at: string | null
           registration_request_id: string | null
           request_id: string
@@ -5638,7 +5638,7 @@ export type Database = {
           instalment_seq?: number
           paid_at?: string | null
           player_id?: string | null
-          profile_id: string
+          profile_id?: string | null
           refunded_at?: string | null
           registration_request_id?: string | null
           request_id: string
@@ -5657,7 +5657,7 @@ export type Database = {
           instalment_seq?: number
           paid_at?: string | null
           player_id?: string | null
-          profile_id?: string
+          profile_id?: string | null
           refunded_at?: string | null
           registration_request_id?: string | null
           request_id?: string
@@ -11508,6 +11508,10 @@ export type Database = {
       }
       two_step_status: { Args: never; Returns: Json }
       two_step_trust_this_session: { Args: { p_device: string }; Returns: Json }
+      undo_event_import: {
+        Args: { p_academy: string; p_refs: string[]; p_team: string }
+        Returns: number
+      }
       undo_import_batch: { Args: { p_batch: string }; Returns: Json }
       undo_last_tick: { Args: { p_event: string }; Returns: Json }
       undo_levy_payment: { Args: { p_payment: string }; Returns: Json }

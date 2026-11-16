@@ -294,7 +294,7 @@ export function check(passed, { what, expected, actual, role = 'â€”', where = 'â
 
 /** A must-not: the call should be refused (a policy or a rule) or come back empty. */
 export function mustRefuse(result, opts) {
-  const refused = !result.ok && ['42501', 'P0001', '22023', '23514', '23P01', '23505'].includes(result.code)
+  const refused = !result.ok && ['42501', 'P0001', '22023', '23514', '23P01', '23505', '23503'].includes(result.code)
   const empty = result.ok && (result.data == null || (Array.isArray(result.data) && result.data.length === 0) || result.data === 0 || result.data === false)
   return check(refused || empty, { ...opts, expected: opts.expected ?? 'refused', actual: result.ok ? `allowed: ${JSON.stringify(result.data)?.slice(0, 120)}` : `${result.code}: ${result.error}` })
 }

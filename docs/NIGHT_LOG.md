@@ -81,7 +81,18 @@ separate organisations): applied on dev by `scripts/demo-spl-ownership.mjs`
 — Joey owns NRIFA only, the League organiser account owns the Sydney
 Premier League beside SPL Admin, NRIFA stays entered in SPL Season 3 with
 its three squads, so Joey sees the league as a club head; `docs/DEMO.md`
-updated. A trap found on the way, now in CLAUDE.md: `migrate.mjs` knows a
+updated. Then three more simulation groups built and green on their own —
+feature switches, admin mistakes, a family's data — which found **0285**: a
+switched-off feature still worked through its functions (now off means
+off, polls by a trigger, the poll button hidden); a wrong draw import had no
+undo (`undo_event_import`); re-publishing a draw mid-season met eight pairs
+three times (the pair skip looked only at a pinned game in the same round);
+a squad with 15 players and 52 games could be deleted outright (refused
+now, End the season offered; the two composite set-null keys named their
+column); a family's erasure took their payment records with the login
+(`payments.profile_id` set null instead). test-rls 238–239, all 239 pass —
+after lending Joey the SPL's seat for the suite's run, since the league
+checks were written when one account owned both. A trap found on the way, now in CLAUDE.md: `migrate.mjs` knows a
 migration by its name without the number, so `0284_playfootball_first`
 read as 0162 and "applied" nothing until renamed.
 

@@ -236,5 +236,65 @@
     "expected": "Each coach told, the way the committee is told of a role request",
     "actual": "Nobody's phone buzzed; the requests waited until a coach opened Home",
     "fixed": "0283: join_requests_tell_the_coach (kind join_request)"
+  },
+  {
+    "scenario": "SW1",
+    "severity": "medium",
+    "role": "coach",
+    "where": "schedule_message / request_role / add_match_photos / add_match_video / polls (feature off)",
+    "steps": "The President switches Scheduled messages, Role requests, Game photos, Game video and Polls off; a coach schedules a message, a parent asks for a role",
+    "expected": "Refused: the feature is switched off for this club",
+    "actual": "Allowed — the switch only hid the screens",
+    "fixed": "0285: each function refuses with a sentence; polls by a trigger"
+  },
+  {
+    "scenario": "SW2",
+    "severity": "medium",
+    "role": "coach",
+    "where": "/chat composer (Polls off)",
+    "steps": "Polls switched off; open the squad chat as its coach",
+    "expected": "No Create a poll button",
+    "actual": "The button still shown",
+    "fixed": "app/chat/[channelId]/composer.tsx: behind WhenOn polls"
+  },
+  {
+    "scenario": "AM1",
+    "severity": "medium",
+    "role": "coach",
+    "where": "create_imported_events (undo)",
+    "steps": "A coach imports the wrong draw file; tries to undo it",
+    "expected": "The wrong games removed in one call, like a roster import",
+    "actual": "No undo existed for a fixture import",
+    "fixed": "0285: undo_event_import(p_academy, p_team, p_refs)"
+  },
+  {
+    "scenario": "AM2",
+    "severity": "high",
+    "role": "competition manager",
+    "where": "generate_fixtures_managed (p_replace)",
+    "steps": "Re-publish a division's draw after eight rounds of results",
+    "expected": "Played, moved and called-off games kept once; only unplayed games redrawn; no pair meets more than twice",
+    "actual": "Eight pairs met three times; 64 games where 56 belong — the pair skip looked only at a pinned game in the same round",
+    "fixed": "0285: a pairing the division already has, whichever round, is drawn already"
+  },
+  {
+    "scenario": "AM3",
+    "severity": "high",
+    "role": "club president",
+    "where": "teams (delete)",
+    "steps": "The President deletes a squad with players and games",
+    "expected": "Refused, with End the season offered instead",
+    "actual": "Deleted — 15 players, 52 games and 27 memberships went with it",
+    "fixed": "0285: teams_refuse_delete_with_history; the composite set-null keys named their column"
+  },
+  {
+    "scenario": "MD2",
+    "severity": "high",
+    "role": "parent",
+    "where": "payments.profile_id (erase)",
+    "steps": "A family deletes their data; the route removes the login",
+    "expected": "The money records kept, as the manifest promises",
+    "actual": "payments cascaded away with the login",
+    "fixed": "0285: payments.profile_id set null when the account goes"
   }
 ]

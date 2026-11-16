@@ -24,11 +24,22 @@ declare
   OUTSIDER constant uuid := '00000000-0000-0000-0000-0000000000c2'; -- other tenant
   ANNO     constant uuid := '00000000-0000-0000-0000-00000000c001';
   v_u8 uuid; v_rv uuid; n int; b bool; b2 bool; foreign_rows int;
+  v_lent_spl bool := false;
   v_kid uuid; v_g1 uuid; v_g2 uuid; v_ev114 uuid; v_grid jsonb; v_going int; v_maybe int; v_total int; v_roster int;
   v_ev uuid; v_ev_total int; v_msg uuid; v_comp uuid;
 begin
   -- For checks 44–45. Read here, before any role switch, so it is a real id.
   select id into v_comp from public.competitions limit 1;
+  -- 16 Nov 2026: Joey (COACH) owns NRIFA only — the League organiser account owns the
+  -- Sydney Premier League (scripts/demo-spl-ownership.mjs). The league checks below were
+  -- written when one account owned both, so for this run the account is lent the SPL's
+  -- owner seat, and gives it back at the end.
+  if exists (select 1 from public.academies where id = '00000000-0000-0000-0000-0000000a0003')
+     and not exists (select 1 from public.academy_members where academy_id = '00000000-0000-0000-0000-0000000a0003' and profile_id = COACH) then
+    insert into public.academy_members (academy_id, profile_id, role, roles, status, invited_by)
+    values ('00000000-0000-0000-0000-0000000a0003', COACH, 'owner', array['owner']::public.academy_role[], 'active', null);
+    v_lent_spl := true;
+  end if;
   select id into v_u8 from public.channels where team_id = '00000000-0000-0000-0000-0000000d0008' and type='team';
   select id into v_rv from public.channels where team_id = '00000000-0000-0000-0000-0000000d0099' and type='team';
 
@@ -5402,6 +5413,26 @@ begin
   select count(*) into n from pg_trigger where tgname in ('fixtures_season_over', 'match_sheets_season_over', 'match_events_season_over', 'competition_entries_season_over', 'competitions_season_over');
   insert into rls_results values (234,'a finished season''s tables carry the read-only guard (0279)', case when n = 5 then 'PASS' else 'FAIL' end);
 
+  -- 238–239 (0285): a switched-off feature is off through its function too;
+  -- a squad with players on it cannot be deleted, even by an owner.
+  perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.set_feature(ACAD_A, 'scheduled_messages', false);
+  b := false;
+  begin
+    perform public.schedule_message(v_u8, 'RLS 238: a line for later', now() + interval '1 day', false);
+  exception when others then b := true;
+  end;
+  perform public.set_feature(ACAD_A, 'scheduled_messages', true);
+  b2 := false;
+  begin
+    delete from public.teams where id = (select pl.team_id from public.players pl where pl.academy_id = ACAD_A and pl.team_id is not null limit 1);
+  exception when others then b2 := true;
+  end;
+  execute 'reset role';
+  insert into rls_results values (238,'with Scheduled messages off, scheduling one is refused (0285)', case when b then 'PASS' else 'FAIL' end);
+  insert into rls_results values (239,'a squad with players on it cannot be deleted (0285)', case when b2 then 'PASS' else 'FAIL' end);
+
   -- 236–237 (0284): the club's PlayFootball import is the registrations
   -- people's to read, not a parent's; a family claims their child only with
   -- name, birthday AND FFA number together.
@@ -5438,6 +5469,9 @@ begin
   execute 'reset role';
   insert into rls_results values (235,'a President who is not an owner reads the setup checklist; a parent still does not (0282)', case when b and b2 then 'PASS' else 'FAIL' end);
 
+  if v_lent_spl then
+    delete from public.academy_members where academy_id = '00000000-0000-0000-0000-0000000a0003' and profile_id = COACH;
+  end if;
   delete from public.registration_requests where child_name in ('RLS Probe Child', 'Direct');
   delete from public.staff_clearances where number in ('RLSPROBE', 'SELF');
   delete from public.message_reports where note in ('rls probe', 'direct insert');

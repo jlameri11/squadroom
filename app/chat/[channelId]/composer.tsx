@@ -596,13 +596,16 @@ export function Composer({
           ＋
         </button>
         {isHost && (
-          <button
-            onClick={() => { setPollOpen((v) => !v); setFixtures(null) }}
-            className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-ink-2"
-            aria-label="Create a poll"
-          >
-            📊
-          </button>
+          // 0285: a switched-off feature is gone from the screen as well as refused by the database.
+          <WhenOn feature="polls">
+            <button
+              onClick={() => { setPollOpen((v) => !v); setFixtures(null) }}
+              className="grid h-10 w-9 flex-none place-items-center rounded-full text-lg text-ink-2"
+              aria-label="Create a poll"
+            >
+              📊
+            </button>
+          </WhenOn>
         )}
         {isHost && (
           <button
