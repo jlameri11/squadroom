@@ -8,6 +8,8 @@ import { COMP, LEAGUE, gamesOn, ladder, squad, val as v } from './world.mjs'
 import * as rounds from './scenarios-rounds.mjs'
 import { runScreens } from './screens.mjs'
 import * as rounds2 from './scenarios-rounds2.mjs'
+import * as extra from './scenarios-extra.mjs'
+import { rng } from './routine.mjs'
 
 const DIVISIONS_BY_VENUE = (division) => {
   const m = /^(U\d+) Division (\d+)$/.exec(division)
@@ -224,6 +226,9 @@ export async function roundPlan(ctx, r, S) {
   const plan = []
   const add = stepAdder(plan)
   await rounds.everyRound(ctx, r, S, add)
+  // Joey's list of 16 Nov (files, families joining, role requests, Stripe test mode, two devices,
+  // admin mistakes, feature switches, a family's data): each group has its round.
+  await extra.extraPlan(ctx, r, S, add, rng(ctx.seed * 1000 + 500 + r))
   switch (r) {
     case 1: await rounds.round1(ctx, S, add); break
     case 2: await rounds.round2(ctx, S, add); break

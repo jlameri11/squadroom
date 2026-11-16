@@ -211,13 +211,18 @@ export const bugs = []
  * One row per distinct finding (the same place/expected/actual is written once).
  * Returns the bug's number.
  */
+/** SIM_DRY=1 (scripts/simulation/step.mjs): print the bugs and results, write no file. */
+const DRY = process.env.SIM_DRY === '1'
 export function logBug({ severity, role, where, steps, expected, actual, scenario }) {
   const key = `${where}|${expected}|${String(actual).slice(0, 80)}`
   if (seen.has(key)) return bugs.find((b) => b.key === key)?.n ?? null
   seen.add(key)
-  startBugLog()
-  const n = (readFileSync(BUGS, 'utf8').match(/^\| \d+ \|/gm) ?? []).length + 1
-  appendFileSync(BUGS, `| ${n} | ${cell(severity)} | ${cell(role)} | ${cell(where)} | ${cell(steps)} | ${cell(expected)} | ${cell(actual)} |  |\n`)
+  let n = bugs.length + 1
+  if (!DRY) {
+    startBugLog()
+    n = (readFileSync(BUGS, 'utf8').match(/^\| \d+ \|/gm) ?? []).length + 1
+    appendFileSync(BUGS, `| ${n} | ${cell(severity)} | ${cell(role)} | ${cell(where)} | ${cell(steps)} | ${cell(expected)} | ${cell(actual)} |  |\n`)
+  }
   bugs.push({ n, key, severity, role, where, scenario })
   console.log(`  \x1b[31mbug #${n}\x1b[0m [${severity}] ${role} — ${where}: expected ${expected}; got ${String(actual).slice(0, 160)}`)
   return n
@@ -312,7 +317,7 @@ export function saveResults(extra = {}) {
     const status = !s.ran || s.checks.length === 0 ? 'NOT RUN' : passed ? (fixedBy[s.id] ? 'FIXED' : 'PASS') : 'FAIL'
     return { ...s, status, fixed: fixedBy[s.id] ?? null }
   })
-  writeFileSync(RESULTS, JSON.stringify({ at: new Date().toISOString(), rows, bugs, ...extra }, null, 2))
+  if (!DRY) writeFileSync(RESULTS, JSON.stringify({ at: new Date().toISOString(), rows, bugs, ...extra }, null, 2))
   return rows
 }
 

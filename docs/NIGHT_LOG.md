@@ -24,13 +24,33 @@ mints ten-year sessions and refuses a server whose clock is not the season's
 through `public.sim_now()`; the driver runs the off-season a step at a time;
 the clock never goes backwards and says so; `refereeOf` is the accepted
 referee; the sheet falls to the team manager when the coach may not; the
-ground manager tries later in the day). **Seed 4 is the first run whose
-screen checks count.** `scripts/local-db/serve.mjs` holds the local Postgres
-up for ad-hoc queries. Joey's next brief arrived mid-morning (files through
-real storage, 200 families joining mid-season, role requests, Stripe test
-mode for a sample of clubs, two devices and two parents, admin mistakes,
-feature switches off, a family's export and deletion) — being built as new
-scenario groups.
+ground manager tries later in the day). **Seed 4 ran clean through both
+seasons** (30 pass · 19 fixed · 4 fail · 7 bugs): one real product bug — the
+new **public game page failed on the server** (a function handed to a client
+component; fixed, `head-to-head.tsx`/the page) — and six harness
+expectations (a nine-team division has no second meeting; finals of four are
+three games; the rollover's managers must go through `grant_club_role`, and
+a coach whose check has lapsed stops only their own squad; the catch-up
+moves). **The `test-many-hats` timeout was a product bug, and Joey's own
+kind of account:** a person wearing several hats bounced between Home and
+sign-in for ever, because the setup checklist answered `null` to a President
+who is not an owner and the screen hook read every `null` as "signed out"
+(135 reloads in 25 seconds). Fixed in `lib/hooks/use-screen.ts` (the session
+decides) and **0282** (the committee that runs the club reads the checklist;
+test-rls 235, all 235 pass on dev); the suite passes end to end.
+`scripts/local-db/serve.mjs` holds the local Postgres up for ad-hoc queries;
+`.next-sim` (2,515 build files) had been committed by mistake and is
+untracked. Joey's next two briefs arrived during the morning: **(a) more
+simulation scenarios** (files through real storage, 200 families joining
+mid-season through the sign-up flow, role requests, Stripe test mode for a
+sample of clubs, two devices and two parents, admin mistakes, feature
+switches off, a family's export and deletion) — the local stack now has an
+auth service (the admin API, the password grant, magic links — accounts are
+rows in `auth.users`, the 0272 triggers do the rest) and a storage service
+(files on disk, rows in `storage.objects` written as the caller so the real
+policies decide; `stack-services.mjs`, smoke-tested end to end), and the
+four product areas have been mapped; **(b) the registration flow,
+PlayFootball first** — being built next.
 
 - **NEEDS JOEY (simulation, 16 Nov):** a referee's offer that nobody
   answers is never chased — the league's Home counts the game as without a

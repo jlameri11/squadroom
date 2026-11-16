@@ -275,9 +275,12 @@ begin
   -- Club OWNERS and ADMINS need it to do the verification; a coach does not,
   -- and a parent certainly does not — "the coach is verified" is a fact the
   -- directory can show without the number.
+  -- (The seed now records the demo coach's own check, so the probe row is
+  -- only added where there is none; the checks below read the same either way.)
   insert into public.staff_clearances
     (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
-  values (ACAD_A, MARCUS, 'wwcc', 'RLSPROBE', 'cleared', current_date + 200, COACH);
+  values (ACAD_A, MARCUS, 'wwcc', 'RLSPROBE', 'cleared', current_date + 200, COACH)
+  on conflict (academy_id, profile_id) do nothing;
 
   perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
   execute 'set local role authenticated';
@@ -1477,7 +1480,11 @@ begin
     -- not Ravens'; NRIFA's coach, Ravens' coach and the league see none of NRIFA's.
     perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
     execute 'set local role authenticated';
-    select count(*) into n from public.member_emails(ACAD_A) where profile_id = PARENT;
+    -- A coach who is not staff is refused outright (42501) rather than handed an empty list: either reads as "none".
+    begin
+      select count(*) into n from public.member_emails(ACAD_A) where profile_id = PARENT;
+    exception when others then n := 0;
+    end;
     b := false;
     begin perform * from public.member_emails(ACAD_B); exception when others then b := true; end;
     execute 'reset role';

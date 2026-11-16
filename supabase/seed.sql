@@ -61,6 +61,14 @@ values
   ('00000000-0000-0000-0000-0000000a0001','NRIFA Football Academy','nrifa','#202842','Australia/Sydney','00000000-0000-0000-0000-0000000000a1'),
   ('00000000-0000-0000-0000-0000000a0002','Ravens FC','ravens','#7A2233','Australia/Sydney','00000000-0000-0000-0000-0000000000c1');
 
+-- A coach's membership needs a current Working With Children Check on file
+-- (0120, 0237's require_a_clearance_for_staff), so the demo's coach has one
+-- before the memberships go in — dated from today, so a replay never rots.
+insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by) values
+  ('00000000-0000-0000-0000-0000000a0001','00000000-0000-0000-0000-0000000000a1','wwcc','SEED-A1','cleared', current_date + 365, '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000a0001','00000000-0000-0000-0000-0000000000a2','wwcc','SEED-A2','cleared', current_date + 365, '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000a0002','00000000-0000-0000-0000-0000000000c1','wwcc','SEED-C1','cleared', current_date + 365, '00000000-0000-0000-0000-0000000000c1');
+
 insert into public.academy_members (academy_id, profile_id, role, invited_by) values
   ('00000000-0000-0000-0000-0000000a0001','00000000-0000-0000-0000-0000000000a1','owner', null),
   ('00000000-0000-0000-0000-0000000a0001','00000000-0000-0000-0000-0000000000a2','coach', '00000000-0000-0000-0000-0000000000a1'),
