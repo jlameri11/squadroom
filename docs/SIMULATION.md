@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-16 00:10 UTC · 15 rounds played · 29 PASS · 19 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 18 min so far
+Last run: 2026-11-16 00:10 UTC · 16 rounds played · 29 PASS · 19 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 19 min so far
 
 ## What this is
 
@@ -53,7 +53,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
 | R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded | **FIXED** | 11/11 | — | 0278: a forfeit is mirrored as a called-off game with its reason |
 | R5 | Points deduction, ladder ties (goal difference, goals for, head-to-head), hidden scores and no ladder for U9 | **FIXED** | 8/8 | — | 0278: competition_ladder returns nothing for a division whose ladder is off, except to the league |
-| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded | **FIXED** | 2/2 | — | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
+| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded | **FIXED** | 4/4 | — | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
 
 ### On-field issues
 
@@ -103,7 +103,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 30 league notices, 180 club messages, 3584 chat lines, 1792 reactions, 150 polls, 600 scheduled messages, 51602 RSVPs, 2104 referee appointments, 4159 team sheets, 1756 results agreed on the sheets, 141 disputes (142 ruled on), 54 late results, 372 cards.
+Over the run: 32 league notices, 192 club messages, 3824 chat lines, 1912 reactions, 160 polls, 640 scheduled messages, 51602 RSVPs, 2112 referee appointments, 4167 team sheets, 1763 results agreed on the sheets, 141 disputes (142 ruled on), 54 late results, 373 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -122,6 +122,7 @@ Over the run: 30 league notices, 180 club messages, 3584 chat lines, 1792 reacti
 | 13 | 2027-05-08 | 138 | 74080 | 74072 | 0 | event_reminder 45836, announcement 19724, message 7294, team_sheet_due 274, match_day 274, entry_fee_owed 255 |
 | 14 | 2027-05-15 | 138 | 65878 | 65873 | 0 | event_reminder 45732, announcement 11268, message 7290, fee_overdue 603, match_day 274, team_sheet_due 274 |
 | 15 | 2027-05-22 | 164 | 58277 | 58270 | 0 | event_reminder 39273, announcement 11030, message 7358, match_day 305, entry_fee_owed 255, discipline_suspension 35 |
+| 16 | 2027-05-29 | 8 | 50661 | 50656 | 0 | event_reminder 31396, announcement 11270, message 7364, fee_overdue 603, wwcc_expiring 12, referee_appointment 8 |
 
 ## The peak
 
