@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-16 00:00 UTC · 5 rounds played · 19 PASS · 13 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 9 min so far
+Last run: 2026-11-16 00:03 UTC · 6 rounds played · 22 PASS · 14 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 12 min so far
 
 ## What this is
 
@@ -59,6 +59,9 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
+| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 6/6 | — | — |
+| OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 8/8 | — | — |
 
 ### Off-field issues
 
@@ -84,10 +87,11 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SC1 | Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them | **FIXED** | 105/105 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits | **FIXED** | 129/129 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 121/121 | — | — |
+| SC4 | Screens after a suspension: the coach and the club see it, the league's discipline page lists it | **PASS** | 130/130 | — | — |
 
 ## The load
 
-Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reactions, 50 polls, 200 scheduled messages, 17324 RSVPs, 765 referee appointments, 1393 team sheets, 474 results agreed on the sheets, 40 disputes (41 ruled on), 15 late results, 99 cards.
+Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reactions, 60 polls, 240 scheduled messages, 20792 RSVPs, 916 referee appointments, 1674 team sheets, 606 results agreed on the sheets, 48 disputes (49 ruled on), 17 late results, 128 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -96,6 +100,7 @@ Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reaction
 | 3 | 2027-02-20 | 145 | 77514 | 75436 | 2293 | event_reminder 45100, announcement 19481, message 7364, event_back_on 2040, event_cancelled 2040, team_sheet_due 289 |
 | 4 | 2027-02-27 | 145 | 75785 | 75145 | 7705 | event_reminder 38952, announcement 11267, event_back_on 8763, event_cancelled 7560, message 7356, fee_overdue 402 |
 | 5 | 2027-03-06 | 150 | 67707 | 67654 | 159 | event_reminder 46722, announcement 11267, message 7335, event_back_on 680, fee_overdue 402, match_day 298 |
+| 6 | 2027-03-13 | 145 | 66692 | 66692 | 0 | event_reminder 46512, announcement 11131, message 7300, team_sheet_due 289, match_day 289, entry_fee_owed 255 |
 
 ## Bugs
 
