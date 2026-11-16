@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-16 00:11 UTC · 17 rounds played · 31 PASS · 19 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 20 min so far
+Last run: 2026-11-16 00:14 UTC · 18 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 24 bugs logged (17 fixed) · 23 min so far
 
 ## What this is
 
@@ -96,7 +96,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
-| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 9/9 | — | — |
+| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history — _Season 4's public page still shows every game, the finals and the ladders: expected >2000 games, ≥4 finals, ≥20 ladders, got 2010 games, 3 finals, 30 ladders_ | **FAIL** | 21/22 | #19 | — |
+| HH1 | Head to head on every match: only the two teams' meetings in the season the game belongs to, a summary and the list; past seasons stay behind the switcher — _a MiniRoos head to head shows the meetings without scores: expected played, no scores, got 0 meetings, scores hidden_ | **FAIL** | 6/7 | #20 | — |
 
 ### Screens
 
@@ -107,10 +108,11 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 121/121 | — | — |
 | SC4 | Screens after a suspension: the coach and the club see it, the league's discipline page lists it | **PASS** | 130/130 | — | — |
 | SC5 | Screens at the finals: the grand finals, the finished ladders, the champions | **PASS** | 102/102 | — | — |
+| SC6 | Screens in Season 5: the season switcher, last season's page and ladders in full, head to head for this season — _parent: no page errors: expected none, got Minified React error #441; visit https://react.dev/errors/441 for the full message or use ; parent: a public game page shows this season's head to head and nothing from 2027: expected Head to head · 2028, got This page couldn’t load A server error occurred. Reload to try again. Reload ERROR 1988402; league organiser: no page errors: expected none, got Minified React error #441; visit https://react.dev/errors/441 for the full message or use ; league organiser: a public game page shows this season's head to head and nothing from 2027: expected Head to head · 2028, got This page couldn’t load A server error occurred. Reload to try again. Reload ERROR 1988402_ | **FAIL** | 119/123 | #21, #22, #23, #24 | — |
 
 ## The load
 
-Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reactions, 170 polls, 680 scheduled messages, 51602 RSVPs, 2117 referee appointments, 4172 team sheets, 1766 results agreed on the sheets, 141 disputes (142 ruled on), 54 late results, 374 cards.
+Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reactions, 170 polls, 720 scheduled messages, 55045 RSVPs, 2271 referee appointments, 4437 team sheets, 1886 results agreed on the sheets, 152 disputes (153 ruled on), 57 late results, 392 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -131,6 +133,7 @@ Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reacti
 | 15 | 2027-05-22 | 164 | 58277 | 58270 | 0 | event_reminder 39273, announcement 11030, message 7358, match_day 305, entry_fee_owed 255, discipline_suspension 35 |
 | 16 | 2027-05-29 | 8 | 50661 | 50656 | 0 | event_reminder 31396, announcement 11270, message 7364, fee_overdue 603, wwcc_expiring 12, referee_appointment 8 |
 | 17 | 2027-06-05 | 4 | 51016 | 51010 | 0 | event_reminder 31396, announcement 11985, message 7360, entry_fee_owed 255, match_correction_requested 6, discipline_suspension 5 |
+| 18 | 2028-02-05 | 144 | 52353 | 52352 | 0 | event_changed 22012, event_reminder 15050, announcement 11458, entry_fee_owed 1495, message 881, fee_overdue 603 |
 
 ## The peak
 
@@ -167,7 +170,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-18 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+24 logged in `docs/BUGS.md`, 17 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
