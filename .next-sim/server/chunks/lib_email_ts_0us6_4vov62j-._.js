@@ -1,3 +1,0 @@
-module.exports=[133,e=>{"use strict";let o=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;e.s(["n",0,function(e){let t="string"==typeof e?e.trim().toLowerCase():"";return t?!o.test(t)||t.length>254?{ok:!1,error:"That doesn’t look like an email address."}:t.endsWith("@squadroom.invalid")?{ok:!1,error:"That address can’t receive email. Use one you read."}:{ok:!0,email:t}:{ok:!1,error:"An email address, please — any one you read. It doesn’t have to match PlayFootball."}},"M",0,function(e){return!e||e.toLowerCase().endsWith("@squadroom.invalid")}])}];
-
-//# sourceMappingURL=lib_email_ts_0us6_4vov62j-._.js.map
