@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-16 00:04 UTC · 7 rounds played · 24 PASS · 15 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 13 min so far
+Last run: 2026-11-16 00:05 UTC · 8 rounds played · 26 PASS · 15 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 14 min so far
 
 ## What this is
 
@@ -59,9 +59,9 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
-| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 7/7 | — | — |
+| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 11/11 | — | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 17/17 | — | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -72,6 +72,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
+| OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
+| OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 
 ### People & messaging
 
@@ -80,8 +82,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM3 | Busy team chats with replies, reactions, photos and polls | **PASS** | 4/4 | — | — |
 | PM5 | Quiet hours and the digest respected | **PASS** | 3/3 | — | — |
 | PM4 | Scheduled messages go at their time, not before | **PASS** | 4/4 | — | — |
-| PM6 | No message sent twice; late messages not sent | **PASS** | 7/7 | — | — |
-| PM1 | Notices to everyone / club staff only | **PASS** | 4/4 | — | — |
+| PM6 | No message sent twice; late messages not sent | **PASS** | 9/9 | — | — |
+| PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
 
 ### Screens
 
@@ -94,7 +96,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 24223 RSVPs, 1073 referee appointments, 1956 team sheets, 741 results agreed on the sheets, 53 disputes (54 ruled on), 20 late results, 154 cards.
+Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 320 scheduled messages, 27715 RSVPs, 1224 referee appointments, 2229 team sheets, 867 results agreed on the sheets, 66 disputes (67 ruled on), 24 late results, 178 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -105,6 +107,7 @@ Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reaction
 | 5 | 2027-03-06 | 150 | 67707 | 67654 | 159 | event_reminder 46722, announcement 11267, message 7335, event_back_on 680, fee_overdue 402, match_day 298 |
 | 6 | 2027-03-13 | 145 | 66692 | 66692 | 0 | event_reminder 46512, announcement 11131, message 7300, team_sheet_due 289, match_day 289, entry_fee_owed 255 |
 | 7 | 2027-03-20 | 145 | 107526 | 107526 | 0 | event_reminder 85044, announcement 10995, message 9372, fee_overdue 804, match_day 289, team_sheet_due 289 |
+| 8 | 2027-03-27 | 145 | 28060 | 28056 | 0 | announcement 11677, event_reminder 7980, message 7380, team_sheet_due 289, match_day 289, referee_appointment 151 |
 
 ## The peak
 
