@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-16 00:14 UTC · 18 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 24 bugs logged (17 fixed) · 23 min so far
+Last run: 2026-11-16 00:15 UTC · 19 rounds played · 30 PASS · 19 FIXED · 4 FAIL · 0 not run · 24 bugs logged (17 fixed) · 24 min so far
 
 ## What this is
 
@@ -112,7 +112,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reactions, 170 polls, 720 scheduled messages, 55045 RSVPs, 2271 referee appointments, 4437 team sheets, 1886 results agreed on the sheets, 152 disputes (153 ruled on), 57 late results, 392 cards.
+Over the run: 38 league notices, 228 club messages, 4064 chat lines, 2032 reactions, 170 polls, 760 scheduled messages, 58538 RSVPs, 2426 referee appointments, 4699 team sheets, 2005 results agreed on the sheets, 165 disputes (166 ruled on), 59 late results, 411 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -134,6 +134,7 @@ Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reacti
 | 16 | 2027-05-29 | 8 | 50661 | 50656 | 0 | event_reminder 31396, announcement 11270, message 7364, fee_overdue 603, wwcc_expiring 12, referee_appointment 8 |
 | 17 | 2027-06-05 | 4 | 51016 | 51010 | 0 | event_reminder 31396, announcement 11985, message 7360, entry_fee_owed 255, match_correction_requested 6, discipline_suspension 5 |
 | 18 | 2028-02-05 | 144 | 52353 | 52352 | 0 | event_changed 22012, event_reminder 15050, announcement 11458, entry_fee_owed 1495, message 881, fee_overdue 603 |
+| 19 | 2028-02-12 | 144 | 27911 | 27911 | 0 | event_reminder 15054, announcement 11117, message 881, match_day 278, team_sheet_due 278, referee_appointment 155 |
 
 ## The peak
 
