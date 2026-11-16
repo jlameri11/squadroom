@@ -172,7 +172,7 @@ function ChildCard({
                   : c.official_status === 'not_required'
                     ? 'Not needed for this squad'
                     : c.official_status === 'pending'
-                      ? 'Pending — finish it before round one'
+                      ? 'PlayFootball pending — the club’s next PlayFootball import clears them for team sheets'
                       : 'Not yet registered — do it at playfootball.com.au, then tell the club'}
               </dd>
             </dl>

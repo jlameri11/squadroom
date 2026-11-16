@@ -53,6 +53,29 @@ one and is meant to reach hundreds of academies.
   PlayFootball. **Never log in to PlayFootball and never scrape it** — the
   only thing that crosses is a file a club admin downloads from their own
   account. R-18 is the build; R-14 is the status.
+  - **PlayFootball first, Squadi-style but smoother (Joey, 16 Nov 2026;
+    0284).** A club (`academies.requires_playfootball`, Settings → Club) or a
+    program (`requires_official_rego`) that requires it shows a **Step 1
+    screen before anything else** — "Register in PlayFootball → come back
+    here", a button to the club's PlayFootball page (`playfootball_url`, a
+    `playfootball.com.au` address, else their club search) and "I've done
+    it", remembered per phone (`components/playfootball-first.tsx`). Step 2
+    is short: an account, the child **claimed from the club's latest
+    PlayFootball import** (`playfootball_rows`, kept by
+    `import_official_status`) by name + birthday + **FFA number together**
+    (`claim_playfootball_child` — all three, so the list is no oracle), then
+    only what the import does not have: emergency contact, consents, kit
+    size. Never re-ask what the import has. A child not in the import is
+    **let in as PlayFootball pending** — approval no longer waits (the 0162
+    gate sets `pending` instead of refusing); **the team sheet is the gate**
+    (`ineligibility`), cleared by the next import. The family is chased
+    weekly (`queue_official_rego_reminders`, game or no game) and the
+    Registrar reminded weekly to import while anyone is pending
+    (`queue_playfootball_import_reminders`, 06:25 Sydney). The club's fees
+    read as **club extras** (`fee_kind`), never a second registration fee;
+    the registration fee is PlayFootball's. Clubs that do not require it see
+    none of this. The Registrar (not a coach) reads and confirms the queue
+    since 0284. `scripts/test-playfootball-first.mjs`.
 
 - **Design rules** (from what users say they hate about Squadi and Dribl,
   `SQUADI_INTEL.md` §6D; check each on every new screen):

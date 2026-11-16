@@ -105,6 +105,8 @@ export function AcademyLoader() {
           activeKidsProvider={(academy as { active_kids_provider?: boolean }).active_kids_provider}
           suburb={(academy as { suburb?: string | null }).suburb ?? null}
           cardFeePassthrough={(academy as { card_fee_passthrough?: boolean }).card_fee_passthrough}
+          requiresPlayfootball={(academy as { requires_playfootball?: boolean }).requires_playfootball}
+          playfootballUrl={(academy as { playfootball_url?: string | null }).playfootball_url ?? null}
         />
         </>
       ) : (

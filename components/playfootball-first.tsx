@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 
 /**
  * Step 1 (Joey, 16 Nov 2026): at a club, or on a program, that requires
@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react'
  */
 const FINDER = 'https://www.playfootball.com.au/football-finder'
 const KEY = (slug: string) => `squadroom.playfootball-done:${slug}`
+const EVENT = 'squadroom:playfootball'
 
 export function playfootballDone(slug: string): boolean {
   try {
@@ -23,6 +24,29 @@ export function playfootballDone(slug: string): boolean {
   } catch {
     return false
   }
+}
+function markDone(slug: string) {
+  try {
+    localStorage.setItem(KEY(slug), '1')
+  } catch {}
+  window.dispatchEvent(new Event(EVENT))
+}
+const subscribe = (onChange: () => void) => {
+  window.addEventListener(EVENT, onChange)
+  window.addEventListener('storage', onChange)
+  return () => {
+    window.removeEventListener(EVENT, onChange)
+    window.removeEventListener('storage', onChange)
+  }
+}
+/**
+ * Whether this phone has been through Step 1 for the club. Read from the
+ * phone's storage as an external store: the server renders "not yet", the
+ * browser corrects it on hydration, and "I've done it" updates every reader
+ * at once — no state set from an effect.
+ */
+export function usePlayfootballDone(slug: string): boolean {
+  return useSyncExternalStore(subscribe, () => playfootballDone(slug), () => false)
 }
 
 export function PlayFootballFirst({
@@ -38,21 +62,14 @@ export function PlayFootballFirst({
   url?: string | null
   /** The squad they are joining, when the link named one. */
   teamName?: string | null
-  onDone: () => void
+  onDone?: () => void
 }) {
   const [opened, setOpened] = useState(false)
-  useEffect(() => {
-    if (playfootballDone(slug)) onDone()
-    // onDone is a state setter from the screen above; stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug])
   const href = url && /^https:\/\/([a-z0-9-]+\.)*playfootball\.com\.au(\/|$)/i.test(url) ? url : `${FINDER}?q=${encodeURIComponent(clubName)}`
 
   function done() {
-    try {
-      localStorage.setItem(KEY(slug), '1')
-    } catch {}
-    onDone()
+    markDone(slug)
+    onDone?.()
   }
 
   return (
@@ -102,4 +119,14 @@ export function PlayFootballFirst({
       </p>
     </section>
   )
+}
+
+/**
+ * The same screen as a gate: shown until "I've done it", then the children
+ * — the join link's landing and form, at a club that requires PlayFootball.
+ */
+export function PlayFootballGate({ when = true, slug, clubName, url, teamName = null, children }: { when?: boolean; slug: string; clubName: string; url?: string | null; teamName?: string | null; children: React.ReactNode }) {
+  const done = usePlayfootballDone(slug)
+  if (!when || done) return <>{children}</>
+  return <PlayFootballFirst slug={slug} clubName={clubName} url={url} teamName={teamName} />
 }

@@ -18,7 +18,9 @@ type Prepared = {
   status: string
   problem?: string
 }
-type Result = { matched: number; confirmed_requests: number; unmatched: { name: string; dob: string | null }[] }
+type Result = { matched: number; confirmed_requests: number; unmatched: { name: string; dob: string | null }[]; rows?: number; import_id?: string }
+/** 0284: where the club's import stands — the last one, the rows kept to claim from, the children pending. */
+type ImportStatus = { imported_at: string | null; imports: number; rows: number; to_claim: number; pending_players: number; required: boolean }
 
 /**
  * The registrations export from PlayFootball, read the same way the roster
@@ -36,6 +38,15 @@ export function PlayfootballImport() {
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<Result | null>(null)
+  const [standing, setStanding] = useState<ImportStatus | null>(null)
+  useEffect(() => {
+    if (!academy?.id) return
+    let live = true
+    void createClient().rpc('playfootball_import_status', { p_academy: academy.id }).then(({ data }) => {
+      if (live && data) setStanding(data as unknown as ImportStatus)
+    })
+    return () => { live = false }
+  }, [academy?.id, result])
 
   useEffect(() => {
     ;(async () => {
@@ -134,6 +145,14 @@ export function PlayfootballImport() {
             Squadroom never logs in to PlayFootball. Only the file you download from your own
             account comes across, and only the columns you map below are read.
           </p>
+          {standing && (
+            <p className="mt-2 text-sm" data-playfootball-standing>
+              {standing.imported_at
+                ? <>Last import <b>{new Date(standing.imported_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</b> · {standing.rows} {standing.rows === 1 ? 'row' : 'rows'} kept for families to claim from{standing.to_claim ? ` (${standing.to_claim} not on the roster yet)` : ''}</>
+                : <>No import yet{standing.required ? ' — families who register are PlayFootball pending until the first one' : ''}</>}
+              {standing.pending_players > 0 && <> · <b>{standing.pending_players}</b> {standing.pending_players === 1 ? 'child' : 'children'} PlayFootball pending</>}
+            </p>
+          )}
 
           <label className="mt-4 block">
             <span className="eyebrow">The file</span>
@@ -221,7 +240,7 @@ export function PlayfootballImport() {
           {result && (
             <section className="card mt-5 p-4 text-sm">
               <p>
-                <b>{result.matched}</b> {result.matched === 1 ? 'player' : 'players'} matched and updated
+                <b>{result.matched}</b> {result.matched === 1 ? 'player' : 'players'} matched and updated{result.rows != null ? `; ${result.rows} rows kept for families to claim from` : ''}
                 {result.confirmed_requests > 0 ? `; ${result.confirmed_requests} waiting ${result.confirmed_requests === 1 ? 'registration' : 'registrations'} confirmed` : ''}.
               </p>
               {result.unmatched.length > 0 && (

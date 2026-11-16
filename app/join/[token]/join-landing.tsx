@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { AccountCard, AccountFrame, PRIMARY_BUTTON, primaryStyle } from '@/components/account/frame'
 import { inkOn } from '@/lib/brand/colour'
+import { PlayFootballGate } from '@/components/playfootball-first'
 
 /**
  * The first screen off a coach's link for somebody with no session (the
@@ -15,12 +16,19 @@ export function JoinLanding({
   teamName,
   logoUrl,
   colour,
+  requiresPlayfootball = false,
+  playfootballUrl = null,
+  slug = '',
 }: {
   token: string
   academyName: string
   teamName: string | null
   logoUrl: string | null
   colour: string | null
+  /** 0284: PlayFootball first — Step 1 before anything else at this club. */
+  requiresPlayfootball?: boolean
+  playfootballUrl?: string | null
+  slug?: string
 }) {
   const next = `/join/${encodeURIComponent(token)}`
   const what = teamName ? `Join ${teamName} at ${academyName}` : `Join ${academyName}`
@@ -30,8 +38,7 @@ export function JoinLanding({
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('')
-  return (
-    <AccountFrame>
+  const card = (
       <AccountCard data-join-landing>
         <div className="flex items-center gap-3.5">
           {logoUrl ? (
@@ -66,6 +73,14 @@ export function JoinLanding({
           </Link>
         </p>
       </AccountCard>
+  )
+  return (
+    <AccountFrame>
+      {requiresPlayfootball ? (
+        <PlayFootballGate slug={slug || academyName} clubName={academyName} url={playfootballUrl} teamName={teamName}>
+          {card}
+        </PlayFootballGate>
+      ) : card}
     </AccountFrame>
   )
 }

@@ -25,6 +25,8 @@ export function AcademySettings({
   clubMode,
   miniroosScores = false,
   photoRequired = false,
+  requiresPlayfootball = false,
+  playfootballUrl = null,
   activeKidsProvider = false,
   suburb = null,
   cardFeePassthrough = false,
@@ -53,6 +55,9 @@ export function AcademySettings({
   miniroosScores?: boolean
   /** 0263: a passport-style photo with every registration. */
   photoRequired?: boolean
+  /** 0284: families register in PlayFootball before they join or register here; the club's page there. */
+  requiresPlayfootball?: boolean
+  playfootballUrl?: string | null
   /** 0264: the club is a registered Active & Creative Kids provider. */
   activeKidsProvider?: boolean
   /** 0266: where the club is, for Find a club. */
@@ -77,6 +82,8 @@ export function AcademySettings({
   const [activeKids, setActiveKids] = useState(activeKidsProvider)
   const [where, setWhere] = useState(suburb ?? '')
   const [cardFee, setCardFee] = useState(cardFeePassthrough)
+  const [pfRequired, setPfRequired] = useState(requiresPlayfootball)
+  const [pfUrl, setPfUrl] = useState(playfootballUrl ?? '')
   const [grace, setGrace] = useState(String(overdueGraceDays))
   const [second, setSecond] = useState(String((siblingDiscountBps[0] ?? 0) / 100))
   const [third, setThird] = useState(String((siblingDiscountBps[1] ?? siblingDiscountBps[0] ?? 0) / 100))
@@ -90,6 +97,8 @@ export function AcademySettings({
     | { public_player_names: 'off' | 'initials' | 'full' }
     | { sibling_discount_bps: number[] }
     | { playfootball_fees_disclosed_season: string | null; playfootball_fees_disclosed_at: string | null }
+    | { requires_playfootball: boolean }
+    | { playfootball_url: string | null }
     | { block_rsvp_when_overdue: boolean }
     | { overdue_grace_days: number }
     | { contact_email: string | null }
@@ -519,6 +528,59 @@ export function AcademySettings({
             {Number(grace) !== overdueGraceDays && Number.isFinite(Number(grace)) && (
               <button onClick={() => update({ overdue_grace_days: Math.max(0, Math.min(365, Math.round(Number(grace)))) })} disabled={busy} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-50" style={{ background: 'var(--brand)' }}>Save</button>
             )}
+          </label>
+        )}
+      </section>
+
+      <section data-playfootball-first-setting>
+        <h2 className="font-semibold">PlayFootball first</h2>
+        <p className="mt-0.5 text-sm text-ink-2">
+          For an affiliated club. Families register in PlayFootball (Football Australia&apos;s national
+          registration) before they join or register here: they see a Step 1 screen with your PlayFootball
+          page, come back, and find their child in your latest PlayFootball import by name, birthday and
+          FFA number — nothing PlayFootball already has is asked again. A child not in your import yet is
+          let in as <b>PlayFootball pending</b> and kept off team sheets until your next import confirms
+          them; the Registrar is reminded weekly to import while anyone is pending. Your Squadroom fees
+          read as club extras; the registration fee stays PlayFootball&apos;s.
+        </p>
+        <label className="mt-2 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={pfRequired}
+            disabled={busy}
+            onChange={async (e) => {
+              setPfRequired(e.target.checked)
+              await update({ requires_playfootball: e.target.checked })
+            }}
+            data-requires-playfootball
+          />
+          Families register in PlayFootball first
+        </label>
+        {pfRequired && (
+          <label className="mt-2 block text-sm">
+            <span className="text-ink-2">Your club&apos;s page on PlayFootball (optional — otherwise their club search opens)</span>
+            <span className="mt-0.5 flex gap-2">
+              <input
+                value={pfUrl}
+                onChange={(e) => setPfUrl(e.target.value)}
+                inputMode="url"
+                placeholder="https://www.playfootball.com.au/…"
+                className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-base"
+                style={{ borderColor: 'var(--line)' }}
+                data-playfootball-url
+              />
+              <button
+                onClick={() => update({ playfootball_url: pfUrl.trim() || null })}
+                disabled={busy || pfUrl.trim() === (playfootballUrl ?? '')}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-ink disabled:opacity-50"
+                style={{ background: 'var(--brand)' }}
+              >
+                Save
+              </button>
+            </span>
+            <span className="mt-0.5 block text-xs text-ink-3">
+              Only a playfootball.com.au address is kept. Squadroom never talks to PlayFootball — the button opens their site in the family&apos;s own browser.
+            </span>
           </label>
         )}
       </section>

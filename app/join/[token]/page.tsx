@@ -42,7 +42,7 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
 
   const { data: link } = await admin
     .from('join_links')
-    .select('id, role, academy_id, team_id, max_uses, use_count, expires_at, revoked_at, academies(name, logo_url, primary_colour), teams(name)')
+    .select('id, role, academy_id, team_id, max_uses, use_count, expires_at, revoked_at, academies(name, slug, logo_url, primary_colour, requires_playfootball, playfootball_url), teams(name)')
     .eq(column, value)
     .maybeSingle()
 
@@ -66,6 +66,12 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
   const club = firstOf(link.academies)
   const academy = club?.name ?? 'this club'
   const team = firstOf(link.teams)?.name ?? null
+  // 0284, PlayFootball first: the club's rule, and its page on PlayFootball.
+  const pf = {
+    requiresPlayfootball: Boolean((club as { requires_playfootball?: boolean } | null)?.requires_playfootball),
+    playfootballUrl: (club as { playfootball_url?: string | null } | null)?.playfootball_url ?? null,
+    slug: (club as { slug?: string } | null)?.slug ?? link.academy_id,
+  }
 
   const userId = await getUserId()
   if (!userId) {
@@ -76,6 +82,7 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
         teamName={team}
         logoUrl={(club as { logo_url?: string | null } | null)?.logo_url ?? null}
         colour={(club as { primary_colour?: string | null } | null)?.primary_colour ?? null}
+        {...pf}
       />
     )
   }
@@ -108,6 +115,7 @@ export default async function JoinPage(props: { params: Promise<{ token: string 
       role={link.role}
       account={{ fullName: me?.full_name ?? '' }}
       pendingRequestId={asked?.status === 'pending' ? asked.id : null}
+      {...pf}
     />
   )
 }

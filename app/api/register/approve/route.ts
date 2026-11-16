@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const { data: req } = await supabase
     .from('registration_requests')
     .select(
-      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path, register_as, wwcc_number, wwcc_expires_on, wwcc_checked_at, profile_id'
+      'id, academy_id, program_id, status, guardian_name, guardian_phone, guardian_email, child_name, child_dob, child_gender, consents, ffa_number, fifa_id, official_confirmed_at, for_self, photo_path, register_as, wwcc_number, wwcc_expires_on, wwcc_checked_at, profile_id, playfootball_row_id, emergency_name, emergency_phone, emergency_relation, shirt_size, shorts_size'
     )
     .eq('id', requestId)
     .maybeSingle()
@@ -289,18 +289,22 @@ export async function POST(request: Request) {
     .select('requires_official_rego')
     .eq('id', req.program_id)
     .maybeSingle()
+  // 0284, PlayFootball first: the club's rule or the program's. A child the
+  // import (or the club) has confirmed is registered; anyone else is let in
+  // as PlayFootball pending — on the roster and in the chat, kept off team
+  // sheets by the database until the club's next import confirms them. No
+  // 409 any more: approval is the club's; the sheet is the gate.
+  const { data: club } = await admin.from('academies').select('requires_playfootball').eq('id', req.academy_id).maybeSingle()
+  const requiresPF = Boolean(prog?.requires_official_rego || club?.requires_playfootball)
+  const { data: claimedRow } = req.playfootball_row_id
+    ? await admin.from('playfootball_rows').select('id, status, player_id').eq('id', req.playfootball_row_id).maybeSingle()
+    : { data: null }
   const confirmed =
     Boolean(req.official_confirmed_at) ||
     match?.official_status === 'registered' ||
-    match?.official_status === 'not_required'
-  if (prog?.requires_official_rego && !confirmed) {
-    return NextResponse.json(
-      {
-        error: `${req.child_name} needs their PlayFootball registration confirmed first. Tick it on the request once you have checked PlayFootball, or import your PlayFootball export.`,
-      },
-      { status: 409 }
-    )
-  }
+    match?.official_status === 'not_required' ||
+    claimedRow?.status === 'registered'
+  const officialStatus: 'registered' | 'pending' | 'unknown' = confirmed ? 'registered' : requiresPF ? 'pending' : 'unknown'
 
   let playerId = match?.id ?? null
 
@@ -318,7 +322,10 @@ export async function POST(request: Request) {
         gender: req.child_gender as 'male' | 'female' | 'other' | null,
         ff_number: req.ffa_number ?? null,
         fifa_id: req.fifa_id ?? null,
-        official_status: req.official_confirmed_at ? 'registered' : 'unknown',
+        official_status: match?.official_status === 'not_required' ? 'not_required' : officialStatus,
+        // 0284: kit sizes asked once, on the form.
+        shirt_size: req.shirt_size ?? null,
+        shorts_size: req.shorts_size ?? null,
       })
       .select('id')
       .single()
@@ -330,13 +337,25 @@ export async function POST(request: Request) {
     // An existing child. 0098 makes the whole family follow a child into
     // the squad's channels; and a confirmed request carries PlayFootball's
     // ids onto the roster row.
-    const patch: { team_id?: string; ff_number?: string; fifa_id?: string; official_status?: 'registered'; profile_id?: string } = {}
+    const patch: { team_id?: string; ff_number?: string; fifa_id?: string; official_status?: 'registered' | 'pending'; profile_id?: string; shirt_size?: typeof req.shirt_size; shorts_size?: typeof req.shorts_size } = {}
     if (teamId) patch.team_id = teamId
     if (forSelf) patch.profile_id = profileId
     if (req.ffa_number) patch.ff_number = req.ffa_number
     if (req.fifa_id) patch.fifa_id = req.fifa_id
-    if (req.official_confirmed_at && match?.official_status !== 'not_required') patch.official_status = 'registered'
+    if (confirmed && match?.official_status !== 'not_required') patch.official_status = 'registered'
+    else if (requiresPF && match?.official_status === 'unknown') patch.official_status = 'pending'
+    if (req.shirt_size) patch.shirt_size = req.shirt_size
+    if (req.shorts_size) patch.shorts_size = req.shorts_size
     if (Object.keys(patch).length > 0) await admin.from('players').update(patch).eq('id', playerId)
+  }
+  // 0284: the claimed PlayFootball row now points at the roster record, and
+  // the emergency contact the family gave goes where the club keeps it.
+  if (claimedRow && playerId) await admin.from('playfootball_rows').update({ player_id: playerId }).eq('id', claimedRow.id)
+  if (playerId && req.emergency_name) {
+    await admin.from('player_medical').upsert(
+      { player_id: playerId, academy_id: req.academy_id, emergency_name: req.emergency_name, emergency_phone: req.emergency_phone, emergency_relation: req.emergency_relation, updated_by: auth.user.id },
+      { onConflict: 'player_id' }
+    )
   }
 
   // The membership after the player record, because the guards that let a

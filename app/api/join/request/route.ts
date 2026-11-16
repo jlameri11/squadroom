@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     /** 0256: the squads for a coach's, a manager's or a volunteer's role. */
     wantedTeams?: string[]
     /** The family's children: names with dates of birth (0248). */
-    children?: (string | { name?: string; dob?: string | null })[]
+    children?: (string | { name?: string; dob?: string | null; ffa?: string | null })[]
     /** 0239: an adult team's link — the person's own date of birth. */
     dob?: string
     news?: boolean
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   // One shape for the children, whichever the client sent. A birthday that
   // cannot be a birthday is refused here, with the child's name, rather
   // than matched against nothing at approval.
-  const kids: { name: string; dob: string | null }[] = []
+  const kids: { name: string; dob: string | null; ffa?: string | null }[] = []
   for (const c of children ?? []) {
     const name = (typeof c === 'string' ? c : c?.name ?? '').trim()
     if (!name) continue
@@ -67,7 +67,12 @@ export async function POST(request: Request) {
     if (kidDob && !isPlausibleDob(kidDob)) {
       return NextResponse.json({ error: `${name}'s date of birth doesn't look right.` }, { status: 400 })
     }
-    kids.push({ name, dob: kidDob })
+    // 0284: the FFA number (digits) at a club that registers in PlayFootball first.
+    const ffa = typeof c === 'string' ? '' : (c?.ffa ?? '').replace(/\s/g, '')
+    if (ffa && !/^\d{5,20}$/.test(ffa)) {
+      return NextResponse.json({ error: `${name}'s FFA number is digits only.` }, { status: 400 })
+    }
+    kids.push({ name, dob: kidDob, ...(ffa ? { ffa } : {}) })
   }
 
   const admin = createAdminClient()

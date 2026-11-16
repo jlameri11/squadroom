@@ -9,6 +9,7 @@ import { QuestionField, unanswered } from '@/components/question-field'
 import { clubThemeCss } from '@/lib/brand/colour'
 import { cardFeeCents } from '@/lib/stripe/card-fee'
 import { prepareImage } from '@/lib/adapters/images'
+import { PlayFootballFirst, usePlayfootballDone } from '@/components/playfootball-first'
 
 type Program = PublicProgram
 
@@ -36,6 +37,9 @@ type Data = {
     active_kids?: boolean
     /** 0270: the club passes Stripe's card fee on, as its own line before paying. */
     card_fee_passthrough?: boolean
+    /** 0284: PlayFootball first at this club, and the club's page there. */
+    requires_playfootball?: boolean
+    playfootball_url?: string | null
   }
   programs: Program[]
   consents: Consent[]
@@ -46,6 +50,22 @@ const DRAFT = (slug: string) => `squadroom.draft.${slug}`
 /** Every registration sent from this phone at this club, so a family pays for all of them in one go. */
 const LIST = (slug: string) => `squadroom.registrations.${slug}`
 type Sent = { requestId: string; secret: string; programId?: string | null; childName?: string; covered?: boolean }
+
+/** 0284: the child as the club's PlayFootball import has them. */
+type Claim = {
+  row_id: string
+  full_name: string | null
+  dob: string | null
+  ffa_number: string | null
+  fifa_id: string | null
+  status: string
+  on_roster: boolean
+  gender: string | null
+  has_emergency: boolean
+  has_kit: boolean
+  squad: string | null
+}
+const KIT_SIZES = ['4', '6', '8', '10', '12', '14', '16', 'YXS', 'YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL']
 
 type Draft = {
   step: 1 | 2 | 3
@@ -67,6 +87,12 @@ type Draft = {
   wwccNumber?: string
   wwccExpiresOn?: string
   roleNote?: string
+  /** 0284: what PlayFootball does not have. */
+  emergencyName?: string
+  emergencyPhone?: string
+  emergencyRelation?: string
+  shirtSize?: string
+  shortsSize?: string
 }
 
 // Short enough to sit three abreast on a 375px phone without truncating.
@@ -172,6 +198,17 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [roleNote, setRoleNote] = useState('')
   // R-18: PlayFootball's ids, so the club can confirm the registration.
   const [childFfa, setChildFfa] = useState('')
+  // 0284, PlayFootball first: the step-1 screen seen on this phone, the child
+  // claimed from the club's import, and what the import does not have.
+  const pfDone = usePlayfootballDone(slug)
+  const [claim, setClaim] = useState<Claim | null>(null)
+  const [claimTried, setClaimTried] = useState(false)
+  const [claimBusy, setClaimBusy] = useState(false)
+  const [emergencyName, setEmergencyName] = useState('')
+  const [emergencyPhone, setEmergencyPhone] = useState('')
+  const [emergencyRelation, setEmergencyRelation] = useState('')
+  const [shirtSize, setShirtSize] = useState('')
+  const [shortsSize, setShortsSize] = useState('')
   const [childFifa, setChildFifa] = useState('')
   const [childGender, setChildGender] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -250,6 +287,11 @@ export function RegisterForm({ slug }: { slug: string }) {
     setChildName(d.childName ?? '')
     setChildDob(d.childDob ?? '')
     setChildFfa(d.childFfa ?? '')
+    setEmergencyName(d.emergencyName ?? '')
+    setEmergencyPhone(d.emergencyPhone ?? '')
+    setEmergencyRelation(d.emergencyRelation ?? '')
+    setShirtSize(d.shirtSize ?? '')
+    setShortsSize(d.shortsSize ?? '')
     setChildFifa(d.childFifa ?? '')
     setChildGender(d.childGender ?? '')
     setGuardianName(d.guardianName ?? '')
@@ -271,6 +313,7 @@ export function RegisterForm({ slug }: { slug: string }) {
       step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
       answers, agreed, savedAt: Date.now(),
       registerAs, wwccNumber, wwccExpiresOn, roleNote, forSelf,
+      emergencyName, emergencyPhone, emergencyRelation, shirtSize, shortsSize,
     }
   }
 
@@ -305,6 +348,7 @@ export function RegisterForm({ slug }: { slug: string }) {
       step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail,
       answers, agreed, savedAt: Date.now(),
       registerAs, wwccNumber, wwccExpiresOn, roleNote, forSelf,
+      emergencyName, emergencyPhone, emergencyRelation, shirtSize, shortsSize,
     }
     try {
       localStorage.setItem(DRAFT(slug), JSON.stringify(d))
@@ -321,7 +365,7 @@ export function RegisterForm({ slug }: { slug: string }) {
       if (!error) setSynced(true)
     }, 1200)
     return () => clearTimeout(t)
-  }, [hydrated, sent, slug, step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed, registerAs, wwccNumber, wwccExpiresOn, roleNote])
+  }, [hydrated, sent, slug, step, chosen, childName, childDob, childFfa, childFifa, childGender, guardianName, guardianPhone, guardianEmail, answers, agreed, registerAs, emergencyName, emergencyPhone, emergencyRelation, shirtSize, shortsSize, wwccNumber, wwccExpiresOn, roleNote])
 
   // Once there is a request, ask where it stands. Not polled on a timer: a
   // club approving takes hours or days, and a page left open on a phone
@@ -454,7 +498,7 @@ export function RegisterForm({ slug }: { slug: string }) {
         {payNow && !paid && !sent.covered && (
           <div className="mt-4 rounded-xl border p-3.5" style={{ borderColor: 'var(--brand)' }} data-pay-now>
             <p className="text-sm">
-              <b>{sentProgram.name}</b> is paid on registration: <b>{`$${((sentProgram.amount_cents ?? 0) / 100).toFixed(2)}`}</b>, refunded in full if the club cannot take the place.
+              <b>{sentProgram.name}</b>{sentProgram.fee_kind === 'extra' ? ' — a club extra, not the PlayFootball registration fee —' : ''} is paid on registration: <b>{`$${((sentProgram.amount_cents ?? 0) / 100).toFixed(2)}`}</b>, refunded in full if the club cannot take the place.
             </p>
             {/* 0264: the NSW voucher, taken off before the charge. Only a club that takes them. */}
             {data.academy.active_kids && (
@@ -600,14 +644,44 @@ export function RegisterForm({ slug }: { slug: string }) {
   const forRole = registerAs !== 'player'
   const needsWwcc = registerAs === 'coach' || registerAs === 'team_manager' || registerAs === 'referee'
   const roleLabel = ROLE_OPTIONS.find(([v]) => v === registerAs)?.[1] ?? registerAs
-  const step1Ok = Boolean((program || forRole) && childName.trim() && childDob) && (!needsWwcc || Boolean(wwccNumber.trim() && wwccExpiresOn))
+  // 0284, PlayFootball first: the club's rule, or the program's. Step 1 is a
+  // screen before the form; step 2 asks the FFA number and only what the
+  // import does not have; the fee is a club extra.
+  const requiresPF = !forRole && Boolean(data.academy.requires_playfootball || program?.requires_official_rego)
+  const showStep1 = requiresPF && !pfDone
+  const feeIsExtra = Boolean(program && (program.fee_kind === 'extra' || requiresPF))
+  const ffaOk = /^\d{5,20}$/.test(childFfa.replace(/\s/g, ''))
+  const step1Ok = Boolean((program || forRole) && childName.trim() && childDob) && (!needsWwcc || Boolean(wwccNumber.trim() && wwccExpiresOn)) && (!requiresPF || ffaOk)
   const step2Ok =
     Boolean(me) &&
     Boolean(guardianName.trim()) &&
     EMAIL_SHAPE.test(guardianEmail.trim()) &&
     missing.length === 0 &&
     unansweredQs.length === 0 &&
-    (!data.academy.photo_required || Boolean(photo))
+    (!data.academy.photo_required || Boolean(photo)) &&
+    (!requiresPF || Boolean(claim?.has_emergency) || Boolean(emergencyName.trim() && emergencyPhone.trim()))
+
+  // 0284: the child as the club's PlayFootball import has them — name, birthday
+  // and FFA number together, so the list is no oracle. Found: the fields fill
+  // and lock. Not found: they register anyway, as PlayFootball pending.
+  async function findInPlayfootball() {
+    if (!data?.academy?.id || !me) return
+    setClaimBusy(true)
+    setClaimTried(false)
+    setError(null)
+    const { data: res, error: err } = await createClient().rpc('claim_playfootball_child', { p_academy: data.academy.id, p_name: childName.trim(), p_dob: childDob, p_ffa: childFfa.replace(/\s/g, '') })
+    setClaimBusy(false)
+    setClaimTried(true)
+    if (err) return setError(err.message)
+    const found = res as unknown as ({ found: true } & Claim) | { found: false } | null
+    if (!found || !found.found) return setClaim(null)
+    setClaim(found)
+    if (found.full_name) setChildName(found.full_name)
+    if (found.dob) setChildDob(found.dob)
+    if (found.ffa_number) setChildFfa(found.ffa_number)
+    if (found.fifa_id) setChildFifa(found.fifa_id)
+    if (found.gender && !childGender) setChildGender(found.gender)
+  }
 
   async function submit() {
     if (!program && !forRole) return
@@ -633,6 +707,13 @@ export function RegisterForm({ slug }: { slug: string }) {
         childFfa: childFfa || undefined,
         childFifa: childFifa || undefined,
         childGender: childGender || undefined,
+        // 0284: the claimed PlayFootball row, and what the import does not have.
+        playfootballRowId: claim?.row_id,
+        emergencyName: requiresPF ? emergencyName.trim() || undefined : undefined,
+        emergencyPhone: requiresPF ? emergencyPhone.trim() || undefined : undefined,
+        emergencyRelation: requiresPF ? emergencyRelation.trim() || undefined : undefined,
+        shirtSize: requiresPF ? shirtSize || undefined : undefined,
+        shortsSize: requiresPF ? shortsSize || undefined : undefined,
         answers,
         consents: data!.consents
           .filter((c) => agreed[c.id])
@@ -682,6 +763,9 @@ export function RegisterForm({ slug }: { slug: string }) {
         </p>
       ) : (
         <>
+          {showStep1 && (
+            <PlayFootballFirst slug={slug} clubName={data.academy.name} url={data.academy.playfootball_url} />
+          )}
           <Progress step={step} tint={tint} />
           {resumed && step > 1 && (
             <p className="mt-2 text-xs text-ink-3">Picked up where you left off.</p>
@@ -740,7 +824,7 @@ export function RegisterForm({ slug }: { slug: string }) {
             )}
           </div>
 
-          {step === 1 && (
+          {!showStep1 && step === 1 && (
             <>
               {/* 0267: a player (a child, or yourself), or a role. */}
               <section className="mt-4" data-register-as={registerAs}>
@@ -870,21 +954,57 @@ export function RegisterForm({ slug }: { slug: string }) {
                         </label>
                       </>
                     )}
-                    {!forRole && program?.requires_official_rego && (
-                      <p className="mt-3 rounded-lg border p-3 text-sm" style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
-                        This program is for players registered in <b>PlayFootball</b> first (Football
-                        Australia&apos;s rule). Register there if you haven&apos;t, then give the FFA number
-                        or FIFA ID below so the club can confirm it.
-                      </p>
-                    )}
                     {!forRole && (
                     <>
                     <Field
-                      label={program?.requires_official_rego ? 'FFA number' : 'FFA number (if registered in PlayFootball)'}
+                      label={requiresPF ? 'FFA number' : 'FFA number (if registered in PlayFootball)'}
                       value={childFfa}
-                      onChange={setChildFfa}
-                      hint="On the PlayFootball profile, digits only."
+                      onChange={(v) => { setChildFfa(v); if (claim) { setClaim(null); setClaimTried(false) } }}
+                      hint={requiresPF ? 'On the PlayFootball profile, digits only — it is how the club finds them in its PlayFootball list.' : 'On the PlayFootball profile, digits only.'}
                     />
+                    {requiresPF && (
+                      <div className="mt-3 rounded-lg border p-3 text-sm" style={{ borderColor: claim ? 'var(--yes)' : 'var(--line)' }} data-pf-claim-card={claim ? 'found' : claimTried ? 'not-found' : 'ready'}>
+                        {claim ? (
+                          <>
+                            <p className="font-semibold" style={{ color: 'var(--yes)' }} data-pf-claimed>
+                              Found in {data.academy.name}&apos;s PlayFootball list{claim.squad ? ` · ${claim.squad}` : ''}
+                            </p>
+                            <p className="mt-0.5 text-ink-2">
+                              {claim.full_name}{claim.dob ? `, born ${new Date(claim.dob + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''} · FFA {claim.ffa_number}
+                              {claim.status === 'registered' ? ' · registered ✓' : ' · PlayFootball says pending'}
+                            </p>
+                            <p className="mt-1 text-xs text-ink-3">Nothing PlayFootball already has is asked again. Not them? Change the name, birthday or FFA number above.</p>
+                          </>
+                        ) : !me ? (
+                          <>
+                            <p className="font-semibold">Step 2 starts with your account</p>
+                            <p className="mt-0.5 text-ink-2">Create one (a minute) or sign in, and come straight back here to find {forSelf ? 'yourself' : 'your child'} in {data.academy.name}&apos;s PlayFootball list.</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <Link href={`/signup?next=${encodeURIComponent(`/${slug}/register`)}&why=${encodeURIComponent(`Registering with ${data.academy.name}`)}`} className="rounded-lg px-3 py-2 text-sm font-semibold" style={{ background: tint, color: ink }} data-pf-create-account>Create account</Link>
+                              <Link href={`/signin?next=${encodeURIComponent(`/${slug}/register`)}`} className="rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--line)' }} data-pf-sign-in>Sign in</Link>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-ink-2">
+                              {claimTried
+                                ? `Not in ${data.academy.name}’s latest PlayFootball import yet. You can still send this: ${forSelf ? 'you' : (childName.split(' ')[0] || 'your child')} will be “PlayFootball pending” — on the squad and in the chat, cleared for team sheets by the club’s next import.`
+                                : `Name and birthday as on PlayFootball, the FFA number from the profile — then find ${forSelf ? 'yourself' : 'your child'} in ${data.academy.name}’s list so nothing is asked twice.`}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => void findInPlayfootball()}
+                              disabled={claimBusy || !childName.trim() || !childDob || !ffaOk}
+                              className="mt-2 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                              style={{ background: tint, color: ink }}
+                              data-pf-find
+                            >
+                              {claimBusy ? 'Looking…' : claimTried ? 'Look again' : 'Find in the club’s PlayFootball list'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                     <Field label="FIFA ID (optional)" value={childFifa} onChange={setChildFifa} />
                     <fieldset className="mt-3">
                       <legend className="text-sm text-ink-2">Gender</legend>
@@ -938,7 +1058,7 @@ export function RegisterForm({ slug }: { slug: string }) {
             </>
           )}
 
-          {step === 2 && (program || forRole) && (
+          {!showStep1 && step === 2 && (program || forRole) && (
             <>
               {!meKnown ? (
                 <section className="mt-4" data-register-you-loading>
@@ -997,6 +1117,38 @@ export function RegisterForm({ slug }: { slug: string }) {
                 <PhotoPicker value={photo} onChange={(v) => { setPhoto(v); setPhotoNote(null) }} tint={tint} ink={ink} />
                 {photoNote && <p className="mt-1.5 text-xs" style={{ color: 'var(--no)' }}>{photoNote}</p>}
               </section>
+
+              {/* 0284: only what PlayFootball does not have — an emergency contact and kit sizes, once. */}
+              {requiresPF && !claim?.has_emergency && (
+                <section className="mt-5" data-emergency-step>
+                  <span className="eyebrow">Emergency contact</span>
+                  <p className="mt-1.5 text-sm text-ink-2">Someone to ring at the ground if you can&apos;t be reached. PlayFootball doesn&apos;t share this with the club.</p>
+                  <Field label="Name" value={emergencyName} onChange={setEmergencyName} />
+                  <Field label="Mobile" type="tel" value={emergencyPhone} onChange={setEmergencyPhone} />
+                  <Field label={`Who they are to ${forSelf ? 'you' : (childName.split(' ')[0] || 'the child')}`} value={emergencyRelation} onChange={setEmergencyRelation} hint="Grandparent, aunt, family friend…" />
+                </section>
+              )}
+              {requiresPF && !claim?.has_kit && (
+                <section className="mt-5" data-kit-step>
+                  <span className="eyebrow">Kit size (optional)</span>
+                  <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    <label className="text-sm">
+                      <span className="text-ink-2">Shirt</span>
+                      <select value={shirtSize} onChange={(e) => setShirtSize(e.target.value)} className="mt-0.5 w-full rounded-lg border px-3 py-2.5 text-base" style={{ borderColor: 'var(--line)' }} data-kit-shirt>
+                        <option value="">Not sure yet</option>
+                        {KIT_SIZES.map((k) => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-sm">
+                      <span className="text-ink-2">Shorts</span>
+                      <select value={shortsSize} onChange={(e) => setShortsSize(e.target.value)} className="mt-0.5 w-full rounded-lg border px-3 py-2.5 text-base" style={{ borderColor: 'var(--line)' }} data-kit-shorts>
+                        <option value="">Not sure yet</option>
+                        {KIT_SIZES.map((k) => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                </section>
+              )}
 
               {(program?.questions ?? []).length > 0 && (
                 <section className="mt-5">
@@ -1132,6 +1284,14 @@ export function RegisterForm({ slug }: { slug: string }) {
                     {childName}
                     {childDob ? `, born ${new Date(childDob + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
                   </dd>
+                  {requiresPF && (
+                    <>
+                      <dt className="text-ink-3">PlayFootball</dt>
+                      <dd data-review-playfootball>
+                        {claim ? (claim.status === 'registered' ? `Registered · FFA ${claim.ffa_number}` : `Pending on PlayFootball · FFA ${claim.ffa_number}`) : `Not in the club’s list yet — PlayFootball pending${childFfa ? ` · FFA ${childFfa}` : ''}`}
+                      </dd>
+                    </>
+                  )}
                   {photo && (
                     <>
                       <dt className="text-ink-3">Photo</dt>
@@ -1158,9 +1318,14 @@ export function RegisterForm({ slug }: { slug: string }) {
                       <b>{money(program.amount_cents)}</b>
                       {program?.payment_required ? ' — paid after the club accepts, in the app.' : ' — the club will tell you when it is due.'}
                       {full ? ' Nothing is owed while you are on the waitlist.' : ''}
+                      {feeIsExtra && (
+                        <span className="mt-1 block text-ink-2" data-fee-extra>
+                          A club extra for {program?.name}. Your PlayFootball registration fee is paid in PlayFootball, not here — one price, nothing added.
+                        </span>
+                      )}
                     </>
                   ) : (
-                    'No fee for this one.'
+                    feeIsExtra ? 'No club extra for this one — the registration fee is PlayFootball’s.' : 'No fee for this one.'
                   )}
                 </p>
                 <p className="mt-1.5 text-xs text-ink-3">

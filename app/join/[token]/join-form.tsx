@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { PlayFootballGate } from '@/components/playfootball-first'
 
 type Stage = 'form' | 'pending' | 'done'
 
@@ -22,6 +23,9 @@ export function JoinForm({
   role = 'parent',
   account,
   pendingRequestId = null,
+  requiresPlayfootball = false,
+  playfootballUrl = null,
+  slug = '',
 }: {
   token: string
   academyName: string
@@ -36,6 +40,10 @@ export function JoinForm({
   account: { fullName: string }
   /** A request this person already made on this link and is still waiting on. */
   pendingRequestId?: string | null
+  /** 0284: PlayFootball first — Step 1 before the form; an FFA number a child, so the import can confirm them. */
+  requiresPlayfootball?: boolean
+  playfootballUrl?: string | null
+  slug?: string
 }) {
   const asPlayer = role === 'player'
   const router = useRouter()
@@ -45,7 +53,7 @@ export function JoinForm({
   const [news, setNews] = useState(false)
   // Each child by name and birthday (0248): the birthday is what finds them
   // on a roster the club has already imported, so nobody is added twice.
-  const [kids, setKids] = useState<{ name: string; dob: string }[]>([{ name: '', dob: '' }])
+  const [kids, setKids] = useState<{ name: string; dob: string; ffa: string }[]>([{ name: '', dob: '', ffa: '' }])
   const [dob, setDob] = useState('')
   // 0256: what they would like to be, if anything — filed as a role request
   // for the committee once they are in.
@@ -68,7 +76,7 @@ export function JoinForm({
       body: JSON.stringify({
         token,
         news,
-        children: asPlayer ? [] : kids.filter((k) => k.name.trim()).map((k) => ({ name: k.name.trim(), dob: k.dob || null })),
+        children: asPlayer ? [] : kids.filter((k) => k.name.trim()).map((k) => ({ name: k.name.trim(), dob: k.dob || null, ffa: requiresPlayfootball ? k.ffa.replace(/\s/g, '') || null : null })),
         dob: asPlayer ? dob : undefined,
         wantedRole: wantedRole || undefined,
         wantedNote: wantedRole && wantedNote.trim() ? wantedNote.trim() : undefined,
@@ -138,6 +146,7 @@ export function JoinForm({
         </p>
       </div>
 
+      <PlayFootballGate when={requiresPlayfootball} slug={slug || academyName} clubName={academyName} url={playfootballUrl} teamName={teamName}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         {asPlayer ? (
           <label className="flex flex-col gap-1.5">
@@ -177,6 +186,17 @@ export function JoinForm({
                   aria-label={`Child ${i + 1}'s date of birth`}
                   data-join-child-dob
                 />
+                {requiresPlayfootball && (
+                  <input
+                    value={k.ffa}
+                    onChange={(e) => setKids(kids.map((x, j) => (j === i ? { ...x, ffa: e.target.value } : x)))}
+                    inputMode="numeric"
+                    placeholder="FFA number (from PlayFootball)"
+                    className="col-span-2 min-w-0 rounded-xl border border-[var(--line)] px-3 py-3"
+                    aria-label={`Child ${i + 1}'s FFA number`}
+                    data-join-child-ffa
+                  />
+                )}
               </div>
             ))}
             <div className="flex items-baseline justify-between gap-3">
@@ -185,7 +205,7 @@ export function JoinForm({
               </span>
               <button
                 type="button"
-                onClick={() => setKids([...kids, { name: '', dob: '' }])}
+                onClick={() => setKids([...kids, { name: '', dob: '', ffa: '' }])}
                 className="tap flex-none text-xs font-semibold underline underline-offset-4"
                 data-join-add-child
               >
@@ -273,6 +293,7 @@ export function JoinForm({
           Your coach approves you, and you&apos;re in.
         </p>
       </form>
+      </PlayFootballGate>
     </main>
   )
 }

@@ -61,8 +61,22 @@ dev (the club-level switch, the import kept as rows to claim from, a
 family's claim by name + birthday + FFA number, "PlayFootball pending"
 admission with the team sheet as the gate, the Registrar's weekly import
 reminder, the chase for every pending child, the Registrar reading the
-queue, fees as extras on the front door; test-rls 236–237, all 237 pass),
-the screens follow; **(c) the ownership fix** (NRIFA and the SPL are
+queue, fees as extras on the front door; test-rls 236–237, all 237 pass)
+and **the screens are built**: the Step 1 screen with the club's
+PlayFootball link and "I've done it" (`components/playfootball-first.tsx`,
+on the public register page and both join screens), the claim card in the
+form, emergency contact and kit size as the only new questions, "club
+extra" on the program card, the fee line and the pay-now card, the
+PlayFootball-first switch and page under Settings → Club, the Registrar's
+queue accepting a pending child, the import screen's standing line, and the
+routes carrying it all; **`scripts/test-playfootball-first.mjs`** (a real
+browser at 375px on a throwaway club): the family whose child is in the
+import finishes step 2 in **about 6 seconds at a thumb's pace, 7 things
+typed, nothing the import had asked twice**; the family whose child is not
+is let in as PlayFootball pending, chased with no game in sight, the club
+reminded to import a week on (once), and confirmed by the next import; a
+club that does not require PlayFootball skips Step 1 — all green; **(c) the
+ownership fix** (NRIFA and the SPL are
 separate organisations): applied on dev by `scripts/demo-spl-ownership.mjs`
 — Joey owns NRIFA only, the League organiser account owns the Sydney
 Premier League beside SPL Admin, NRIFA stays entered in SPL Season 3 with

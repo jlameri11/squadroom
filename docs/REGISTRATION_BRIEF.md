@@ -62,7 +62,18 @@ push hourly; Joey says when the next deploy is.
   `program_registrations.answers` (R-11), `squad_numbers` (the jersey pool),
   the registration dashboard, PlayFootball status (R-14, kept as status only
   — "no PlayFootball link" here means no step in the flow, not the end of
-  the status).
+  the status). **Superseded on 16 Nov 2026 by Joey's "PlayFootball first,
+  Squadi-style but smoother" brief (0284):** a club, or a program, that
+  requires PlayFootball now shows a Step 1 screen with the club's
+  PlayFootball link and "I've done it" before anyone joins or registers;
+  step 2 is an account, the child claimed from the club's PlayFootball
+  import by name + birthday + FFA number, and only what the import does not
+  have (emergency contact, consents, kit size); a child not in the import is
+  let in as PlayFootball pending — chased weekly, kept off team sheets until
+  the next import — and the Registrar is reminded weekly to import; the
+  club's fees read as extras, never a second registration fee. Clubs that do
+  not require PlayFootball see none of it. `scripts/test-playfootball-first.mjs`
+  proves both families, in a browser at 375px.
 - The Active & Creative Kids voucher is a `vouchers` kind `government` with a
   number and the child's details, and a Treasurer list; nothing is ever sent
   to Service NSW.

@@ -759,7 +759,7 @@ export function RegistrationQueue() {
                             </span>
                           ) : (
                             <span className="mt-1 flex items-center gap-2">
-                              <span className="pill" style={{ background: 'var(--no-bg)', color: 'var(--no)' }}>Not confirmed</span>
+                              <span className="pill" style={{ background: 'var(--surface-2)', color: 'var(--ink-2)' }} data-pf-pending-pill>PlayFootball pending — accepting puts them on the roster; your next PlayFootball import clears them for team sheets</span>
                               {r.status === 'pending' && (
                                 <button onClick={() => void confirmOfficial(r, true)} disabled={busy === r.request_id} className="rounded-lg border px-2 py-1 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--line)' }}>
                                   I checked PlayFootball — registered
@@ -886,13 +886,13 @@ export function RegistrationQueue() {
                         <div className="mt-2 flex gap-2">
                           <button
                             onClick={() => void decide(r, 'approve')}
-                            disabled={busy === r.request_id || !officialOk(r) || !wwccOk(r) || !teamOk(r)}
-                            title={!officialOk(r) ? 'Confirm the PlayFootball registration first' : !wwccOk(r) ? 'Check the Working With Children Check on the register first' : !teamOk(r) ? 'Pick the squad they manage' : undefined}
+                            disabled={busy === r.request_id || !wwccOk(r) || !teamOk(r)}
+                            title={!wwccOk(r) ? 'Check the Working With Children Check on the register first' : !teamOk(r) ? 'Pick the squad they manage' : undefined}
                             className="flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold text-yes-ink disabled:opacity-50"
                             style={{ background: 'var(--yes)' }}
                             data-accept
                           >
-                            {busy === r.request_id ? 'Working…' : !officialOk(r) ? 'Accept (PlayFootball first)' : !wwccOk(r) ? 'Accept (check the WWCC first)' : !teamOk(r) ? 'Accept (pick a squad)' : 'Accept'}
+                            {busy === r.request_id ? 'Working…' : !wwccOk(r) ? 'Accept (check the WWCC first)' : !teamOk(r) ? 'Accept (pick a squad)' : 'Accept'}
                           </button>
                           <button
                             onClick={() => void decide(r, 'decline')}

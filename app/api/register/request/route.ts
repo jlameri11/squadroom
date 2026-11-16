@@ -75,6 +75,12 @@ export async function POST(request: Request) {
     wwccNumber,
     wwccExpiresOn,
     roleNote,
+    playfootballRowId,
+    emergencyName,
+    emergencyPhone,
+    emergencyRelation,
+    shirtSize,
+    shortsSize,
   } = body as {
     slug?: string
     programId?: string
@@ -95,6 +101,13 @@ export async function POST(request: Request) {
     wwccNumber?: string
     wwccExpiresOn?: string
     roleNote?: string
+    /** 0284, PlayFootball first: the row claimed from the club's import, and what the import does not have. */
+    playfootballRowId?: string
+    emergencyName?: string
+    emergencyPhone?: string
+    emergencyRelation?: string
+    shirtSize?: string
+    shortsSize?: string
   }
 
   const role: RegisterAs = ROLES.includes(registerAs as RegisterAs) ? (registerAs as RegisterAs) : 'player'
@@ -252,6 +265,22 @@ export async function POST(request: Request) {
 
   const secret = generateSecret()
 
+  // 0284: the claimed PlayFootball row must be this club's; the sizes one of
+  // the sizes the kit comes in; the emergency contact a name and a number.
+  const KIT = ['4', '6', '8', '10', '12', '14', '16', 'YXS', 'YS', 'YM', 'YL', 'S', 'M', 'L', 'XL', '2XL', '3XL']
+  type Kit = '4' | '6' | '8' | '10' | '12' | '14' | '16' | 'YXS' | 'YS' | 'YM' | 'YL' | 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL'
+  const kit = (v?: string) => (v && KIT.includes(v) ? (v as Kit) : null)
+  let claimedRow: { id: string; status: string } | null = null
+  if (playfootballRowId && /^[0-9a-f-]{36}$/i.test(playfootballRowId)) {
+    const { data: row } = await admin.from('playfootball_rows').select('id, academy_id, status').eq('id', playfootballRowId).maybeSingle()
+    if (row && row.academy_id === academyId) claimedRow = { id: row.id, status: row.status }
+  }
+  const emergency = {
+    emergency_name: (emergencyName ?? '').trim().slice(0, 120) || null,
+    emergency_phone: (emergencyPhone ?? '').trim().slice(0, 40) || null,
+    emergency_relation: (emergencyRelation ?? '').trim().slice(0, 60) || null,
+  }
+
   const { data: created, error } = await admin
     .from('registration_requests')
     .insert({
@@ -274,12 +303,22 @@ export async function POST(request: Request) {
       wwcc_number: forRole && wwcc ? wwcc : null,
       wwcc_expires_on: forRole && wwcc ? wwccExpiry : null,
       role_note: forRole ? roleNote?.trim().slice(0, 500) || null : null,
+      // 0284
+      playfootball_row_id: claimedRow?.id ?? null,
+      // A claimed row that PlayFootball says is registered confirms the request on the spot.
+      official_confirmed_at: claimedRow?.status === 'registered' ? new Date().toISOString() : null,
+      shirt_size: kit(shirtSize),
+      shorts_size: kit(shortsSize),
+      ...emergency,
     })
     .select('id')
     .single()
 
   if (error) {
     return NextResponse.json({ error: 'Could not send your registration.' }, { status: 500 })
+  }
+  if (claimedRow) {
+    await admin.from('playfootball_rows').update({ claimed_by: sub, claimed_at: new Date().toISOString() }).eq('id', claimedRow.id)
   }
 
   // The id and the secret, and nothing else. It must not say whether this

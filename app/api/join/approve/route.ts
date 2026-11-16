@@ -133,7 +133,7 @@ export async function POST(request: Request) {
   const extra = (given ?? {}) as {
     email?: string | null
     news_opt_in_at?: string | null
-    children?: { name?: string; dob?: string | null }[] | null
+    children?: { name?: string; dob?: string | null; ffa?: string | null }[] | null
     wanted_role?: Database['public']['Enums']['role_request_kind'] | null
     wanted_note?: string | null
     wanted_team_ids?: string[] | null
@@ -149,12 +149,32 @@ export async function POST(request: Request) {
   // squads can both have a Leo. A duplicate is a far smaller problem than
   // silently attaching a parent to someone else's child.
   const teamId = req.team_id
-  const kids: { name: string; dob: string | null }[] =
+  const kids: { name: string; dob: string | null; ffa?: string | null }[] =
     Array.isArray(extra.children) && extra.children.length > 0
-      ? extra.children.map((k) => ({ name: (k?.name ?? '').trim(), dob: k?.dob ?? null })).filter((k) => k.name)
+      ? extra.children.map((k) => ({ name: (k?.name ?? '').trim(), dob: k?.dob ?? null, ffa: k?.ffa ?? null })).filter((k) => k.name)
       : (req.children_names ?? []).map((n) => ({ name: n, dob: null }))
+  // 0284, PlayFootball first: at a club that requires it, a child the club's
+  // import has (by FFA number, or name and birthday) is registered; anyone
+  // else is PlayFootball pending — on the squad, off the team sheet until the
+  // next import confirms them.
+  const { data: club } = await admin.from('academies').select('requires_playfootball').eq('id', req.academy_id).maybeSingle()
+  const requiresPF = Boolean(club?.requires_playfootball)
+  const importRow = async (kid: { name: string; dob: string | null; ffa?: string | null }) => {
+    if (!requiresPF) return null
+    if (kid.ffa) {
+      const { data } = await admin.from('playfootball_rows').select('id, status').eq('academy_id', req.academy_id).eq('ffa_number', kid.ffa).maybeSingle()
+      if (data) return data
+    }
+    if (kid.dob) {
+      const { data } = await admin.from('playfootball_rows').select('id, status').eq('academy_id', req.academy_id).eq('dob', kid.dob).ilike('full_name', kid.name).limit(1).maybeSingle()
+      if (data) return data
+    }
+    return null
+  }
   for (const kid of asPlayer ? [] : kids) {
     let playerId: string | null = null
+    const row = await importRow(kid)
+    const officialStatus: 'registered' | 'pending' | null = !requiresPF ? null : row?.status === 'registered' ? 'registered' : 'pending'
 
     if (kid.dob) {
       const { data: found } = await admin
@@ -183,11 +203,21 @@ export async function POST(request: Request) {
     if (!playerId) {
       const { data: newPlayer } = await admin
         .from('players')
-        .insert({ academy_id: req.academy_id, team_id: teamId, full_name: kid.name, dob: kid.dob })
+        .insert({
+          academy_id: req.academy_id, team_id: teamId, full_name: kid.name, dob: kid.dob,
+          ...(officialStatus ? { official_status: officialStatus } : {}),
+          ...(kid.ffa ? { ff_number: kid.ffa } : {}),
+        })
         .select('id')
         .single()
       playerId = newPlayer?.id ?? null
+    } else if (officialStatus) {
+      // A child already on the roster: the import's word, or pending if the club had nothing yet.
+      const { data: existing } = await admin.from('players').select('official_status').eq('id', playerId).maybeSingle()
+      if (officialStatus === 'registered' && existing?.official_status !== 'not_required') await admin.from('players').update({ official_status: 'registered', ...(kid.ffa ? { ff_number: kid.ffa } : {}) }).eq('id', playerId)
+      else if (existing?.official_status === 'unknown') await admin.from('players').update({ official_status: 'pending' }).eq('id', playerId)
     }
+    if (playerId && row) await admin.from('playfootball_rows').update({ player_id: playerId, claimed_by: profileId, claimed_at: new Date().toISOString() }).eq('id', row.id)
 
     if (playerId) {
       await admin.from('player_guardians').upsert(

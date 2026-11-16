@@ -30,6 +30,9 @@ export type PublicProgram = {
   questions: Question[] | null
   /** R-18: PlayFootball first. */
   requires_official_rego?: boolean
+  /** 0284: PlayFootball first — the club's rule or the program's; the fee is a club extra, never the registration fee. */
+  requires_playfootball?: boolean
+  fee_kind?: 'extra' | 'fee'
   payment_required: boolean
   /** 0262: 'now' charges on submit (refunded in full on a decline); 'after_approval' asks once accepted. */
   pay_timing?: 'now' | 'after_approval'
@@ -49,7 +52,8 @@ export function ProgramSummary({ program: p }: { program: PublicProgram }) {
               p.born_to_year && p.born_to_year !== p.born_from_year ? `–${p.born_to_year}` : ''
             }`,
           p.starts_on && `From ${shortDate(p.starts_on)}`,
-          p.amount_cents != null && `${money(p.amount_cents)}${p.pay_timing === 'now' && p.payment_required ? ', paid on registration' : ''}`,
+          p.amount_cents != null && `${money(p.amount_cents)}${p.fee_kind === 'extra' ? ' club extra' : ''}${p.pay_timing === 'now' && p.payment_required ? ', paid on registration' : ''}`,
+          p.requires_playfootball && 'PlayFootball first',
         ]
           .filter(Boolean)
           .join(' · ')}
