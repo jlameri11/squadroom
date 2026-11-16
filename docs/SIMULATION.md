@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-16 00:06 UTC · 10 rounds played · 27 PASS · 16 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 15 min so far
+Last run: 2026-11-16 00:07 UTC · 11 rounds played · 27 PASS · 17 FIXED · 1 FAIL · 0 not run · 18 bugs logged (17 fixed) · 16 min so far
 
 ## What this is
 
@@ -76,6 +76,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 | OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
 | OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **FIXED** | 18/18 | — | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
+| OFF5a | A team withdraws mid-season: fixtures, ladder and opponents handled | **FIXED** | 6/6 | — | 0276: withdraw_entry; a bye is mirrored as a called-off game |
 
 ### People & messaging
 
@@ -98,7 +99,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 400 scheduled messages, 34502 RSVPs, 1529 referee appointments, 2783 team sheets, 1115 results agreed on the sheets, 94 disputes (95 ruled on), 33 late results, 229 cards.
+Over the run: 22 league notices, 132 club messages, 2636 chat lines, 1318 reactions, 110 polls, 440 scheduled messages, 37792 RSVPs, 1675 referee appointments, 3051 team sheets, 1238 results agreed on the sheets, 103 disputes (104 ruled on), 38 late results, 253 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -112,6 +113,7 @@ Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reacti
 | 8 | 2027-03-27 | 145 | 28060 | 28056 | 0 | announcement 11677, event_reminder 7980, message 7380, team_sheet_due 289, match_day 289, referee_appointment 151 |
 | 9 | 2027-04-03 | 145 | 75832 | 75823 | 0 | event_reminder 46520, announcement 20300, message 7366, fee_overdue 603, match_day 289, team_sheet_due 289 |
 | 10 | 2027-04-10 | 141 | 66723 | 66716 | 0 | event_reminder 46152, announcement 11948, message 7370, match_day 282, team_sheet_due 282, entry_fee_owed 255 |
+| 11 | 2027-04-24 | 138 | 98071 | 98060 | 0 | event_reminder 77130, announcement 11472, message 7360, fee_overdue 603, match_day 274, team_sheet_due 274 |
 
 ## The peak
 
