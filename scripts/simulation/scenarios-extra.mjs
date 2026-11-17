@@ -19,7 +19,8 @@ import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql,
 import { COMP, LEAGUE, eventFor, gamesOn, guardianOf, playerName, queued, rsvp, say, squad } from './world.mjs'
 import { plusDays } from './routine.mjs'
 import { apiAs, has, openSettled, pageAs, text, withStack } from './live.mjs'
-import { APP_URL, sessionCookie, sessionFor } from './stack.mjs'
+import { APP_URL, SUPABASE_URL, sessionCookie, sessionFor } from './stack.mjs'
+import { existsSync, readFileSync } from 'node:fs'
 
 /** The steps for round r (Saturday S). `add(at, name, fn)`; a step's checks file under the scenario its name starts with. */
 export async function extraPlan(ctx, r, S, add, rand) {
@@ -30,6 +31,9 @@ export async function extraPlan(ctx, r, S, add, rand) {
       break
     case 5:
       await joiningFamilies(ctx, S, add, rand)
+      break
+    case 6:
+      await realFiles(ctx, S, add, rand)
       break
     case 8:
       await featureSwitches(ctx, S, add, rand)
@@ -377,6 +381,250 @@ async function joiningFamilies(ctx, S, add, rand) {
         await context.close().catch(() => null)
       }
     }, { browser: true })
+  })
+}
+
+// ============================================ FS · real files through real storage
+const FIX = (name) => `${process.cwd()}/.cache/fixtures/${name}`
+/** Sign a storage path as a person, through the stack, the way the app does. Returns { status, url }. */
+async function signAs(db, personId, bucket, path) {
+  const session = await sessionFor(db, personId)
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${bucket}/${path}`, { method: 'POST', headers: { 'content-type': 'application/json', apikey: session.access_token, authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ expiresIn: 60 }) })
+  let data = null
+  try { data = await r.json() } catch {}
+  return { status: r.status, ok: r.ok, url: data?.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null, error: data?.message ?? data?.error ?? null }
+}
+async function fetchSigned(url) {
+  const r = await fetch(url)
+  return { status: r.status, type: r.headers.get('content-type'), bytes: (await r.arrayBuffer()).byteLength }
+}
+/** A new family through the sign-up routes (an account with a session cookie), for the public register flow. */
+async function newFamily(tag, i, seed = 0) {
+  const ip = `10.80.${i % 250}.${1 + (seed % 200)}`
+  const email = `sim-file-${tag}-${i}@squadroom-demo.test`
+  const mobile = `+6146${seed % 10}${String(100000 + i).slice(-6)}`
+  const post = async (path, body, cookie) => {
+    const r = await fetch(`${APP_URL}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': ip, ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body) })
+    let data = null
+    try { data = await r.json() } catch {}
+    return { status: r.status, ok: r.ok, data, headers: r.headers }
+  }
+  let r = await post('/api/account/create', { first: 'Frida', last: `Filer ${tag}`, email, mobile })
+  if (!r.ok || !r.data?.demo_code) return { ok: false, step: 'create', error: JSON.stringify(r.data).slice(0, 120) }
+  r = await post('/api/account/confirm', { email, code: r.data.demo_code, purpose: 'confirm', password: 'squadroom-sim-2027', next: '/' })
+  if (!r.ok) return { ok: false, step: 'confirm', error: JSON.stringify(r.data).slice(0, 120) }
+  const cookie = (r.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
+  return { ok: true, email, cookie, ip, post }
+}
+
+async function realFiles(ctx, S, add, rand) {
+  const { pool } = ctx
+  const c = 11 + rand.int(9)
+  const club = ids.club(c)
+  add(`${plusDays(S, -5)} 18:30`, 'FS0 the club has a photo consent form, and one family said no', async () => {
+    scenario('FS1', 'Files & storage', 'Chat photos through the real storage: a coach posts a photo in the squad chat, is warned who must not be in it, the squad sees it, nobody else can open it')
+    if (!existsSync(FIX('photo.jpg'))) { note('no fixture files in .cache/fixtures — run the generator first'); return }
+    const team = await val(pool, `select id from public.teams where academy_id = $1 and season = '2027' order by name limit 1`, [club])
+    const sq = await squad(pool, team)
+    const doc = (await sql(pool, `insert into public.consent_documents (academy_id, kind, title, version, body, required, published_at, created_by)
+      values ($1, 'photo_media', 'Photos and media', 1, 'We may photograph and film training and games for the club''s own channels.', false, now(), $2) returning id`, [club, who.president(c)]))[0].id
+    const refused = sq.players[2]
+    const guardian = await guardianOf(pool, refused)
+    await sql(pool, `insert into public.consent_acceptances (academy_id, document_id, profile_id, player_id, accepted, accepted_at) values ($1, $2, $3, $4, false, now())`, [club, doc, guardian, refused])
+    ctx.files = { club, c, team, coach: sq.coach, channel: sq.channel, parents: sq.parents, refused, refusedName: await playerName(pool, refused), stranger: ids.parent(c === 19 ? 11 : c + 1, 1), president: who.president(c) }
+    note(`club ${c}: ${ctx.files.refusedName} must not be photographed`)
+  })
+  const sendFile = async (page, file) => {
+    const input = await page.$('input[type="file"]')
+    if (!input) return { ok: false, why: 'no file input in the composer' }
+    await input.uploadFile(file)
+    await new Promise((r) => setTimeout(r, 1800))
+    const txt = await page.evaluate(() => document.body.innerText)
+    return { ok: true, txt }
+  }
+  const latestWithFile = async (channel, sender, since) => (await sql(pool, `select id, attachments from public.messages where channel_id = $1 and sender_id = $2 and created_at >= $3 and jsonb_array_length(attachments) > 0 order by created_at desc limit 1`, [channel, sender, since]))[0] ?? null
+  const chatStep = (name, at, file, run) => add(at, name, async () => {
+    const f = ctx.files
+    if (!f) return
+    await withStack(ctx, name, async ({ db, browser }) => {
+      const co = await pageAs(browser, db, f.coach, { org: f.club })
+      try {
+        await openSettled(co.page, `/chat/${f.channel}`)
+        const since = new Date(clock.now.getTime() - 1000).toISOString()
+        const picked = await sendFile(co.page, FIX(file))
+        await run({ db, browser, page: co.page, picked, since })
+      } finally { await co.context.close().catch(() => null) }
+    }, { browser: true })
+  })
+  chatStep('FS1 a photo in the squad chat', `${plusDays(S, -5)} 19:00`, 'photo.jpg', async ({ db, browser, page, picked, since }) => {
+    const f = ctx.files
+    check(picked.ok, { what: 'the composer takes a photo', expected: 'picked', actual: picked.why ?? 'picked', role: 'coach', where: '/chat composer' })
+    if (!picked.ok) return
+    check(has(picked.txt, 'must not be photographed') && has(picked.txt, f.refusedName.split(' ')[0]), { what: 'the coach is warned who must not be in the picture, before it goes', expected: `${f.refusedName} must not be photographed`, actual: text(picked.txt).slice(-200), role: 'coach', where: 'photo consent warning (0128)' })
+    await page.click('[aria-label="Send"]')
+    let msg = null
+    for (let i = 0; i < 20 && !msg; i++) { await new Promise((r) => setTimeout(r, 500)); msg = await latestWithFile(f.channel, f.coach, since) }
+    check(Boolean(msg), { what: 'the photo is sent', expected: 'a message with an attachment', actual: msg ? 'sent' : 'nothing arrived in 10 s', role: 'coach', where: 'messages' })
+    if (!msg) return
+    const a = msg.attachments[0]
+    check(a.path?.startsWith(`${f.club}/${f.channel}/${f.coach}/`) && a.mime === 'image/jpeg', { what: 'the file sits in the squad chat\'s own folder as a JPEG', expected: `${f.club.slice(0, 8)}…/${f.channel.slice(0, 8)}…/coach/…jpg`, actual: `${a.path} (${a.mime})`, role: 'coach', where: 'attachments (path, mime)' })
+    const obj = await val(pool, `select count(*)::int from storage.objects where bucket_id = 'attachments' and name = $1`, [a.path])
+    const onDisk = existsSync(`${process.cwd()}/.cache/storage/attachments/${a.path}`)
+    check(obj === 1 && onDisk, { what: 'the bytes are in the bucket, with their row', expected: 'row + file', actual: `${obj} rows, file ${onDisk ? 'present' : 'missing'}`, role: 'coach', where: 'storage.objects' })
+    const inSquad = await signAs(db, f.parents[0], 'attachments', a.path)
+    check(inSquad.ok, { what: 'a parent in the squad can open it', expected: 'a signed link', actual: `${inSquad.status} ${inSquad.error ?? ''}`, role: 'parent', where: 'storage sign (attachments)' })
+    if (inSquad.url) { const got = await fetchSigned(inSquad.url); check(got.status === 200 && /image\/jpeg/.test(got.type ?? ''), { what: 'and the picture comes down', expected: '200 image/jpeg', actual: `${got.status} ${got.type}`, role: 'parent', where: 'storage signed GET' }) }
+    const outside = await signAs(db, f.stranger, 'attachments', a.path)
+    check(!outside.ok || !outside.url, { what: 'a parent at another club cannot', expected: 'refused', actual: `${outside.status}`, role: 'parent (another club)', where: 'storage sign (attachments)' })
+    const staff = await signAs(db, f.president, 'attachments', a.path)
+    check(staff.ok, { what: 'the President, who may read the squad chat (0278), can open its photos too', expected: 'a signed link', actual: `${staff.status} ${staff.error ?? ''}`, role: 'club president', where: 'storage sign (attachments policy)', severity: 'medium' })
+    // The parent's phone shows the picture.
+    const pa = await pageAs(browser, db, f.parents[0], { org: f.club })
+    try {
+      await openSettled(pa.page, `/chat/${f.channel}`)
+      await new Promise((r) => setTimeout(r, 1500))
+      const imgs = await pa.page.$$eval('img', (els) => els.filter((i) => i.src.includes('/storage/v1/')).map((i) => ({ w: i.naturalWidth, complete: i.complete })))
+      check(imgs.length >= 1 && imgs.some((i) => i.w > 0), { what: 'the parent sees the photo in the chat', expected: 'an image that loaded', actual: `${imgs.length} storage images, widths ${imgs.map((i) => i.w).join(',')}`, role: 'parent', where: '/chat (attachment)' })
+      await pa.page.screenshot({ path: `.cache/screens/${ctx.seed ?? 1}-files-chat-photo.png`, fullPage: true }).catch(() => null)
+    } finally { await pa.context.close() }
+    ctx.files.chatPhoto = a.path
+  })
+  chatStep('FS2 an iPhone HEIC photo', `${plusDays(S, -5)} 19:10`, 'photo.heic', async ({ db, browser, page, picked, since }) => {
+    scenario('FS2', 'Files & storage', 'An iPhone HEIC photo in the chat: either it goes up as a picture everyone can see, or the sender is told at once what to do — never a broken image for the squad')
+    const f = ctx.files
+    if (!picked.ok) return
+    if (has(picked.txt, 'iPhone') || has(picked.txt, 'HEIC')) {
+      check(/Most Compatible|JPEG|screenshot/i.test(picked.txt), { what: 'the sender is told, at once, how to send an iPhone photo others can see', expected: 'a sentence naming Most Compatible or a JPEG', actual: text(picked.txt).slice(-200), role: 'coach', where: '/chat composer (HEIC)' })
+      const sent = await latestWithFile(f.channel, f.coach, since)
+      check(!sent, { what: 'and nothing unviewable was sent', expected: 'no message', actual: sent ? `sent as ${sent.attachments[0]?.mime}` : 'nothing sent', role: 'coach', where: 'messages' })
+      return
+    }
+    await page.click('[aria-label="Send"]')
+    let msg = null
+    for (let i = 0; i < 20 && !msg; i++) { await new Promise((r) => setTimeout(r, 500)); msg = await latestWithFile(f.channel, f.coach, since) }
+    check(Boolean(msg), { what: 'the HEIC photo is sent', expected: 'a message with an attachment', actual: msg ? `sent as ${msg.attachments[0]?.mime}` : `nothing arrived: ${text(picked.txt).slice(-160)}`, role: 'coach', where: 'messages' })
+    if (!msg) return
+    const a = msg.attachments[0]
+    const pa = await pageAs(browser, db, f.parents[1] ?? f.parents[0], { org: f.club })
+    try {
+      await openSettled(pa.page, `/chat/${f.channel}`)
+      await new Promise((r) => setTimeout(r, 2000))
+      const imgs = await pa.page.$$eval('img', (els) => els.filter((i) => i.src.includes('/storage/v1/')).map((i) => ({ src: i.src, w: i.naturalWidth })))
+      const mine = imgs.find((i) => i.src.includes(encodeURIComponent(a.path).replace(/%2F/g, '/')) || i.src.includes(a.path))
+      check(Boolean(mine) && mine.w > 0, { what: 'a parent on another phone can see an iPhone photo', expected: 'the picture loads (converted to JPEG on the way up)', actual: mine ? `the image is there but ${mine.w === 0 ? 'cannot be decoded' : 'loaded'} (${a.mime})` : `no image for it (${a.mime})`, role: 'parent', where: '/chat (HEIC attachment)', severity: 'medium' })
+    } finally { await pa.context.close() }
+  })
+  chatStep('FS3 a photo that is too big', `${plusDays(S, -5)} 19:15`, 'big.jpg', async ({ page, picked, since }) => {
+    scenario('FS3', 'Files & storage', 'A file over the limit: refused on the phone with a sentence, nothing uploaded')
+    const f = ctx.files
+    const before = await val(pool, `select count(*)::int from storage.objects where bucket_id = 'attachments' and name like $1`, [`${f.club}/${f.channel}/%`])
+    check(picked.ok && has(picked.txt, 'too big'), { what: 'a 26 MB photo is refused with a sentence', expected: '"… is too big …"', actual: text(picked.txt).slice(-160), role: 'coach', where: '/chat composer' })
+    await new Promise((r) => setTimeout(r, 1500))
+    const after = await val(pool, `select count(*)::int from storage.objects where bucket_id = 'attachments' and name like $1`, [`${f.club}/${f.channel}/%`])
+    check(after === before, { what: 'nothing was uploaded', expected: before, actual: after, role: 'coach', where: 'storage.objects' })
+    void since
+  })
+  chatStep('FS4 a PDF in the chat', `${plusDays(S, -5)} 19:20`, 'draw.pdf', async ({ db, page, picked, since }) => {
+    scenario('FS4', 'Files & storage', 'A PDF in the chat: the draw as a document, opened by a parent')
+    const f = ctx.files
+    if (!picked.ok) return
+    await page.click('[aria-label="Send"]')
+    let msg = null
+    for (let i = 0; i < 20 && !msg; i++) { await new Promise((r) => setTimeout(r, 500)); msg = await latestWithFile(f.channel, f.coach, since) }
+    check(Boolean(msg) && msg?.attachments[0]?.mime === 'application/pdf', { what: 'the PDF is sent as a PDF', expected: 'application/pdf', actual: msg ? msg.attachments[0]?.mime : 'nothing arrived', role: 'coach', where: 'messages (attachments)' })
+    if (!msg) return
+    const signed = await signAs(db, f.parents[0], 'attachments', msg.attachments[0].path)
+    const got = signed.url ? await fetchSigned(signed.url) : null
+    check(got?.status === 200 && /pdf/.test(got.type ?? ''), { what: 'a parent opens the PDF', expected: '200 application/pdf', actual: got ? `${got.status} ${got.type}` : `sign ${signed.status}`, role: 'parent', where: 'storage signed GET (pdf)' })
+  })
+  add(`${S} 16:30`, 'FS5 match photos after the game', async () => {
+    scenario('FS5', 'Files & storage', 'Match photos: the coach adds them after the game and is warned who must not be in them; only the squad sees them; a family takes one down at once; the coach puts it back')
+    const f = ctx.files
+    if (!f) return
+    const ev = await val(pool, `select e.id from public.events e join public.fixtures fx on fx.id = e.fixture_id where e.team_id = $1 and fx.status in ('final', 'forfeit') and (e.starts_at at time zone 'Australia/Sydney')::date <= $2::date order by e.starts_at desc limit 1`, [f.team, S])
+    if (!ev) { note('the squad has no played game today'); return }
+    await withStack(ctx, 'FS5 match photos', async ({ db, browser }) => {
+      const co = await pageAs(browser, db, f.coach, { org: f.club })
+      try {
+        await openSettled(co.page, `/calendar/${ev}?tab=sheet`)
+        const input = await co.page.$('[data-photos-file]')
+        check(Boolean(input), { what: 'the coach can add photos to a played game', expected: 'a photo picker on the match sheet', actual: input ? 'picker' : 'none', role: 'coach', where: '/calendar (photos)' })
+        if (!input) return
+        await input.uploadFile(FIX('photo.jpg'))
+        await new Promise((r) => setTimeout(r, 1500))
+        const txt = await co.page.evaluate(() => document.body.innerText)
+        check(has(txt, 'must not be photographed'), { what: 'the warning names who must not be in them, before the Add button', expected: `${f.refusedName} must not be photographed`, actual: text(txt).slice(-200), role: 'coach', where: 'match photos (consent)' })
+        await co.page.click('[data-photos-add]')
+        let photo = null
+        for (let i = 0; i < 24 && !photo; i++) { await new Promise((r) => setTimeout(r, 500)); photo = (await sql(pool, `select id, storage_path, thumb_path from public.event_photos where event_id = $1 order by created_at desc limit 1`, [ev]))[0] ?? null }
+        check(Boolean(photo), { what: 'the photo is added to the game', expected: 'an event_photos row', actual: photo ? 'added' : `nothing in 12 s: ${text(await co.page.evaluate(() => document.body.innerText)).slice(-160)}`, role: 'coach', where: 'add_match_photos' })
+        if (!photo) return
+        const inSquad = await signAs(db, f.parents[0], 'match-photos', photo.thumb_path ?? photo.storage_path)
+        check(inSquad.ok, { what: 'a family in the squad can see it', expected: 'a signed link', actual: `${inSquad.status}`, role: 'parent', where: 'storage sign (match-photos)' })
+        const outside = await signAs(db, f.stranger, 'match-photos', photo.storage_path)
+        check(!outside.ok, { what: 'a family at another club cannot', expected: 'refused', actual: `${outside.status}`, role: 'parent (another club)', where: 'storage sign (match-photos)' })
+        const down = await rpc(pool, f.parents[1] ?? f.parents[0], 'take_down_match_photo', { p_photo: photo.id })
+        mustWork(down, { what: 'any family in the squad takes it down at once, no reason asked', role: 'parent', where: 'take_down_match_photo' })
+        const hidden = await signAs(db, f.parents[0], 'match-photos', photo.storage_path)
+        check(!hidden.ok, { what: 'taken down, the squad cannot open it any more', expected: 'refused', actual: `${hidden.status}`, role: 'parent', where: 'storage sign after takedown' })
+        const coachStill = await signAs(db, f.coach, 'match-photos', photo.storage_path)
+        check(coachStill.ok, { what: 'the coach still can', expected: 'a signed link', actual: `${coachStill.status}`, role: 'coach', where: 'storage sign after takedown' })
+        const back = await rpc(pool, f.coach, 'restore_match_photo', { p_photo: photo.id })
+        mustWork(back, { what: 'only the coach puts it back', role: 'coach', where: 'restore_match_photo' })
+        const notParent = await rpc(pool, f.parents[0], 'restore_match_photo', { p_photo: photo.id })
+        mustRefuse(notParent, { what: 'a parent cannot put it back', role: 'parent', where: 'restore_match_photo' })
+        await co.page.screenshot({ path: `.cache/screens/${ctx.seed ?? 1}-files-match-photos.png`, fullPage: true }).catch(() => null)
+      } finally { await co.context.close().catch(() => null) }
+    }, { browser: true })
+  })
+  add(`${plusDays(S, -4)} 19:00`, 'FS6 a registration photo, private until approved', async () => {
+    scenario('FS6', 'Files & storage', 'A registration photo: sent with the request, private to the club until approved, then on the player card for the family and nobody else')
+    // A program open today, at this club, that a child born in 2017 may join — made by the President if the club has none.
+    const fits = `p.status = 'open' and (p.opens_at is null or p.opens_at <= now()) and (p.closes_at is null or p.closes_at > now())
+      and (p.born_from_year is null or p.born_from_year <= 2017) and (p.born_to_year is null or p.born_to_year >= 2017)`
+    let program = (await sql(pool, `select p.id, p.academy_id, a.slug from public.programs p join public.academies a on a.id = p.academy_id where p.academy_id = $1 and ${fits} order by p.created_at limit 1`, [club]).catch(() => []))[0]
+    if (!program) {
+      const made = await run(pool, who.president(c), `insert into public.programs (academy_id, name, kind, status, season, born_from_year, born_to_year) values ($1, $2, 'camp', 'open', '2027', 2015, 2018) returning id`, [club, `Autumn holiday camp ${S}`])
+      if (!made.ok) { note(`no open program and the President could not make one: ${made.error}`); return }
+      program = { id: made.data[0].id, academy_id: club, slug: await val(pool, `select slug from public.academies where id = $1`, [club]) }
+    }
+    const clubOf = program.academy_id
+    const cnum = await val(pool, `select n from (select id, row_number() over (order by name) n from public.academies where type <> 'league') x where id = $1`, [clubOf]).catch(() => null)
+    await withStack(ctx, 'FS6 registration photo', async ({ db }) => {
+      const fam = await newFamily(`${S.replace(/-/g, '')}${ctx.seed ?? 0}`, 1, ctx.seed ?? 0)
+      check(fam.ok, { what: 'a new family makes an account', expected: 'a session', actual: fam.ok ? 'session' : `${fam.step}: ${fam.error}`, role: 'parent (new)', where: '/api/account' })
+      if (!fam.ok) return
+      const child = { name: `Pia Filer ${S}`, dob: '2017-02-11' }
+      const req = await fam.post('/api/register/request', { slug: program.slug, programId: program.id, childName: child.name, childDob: child.dob, childGender: 'female', answers: {}, consents: [], forSelf: false }, fam.cookie)
+      check(req.ok && req.data?.requestId, { what: 'the family registers a child', expected: 'a request id and a secret', actual: `${req.status} ${JSON.stringify(req.data).slice(0, 100)}`, role: 'parent (new)', where: '/api/register/request' })
+      if (!req.ok) return
+      const image = `data:image/jpeg;base64,${readFileSync(FIX('photo.jpg')).toString('base64')}`
+      const up = await fam.post('/api/register/photo', { requestId: req.data.requestId, secret: req.data.secret, image }, fam.cookie)
+      check(up.ok, { what: 'the photo goes with the request', expected: 200, actual: `${up.status} ${JSON.stringify(up.data).slice(0, 80)}`, role: 'parent (new)', where: '/api/register/photo' })
+      const pending = await val(pool, `select photo_path from public.registration_requests where id = $1`, [req.data.requestId])
+      check(Boolean(pending) && pending.startsWith(`${clubOf}/pending/`), { what: 'it waits in the club\'s pending folder', expected: `${clubOf.slice(0, 8)}…/pending/…`, actual: String(pending), role: 'registrar', where: 'player-photos (pending)' })
+      if (!pending) return
+      const registrar = await val(pool, `select profile_id from public.club_roles where academy_id = $1 and role = 'registrar' limit 1`, [clubOf]) ?? await val(pool, `select profile_id from public.academy_members where academy_id = $1 and role = 'owner' limit 1`, [clubOf])
+      const reg = await signAs(db, registrar, 'player-photos', pending)
+      check(reg.ok, { what: 'the club\'s Registrar can see it while it waits', expected: 'a signed link', actual: `${reg.status} ${reg.error ?? ''}`, role: 'registrar', where: 'storage sign (pending photo)' })
+      const someParent = await val(pool, `select profile_id from public.academy_members where academy_id = $1 and role = 'parent' and status = 'active' limit 1`, [clubOf])
+      const par = await signAs(db, someParent, 'player-photos', pending)
+      check(!par.ok, { what: 'another family at the club cannot', expected: 'refused', actual: `${par.status}`, role: 'parent', where: 'storage sign (pending photo)' })
+      const owner = await val(pool, `select profile_id from public.academy_members where academy_id = $1 and role = 'owner' and status = 'active' limit 1`, [clubOf])
+      const ownerSession = await sessionFor(db, owner)
+      const ck = sessionCookie(ownerSession)
+      const approve = await fetch(`${APP_URL}/api/register/approve`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: `${ck.name}=${ck.value}` }, body: JSON.stringify({ requestId: req.data.requestId, decision: 'approve' }) })
+      check(approve.ok, { what: 'the club accepts the registration', expected: 200, actual: `${approve.status} ${(await approve.text()).slice(0, 100)}`, role: 'club president', where: '/api/register/approve' })
+      const player = (await sql(pool, `select id, photo_url from public.players where academy_id = $1 and full_name = $2 order by created_at desc limit 1`, [clubOf, child.name]))[0]
+      check(Boolean(player?.photo_url) && player.photo_url.startsWith(`${clubOf}/${player.id}/`), { what: 'approved, the photo moves to the player\'s own folder', expected: `${clubOf.slice(0, 8)}…/<player>/registration.jpg`, actual: String(player?.photo_url), role: 'registrar', where: 'player-photos (approved)' })
+      if (!player?.photo_url) return
+      const me = await val(pool, `select id from auth.users where lower(email) = $1`, [fam.email])
+      const guardian = await signAs(db, me, 'player-photos', player.photo_url)
+      check(guardian.ok, { what: 'the family sees it on the player card', expected: 'a signed link', actual: `${guardian.status} ${guardian.error ?? ''}`, role: 'parent (new)', where: 'storage sign (player photo)' })
+      const stranger = await signAs(db, ids.parent(c === 19 ? 11 : c + 1, 2), 'player-photos', player.photo_url)
+      check(!stranger.ok, { what: 'a family at another club cannot', expected: 'refused', actual: `${stranger.status}`, role: 'parent (another club)', where: 'storage sign (player photo)' })
+      void cnum
+    })
   })
 }
 

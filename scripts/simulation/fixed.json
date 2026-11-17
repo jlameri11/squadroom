@@ -296,5 +296,25 @@
     "expected": "The money records kept, as the manifest promises",
     "actual": "payments cascaded away with the login",
     "fixed": "0285: payments.profile_id set null when the account goes"
+  },
+  {
+    "scenario": "FS1",
+    "severity": "medium",
+    "role": "club president",
+    "where": "storage.objects (attachments read policy)",
+    "steps": "The President opens a squad chat they may read (0278) that has a photo in it",
+    "expected": "The photo opens like the messages",
+    "actual": "A pulsing grey box for ever — the bucket's read rule still asked for a member row",
+    "fixed": "0286: the read rule asks the same helper as the chat (staff_reads_channel)"
+  },
+  {
+    "scenario": "FS2",
+    "severity": "medium",
+    "role": "parent",
+    "where": "/chat composer (HEIC)",
+    "steps": "A coach sends an iPhone HEIC photo; a parent on Android or a computer opens the chat",
+    "expected": "A picture everyone can see, or the sender told what to do",
+    "actual": "The HEIC went up raw and showed as a broken image to the squad",
+    "fixed": "composer, notice composer and the match photos picker refuse a HEIC with the fix (Most Compatible / a screenshot) and accept JPEG, PNG, WebP and GIF so Safari converts on the way"
   }
 ]

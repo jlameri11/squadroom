@@ -171,13 +171,21 @@ export function MatchPhotos({ eventId }: { eventId: string }) {
             {d.photos.length ? 'Add more' : 'Add photos'}
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               multiple
               className="sr-only"
               disabled={busy !== null}
               onChange={(e) => {
-                setPicked([...(e.target.files ?? [])])
-                setError(null)
+                const files = [...(e.target.files ?? [])]
+                // An iPhone HEIC cannot be decoded here and would go up raw, a broken picture for the squad (17 Nov 2026).
+                const heic = files.find((f) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name))
+                if (heic) {
+                  setPicked([])
+                  setError(`${heic.name} is an iPhone HEIC photo, which Android phones and computers can’t show. On the iPhone: Settings → Camera → Formats → Most Compatible — or send a screenshot of it.`)
+                } else {
+                  setPicked(files)
+                  setError(null)
+                }
                 e.target.value = ''
               }}
               data-photos-file

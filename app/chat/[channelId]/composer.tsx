@@ -11,6 +11,10 @@ import { DEFAULT_TZ, zonedToUtc } from '@/lib/time'
 
 const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 
+/** An iPhone's HEIC: refused with the fix, never uploaded raw. */
+const HEIC_WORDS = (name: string) => `${name} is an iPhone HEIC photo, which Android phones and computers can’t show. On the iPhone: Settings → Camera → Formats → Most Compatible — or send a screenshot of it.`
+const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name)
+
 export function Composer({
   channelId, academyId, teamId, myId, canPost, isHost, archived, postingMode,
   replyTo, onCancelReply, lastMessageId, addOptimistic, replaceOptimistic, onScheduled, onTyping,
@@ -199,6 +203,13 @@ export function Composer({
     // A few at a time. Someone selecting their whole camera roll is almost
     // always a mistake, and a 40-image message is unreadable anyway.
     const chosen = Array.from(files).slice(0, 6)
+    // An iPhone HEIC cannot be decoded here, so it would go up raw and show the
+    // squad a broken picture (the simulation's files scenario, 17 Nov 2026).
+    const heic = chosen.find(isHeic)
+    if (heic) {
+      setError(HEIC_WORDS(heic.name))
+      return
+    }
     // C-05: a video is refused here, before a byte is sent, rather than by
     // the bucket after thirty seconds of upload on a 4G connection.
     const big = chosen.find((f) => f.size > MAX_MEDIA_BYTES)
@@ -572,7 +583,7 @@ export function Composer({
         <input
           ref={fileInput}
           type="file"
-          accept="image/*,video/*,audio/*,application/pdf"
+          accept="image/jpeg,image/png,image/webp,image/gif,video/*,audio/*,application/pdf"
           multiple
           className="hidden"
           onChange={(e) => { pickFiles(e.target.files); e.target.value = '' }}

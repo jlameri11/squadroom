@@ -21,7 +21,8 @@
 // checks (expected vs actual); the results land in .cache/simulation-results.json
 // and docs/SIMULATION.md (report.mjs), bugs in docs/BUGS.md as they are found.
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { ROOT, bugs, clock, head, localDb, note, ok, saveResults, scenarios, sql, sydney, val } from './lib.mjs'
 import { COMP, advanceTo, gamesOn, roundDates, queueTally } from './world.mjs'
 import { appointReferees, checkIns, clubLife, fullTime, leagueNotices, leagueSunday, plusDays, refereesRespond, rescheduleLeftovers, rng, scheduleFridayLines, submitSheets, weekRsvps } from './routine.mjs'
@@ -88,6 +89,8 @@ try {
   }
 
   // ------------------------------------------------------------ pre-season
+  // The files the files scenarios push through the storage (a PNG, a JPEG, an iPhone HEIC, a PDF, a 26 MB photo).
+  if (!existsSync(join(ROOT, '.cache', 'fixtures', 'photo.png'))) await import('./fixtures.mjs')
   clock.set('2027-01-25 09:00')
   head('PRE-SEASON — Monday 25 January 2027')
   await preseason(ctx)

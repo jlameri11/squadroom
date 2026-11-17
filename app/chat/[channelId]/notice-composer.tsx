@@ -60,6 +60,8 @@ export function NoticeComposer({
   function pickFiles(files: FileList | null) {
     if (!files) return
     const chosen = Array.from(files).slice(0, 6)
+    const heic = chosen.find((f) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name))
+    if (heic) return setError(`${heic.name} is an iPhone HEIC photo, which Android phones and computers can’t show. On the iPhone: Settings → Camera → Formats → Most Compatible — or send a screenshot of it.`)
     const big = chosen.find((f) => f.size > MAX_MEDIA_BYTES)
     if (big) return setError(`${big.name} is too big. Keep it under 25 MB.`)
     setPending((prev) => [...prev, ...chosen.map((f) => ({ key: crypto.randomUUID(), file: f, kind: kindOf(f.type) }))].slice(0, 6))
@@ -169,7 +171,7 @@ export function NoticeComposer({
         <input
           ref={fileInput}
           type="file"
-          accept="image/*,application/pdf,video/*"
+          accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,video/*"
           multiple
           className="hidden"
           onChange={(e) => { pickFiles(e.target.files); e.target.value = '' }}
