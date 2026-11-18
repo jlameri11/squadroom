@@ -6,6 +6,66 @@ every item on it is something no amount of building can get past.
 
 ---
 
+**Session log.** 17–18 Nov 2026 (Tue–Wed), Sydney, continuing the 16 Nov
+briefs: **files through the real storage** (the simulation's FS1–FS6, all
+green on their own — chat photos as PNG and JPEG, an iPhone HEIC refused with
+the fix in a sentence instead of going up as a broken picture, a 26 MB photo
+refused before a byte goes up, a draw PDF, match photos with the consent
+warning and a family's takedown, a registration photo private until approved
+— through the stack's storage service with the real policies; **0286** staff
+who may read a squad chat may open its photos; `fixtures.mjs` makes the test
+files). **League setup in thirty minutes** (Joey, 16 Nov): `/start` offers
+the four agreed choices and no others (League and Tournament & league
+organiser both found an organiser organisation — the same kind, named for who
+picks it; School is gone, a school picks Academy); **0287** gives the league
+its own checklist — `setup_progress` branches for a league: Crest & colours,
+then the newest competition's eight steps from `competition_setup` (Venues &
+pitches → Create the competition → Divisions & rules → Invite clubs / open
+entries → Entry fees → Referees → Build & check the draw → Publish), every
+tick read from the data; the three steps that had no state are given one —
+`add_division` names a division before any club enters it, "no entry fee" is
+a decision (`mark_entry_fees_free`, `competitions.fees_decided_at`, also set
+by the fee trigger), a checked draw is noted (`note_draw_checked`,
+`draw_checked_at`, from the Check screen); test-rls 240–241, **all 241 pass on
+dev**. The screens: a **Setup tab first** inside an unpublished competition
+(`competition-setup.tsx`: the steps with ticks, the division form, Set a fee /
+No entry fee, the publish control; the tab goes away once published), venues
+and pitches reachable from the competition (`/admin/venues?back=…` comes
+back), the draw builder links to the grounds when there are none,
+`/competitions/new` defaults to the organisation showing and lands on the
+Setup tab, Home shows "Finish setting up the league" to the league's owner,
+`/start/setup` speaks of a league. **LS1** ("a brand-new organiser starts a
+league from sign-up to a published draw", in the pre-season week and in
+`step.mjs --plan league`): sign-up through the real routes, the league, two-step
+sign-in, two grounds with a full field and two halves each, the competition,
+two divisions and their rules, sixteen clubs invited, entries open, a fee,
+six referees, both divisions drawn onto their grounds, checked, published —
+**33/33, 16 minutes at a thumb's pace** (62 fields typed, 37 taps, 15 screens
+read, 55 s waiting; the model is six seconds a field, three a tap, thirty a
+screen — the same as test-playfootball-first's; 8–12 s of calls), 112 games
+and both ladders on the public page, the Setup tab and Home's checklist and
+`/start` photographed at 375px light and dark (`.cache/screens/<seed>-league/`).
+Two harness traps on the way: a league's staff pages want a two-step session
+(`pageAs(…, { aal2: true })`, the same reason as the SQL calls' claim), and
+`next build` now **stops its first run with a Next.js security-upgrade nudge**
+(`SecurityFatalError`) — not a build error; the retry builds; the rebuild
+script had started the old build regardless, which is why the first browser
+run saw the old screens. A short run's report had overwritten
+`docs/SIMULATION.md` in the working tree; restored to the full-season one (the
+next full season rewrites it).
+
+- **NEEDS JOEY (18 Nov):** `next build` says this Next.js version "is affected
+  by a known security vulnerability" and asks for `next upgrade
+  --agent=security`; it is a dependency change, so it is yours to say — the
+  deploy's build stops on the same nudge until it is done (a retry gets past
+  it). And a competition **"spl season 4"** appeared on dev under the Sydney
+  Premier League on 16 Nov at 8:28 pm Sydney, created by no account, with four
+  entries and two games — no suite names it (test-organiser-journey's "SPL
+  Season 4" lives under its own Magic Group and goes with it); left as found;
+  say if it is yours or should go.
+
+---
+
 **Session log.** 16 Nov 2026 (Mon), Sydney, overnight into the morning: the
 **seed-3 season ran to the end of Season 5** (30 pass · 19 fixed · 4 fail,
 25 bugs logged in 25 minutes, committed after every round). Every one of the

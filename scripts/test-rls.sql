@@ -5413,6 +5413,19 @@ begin
   select count(*) into n from pg_trigger where tgname in ('fixtures_season_over', 'match_sheets_season_over', 'match_events_season_over', 'competition_entries_season_over', 'competitions_season_over');
   insert into rls_results values (234,'a finished season''s tables carry the read-only guard (0279)', case when n = 5 then 'PASS' else 'FAIL' end);
 
+  -- 240–241 (0287): a competition's setup list is the organiser's; a parent cannot name a division.
+  perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+  execute 'set local role authenticated';
+  b := public.competition_setup(v_comp) is null;
+  b2 := false;
+  begin
+    perform public.add_division(v_comp, 'RLS Division');
+  exception when others then b2 := true;
+  end;
+  execute 'reset role';
+  insert into rls_results values (240,'a parent gets no setup list for a competition (0287)', case when b then 'PASS' else 'FAIL' end);
+  insert into rls_results values (241,'a parent cannot name a division (0287)', case when b2 then 'PASS' else 'FAIL' end);
+
   -- 238–239 (0285): a switched-off feature is off through its function too;
   -- a squad with players on it cannot be deleted, even by an owner.
   perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);

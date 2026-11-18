@@ -58,6 +58,9 @@ if (plan === 'extra') {
 } else if (plan === 'season5') {
   const { season5Plan } = await import('./scenarios-season5.mjs')
   await season5Plan(ctx, add)
+} else if (plan === 'league') {
+  const { leagueSetup } = await import('./scenarios-extra.mjs')
+  add('2027-01-18 10:00', 'LS1 a brand-new organiser starts a league', () => leagueSetup(ctx))
 } else {
   console.log(`  no plan called ${plan}`)
   process.exit(2)

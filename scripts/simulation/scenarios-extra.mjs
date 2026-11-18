@@ -15,10 +15,10 @@
 // the real app go through live.mjs (the stack up at the season's moment, a
 // browser whose clock is the season's). A step can be run on its own with
 // scripts/simulation/step.mjs while it is being built.
-import { check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who } from './lib.mjs'
+import { asAnon, check, clock, ids, mustRefuse, mustWork, note, rpc, run, scenario, sql, val, who } from './lib.mjs'
 import { COMP, LEAGUE, eventFor, gamesOn, guardianOf, playerName, queued, rsvp, say, squad } from './world.mjs'
 import { plusDays } from './routine.mjs'
-import { apiAs, has, openSettled, pageAs, text, withStack } from './live.mjs'
+import { apiAs, appUp, has, openSettled, pageAs, text, withStack } from './live.mjs'
 import { APP_URL, SUPABASE_URL, sessionCookie, sessionFor } from './stack.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 
@@ -888,6 +888,169 @@ async function familyData(ctx, S, add, rand) {
     check(!mine || mine.guardian_id == null, { what: 'the coach sees the child with nobody to nudge', expected: 'no guardian', actual: JSON.stringify(mine ?? 'not listed').slice(0, 80), role: 'coach', where: 'who_hasnt_answered' })
     ctx.erased = { me, player: row.player, authUser: after.authUser }
   })
+}
+
+// ========================================= LS · a brand-new organiser's league
+const CLUB_NAMES = ['Lindfield Lions', 'Killara Kites', 'Gordon Gulls', 'Pymble Panthers', 'Turramurra Tigers', 'Wahroonga Wolves', 'Hornsby Hawks', 'Asquith Arrows',
+  'Chatswood Comets', 'Roseville Rangers', 'Willoughby Wanderers', 'Artarmon Aces', 'Lane Cove Lynx', 'Gladesville Gazelles', 'Epping Eagles', 'Beecroft Bears']
+/**
+ * Joey (16 Nov 2026): "a brand-new organiser starts a league from sign-up to
+ * published draw" — two divisions, sixteen teams, two venues — timed against
+ * the thirty-minute target. The clock moves at a human's pace per step; the
+ * wall time of the calls is reported beside it.
+ */
+export async function leagueSetup(ctx) {
+  const { pool } = ctx
+  scenario('LS1', 'League setup', 'A brand-new organiser starts a league from sign-up to a published draw: two divisions, sixteen teams, two venues — the checklist ticks itself from the data, and it takes under thirty minutes')
+  clock.set('2027-01-18 10:00')
+  const t0 = Date.now()
+  const tag = `ls${(ctx.seed ?? 0)}${Date.now().toString(36).slice(-4)}`
+  let uid = null
+  // Sign-up through the real routes when the app is serving; else the account goes straight in, as the seed's do.
+  if (await appUp(ctx, 'LS1 sign-up')) {
+    await withStack(ctx, 'LS1 sign-up', async () => {
+      // The index names the mobile and the address, so a run never reuses one.
+      const fam = await newFamily(tag, 300000 + Math.floor(Math.random() * 600000), ctx.seed ?? 0)
+      if (fam.ok) uid = await val(pool, `select id from auth.users where lower(email) = $1`, [fam.email])
+      check(fam.ok, { what: 'the organiser creates an account (name, email, mobile, the six-digit code)', expected: 'an account', actual: fam.ok ? 'signed up' : `${fam.step}: ${fam.error}`, role: 'league organiser (new)', where: '/api/account' })
+    })
+  }
+  if (!uid) {
+    uid = (await sql(pool, `insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, created_at, updated_at, aud, role)
+      values (gen_random_uuid(), $1, 'x', now(), '{"full_name":"Nadia Organiser","first_name":"Nadia","last_name":"Organiser"}'::jsonb, now(), now(), 'authenticated', 'authenticated') returning id`, [`${tag}-organiser@squadroom-demo.test`]))[0].id
+    note('the app was not serving: the organiser account went straight in')
+  }
+  const as = (fn, args) => rpc(pool, uid, fn, args, { aal2: true })
+  const own = (text, params) => run(pool, uid, text, params, { aal2: true })
+  // The clock moves at a thumb's pace, the same model as test-playfootball-first:
+  // six seconds a typed field, three a tap, thirty seconds to read each screen,
+  // plus any wait (scanning a QR code, picking a crest, the draw building).
+  const spent = { fields: 0, taps: 0, screens: 0, wait: 0 }
+  const human = ({ fields = 0, taps = 0, screens = 1, wait = 0 }) => {
+    spent.fields += fields; spent.taps += taps; spent.screens += screens; spent.wait += wait
+    clock.advance((fields * 6 + taps * 3 + screens * 30 + wait) / 3600)
+  }
+  // 1. Found the league (a minute).
+  const org = await rpc(pool, uid, 'create_academy', { p_name: `Northern Districts Football League ${tag}`, p_type: 'league' })
+  mustWork(org, { what: 'they found the league from /start', role: 'league organiser (new)', where: 'create_academy' })
+  if (!org.ok) return
+  const league = org.data
+  human({ fields: 1, taps: 2 })                        // the name, the kind, Create it
+  // A league's staff sign in with two steps (0231): the founder sets up the
+  // authenticator now (two minutes). The stack has no authenticator, so every
+  // call and page from here is the two-step session the app would give them.
+  human({ fields: 1, taps: 2, wait: 15 })              // scan the code, type the six digits
+  const list0 = (await as('setup_progress', { p_academy: league })).data
+  check(list0?.type === 'league' && (list0.steps ?? []).length === 9 && list0.done <= 1 && !list0.complete, { what: 'Home shows the league\'s own nine-step list, nothing ticked yet', expected: '9 steps, 0–1 done', actual: list0 ? `${list0.type}: ${list0.steps?.length} steps, ${list0.done} done` : 'null', role: 'league organiser (new)', where: 'setup_progress (league)' })
+  // 2. Crest & colours (two minutes).
+  mustWork(await own(`update public.academies set primary_colour = '#1f6f8b' where id = $1 returning id`, [league]), { what: 'the league picks its colour', role: 'league organiser (new)', where: 'academies' })
+  human({ taps: 1, wait: 20 })                         // a swatch, the crest from the photo roll
+  // 3. Venues & pitches (five minutes): two grounds, a full field and two halves at each.
+  const venues = []
+  for (const name of ['Lindfield Oval', 'Pymble Park']) {
+    const v = await own(`insert into public.venues (academy_id, name) values ($1, $2) returning id`, [league, `${name} ${tag}`])
+    mustWork(v, { what: `a ground: ${name}`, role: 'league organiser (new)', where: 'venues' })
+    if (!v.ok) continue
+    const full = await as('add_pitch', { p_venue: v.data[0].id, p_name: 'Field 1' })
+    const second = await as('add_pitch', { p_venue: v.data[0].id, p_name: 'Field 2' })
+    if (second.ok) await as('split_pitch', { p_pitch: second.data, p_into: 2 })
+    mustWork(full, { what: 'and its pitches', role: 'league organiser (new)', where: 'add_pitch / split_pitch' })
+    venues.push(v.data[0].id)
+  }
+  human({ fields: 6, taps: 8, screens: 2 })            // two grounds, four pitch names, add and split
+  // 4. Create the competition (two minutes).
+  const comp = await own(`insert into public.competitions (organiser_id, name, type, mode, season, organiser, starts_on) values ($1, $2, 'season', 'managed', '2027', $3, '2027-04-10') returning id`,
+    [league, `NDFL Winter ${tag}`, `Northern Districts Football League ${tag}`])
+  mustWork(comp, { what: 'they create the competition', role: 'league organiser (new)', where: 'competitions' })
+  if (!comp.ok) return
+  const C = comp.data[0].id
+  human({ fields: 3, taps: 2 })                        // name, season, first Saturday
+  const setup0 = (await as('competition_setup', { p_competition: C })).data
+  check(setup0 && setup0.steps?.[0]?.done && setup0.steps?.[1]?.done && !setup0.complete && !setup0.published, { what: 'the competition opens on its Setup tab: venues and the competition ticked, the rest waiting', expected: 'grounds ✓ competition ✓ 6 to go', actual: setup0 ? setup0.steps.map((s) => `${s.id}:${s.done ? '✓' : '○'}`).join(' ') : 'null', role: 'league organiser (new)', where: 'competition_setup' })
+  // 5. Divisions & rules (three minutes).
+  const d1 = await as('add_division', { p_competition: C, p_division: 'U12 Division 1', p_age_group: 'U12', p_pitch_size: 'half' })
+  const d2 = await as('add_division', { p_competition: C, p_division: 'U16 Division 1', p_age_group: 'U16', p_pitch_size: 'full' })
+  mustWork(d1, { what: 'two divisions are named before any club enters', role: 'league organiser (new)', where: 'add_division' })
+  mustWork(await own(`update public.competition_divisions set match_length_mins = 50, points_win = 3, points_draw = 1 where competition_id = $1 returning id`, [C]), { what: 'and their rules set', role: 'league organiser (new)', where: 'competition_divisions' })
+  human({ fields: 12, taps: 4, screens: 2 })           // two divisions, their rules
+  // 6. Invite clubs / open entries (five minutes): sixteen teams by name, entries open.
+  const inv1 = await as('bulk_invite_clubs', { p_competition: C, p_division: 'U12 Division 1', p_clubs: JSON.stringify(CLUB_NAMES.slice(0, 8).map((n) => ({ club_name: n }))) })
+  const inv2 = await as('bulk_invite_clubs', { p_competition: C, p_division: 'U16 Division 1', p_clubs: JSON.stringify(CLUB_NAMES.slice(8, 16).map((n) => ({ club_name: n }))) })
+  mustWork(inv1, { what: 'eight clubs invited into U12 Division 1', role: 'league organiser (new)', where: 'bulk_invite_clubs' })
+  mustWork(inv2, { what: 'and eight into U16 Division 1', role: 'league organiser (new)', where: 'bulk_invite_clubs' })
+  mustWork(await own(`update public.competitions set entries_open = true where id = $1 returning id`, [C]), { what: 'entries opened', role: 'league organiser (new)', where: 'competitions.entries_open' })
+  human({ fields: 16, taps: 3, screens: 2 })           // sixteen club names, Invite, Open entries
+  // 7. Entry fees (two minutes).
+  mustWork(await as('set_competition_fee', { p_competition: C, p_division: '', p_fee_cents: 35000, p_instructions: 'Bank transfer to the league before round one' }), { what: 'an entry fee for every division', role: 'league organiser (new)', where: 'set_competition_fee' })
+  human({ fields: 2, taps: 1 })                        // the fee and how to pay it
+  // 8. Referees (four minutes): six into the pool.
+  let refs = 0
+  for (let i = 0; i < 6; i++) {
+    const r = await as('add_referee', { p_competition: C, p_full_name: `${['Ava', 'Ben', 'Chloe', 'Dev', 'Ella', 'Finn'][i]} Whistle`, p_phone: `+6148${String(100000 + i).slice(-6)}0`, p_grade: 'Level 4' })
+    if (r.ok) refs++
+  }
+  check(refs === 6, { what: 'six referees in the pool', expected: 6, actual: refs, role: 'league organiser (new)', where: 'add_referee' })
+  human({ fields: 18, taps: 6 })                       // six referees: name, mobile, grade
+  // 9. Build & check the draw (five minutes): each division on a ground, two legs, from 10 April.
+  let drawn = 0
+  for (const [division, venue] of [['U12 Division 1', venues[0]], ['U16 Division 1', venues[1]]]) {
+    const r = await as('generate_fixtures_on_pitches', { p_competition: C, p_division: division, p_venue: venue, p_first_date: '2027-04-10', p_game_mins: null, p_gap_mins: 5, p_replace: false, p_round_every_days: 7, p_legs: 2, p_skip_dates: null })
+    if (r.ok) drawn++; else note(`${division}: ${r.error}`)
+  }
+  check(drawn === 2, { what: 'both divisions drawn onto their grounds', expected: 2, actual: drawn, role: 'league organiser (new)', where: 'generate_fixtures_on_pitches' })
+  const q = await as('draw_quality', { p_competition: C, p_division: 'U12 Division 1' })
+  mustWork(q, { what: 'the draw is checked', role: 'league organiser (new)', where: 'draw_quality' })
+  mustWork(await as('note_draw_checked', { p_competition: C }), { what: 'and the check is noted', role: 'league organiser (new)', where: 'note_draw_checked' })
+  human({ fields: 2, taps: 7, screens: 2, wait: 20 })  // venue, date, legs, Build — twice — and Check
+  const setup1 = (await as('competition_setup', { p_competition: C })).data
+  check(setup1 && setup1.done === 7 && !setup1.complete, { what: 'every step but Publish is ticked', expected: '7 of 8', actual: setup1 ? `${setup1.done} of ${setup1.total}: ${setup1.steps.filter((s) => !s.done).map((s) => s.id).join(', ') || 'all'}` : 'null', role: 'league organiser (new)', where: 'competition_setup' })
+  // The screens, at 375px in light and dark (CLAUDE.md): the competition opens
+  // on its Setup tab, Home's checklist is the league's, /start has the four.
+  await withStack(ctx, 'LS1 the Setup tab in the browser', async ({ db, browser }) => {
+    const { mkdirSync } = await import('node:fs')
+    const dir = `.cache/screens/${ctx.seed ?? 1}-league`
+    mkdirSync(dir, { recursive: true })
+    for (const dark of [false, true]) {
+      const { context, page } = await pageAs(browser, db, uid, { org: league, dark, aal2: true })
+      try {
+        const txt = await openSettled(page, `/competitions/${C}`)
+        const onSetup = Boolean(await page.$('[data-competition-setup]'))
+        const count = await page.$eval('[data-setup-count]', (el) => el.textContent).catch(() => null)
+        check(onSetup && /7 of 8/.test(count ?? ''), { what: `the competition opens on its Setup tab (${dark ? 'dark' : 'light'}), 7 of 8 ticked`, expected: 'Setup first, "7 of 8"', actual: onSetup ? `Setup tab, "${count}"` : txt.slice(0, 160), role: 'league organiser (new)', where: `/competitions/${C}` })
+        check(Boolean(await page.$('#publish')) && Boolean(await page.$('[data-add-division]')), { what: 'with the division form and the publish control on it', expected: 'both', actual: `publish ${Boolean(await page.$('#publish'))}, divisions ${Boolean(await page.$('[data-add-division]'))}`, role: 'league organiser (new)', where: 'Setup tab' })
+        await page.screenshot({ path: `${dir}/setup-${dark ? 'dark' : 'light'}.png`, fullPage: true }).catch(() => null)
+        if (!dark) {
+          const home = await openSettled(page, '/start/setup')
+          const clockText = await page.$eval('[data-setup-clock]', (el) => el.textContent).catch(() => null)
+          check(/7 of 9|8 of 9/.test(clockText ?? ''), { what: 'Home\'s checklist is the league\'s nine steps with the clock running', expected: '8 of 9 done · N min so far', actual: clockText ?? home.slice(0, 120), role: 'league organiser (new)', where: '/start/setup' })
+          await page.screenshot({ path: `${dir}/home-checklist.png`, fullPage: true }).catch(() => null)
+          await openSettled(page, '/start')
+          const choices = await page.$$eval('[data-start-type]', (els) => els.map((e) => e.getAttribute('data-start-type')))
+          check(choices.join('|') === 'Academy|Club|League|Tournament & league organiser', { what: '/start offers the four agreed choices and no others', expected: 'Academy, Club, League, Tournament & league organiser', actual: choices.join(', '), role: 'anyone', where: '/start' })
+          await page.screenshot({ path: `${dir}/start.png`, fullPage: true }).catch(() => null)
+        }
+      } finally {
+        await context.close().catch(() => null)
+      }
+    }
+  }, { browser: true })
+  // 10. Publish (a minute).
+  const slug = `ndfl-${tag}`
+  mustWork(await own(`update public.competitions set public_slug = $2, published_at = now() where id = $1 returning id`, [C, slug]), { what: 'they publish', role: 'league organiser (new)', where: 'competitions (publish)' })
+  human({ fields: 1, taps: 1 })                        // the address, Publish
+  const games = await val(pool, `select count(*)::int from public.fixtures where competition_id = $1 and status <> 'bye'`, [C])
+  check(games === 112, { what: 'a full home-and-away season for sixteen teams', expected: 112, actual: games, role: 'league organiser (new)', where: 'fixtures' })
+  const setup2 = (await as('competition_setup', { p_competition: C })).data
+  check(Boolean(setup2?.complete && setup2.published), { what: 'the competition\'s setup is complete', expected: 'complete, published', actual: JSON.stringify({ done: setup2?.done, total: setup2?.total, published: setup2?.published }), role: 'league organiser (new)', where: 'competition_setup' })
+  const prog = (await as('setup_progress', { p_academy: league })).data
+  check(Boolean(prog?.complete && prog.completed_at), { what: 'the league\'s checklist on Home is complete and the clock stopped', expected: 'complete', actual: prog ? `${prog.done}/${prog.total}, ${prog.minutes} min` : 'null', role: 'league organiser (new)', where: 'setup_progress (league)' })
+  check(Number(prog?.minutes) <= 30, { what: 'from sign-up to a published draw in under thirty minutes (at a human\'s pace)', expected: '≤ 30 min', actual: `${prog?.minutes} min simulated, ${Math.round((Date.now() - t0) / 1000)} s of calls`, role: 'league organiser (new)', where: 'setup_progress.minutes' })
+  const pub = await asAnon(pool, async (c) => (await c.query(`select public.public_match_centre($1) j`, [slug])).rows[0].j)
+  check(pub.ok && (pub.data?.fixtures ?? []).length === 112 && Object.keys(pub.data?.ladder ?? {}).length === 2, { what: 'the public match centre shows the whole draw and both ladders', expected: '112 games, 2 ladders', actual: pub.ok ? `${(pub.data?.fixtures ?? []).length} games, ${Object.keys(pub.data?.ladder ?? {}).length} ladders` : pub.error, role: 'stranger', where: 'public_match_centre' })
+  note(`league ${tag}: ${prog?.minutes} min at a thumb's pace (${spent.fields} fields typed, ${spent.taps} taps, ${spent.screens} screens read, ${spent.wait} s waiting), ${Math.round((Date.now() - t0) / 1000)} s of calls`)
+  ctx.leagueSetup = { league, competition: C, slug, uid }
+  // The pre-season proper starts the week after.
+  clock.set('2027-01-25 09:00')
 }
 
 export { plusDays }

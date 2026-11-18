@@ -1536,9 +1536,11 @@ export type Database = {
           club_allocate_hours: number
           created_at: string
           created_by: string | null
+          draw_checked_at: string | null
           ended_at: string | null
           ends_on: string | null
           entries_open: boolean
+          fees_decided_at: string | null
           flowing_until: string | null
           flowing_window_days: number
           id: string
@@ -1564,9 +1566,11 @@ export type Database = {
           club_allocate_hours?: number
           created_at?: string
           created_by?: string | null
+          draw_checked_at?: string | null
           ended_at?: string | null
           ends_on?: string | null
           entries_open?: boolean
+          fees_decided_at?: string | null
           flowing_until?: string | null
           flowing_window_days?: number
           id?: string
@@ -1592,9 +1596,11 @@ export type Database = {
           club_allocate_hours?: number
           created_at?: string
           created_by?: string | null
+          draw_checked_at?: string | null
           ended_at?: string | null
           ends_on?: string | null
           entries_open?: boolean
+          fees_decided_at?: string | null
           flowing_until?: string | null
           flowing_window_days?: number
           id?: string
@@ -9318,6 +9324,15 @@ export type Database = {
           waiting: boolean
         }[]
       }
+      add_division: {
+        Args: {
+          p_age_group?: string
+          p_competition: string
+          p_division: string
+          p_pitch_size?: string
+        }
+        Returns: string
+      }
       add_fixture_change_note: {
         Args: { p_body: string; p_request: string }
         Returns: string
@@ -9733,6 +9748,7 @@ export type Database = {
         }[]
       }
       competition_seasons: { Args: { p_competition: string }; Returns: Json }
+      competition_setup: { Args: { p_competition: string }; Returns: Json }
       conduct_register: { Args: { p_academy?: string }; Returns: Json }
       confirm_match_sheet: {
         Args: { p_entry: string; p_fixture: string }
@@ -10282,6 +10298,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_entry_fees_free: {
+        Args: { p_competition: string }
+        Returns: undefined
+      }
       mark_password_set: { Args: never; Returns: boolean }
       mark_referee_run_paid: {
         Args: { p_method?: string; p_run: string }
@@ -10518,6 +10538,7 @@ export type Database = {
         Args: { p_note: string; p_suspension: string }
         Returns: undefined
       }
+      note_draw_checked: { Args: { p_competition: string }; Returns: undefined }
       notice_email_recipients: {
         Args: { p_message: string }
         Returns: {

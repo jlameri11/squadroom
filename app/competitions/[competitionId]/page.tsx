@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient, getUserId } from '@/lib/supabase/server'
 import { CompetitionView, type Fixture, type LadderRow } from './competition-view'
+import type { CompetitionSetupData } from './competition-setup'
 
 export default async function CompetitionPage(props: {
   params: Promise<{ competitionId: string }>
-  /** `?tab=run|ladder|discipline|referees|clubs|send` opens that tab — what Home links to. */
+  /** `?tab=setup|run|ladder|discipline|referees|clubs|send` opens that tab — what Home and the setup checklist link to. */
   searchParams: Promise<{ tab?: string }>
 }) {
   const { competitionId } = await props.params
@@ -24,7 +25,7 @@ export default async function CompetitionPage(props: {
   if (!comp) notFound()
   const runBy = orgName(comp.academies) ?? comp.organiser
 
-  const [{ data: sheet }, { data: entries }, { data: access }] = await Promise.all([
+  const [{ data: sheet }, { data: entries }, { data: access }, { data: named }] = await Promise.all([
     supabase.rpc('competition_run_sheet', { p_competition: competitionId }),
     supabase
       .from('competition_entries')
@@ -35,11 +36,13 @@ export default async function CompetitionPage(props: {
       .order('display_name'),
     // L-13: owner/admin, or a league role scoped to an area.
     supabase.rpc('my_competition_access', { p_competition: competitionId }),
+    // 0287: a division named before any club has entered it.
+    supabase.from('competition_divisions').select('division, rank').eq('competition_id', competitionId).order('rank'),
   ])
 
   const areas = ((access as unknown as { areas?: string[] } | null)?.areas ?? []) as string[]
   const isOrganiser = areas.includes('competition')
-  const divisions = [...new Set((entries ?? []).map((e) => e.division))]
+  const divisions = [...new Set([...(named ?? []).map((d) => d.division), ...(entries ?? []).map((e) => e.division)])]
 
   // Asked for separately, and allowed to fail.
   //
@@ -59,6 +62,14 @@ export default async function CompetitionPage(props: {
     .maybeSingle()) as {
     data: { public_slug: string | null; published_at: string | null; entries_open: boolean | null } | null
   }
+
+  // 0287: the organiser's Setup tab — the steps in order with what is missing —
+  // until the competition is published. Loose like the publication: the typed
+  // client learns the function when the types are regenerated.
+  const { data: setupRaw } = isOrganiser
+    ? ((await loose.rpc('competition_setup', { p_competition: competitionId })) as { data: unknown })
+    : { data: null }
+  const setup = (setupRaw as CompetitionSetupData | null) ?? null
 
   // One ladder per division, computed rather than stored.
   const ladders: Record<string, LadderRow[]> = {}
@@ -99,6 +110,7 @@ export default async function CompetitionPage(props: {
             : null
         }
         divisions={divisions}
+        setup={setup}
         fixtures={(sheet ?? []) as Fixture[]}
         ladders={ladders}
         entries={(entries ?? []).map((e) => ({

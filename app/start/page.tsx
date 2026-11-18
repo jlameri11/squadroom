@@ -6,11 +6,13 @@ import { createClient } from '@/lib/supabase/client'
 import { setOrg } from '@/lib/org'
 
 const TYPES = [
-  { value: 'academy', label: 'Academy', hint: 'Several teams across age groups' },
-  { value: 'club', label: 'Club or team', hint: 'One team, or a few mates' },
-  // Joey, 5 Nov 2026: the organiser's choice, named for who picks it.
-  { value: 'league', label: 'Tournament & league organiser', hint: 'You run leagues or tournaments, e.g. Magic Group, Football NSW.' },
-  { value: 'school', label: 'School', hint: 'A school football program' },
+  // The four agreed (Joey, 16 Nov 2026). A school picks Academy. "League" and
+  // "Tournament & league organiser" are the same kind of organisation here —
+  // the organiser organisation is the group (0246) — named for who picks it.
+  { value: 'academy', label: 'Academy', hint: 'You train players in squads and programs' },
+  { value: 'club', label: 'Club', hint: 'You field teams in a league' },
+  { value: 'league', label: 'League', hint: 'You run one competition others enter' },
+  { value: 'league', label: 'Tournament & league organiser', hint: 'You run several leagues or tournaments — e.g. Magic Group, Football NSW' },
 ] as const
 
 /**
@@ -23,7 +25,9 @@ const TYPES = [
 export default function Start() {
   const router = useRouter()
   const [name, setName] = useState('')
-  const [type, setType] = useState<(typeof TYPES)[number]['value']>('academy')
+  // Two of the four are the same kind of organisation, so the choice is the card, not the kind.
+  const [choice, setChoice] = useState<(typeof TYPES)[number]['label']>('Academy')
+  const type = TYPES.find((t) => t.label === choice)?.value ?? 'academy'
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -78,17 +82,18 @@ export default function Start() {
           </legend>
           {TYPES.map((t) => (
             <label
-              key={t.value}
+              key={t.label}
               className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${
-                type === t.value ? 'border-[var(--brand)]' : 'border-[var(--line)]'
+                choice === t.label ? 'border-[var(--brand)]' : 'border-[var(--line)]'
               }`}
+              data-start-type={t.label}
             >
               <input
                 type="radio"
                 name="type"
                 className="mt-1"
-                checked={type === t.value}
-                onChange={() => setType(t.value)}
+                checked={choice === t.label}
+                onChange={() => setChoice(t.label)}
               />
               <span>
                 <span className="block font-medium">{t.label}</span>

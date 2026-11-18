@@ -54,13 +54,14 @@ export async function withStack(ctx, what, fn, { browser = false } = {}) {
  * the browser's clock moved to the simulated moment, 375px wide, light.
  * Returns { context, page }; close the context when done.
  */
-export async function pageAs(browser, db, personId, { org = null, hat = null, dark = false, width = 375 } = {}) {
+export async function pageAs(browser, db, personId, { org = null, hat = null, dark = false, width = 375, aal2 = false } = {}) {
   const context = await browser.createBrowserContext()
   const page = await context.newPage()
   await page.setViewport({ width, height: 812 })
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }])
   if (personId) {
-    const session = await sessionFor(db, personId)
+    // A league's staff sign in with two steps (0231); aal2 is that session, as the SQL calls' {aal2:true} is.
+    const session = await sessionFor(db, personId, { aal: aal2 ? 'aal2' : 'aal1' })
     await page.setCookie(sessionCookie(session))
   }
   const shift = clock.now ? clock.now.getTime() - Date.now() : 0

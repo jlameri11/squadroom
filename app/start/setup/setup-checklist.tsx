@@ -20,6 +20,8 @@ type Progress = {
   minutes: number
   /** Set up before the checklist existed; the clock means nothing. */
   grandfathered?: boolean
+  /** 0287: 'league' has its own nine steps; the rest are a club's six. */
+  type?: string
   steps: Step[]
   done: number
   total: number
@@ -131,7 +133,7 @@ export function SetupChecklist() {
               ? `${p.done} of ${p.total} in place`
               : p.complete
                 ? `Set up in ${p.minutes} min${p.minutes <= 30 ? ' — under the half hour' : ''}`
-                : `${p.done} of ${p.total} done · ${p.minutes} min so far · aim for under 30`}
+                : `${p.done} of ${p.total} done · ${p.minutes} min · aim: under 30`}
           </span>
         </span>
         <Link href="/" className="flex-none rounded-[10px] px-2.5 py-1.5 text-xs font-semibold" style={{ background: 'color-mix(in srgb, var(--bar-ink) 16%, transparent)' }}>
@@ -199,12 +201,12 @@ export function SetupChecklist() {
 
         {p.complete && !p.grandfathered ? (
           <p className="mt-4 rounded-xl p-3.5 text-sm" style={{ background: 'var(--yes-bg)', color: 'var(--yes)' }} data-setup-complete>
-            That is the club set up — {p.minutes} minutes. Your public page is live at <b>/{p.slug}</b>; families register there and coaches join from their links.
+            {p.type === 'league' ? <>That is the league set up — {p.minutes} minutes. The competition is live on its public page; clubs enter from it and every family sees the draw.</> : <>That is the club set up — {p.minutes} minutes. Your public page is live at <b>/{p.slug}</b>; families register there and coaches join from their lin</>}ks.
           </p>
         ) : p.grandfathered ? (
           <p className="mt-4 px-1 text-xs text-ink-3">Your public page is at <b>/{p.slug}</b>. Anything unticked above is one tap away.</p>
         ) : (
-          <p className="mt-4 px-1 text-xs text-ink-3">Come back here from Home any time; the ticks come from what is in the club, not from this list.</p>
+          <p className="mt-4 px-1 text-xs text-ink-3">Come back here from Home any time; the ticks come from what is in the {p.type === 'league' ? 'league' : 'club'}, not from this list.</p>
         )}
         {error && <p className="mt-2 text-xs" style={{ color: 'var(--no)' }}>{error}</p>}
       </div>

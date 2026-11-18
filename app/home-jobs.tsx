@@ -96,7 +96,7 @@ export function rememberedHat(org: string | null): string | undefined {
  * the tiles are the one-tap switch. The crest in the app bar still opens the
  * full sheet; this is the shortcut for the coach who also runs the league.
  */
-type Setup = { done: number; total: number; minutes: number; complete: boolean; completed_at: string | null; grandfathered?: boolean }
+type Setup = { done: number; total: number; minutes: number; complete: boolean; completed_at: string | null; grandfathered?: boolean; type?: string }
 
 /** What Home hands to Needs you for a parent: the jobs, already pointing at the exact page. */
 export type JobsHandoff = { persona: Persona; jobs: Job[] }
@@ -116,7 +116,8 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
   const { data } = useScreen<Jobs>('home_jobs', { p_academy: org, p_persona: hat })
   // G-01: a club still being set up gets the checklist first.
   const persona = data?.persona
-  const { data: setup } = useScreen<Setup>('setup_progress', { p_academy: org }, { enabled: persona === 'owner' || persona === 'president' })
+  // G-01, and the league's own list (0287): the owner's, the President's and the organiser's Home.
+  const { data: setup } = useScreen<Setup>('setup_progress', { p_academy: org }, { enabled: persona === 'owner' || persona === 'president' || persona === 'league' })
   useEffect(() => {
     if (data) onJobs?.({ persona: data.persona, jobs: data.jobs ?? [] })
     // onJobs is a state setter from Home; stable for the life of the screen.
@@ -201,7 +202,7 @@ export function HomeJobs({ onJobs }: { onJobs?: (jobs: JobsHandoff) => void }) {
             {setup.done}/{setup.total}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold">Finish setting up the club</span>
+            <span className="block text-sm font-semibold">Finish setting up the {setup.type === 'league' ? 'league' : 'club'}</span>
             <span className="block text-xs text-ink-3">{setup.total - setup.done} steps left · {setup.minutes} min so far · aim for under 30</span>
           </span>
           <span className="flex-none text-lg text-ink-3">›</span>

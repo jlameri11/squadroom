@@ -26,6 +26,8 @@ export async function hasParam(pool, fn, param) {
 
 // ================================================================ pre-season
 export async function preseason(ctx) {
+  // Joey (16 Nov): a brand-new organiser starts a league from sign-up to a published draw, timed — the week before.
+  await extra.leagueSetup(ctx)
   const { pool } = ctx
   ctx.needsJoey = ctx.needsJoey ?? []
 

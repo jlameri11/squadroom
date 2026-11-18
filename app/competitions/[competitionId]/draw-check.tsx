@@ -46,6 +46,8 @@ export function DrawCheck({ competitionId, division }: { competitionId: string; 
     setBusy(false)
     if (error) return setError(error.message)
     setQ((data as unknown as Quality | null) ?? null)
+    // 0287: a checked draw is a setup step done.
+    void createClient().rpc('note_draw_checked', { p_competition: competitionId })
   }
   async function askImpact() {
     if (!date) return

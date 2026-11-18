@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getOrg } from '@/lib/org'
 
 const MODES = [
   {
@@ -31,7 +32,9 @@ export default function NewCompetition() {
     const supabase = createClient()
     supabase.from('academies').select('id, name').order('name').then(({ data }) => {
       setOrgs(data ?? [])
-      setOrganiserId(data?.[0]?.id ?? '')
+      // The organisation the browser is showing, not the first by name (0287).
+      const current = getOrg()
+      setOrganiserId(current && (data ?? []).some((o) => o.id === current) ? current : data?.[0]?.id ?? '')
     })
   }, [])
 
@@ -53,7 +56,8 @@ export default function NewCompetition() {
       .single()
     setBusy(false)
     if (error) return setError(error.message)
-    router.replace(`/competitions/${data.id}/invite`)
+    // 0287: the Setup tab — divisions, entries, fees, referees, the draw, publish — in order.
+    router.replace(`/competitions/${data.id}?tab=setup`)
   }
 
   return (

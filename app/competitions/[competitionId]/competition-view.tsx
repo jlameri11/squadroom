@@ -12,6 +12,7 @@ import { ChangeRequests, ProposeChange } from './change-requests'
 import { CallOffDay, FixtureOps } from './match-day-ops'
 import { MatchDayDashboard } from './match-day-dashboard'
 import { DrawCheck } from './draw-check'
+import { CompetitionSetup, type CompetitionSetupData } from './competition-setup'
 import { Nominations, MyNominations } from './nominations'
 import { RoundTools } from './round-tools'
 
@@ -58,7 +59,7 @@ export type LadderRow = {
 type Entry = { id: string; name: string; division: string; group: string | null; signedUp: boolean }
 
 export function CompetitionView({
-  competitionId, initialTab, mode, isOrganiser, areas = [], name, publication, divisions, fixtures, ladders, entries, entriesOpen = false, status,
+  competitionId, initialTab, mode, isOrganiser, areas = [], name, publication, divisions, setup = null, fixtures, ladders, entries, entriesOpen = false, status,
 }: {
   competitionId: string
   /** 0279: 'active' or 'ended' — a finished season is read-only, and says so. */
@@ -75,6 +76,8 @@ export function CompetitionView({
   /** Null until 0079 is applied, which is how the control stays hidden. */
   publication: { slug: string | null; publishedAt: string | null } | null
   divisions: string[]
+  /** 0287: the organiser's setup steps; the Setup tab shows first until the competition is published. */
+  setup?: CompetitionSetupData | null
   fixtures: Fixture[]
   ladders: Record<string, LadderRow[]>
   entries: Entry[]
@@ -83,17 +86,24 @@ export function CompetitionView({
   // organiser already uses. Showing empty versions here would invite someone
   // to fill them in and create a second, wrong answer.
   const commsOnly = mode === 'comms_only'
-  const tabs = commsOnly
-    ? (['send', 'clubs'] as const)
-    : (['run', 'ladder', 'discipline', 'referees', 'clubs', 'send'] as const)
+  // 0287: until the competition is published its organiser lands on Setup —
+  // the steps in order with what is missing; the normal tabs after.
+  const showSetup = isOrganiser && !commsOnly && Boolean(setup) && !setup?.published
+  const tabs: readonly string[] = commsOnly
+    ? ['send', 'clubs']
+    : showSetup
+      ? ['setup', 'run', 'ladder', 'discipline', 'referees', 'clubs', 'send']
+      : ['run', 'ladder', 'discipline', 'referees', 'clubs', 'send']
 
-  const [tab, setTab] = useState<string>(
-    initialTab && (tabs as readonly string[]).includes(initialTab) ? initialTab : tabs[0]
+  const [tabState, setTab] = useState<string>(
+    initialTab && tabs.includes(initialTab) ? initialTab : tabs[0]
   )
+  // Publishing takes the Setup tab away; whatever was open falls to the first.
+  const tab = tabs.includes(tabState) ? tabState : tabs[0]
   const [division, setDivision] = useState(divisions[0] ?? '')
 
   const LABEL: Record<string, string> = {
-    run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', referees: 'Refs', clubs: 'Clubs', send: 'Notices',
+    setup: 'Setup', run: 'Run sheet', ladder: 'Ladder', discipline: 'Cards', referees: 'Refs', clubs: 'Clubs', send: 'Notices',
   }
 
   return (
@@ -112,7 +122,7 @@ export function CompetitionView({
           <button
             key={t}
             onClick={() => setTab(t)}
-            className="flex-1 rounded-lg py-2 text-sm font-medium"
+            className={`flex-1 rounded-lg py-2 font-medium ${tabs.length > 6 ? 'px-0.5 text-xs' : 'text-sm'}`}
             style={tab === t ? { background: 'var(--brand-soft)', color: 'var(--brand-text)' } : { color: 'var(--ink-2)' }}
           >
             {LABEL[t]}
@@ -120,7 +130,7 @@ export function CompetitionView({
         ))}
       </div>
 
-      {divisions.length > 1 && tab !== 'clubs' && tab !== 'discipline' && tab !== 'send' && (
+      {divisions.length > 1 && tab !== 'clubs' && tab !== 'discipline' && tab !== 'send' && tab !== 'setup' && (
         <div className="flex gap-2 overflow-x-auto border-b border-[var(--line-2)] px-4 py-2">
           {divisions.map((d) => (
             <button
@@ -137,6 +147,16 @@ export function CompetitionView({
         </div>
       )}
 
+      {tab === 'setup' && setup && (
+        <CompetitionSetup
+          setup={setup}
+          competitionId={competitionId}
+          divisions={divisions}
+          onTab={setTab}
+          publish={publication ? <PublishPublicly competitionId={competitionId} name={name} slug={publication.slug} publishedAt={publication.publishedAt} /> : null}
+          rules={divisions.length > 0 ? <DivisionSettings competitionId={competitionId} divisions={divisions} /> : null}
+        />
+      )}
       {tab === 'run' && (
         <>
           {/* L-26: the league's live list, for whoever runs any part of it. */}
@@ -749,6 +769,14 @@ function BuildDraw({ competitionId, division }: { competitionId: string; divisio
               <option key={v.id} value={v.id}>{v.name} · {v.pitches} {v.pitches === 1 ? 'pitch' : 'pitches'}</option>
             ))}
           </select>
+        </label>
+      )}
+      {venues.length === 0 && (
+        <label className="mt-3 block">
+          {/* 0287: the grounds are one tap from here, and Back comes back. */}
+          <Link href={`/admin/venues?back=${encodeURIComponent(`/competitions/${competitionId}?tab=run`)}`} className="text-xs text-ink-2 underline underline-offset-4" data-draw-no-venues>
+            No grounds yet — add your venues and pitches, and the draw is laid onto them
+          </Link>
           {venueId && (
             <span className="mt-1 block text-xs text-ink-3">
               On this division&apos;s size of pitch, inside each pitch&apos;s hours, around anything already booked.
