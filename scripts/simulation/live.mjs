@@ -89,8 +89,8 @@ export async function openSettled(page, path, { timeout = 45000 } = {}) {
 }
 
 /** The app's own API, as a person (the cookie a browser would send) — for routes that need a session. */
-export async function apiAs(db, personId, path, { method = 'POST', body = null, headers = {} } = {}) {
-  const session = personId ? await sessionFor(db, personId) : null
+export async function apiAs(db, personId, path, { method = 'POST', body = null, headers = {}, aal2 = false } = {}) {
+  const session = personId ? await sessionFor(db, personId, { aal: aal2 ? 'aal2' : 'aal1' }) : null
   const cookie = session ? sessionCookie(session) : null
   const res = await fetch(`${APP_URL}${path}`, {
     method,

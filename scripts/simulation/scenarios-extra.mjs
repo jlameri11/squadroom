@@ -21,6 +21,7 @@ import { plusDays } from './routine.mjs'
 import { apiAs, appUp, has, openSettled, pageAs, text, withStack } from './live.mjs'
 import { APP_URL, SUPABASE_URL, sessionCookie, sessionFor } from './stack.mjs'
 import { existsSync, readFileSync } from 'node:fs'
+import { stripePlan } from './scenarios-stripe.mjs'
 
 /** The steps for round r (Saturday S). `add(at, name, fn)`; a step's checks file under the scenario its name starts with. */
 export async function extraPlan(ctx, r, S, add, rand) {
@@ -40,6 +41,9 @@ export async function extraPlan(ctx, r, S, add, rand) {
       break
     case 9:
       await adminMistakes(ctx, S, add, rand)
+      break
+    case 10:
+      await stripePlan(ctx, S, add)
       break
     case 11:
       await familyData(ctx, S, add, rand)
