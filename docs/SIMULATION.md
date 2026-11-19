@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 09:39 UTC · 4 rounds played · 20 PASS · 13 FIXED · 2 FAIL · 0 not run · 34 bugs logged (32 fixed) · 9 min so far
+Last run: 2026-11-19 09:40 UTC · 5 rounds played · 22 PASS · 15 FIXED · 2 FAIL · 0 not run · 34 bugs logged (32 fixed) · 9 min so far
 
 ## What this is
 
@@ -42,6 +42,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
 | WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
 | WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header — _the other 140 games go to the catch-up round on 22 May at their own times (or later that day): expected 140, got 130 moved; refused: {"Lucas Haddad is on Bayview FC U# Red v Redfern Lakes FC U# Red at # _ | **FAIL** | 3/4 | #34 | — |
+| WS2 | Lightning suspension mid-game → resumed later the same day, and one abandoned | **PASS** | 7/7 | — | — |
 
 ### Results
 
@@ -50,6 +51,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R1 | Win, draw, loss; high scores; 0–0 | **PASS** | 7/7 | — | — |
 | R2 | Matching scores → final; mismatched → dispute → the league rules → the ladder moves only then | **PASS** | 7/7 | — | — |
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
+| R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded | **FIXED** | 11/11 | — | 0278: a forfeit is mirrored as a called-off game with its reason |
 
 ### On-field issues
 
@@ -83,6 +85,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits | **FIXED** | 121/121 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 121/121 | — | — |
 
+### Joining mid-season
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| JF1 | 200+ new families join mid-season through the sign-up flow (coach link → create account → code → team): approved by the coach, each lands in the squad, the chat and the family's Fixtures | **FIXED** | 9/9 | — | 0283: join_requests_tell_the_coach (kind join_request) |
+| JF2 | A family joins through the real screens at 375px: the coach's link, Create account, the code, the join form, waiting, then in after the coach approves | **PASS** | 7/7 | — | — |
+
 ### Role requests
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -104,7 +113,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 13836 RSVPs, 609 referee appointments, 1124 team sheets, 337 results agreed on the sheets, 35 disputes (36 ruled on), 13 late results, 74 cards.
+Over the run: 10 league notices, 60 club messages, 1200 chat lines, 600 reactions, 50 polls, 200 scheduled messages, 17349 RSVPs, 764 referee appointments, 1411 team sheets, 465 results agreed on the sheets, 45 disputes (46 ruled on), 19 late results, 102 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -112,6 +121,7 @@ Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions,
 | 2 | 2027-02-13 | 145 | 66928 | 66928 | 0 | event_reminder 46514, announcement 11675, message 7354, team_sheet_due 289, match_day 289, entry_fee_owed 255 |
 | 3 | 2027-02-20 | 145 | 77523 | 75428 | 2294 | event_reminder 45100, announcement 19481, message 7360, event_back_on 2040, event_cancelled 2040, team_sheet_due 289 |
 | 4 | 2027-02-27 | 145 | 76121 | 76121 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7356, fee_overdue 402 |
+| 5 | 2027-03-06 | 150 | 68297 | 67238 | 159 | event_reminder 47660, announcement 11268, message 7358, fee_overdue 402, match_day 298, team_sheet_due 289 |
 
 ## Bugs
 
