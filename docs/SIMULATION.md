@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 08:37 UTC · 3 rounds played · 20 PASS · 11 FIXED · 4 FAIL · 0 not run · 52 bugs logged (32 fixed) · 8 min
+Last run: 2026-11-19 09:35 UTC · 1 rounds played · 16 PASS · 4 FIXED · 0 FAIL · 0 not run · 52 bugs logged (32 fixed) · 5 min so far
 
 ## What this is
 
@@ -27,21 +27,6 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | FV3 | Hours limits: nothing drawn outside a pitch's hours, and a move outside them is refused | **PASS** | 2/2 | — | — |
 | FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
 | FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
-| FV11 | Field map, directions and "Field 3" shown correctly to every family affected | **FIXED** | 7/7 | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
-| FV9 | Ground closures announced Friday night and Saturday 7 am; a whole venue closed | **FIXED** | 11/11 | — | 0276: notify_referees_of_change |
-| FV6 | A whole venue closed | **FIXED** | 1/1 | — | 0276: notify_referees_of_change |
-| FV10 | Partial closure: one pitch only | **FIXED** | 2/2 | — | 0276: notify_referees_of_change |
-| FV5 | A pitch changed on the morning | **FIXED** | 3/3 | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
-| FV7 | A game moved to another venue | **FIXED** | 4/4 | — | 0276: apply_reschedule resolves the ground and field to the pitch |
-| FV8 | A late kick-off pushing later games | **PASS** | 3/3 | — | — |
-
-### Weather & safety on the day
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
-| WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
-| WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header | **PASS** | 2/2 | — | — |
 
 ### Results
 
@@ -49,14 +34,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | R1 | Win, draw, loss; high scores; 0–0 | **PASS** | 7/7 | — | — |
 | R2 | Matching scores → final; mismatched → dispute → the league rules → the ladder moves only then | **PASS** | 7/7 | — | — |
-| R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
+| R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 1/1 | — | — |
 
 ### On-field issues
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
-| OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 
 ### Off-field issues
 
@@ -79,22 +63,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
-| SC1 | Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them — _league organiser: the run sheet lists the focus game: expected Ashcombe United U11 Red v Wattle Park FC U11 Blue, got ← Competitions SPL Season 4 Season · 2027 Run by Harbour Football Group End the season Run_ | **FAIL** | 104/105 | #33 | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
-| SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits — _parent (children at two clubs): the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; parent: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; parent (U9): the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; team manager: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; club president: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; league organiser: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; league organiser: the run sheet lists the focus game: expected Ashcombe United U11 Red v Wattle Park FC U11 Blue, got ← Competitions SPL Season 4 Season · 2027 Run by Harbour Football Group End the season Run_ | **FAIL** | 112/121 | #34, #35, #36, #37, #38, #39, #40, #41, #42 | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
-| SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee — _parent (children at two clubs): the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; parent: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; parent (U9): the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; team manager: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; club president: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; league organiser: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; league organiser: the run sheet lists the focus game: expected Kurrajong United U11 Red v Ashcombe United U11 Red, got ← Competitions SPL Season 4 Season · 2027 Run by Harbour Football Group End the season Run_ | **FAIL** | 112/121 | #44, #45, #46, #47, #48, #49, #50, #51, #52 | — |
-
-### Role requests
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| RR1 | Role requests mid-season (team manager, volunteer, referee): asked from Settings, the committee told and the President's Home counting them, a check needed before approval, approved and declined, the person told | **PASS** | 21/21 | — | — |
-
-### Two devices, two parents
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| TP1 | Two parents answer differently for the same child: one answer per child, the latest, everywhere the coach looks; each parent sees the family's answer | **FIXED** | 7/7 | — | 0283: the register takes the latest answer a child; 0283: one row a child, the latest, and who gave it; 0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children |
-| TP2 | One person on two devices: an answer given on one phone is on the other after a refresh; a tap on each device leaves one answer, the latest — _device 2 shows the answer given on device 1 after a refresh: expected Maybe pressed, got false_ | **FAIL** | 3/4 | #43 | — |
+| SC1 | Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them | **FIXED** | 105/105 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
+| SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits | **FIXED** | 121/121 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 
 ### League setup
 
@@ -104,13 +74,11 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 13836 RSVPs, 609 referee appointments, 1124 team sheets, 337 results agreed on the sheets, 35 disputes (36 ruled on), 13 late results, 74 cards.
+Over the run: 2 league notices, 12 club messages, 240 chat lines, 120 reactions, 10 polls, 40 scheduled messages, 3456 RSVPs, 150 referee appointments, 283 team sheets, 116 results agreed on the sheets, 14 disputes (15 ruled on), 6 late results, 26 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
 | 1 | 2027-02-06 | 145 | 67451 | 66392 | 0 | event_reminder 46510, announcement 12083, message 7530, match_day 289, team_sheet_due 289, entry_fee_owed 271 |
-| 2 | 2027-02-13 | 145 | 66928 | 66928 | 0 | event_reminder 46514, announcement 11675, message 7354, team_sheet_due 289, match_day 289, entry_fee_owed 255 |
-| 3 | 2027-02-20 | 145 | 77526 | 75432 | 2293 | event_reminder 45100, announcement 19481, message 7360, event_cancelled 2040, event_back_on 2040, team_sheet_due 289 |
 
 ## Bugs
 
