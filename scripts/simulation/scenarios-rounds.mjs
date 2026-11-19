@@ -623,7 +623,8 @@ export async function round4(ctx, S, add) {
     }
     for (const { g, error } of refused) {
       let ok = false
-      for (const [from, to] of [['08:00', '12:00'], ['12:00', '17:30']]) {
+      for (const [start, to] of [['08:00', '12:00'], ['12:00', '17:30']]) {
+        let from = start // moved later in the window after a clash (the loop's own binding is constant)
         for (let tries = 0; tries < 4 && !ok; tries++) {
           const slot = await freeSlot(pool, g.pitch_id, '2027-05-22', from, to, g.duration_mins ?? 60, g.id)
           if (!slot) break

@@ -176,8 +176,10 @@ async function twoParents(ctx, S, add, rand) {
         const saved = await val(pool, `select status::text from public.event_rsvps where event_id = $1 and player_id = $2 and profile_id = $3`, [tp.event, tp.player, tp.a])
         check(saved === 'maybe', { what: 'the tap on device 1 is saved', expected: 'maybe', actual: saved, role: 'parent', where: 'event_rsvps' })
         await openSettled(d2.page, `/calendar/${tp.event}`)
+        // The page paints what this phone last saw, then asks again: the fresh answer is due within a few seconds.
+        await d2.page.waitForFunction((q) => document.querySelector(q)?.getAttribute('aria-pressed') === 'true', { timeout: 8000 }, sel('maybe')).catch(() => null)
         const pressed = await d2.page.$eval(sel('maybe'), (el) => el.getAttribute('aria-pressed')).catch(() => null)
-        check(pressed === 'true', { what: 'device 2 shows the answer given on device 1 after a refresh', expected: 'Maybe pressed', actual: String(pressed), role: 'parent', where: 'game page (device 2)', severity: 'medium' })
+        check(pressed === 'true', { what: 'device 2 shows the answer given on device 1 after a refresh (within eight seconds)', expected: 'Maybe pressed', actual: String(pressed), role: 'parent', where: 'game page (device 2)', severity: 'medium' })
         const b2 = await d2.page.$(sel('yes'))
         if (b2) { await b2.click(); await new Promise((r) => setTimeout(r, 3000)) }
         const rows = await sql(pool, `select status::text from public.event_rsvps where event_id = $1 and player_id = $2 and profile_id = $3`, [tp.event, tp.player, tp.a])

@@ -575,6 +575,23 @@ one and is meant to reach hundreds of academies.
       treasurer marks the run paid. No Stripe payouts, no bank files; the
       routes and the referee's "Connect Stripe" were removed. Do not
       rebuild them without Joey.
+  - **Proven again inside the simulation, 19 Nov 2026** (`scripts/simulation/
+    scenarios-stripe.mjs`, PY0–PY4 in round 10; alone with `node scripts/
+    simulation/step.mjs --plan extra --round 10 --step PY`): a program fee, a
+    levy in instalments with a declined card first, a refund, a league entry
+    fee — on stand-in accounts, through the real routes and webhook, with the
+    app built for the local stack. Test keys only: the group refuses anything
+    but `sk_test_`. What that taught:
+    - Stripe Checkout now draws its whole form inside its own frame with its
+      own field ids (`#payment-numberInput` …); the driver there is current,
+      `test-stripe-e2e.mjs`'s `#cardNumber` selectors are not.
+    - `.env.local`'s STRIPE_WEBHOOK_SECRET is the deployed endpoint's, not the
+      CLI listener's: a local server tested with `stripe listen` must be
+      given the listener's secret through its environment (the rebuild
+      script for :3300 does); never edit the file for it.
+    - The Treasurer (the money role, 0236) issues refunds and pays entry fees
+      since 0288 — a route that checks `academy_members.role` alone shuts out
+      the club roles; ask `i_may_run_club(academy, area)` as the policies do.
   - **The Active & Creative Kids voucher never reaches Service NSW** (0264,
     the registration brief). A family's voucher is a `vouchers` row of kind
     `government` worth $50, used once anywhere, with the number and the

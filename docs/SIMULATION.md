@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 08:35 UTC · 3 rounds played · 18 PASS · 9 FIXED · 2 FAIL · 0 not run · 42 bugs logged (32 fixed) · 6 min so far
+Last run: 2026-11-19 08:37 UTC · 3 rounds played · 20 PASS · 11 FIXED · 4 FAIL · 0 not run · 52 bugs logged (32 fixed) · 8 min
 
 ## What this is
 
@@ -40,6 +40,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
+| WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
+| WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header | **PASS** | 2/2 | — | — |
 
 ### Results
 
@@ -79,6 +81,20 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | SC1 | Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them — _league organiser: the run sheet lists the focus game: expected Ashcombe United U11 Red v Wattle Park FC U11 Blue, got ← Competitions SPL Season 4 Season · 2027 Run by Harbour Football Group End the season Run_ | **FAIL** | 104/105 | #33 | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits — _parent (children at two clubs): the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; parent: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; parent (U9): the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; team manager: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; club president: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; league organiser: the ladder has Harbourside FC U11 Blue above Kurrajong United U11 Red: expected leader first, got leader not on the page; league organiser: the run sheet lists the focus game: expected Ashcombe United U11 Red v Wattle Park FC U11 Blue, got ← Competitions SPL Season 4 Season · 2027 Run by Harbour Football Group End the season Run_ | **FAIL** | 112/121 | #34, #35, #36, #37, #38, #39, #40, #41, #42 | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
+| SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee — _parent (children at two clubs): the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; parent: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; parent (U9): the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; coach: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; team manager: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; club president: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; league organiser: the ladder has Kurrajong United U11 Red above Ashcombe United U11 Red: expected leader first, got leader not on the page; league organiser: the run sheet lists the focus game: expected Kurrajong United U11 Red v Ashcombe United U11 Red, got ← Competitions SPL Season 4 Season · 2027 Run by Harbour Football Group End the season Run_ | **FAIL** | 112/121 | #44, #45, #46, #47, #48, #49, #50, #51, #52 | — |
+
+### Role requests
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| RR1 | Role requests mid-season (team manager, volunteer, referee): asked from Settings, the committee told and the President's Home counting them, a check needed before approval, approved and declined, the person told | **PASS** | 21/21 | — | — |
+
+### Two devices, two parents
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| TP1 | Two parents answer differently for the same child: one answer per child, the latest, everywhere the coach looks; each parent sees the family's answer | **FIXED** | 7/7 | — | 0283: the register takes the latest answer a child; 0283: one row a child, the latest, and who gave it; 0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children |
+| TP2 | One person on two devices: an answer given on one phone is on the other after a refresh; a tap on each device leaves one answer, the latest — _device 2 shows the answer given on device 1 after a refresh: expected Maybe pressed, got false_ | **FAIL** | 3/4 | #43 | — |
 
 ### League setup
 
@@ -88,7 +104,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 6 league notices, 36 club messages, 720 chat lines, 360 reactions, 30 polls, 120 scheduled messages, 10356 RSVPs, 455 referee appointments, 841 team sheets, 337 results agreed on the sheets, 35 disputes (36 ruled on), 13 late results, 74 cards.
+Over the run: 8 league notices, 48 club messages, 960 chat lines, 480 reactions, 40 polls, 160 scheduled messages, 13836 RSVPs, 609 referee appointments, 1124 team sheets, 337 results agreed on the sheets, 35 disputes (36 ruled on), 13 late results, 74 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -98,7 +114,7 @@ Over the run: 6 league notices, 36 club messages, 720 chat lines, 360 reactions,
 
 ## Bugs
 
-42 logged in `docs/BUGS.md`, 32 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+52 logged in `docs/BUGS.md`, 32 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 

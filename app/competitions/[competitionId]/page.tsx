@@ -42,7 +42,11 @@ export default async function CompetitionPage(props: {
 
   const areas = ((access as unknown as { areas?: string[] } | null)?.areas ?? []) as string[]
   const isOrganiser = areas.includes('competition')
-  const divisions = [...new Set([...(named ?? []).map((d) => d.division), ...(entries ?? []).map((e) => e.division)])]
+  // The divisions in the order they were always shown (the entries', alphabetical),
+  // then any named before a club has entered it (0287) — so nothing moves for a
+  // league whose divisions are all filled.
+  const entered = [...new Set((entries ?? []).map((e) => e.division))]
+  const divisions = [...entered, ...(named ?? []).map((d) => d.division).filter((d) => !entered.includes(d)).sort((a, b) => a.localeCompare(b, 'en'))]
 
   // Asked for separately, and allowed to fail.
   //

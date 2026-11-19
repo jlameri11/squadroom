@@ -124,45 +124,91 @@ async function ensureConnected(academyId, who, label, name) {
 }
 
 // A card paid on Stripe's hosted Checkout, in a browser, with a test card.
+// Since November 2026 Checkout draws its whole form inside Stripe's own frame
+// (elements-inner-…) with its own field ids, so everything is typed into that
+// frame — the same driver as the simulation's (scripts/simulation/
+// scenarios-stripe.mjs), which is where it was proved on 19 Nov 2026; this
+// copy is the port, not yet run here (NIGHT_LOG, 19 Nov: the dev server
+// verifies webhooks with .env.local's endpoint secret, not the CLI's).
 async function payOnCheckout(url, label, card = '4242424242424242') {
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   try {
     const page = await browser.newPage()
     await page.setViewport({ width: 420, height: 900 })
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 90000 })
-    await page.waitForSelector('#cardNumber', { timeout: 60000 })
-    const email = await page.$('#email')
-    if (email) await page.type('#email', 'sam.whitfield@squadroom.invalid', { delay: 10 })
-    await page.type('#cardNumber', card, { delay: 10 })
-    await page.type('#cardExpiry', '1234', { delay: 10 })
-    await page.type('#cardCvc', '123', { delay: 10 })
-    const name = await page.$('#billingName')
-    if (name) await page.type('#billingName', 'Sam Whitfield', { delay: 10 })
-    const country = await page.$('#billingCountry')
-    if (country) await page.select('#billingCountry', 'AU').catch(() => {})
-    const postal = await page.$('#billingPostalCode')
-    if (postal) await page.type('#billingPostalCode', '2113', { delay: 10 })
+    // The payment frame, once it has drawn the card number field.
+    let f = null
+    for (let i = 0; i < 120 && !f; i++) {
+      for (const fr of page.frames()) {
+        if (!/js\.stripe\.com\/v3\/elements-inner/.test(fr.url())) continue
+        if (await fr.$('#payment-numberInput, input[name="number"], input[autocomplete="cc-number"]').catch(() => null)) { f = fr; break }
+      }
+      if (!f) await sleep(500)
+    }
+    if (!f) throw new Error(`no card field in ${page.frames().length} frames after 60 s`)
+    const SEL = {
+      email: '#linkAuthentication-emailInput, input[type="email"], input[name="email"], input[autocomplete="email"], #email',
+      number: '#payment-numberInput, input[name="number"], input[autocomplete="cc-number"]',
+      expiry: '#payment-expiryInput, input[name="expiry"], input[autocomplete="cc-exp"]',
+      cvc: '#payment-cvcInput, input[name="cvc"], input[autocomplete="cc-csc"]',
+      name: '#payment-nameInput, input[name="name"], input[autocomplete="cc-name"]',
+      country: '#payment-countryInput, select[name="country"]',
+      postal: '#payment-postalCodeInput, input[name="postalCode"], input[autocomplete="postal-code"]',
+      link: '#payment-linkOptInInput, input[name="linkOptIn"], input[name="enableStripePass"]',
+    }
+    const visible = async (sel) => {
+      for (const el of await f.$$(sel)) if (await el.evaluate((e) => e.offsetParent !== null || e.getClientRects().length > 0)) return el
+      return null
+    }
+    const type = async (sel, value) => {
+      const el = await visible(sel)
+      if (!el) return false
+      await el.click({ clickCount: 3 }).catch(() => null)
+      await el.type(value, { delay: 15 })
+      return true
+    }
+    await sleep(600)
+    const EMAIL = 'sam.whitfield@squadroom.invalid'
+    // Link re-draws the email box on first load, which can swallow what was typed: type, then make sure.
+    const email = async () => {
+      for (let i = 0; i < 3; i++) {
+        if (!(await type(SEL.email, EMAIL))) return false
+        await sleep(400)
+        const el = await visible(SEL.email)
+        if (el && (await el.evaluate((e) => e.value)) === EMAIL) return true
+      }
+      return false
+    }
+    await email()
+    await type(SEL.number, card)
+    await type(SEL.expiry, '1234')
+    await type(SEL.cvc, '123')
+    await type(SEL.name, 'Sam Whitfield')
+    const country = await visible(SEL.country)
+    if (country) await country.select('AU').catch(() => {})
+    await type(SEL.postal, '2113')
     // Checkout pre-ticks "Save my information with Link", which adds a
     // required phone number; a parent would untick it or type theirs.
-    const linkBox = await page.$('input[type="checkbox"]#enableStripePass, input[type="checkbox"][name="enableStripePass"]')
+    const linkBox = await visible(SEL.link)
     if (linkBox && (await linkBox.evaluate((el) => el.checked))) await linkBox.click()
-    const phone = await page.$('#phoneNumber')
-    if (phone && (await phone.evaluate((el) => !el.value && el.offsetParent !== null))) await page.type('#phoneNumber', '0412345678', { delay: 10 })
     const total = await page.evaluate(() => document.body.innerText.match(/A\$[\d,.]+|\$[\d,.]+/)?.[0] ?? null)
-    await page.click('.SubmitButton, button[type="submit"]')
+    const submit = 'button[data-testid="payment-form-submit-button"], button[type="submit"]'
+    await f.click(submit)
     // Back on the app means paid (the browser holds no session, so the app
-    // sends it to /signin — still the app). Stripe's page says why if not.
+    // sends it to /signin — still the app). The frame says why if not.
     let state = null
     for (let i = 0; i < 45 && !page.url().startsWith(BASE); i++) {
-      await new Promise((r) => setTimeout(r, 2000))
-      state = await page.evaluate(() => ({
-        errors: [...document.querySelectorAll('[role=alert], .FieldError, [class*="Error"], [class*="error"]')].map((e) => e.innerText.trim().replace(/\s+/g, ' ')).filter(Boolean).slice(0, 4),
-        button: document.querySelector('.SubmitButton, button[type="submit"]')?.innerText.trim().replace(/\s+/g, ' ').slice(0, 30) ?? null,
-        text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 200),
-      })).catch(() => null)
-      if (state?.errors?.length) break
-      // A click that never took (the button still says Pay after 20s): once more.
-      if (i === 10 && state?.button === 'Pay') await page.click('.SubmitButton, button[type="submit"]').catch(() => {})
+      await sleep(2000)
+      const txt = await f.evaluate(() => document.body.innerText).catch(() => '')
+      if (/enter your email/i.test(txt)) { await email(); await f.click(submit).catch(() => {}); continue }
+      const m = /[^\n]*(declined|try a different card|was not accepted|insufficient funds|could not be processed|incorrect|invalid|is incomplete)[^\n]*/i.exec(txt)
+      state = { error: m ? m[0].trim().slice(0, 200) : null, text: txt.replace(/\s+/g, ' ').slice(0, 200) }
+      if (state.error) break
+      if (i === 10) {
+        const btn = await f.$eval(submit, (b) => b.textContent).catch(() => '')
+        if (/pay/i.test(btn)) await f.click(submit).catch(() => {})
+      }
     }
     if (!page.url().startsWith(BASE)) {
       const shot = `.shots/stripe/fail-${label.replace(/\W+/g, '-')}.png`

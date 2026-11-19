@@ -73,10 +73,11 @@ role; now `i_may_run_club` lets the routes ask the policies' question, both
 routes accept whoever runs the club's money, and entry fees are readable by
 it (test-rls 242–243, **all 243 pass on dev**; PY3 and PY4 read FIXED).
 Harness notes: Stripe Checkout now draws its whole form inside its own frame
-with new field ids (`#cardNumber` is gone — `test-stripe-e2e.mjs`'s selectors
-are stale; the simulation's driver types into the frame by id, name or
-autocomplete and reads the email back, because Link re-draws that box on
-first load); `.env.local`'s STRIPE_WEBHOOK_SECRET (70 characters) is not the
+with new field ids (`#cardNumber` is gone; the simulation's driver types into
+the frame by id, name or autocomplete and reads the email back, because Link
+re-draws that box on first load — the same driver is ported into
+`test-stripe-e2e.mjs`, syntax-checked but not run there, since that suite
+needs the dev server to verify webhooks with the CLI's secret, below); `.env.local`'s STRIPE_WEBHOOK_SECRET (70 characters) is not the
 CLI listener's (38) — by its shape the deployed endpoint's own — so
 `.cache/rebuild-sim.sh` gives the simulation server the listener's from
 `stripe listen --print-secret` and the file is not touched.
