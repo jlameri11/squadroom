@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 09:53 UTC · 16 rounds played · 38 PASS · 30 FIXED · 5 FAIL · 0 not run · 40 bugs logged (32 fixed) · 23 min so far
+Last run: 2026-11-19 09:54 UTC · 17 rounds played · 40 PASS · 30 FIXED · 5 FAIL · 0 not run · 40 bugs logged (32 fixed) · 24 min so far
 
 ## What this is
 
@@ -53,7 +53,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
 | R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded | **FIXED** | 11/11 | — | 0278: a forfeit is mirrored as a called-off game with its reason |
 | R5 | Points deduction, ladder ties (goal difference, goals for, head-to-head), hidden scores and no ladder for U9 | **FIXED** | 8/8 | — | 0278: competition_ladder returns nothing for a division whose ladder is off, except to the league |
-| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded | **FIXED** | 4/4 | — | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
+| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded | **FIXED** | 6/6 | — | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
 
 ### On-field issues
 
@@ -92,6 +92,12 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
 | PM2 | Club messages to thousands | **PASS** | 6/6 | — | — |
 
+### Past seasons
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 9/9 | — | — |
+
 ### Screens
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -100,6 +106,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits | **FIXED** | 121/121 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 121/121 | — | — |
 | SC4 | Screens after a suspension: the coach and the club see it, the league's discipline page lists it | **PASS** | 122/122 | — | — |
+| SC5 | Screens at the finals: the grand finals, the finished ladders, the champions | **PASS** | 101/101 | — | — |
 
 ### Files & storage
 
@@ -172,7 +179,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 32 league notices, 192 club messages, 3824 chat lines, 1912 reactions, 160 polls, 637 scheduled messages, 51817 RSVPs, 2104 referee appointments, 4166 team sheets, 1733 results agreed on the sheets, 155 disputes (156 ruled on), 71 late results, 380 cards.
+Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reactions, 170 polls, 677 scheduled messages, 51817 RSVPs, 2108 referee appointments, 4174 team sheets, 1737 results agreed on the sheets, 155 disputes (156 ruled on), 71 late results, 380 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -192,6 +199,7 @@ Over the run: 32 league notices, 192 club messages, 3824 chat lines, 1912 reacti
 | 14 | 2027-05-15 | 138 | 67614 | 65869 | 0 | event_reminder 46980, announcement 11581, message 7448, fee_overdue 603, team_sheet_due 275, match_day 274 |
 | 15 | 2027-05-22 | 170 | 60232 | 58526 | 0 | event_reminder 40993, announcement 11239, message 7382, match_day 315, entry_fee_owed 250, discipline_suspension 30 |
 | 16 | 2027-05-29 | 8 | 51955 | 50655 | 0 | event_reminder 32228, announcement 11479, message 7601, fee_overdue 603, entry_fee_owed 16, wwcc_expiring 12 |
+| 17 | 2027-06-05 | 4 | 52544 | 50994 | 0 | event_reminder 32228, announcement 12194, message 7859, entry_fee_owed 250, match_correction_requested 6, referee_appointment 4 |
 
 ## The peak
 
@@ -232,4 +240,4 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Needs Joey
 
-- Nothing from this run.
+- A withdrawn team and a finished season show on the ladder and the match centre without a label yet (the data is marked; the screens could say "withdrew" and "final").
