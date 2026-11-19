@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 09:51 UTC · 12 rounds played · 36 PASS · 29 FIXED · 5 FAIL · 0 not run · 40 bugs logged (32 fixed) · 21 min so far
+Last run: 2026-11-19 09:51 UTC · 13 rounds played · 38 PASS · 29 FIXED · 5 FAIL · 0 not run · 40 bugs logged (32 fixed) · 21 min so far
 
 ## What this is
 
@@ -78,6 +78,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF7b | A public-holiday round (Easter Saturday) — _the league's Home counts the weekend's games: expected N games this weekend, got Nothing this weekend_ | **FAIL** | 2/3 | #39 | — |
 | OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **FIXED** | 18/18 | — | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
 | OFF5a | A team withdraws mid-season: fixtures, ladder and opponents handled | **FIXED** | 6/6 | — | 0276: withdraw_entry; a bye is mirrored as a called-off game |
+| OFF7c | Games around midnight land on the right day | **PASS** | 5/5 | — | — |
 
 ### People & messaging
 
@@ -88,6 +89,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM4 | Scheduled messages go at their time, not before | **PASS** | 4/4 | — | — |
 | PM6 | No message sent twice; late messages not sent | **PASS** | 9/9 | — | — |
 | PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
+| PM2 | Club messages to thousands | **PASS** | 6/6 | — | — |
 
 ### Screens
 
@@ -169,7 +171,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 24 league notices, 144 club messages, 2876 chat lines, 1438 reactions, 120 polls, 477 scheduled messages, 41160 RSVPs, 1813 referee appointments, 3308 team sheets, 1348 results agreed on the sheets, 118 disputes (119 ruled on), 46 late results, 289 cards.
+Over the run: 26 league notices, 156 club messages, 3108 chat lines, 1554 reactions, 130 polls, 517 scheduled messages, 44442 RSVPs, 1954 referee appointments, 3571 team sheets, 1465 results agreed on the sheets, 130 disputes (131 ruled on), 54 late results, 311 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -185,6 +187,7 @@ Over the run: 24 league notices, 144 club messages, 2876 chat lines, 1438 reacti
 | 10 | 2027-04-10 | 141 | 68627 | 66710 | 0 | event_reminder 47406, announcement 12263, message 7710, team_sheet_due 283, match_day 282, entry_fee_owed 250 |
 | 11 | 2027-04-24 | 138 | 100814 | 98146 | 0 | event_reminder 79210, announcement 11785, message 7650, fee_overdue 603, event_cancelled 312, team_sheet_due 275 |
 | 12 | 2027-05-01 | 138 | 67670 | 65895 | 0 | event_reminder 46928, announcement 11477, message 7652, fee_overdue 603, team_sheet_due 275, match_day 274 |
+| 13 | 2027-05-08 | 138 | 76048 | 74029 | 0 | event_reminder 47084, announcement 20245, message 7520, team_sheet_due 275, match_day 274, entry_fee_owed 250 |
 
 ## The peak
 
