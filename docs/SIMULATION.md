@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 09:45 UTC · 9 rounds played · 32 PASS · 24 FIXED · 4 FAIL · 0 not run · 39 bugs logged (32 fixed) · 15 min so far
+Last run: 2026-11-19 09:49 UTC · 10 rounds played · 35 PASS · 26 FIXED · 5 FAIL · 0 not run · 40 bugs logged (32 fixed) · 19 min so far
 
 ## What this is
 
@@ -61,7 +61,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected Amara Hughes in the report, got {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3_ | **FAIL** | 10/14 | #35, #36, #37, #38 | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected Amara Hughes in the report, got {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3_ | **FAIL** | 11/15 | #35, #36, #37, #38 | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -69,12 +69,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
-| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 2/2 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 | OFF7b | A public-holiday round (Easter Saturday) — _the league's Home counts the weekend's games: expected N games this weekend, got Nothing this weekend_ | **FAIL** | 2/3 | #39 | — |
+| OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **FIXED** | 18/18 | — | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
 
 ### People & messaging
 
@@ -119,6 +120,16 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | RR1 | Role requests mid-season (team manager, volunteer, referee): asked from Settings, the committee told and the President's Home counting them, a check needed before approval, approved and declined, the person told | **PASS** | 21/21 | — | — |
 
+### Payments (Stripe test mode)
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| PY0 | Stripe test mode: two clubs and the league set up payments on stand-in accounts, the listener forwards every event to the app, and nothing real can move | **PASS** | 8/8 | — | — |
+| PY1 | A family registers a child for a club program and pays the fee by card on Stripe Checkout; the webhook marks it paid; the quote, the receipt and the family's Payments page agree | **PASS** | 9/9 | — | — |
+| PY2 | A season levy paid in instalments by card: the first card is declined on Stripe's page and nothing is marked paid; the next card pays part one, then part two; the quote and the Treasurer's Who owes follow | **PASS** | 10/10 | — | — |
+| PY3 | The family withdraws from the program inside the full-refund window; the club issues the refund through Stripe; the webhook marks the payment refunded and the Treasurer's list clears — _and their Home no longer says a refund is waiting: expected no "to issue", got 1 to issue_ | **FAIL** | 8/9 | #40 | 0288: i_may_run_club lets the routes ask the policies' question; the refund route accepts whoever runs the club's money |
+| PY4 | A club that still owes the league its entry fee pays it by card; the money goes to the league's account; the league and the club both see it paid | **FIXED** | 5/5 | — | 0288: entry fees are readable by the club's money role; the entry-fee route accepts the Treasurer |
+
 ### Two devices, two parents
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -149,7 +160,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 357 scheduled messages, 31273 RSVPs, 1366 referee appointments, 2509 team sheets, 974 results agreed on the sheets, 87 disputes (88 ruled on), 36 late results, 212 cards.
+Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 397 scheduled messages, 34608 RSVPs, 1515 referee appointments, 2778 team sheets, 1103 results agreed on the sheets, 96 disputes (97 ruled on), 39 late results, 237 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -162,6 +173,7 @@ Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reacti
 | 7 | 2027-03-20 | 145 | 70226 | 68539 | 0 | event_reminder 47766, announcement 11205, message 9579, fee_overdue 603, team_sheet_due 290, match_day 289 |
 | 8 | 2027-03-27 | 145 | 68469 | 66974 | 0 | event_reminder 47768, announcement 11886, message 7328, team_sheet_due 290, match_day 289, entry_fee_owed 255 |
 | 9 | 2027-04-03 | 145 | 78962 | 77082 | 0 | event_reminder 47774, announcement 20720, message 7391, event_changed 1416, fee_overdue 603, team_sheet_due 290 |
+| 10 | 2027-04-10 | 141 | 68627 | 66710 | 0 | event_reminder 47406, announcement 12263, message 7710, team_sheet_due 283, match_day 282, entry_fee_owed 250 |
 
 ## The peak
 
@@ -198,7 +210,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-39 logged in `docs/BUGS.md`, 32 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+40 logged in `docs/BUGS.md`, 32 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
