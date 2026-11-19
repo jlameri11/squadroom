@@ -42,3 +42,4 @@ Found by `scripts/simulation` on the local Postgres (docs/SIMULATION.md). Severi
 | 36 | high | league | suspend_on_card | OF1 a two-game suspension is raised at once | 2 games, active | [] |  |
 | 37 | high | coach | suspend_on_card | OF1 the club is told the player is suspended | >0 | 0 |  |
 | 38 | high | discipline officer | discipline_report | OF1 the discipline officer's report lists the sending-off | Amara Hughes in the report | {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3,"games_per_yellow_suspension":1},"players":[{"club":"Underwood United |  |
+| 39 | high | league | home_jobs | OFF7b the league's Home counts the weekend's games | N games this weekend | Nothing this weekend |  |

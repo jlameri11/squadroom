@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 09:44 UTC · 8 rounds played · 32 PASS · 21 FIXED · 3 FAIL · 0 not run · 38 bugs logged (32 fixed) · 14 min so far
+Last run: 2026-11-19 09:45 UTC · 9 rounds played · 32 PASS · 24 FIXED · 4 FAIL · 0 not run · 39 bugs logged (32 fixed) · 15 min so far
 
 ## What this is
 
@@ -61,7 +61,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected Amara Hughes in the report, got {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3_ | **FAIL** | 9/13 | #35, #36, #37, #38 | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected Amara Hughes in the report, got {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3_ | **FAIL** | 10/14 | #35, #36, #37, #38 | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -74,6 +74,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
+| OFF7b | A public-holiday round (Easter Saturday) — _the league's Home counts the weekend's games: expected N games this weekend, got Nothing this weekend_ | **FAIL** | 2/3 | #39 | — |
 
 ### People & messaging
 
@@ -125,6 +126,14 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | TP1 | Two parents answer differently for the same child: one answer per child, the latest, everywhere the coach looks; each parent sees the family's answer | **FIXED** | 7/7 | — | 0283: the register takes the latest answer a child; 0283: one row a child, the latest, and who gave it; 0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children |
 | TP2 | One person on two devices: an answer given on one phone is on the other after a refresh; a tap on each device leaves one answer, the latest — _device 2 shows the answer given on device 1 after a refresh (within eight seconds): expected Maybe pressed, got false_ | **FAIL** | 3/4 | #33 | — |
 
+### Admin mistakes
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| AM1 | A wrong import undone: a roster import of the wrong file is undone in one tap and nothing else moves; a wrong draw import can be undone the same way | **FIXED** | 10/10 | — | 0285: undo_event_import(p_academy, p_team, p_refs) |
+| AM2 | The draw re-published mid-season: played games, moved games and call-offs survive; only unplayed, unpinned games are redrawn, from today on; no pair meets more than the draw allows | **FIXED** | 7/7 | — | 0285: a pairing the division already has, whichever round, is drawn already |
+| AM3 | A team deleted by mistake: a squad with players, games or money cannot be deleted outright — the club ends its season instead and nothing is lost | **FIXED** | 4/4 | — | 0285: teams_refuse_delete_with_history; the composite set-null keys named their column |
+
 ### Feature switches
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -140,7 +149,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 317 scheduled messages, 27807 RSVPs, 1216 referee appointments, 2232 team sheets, 853 results agreed on the sheets, 72 disputes (73 ruled on), 32 late results, 184 cards.
+Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 357 scheduled messages, 31273 RSVPs, 1366 referee appointments, 2509 team sheets, 974 results agreed on the sheets, 87 disputes (88 ruled on), 36 late results, 212 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -152,6 +161,7 @@ Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reaction
 | 6 | 2027-03-13 | 145 | 68563 | 66761 | 0 | event_reminder 47766, announcement 11446, message 7584, team_sheet_due 290, match_day 289, entry_fee_owed 255 |
 | 7 | 2027-03-20 | 145 | 70226 | 68539 | 0 | event_reminder 47766, announcement 11205, message 9579, fee_overdue 603, team_sheet_due 290, match_day 289 |
 | 8 | 2027-03-27 | 145 | 68469 | 66974 | 0 | event_reminder 47768, announcement 11886, message 7328, team_sheet_due 290, match_day 289, entry_fee_owed 255 |
+| 9 | 2027-04-03 | 145 | 78962 | 77082 | 0 | event_reminder 47774, announcement 20720, message 7391, event_changed 1416, fee_overdue 603, team_sheet_due 290 |
 
 ## The peak
 
@@ -188,7 +198,7 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-38 logged in `docs/BUGS.md`, 32 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+39 logged in `docs/BUGS.md`, 32 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
