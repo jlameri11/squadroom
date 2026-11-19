@@ -2964,7 +2964,7 @@ begin
     g_parent boolean; g_wwcc boolean; w_officer boolean;
     l_rows int; l_seen int; l_parent int; adult_ok boolean; adult_bad boolean; stream_dup boolean;
     acc jsonb;
-    r178 text; r179 text; r180 text; r181 text; r182 text; r183 text;
+    r178 text; r179 text; r180 text; r181 text; r182 text; r183 text; r242 text; r243 text;
   begin
     begin
       insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
@@ -3019,6 +3019,28 @@ begin
       r180 := case when r_regs and not r_money and r_progs >= 1 and r_pay = 1 then 'PASS'
                    else 'FAIL (registrations '||r_regs||', money '||r_money||', registrations read '||r_progs||', who-owes refused '||r_pay||')' end;
 
+      -- 242–243 (0288). The Treasurer reads the club's entry fees and the app
+      -- can ask the same question through i_may_run_club; the Registrar is
+      -- told no and sees none.
+      declare
+        ef_all int; ef_t int; ef_r int; w_t boolean; w_r boolean;
+      begin
+        select count(*) into ef_all from public.entry_fees where club_academy_id = ACAD_A;
+        perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        select count(*) into ef_t from public.entry_fees where club_academy_id = ACAD_A;
+        w_t := public.i_may_run_club(ACAD_A, 'money');
+        execute 'reset role';
+        perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        select count(*) into ef_r from public.entry_fees where club_academy_id = ACAD_A;
+        w_r := public.i_may_run_club(ACAD_A, 'money');
+        execute 'reset role';
+        -- The block rolls itself back at the end; the results go out in variables like 178–183's.
+        r242 := case when w_t and ef_t = ef_all then 'PASS' else 'FAIL (money '||w_t||', sees '||ef_t||' of '||ef_all||')' end;
+        r243 := case when not w_r and ef_r = 0 then 'PASS' else 'FAIL (money '||w_r||', sees '||ef_r||')' end;
+      end;
+
       -- 181. Scope: a coordinator of U8 runs the U8 squad, not the U12; the
       -- U12's manager runs the U12 (as a coach would) but may not write a
       -- player's development report.
@@ -3072,6 +3094,8 @@ begin
         r181 := coalesce(r181, 'FAIL (stopped: '||sqlerrm||')');
         r182 := coalesce(r182, 'FAIL (stopped: '||sqlerrm||')');
         r183 := coalesce(r183, 'FAIL (stopped: '||sqlerrm||')');
+        r242 := coalesce(r242, 'FAIL (stopped: '||sqlerrm||')');
+        r243 := coalesce(r243, 'FAIL (stopped: '||sqlerrm||')');
       end if;
     end;
     execute 'reset role';
@@ -3081,6 +3105,8 @@ begin
     insert into rls_results values (181, 'a coordinator runs only the squads in their scope; a team manager runs their team but writes no development report', r181);
     insert into rls_results values (182, 'the Welfare officer is the safeguarding officer; the activity log is the committee''s to read', r182);
     insert into rls_results values (183, 'streams are one per name per club; adult age groups are teams; an odd age group is refused', r183);
+    insert into rls_results values (242, 'the Treasurer reads the club''s entry fees, as many as there are (0288)', r242);
+    insert into rls_results values (243, 'the Registrar is not the money role and sees no entry fee (0288)', r243);
   end;
 
   -- 0237. One membership, many hats. Rolled back. Sam (PARENT) gains a

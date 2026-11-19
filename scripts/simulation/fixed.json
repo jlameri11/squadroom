@@ -1,320 +1,340 @@
 [
-  {
-    "scenario": "S1",
-    "severity": "medium",
-    "role": "competition manager",
-    "where": "generate_fixtures / generate_fixtures_managed",
-    "steps": "Build the draw for an eight-team division; try to draw the second half of the season",
-    "expected": "Rounds 1–14 from one draw, home and away reversed in the second leg",
-    "actual": "One run makes seven rounds; a second run is allowed and labels its games Round 1–7 again, with nobody's home game reversed",
-    "fixed": "0276: generate_fixtures(… p_legs, p_skip_dates)"
-  },
-  {
-    "scenario": "S1",
-    "severity": "medium",
-    "role": "competition manager",
-    "where": "generate_fixtures_managed (p_round_every_days)",
-    "steps": "Draw a season across the NSW autumn school holidays",
-    "expected": "A week the league leaves out (17 April) has no games; later rounds move on a week",
-    "actual": "The generator spaces rounds evenly and cannot leave a week out; the league would move every game of the round by hand",
-    "fixed": "0276: p_skip_dates"
-  },
-  {
-    "scenario": "OFF7a",
-    "severity": "medium",
-    "role": "competition manager",
-    "where": "generate_fixtures_managed (round dates as timestamptz + 'n days')",
-    "steps": "Draw a season whose rounds cross 4 April 2027 (daylight saving ends); compare a division's first kick-off on 27 March and 10 April",
-    "expected": "The same clock time (9 am stays 9 am)",
-    "actual": "Round dates were p_start_at + n days on a timestamptz; in a UTC session (PostgREST) that is n × 24 hours, so every kick-off after the change was an hour earlier and the pitch fit then pushed it to the next free slot. Found by inspection while fixing the draw; the check that would have caught it is OFF7a",
-    "fixed": "0276: round dates worked out in the competition's zone"
-  },
-  {
-    "scenario": [
-      "FV11",
-      "FV5",
-      "FV7"
-    ],
-    "severity": "high",
-    "role": "ground manager",
-    "where": "app_private.apply_reschedule / guard_pitch_booking",
-    "steps": "Move a game onto another field (or ground) by name with reschedule_fixture",
-    "expected": "The game is on that pitch; the run sheet, the fixture and every family's game page say the new field",
-    "actual": "The labels were written and pitch_id stayed on the old pitch, so the booking guard put the old field's name straight back; a move to another ground left venue_id on the old ground while the label said the new one",
-    "fixed": "0276: apply_reschedule resolves the ground and field to the pitch"
-  },
-  {
-    "scenario": [
-      "FV11",
-      "FV5"
-    ],
-    "severity": "high",
-    "role": "parent",
-    "where": "mirror_fixture / game_screen",
-    "steps": "Open the game page as a family after the league moved the game to Field 3",
-    "expected": "\"Harbour Park · Field 3\" on the game page, and a push that the field changed",
-    "actual": "The mirrored event carried only the ground, so no family could see which field, and a field change sent nothing",
-    "fixed": "0276: the field in the mirrored event's venue; a field change is a change families hear"
-  },
-  {
-    "scenario": [
-      "FV9",
-      "WS1",
-      "FV6",
-      "FV10"
-    ],
-    "severity": "high",
-    "role": "referee",
-    "where": "call_off_fixtures / reschedule_fixture",
-    "steps": "Call off a ground, a pitch or a round with referees appointed; move a game",
-    "expected": "Every appointed referee is told their game is off or moved, a text inside 24 hours",
-    "actual": "Every family and coach was told; no referee was",
-    "fixed": "0276: notify_referees_of_change"
-  },
-  {
-    "scenario": "OF4",
-    "severity": "medium",
-    "role": "referee coordinator",
-    "where": "submit_referee_report",
-    "steps": "A referee files a report with abuse in it",
-    "expected": "The coordinator and the discipline officer are told at once",
-    "actual": "The report sat on the appointments screen until someone looked",
-    "fixed": "0276: a report of abuse, an injury or an incident is pushed"
-  },
-  {
-    "scenario": "OF4",
-    "severity": "medium",
-    "role": "referee coordinator",
-    "where": "propose_referee_allocation / referee_unavailable_reason",
-    "steps": "Allocate a Saturday with under-18 referees in the pool",
-    "expected": "An under-18 referee is never put on an U15 or older game",
-    "actual": "The allocator did not consider a referee's age",
-    "fixed": "0276: referee_unavailable_reason"
-  },
-  {
-    "scenario": "OF5",
-    "severity": "medium",
-    "role": "welfare officer",
-    "where": "file_incident_report",
-    "steps": "A coach files an injury from the ground",
-    "expected": "The Welfare officer and the President are told at once",
-    "actual": "The report reached nobody until someone opened the register",
-    "fixed": "0276: incident_report pushes"
-  },
-  {
-    "scenario": "OF3",
-    "severity": "medium",
-    "role": "coach",
-    "where": "submit_match_sheet",
-    "steps": "Submit a sheet of six for a nine-a-side division",
-    "expected": "Refused as short, or flagged",
-    "actual": "Accepted with six players, nothing said",
-    "fixed": "0276: competition_divisions.squad_size_min"
-  },
-  {
-    "scenario": "OFF5a",
-    "severity": "high",
-    "role": "competition manager",
-    "where": "competition_entries / fixtures",
-    "steps": "Withdraw a team after round 10",
-    "expected": "Remaining games become byes, played games stand, opponents' families see the game is off, the entry is marked withdrawn",
-    "actual": "No withdraw action: the league would give each game a bye by hand (set_bye), whose mirror left the opponents' game live, or delete the entry and every played game with it",
-    "fixed": "0276: withdraw_entry; a bye is mirrored as a called-off game"
-  },
-  {
-    "scenario": "R6",
-    "severity": "medium",
-    "role": "competition manager",
-    "where": "create_finals / resolve_source",
-    "steps": "Set up finals for a one-table division; a semi-final is drawn after extra time",
-    "expected": "Semi-finals for the top four and a grand final; the shootout winner goes through",
-    "actual": "A one-table division got a final only; a drawn knockout promoted nobody",
-    "fixed": "0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away)"
-  },
-  {
-    "scenario": "OFF4",
-    "severity": "medium",
-    "role": "league treasurer",
-    "where": "queue_fee_reminders",
-    "steps": "Fifty clubs' entry fees still owed in April",
-    "expected": "The clubs are reminded",
-    "actual": "Nothing chased an entry fee",
-    "fixed": "0276: queue_entry_fee_reminders (every fortnight after 14 days)"
-  },
-  {
-    "scenario": [
-      "SC1",
-      "SC3"
-    ],
-    "severity": "high",
-    "role": "club president",
-    "where": "channel_messages / channel_screen",
-    "steps": "Open a squad chat you are not a member of as the club's owner",
-    "expected": "The club's staff read the club's channels (the screen already makes them a host)",
-    "actual": "\"Nothing here yet. Say hello.\" above a working composer: the message list hid every line from a non-member; a direct chat between two others opened the same way",
-    "fixed": "0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one"
-  },
-  {
-    "scenario": [
-      "SC1",
-      "SC3"
-    ],
-    "severity": "medium",
-    "role": "team manager",
-    "where": "notices_standing / notices_people",
-    "steps": "Open the league's Notices as a team manager (a club role, parent hat)",
-    "expected": "The league's notices, as the person who files the sheet",
-    "actual": "\"Not one of your chats — only its members can open it\"",
-    "fixed": "0278: team managers stand with the staff for a competition's Notices"
-  },
-  {
-    "scenario": "R4",
-    "severity": "medium",
-    "role": "parent",
-    "where": "mirror_fixture (forfeit)",
-    "steps": "A forfeit is approved on Thursday for Saturday's game",
-    "expected": "The families of both squads see the game is off (forfeit) and are told",
-    "actual": "The game stayed on their calendar as if it would be played; nobody was told",
-    "fixed": "0278: a forfeit is mirrored as a called-off game with its reason"
-  },
-  {
-    "scenario": "R5",
-    "severity": "medium",
-    "role": "parent",
-    "where": "competition_ladder (ladder_enabled)",
-    "steps": "Ask for a U9 division's ladder as a family (ladder off in the division rules)",
-    "expected": "Nothing — the division has no ladder",
-    "actual": "Eight rows: the screens hid the tab, the function did not",
-    "fixed": "0278: competition_ladder returns nothing for a division whose ladder is off, except to the league"
-  },
-  {
-    "scenario": "SC6",
-    "severity": "high",
-    "role": "parent, league organiser",
-    "where": "/c/{slug}/game/{fixtureId} (public game page)",
-    "steps": "Open a public game page in Season 5 from the match centre",
-    "expected": "The game, its score and this season's head to head",
-    "actual": "“This page couldn’t load — a server error occurred”: the server page handed the head-to-head card a function, which cannot cross into a client component; the parent's and the organiser's screens logged React error #441",
-    "fixed": "components/head-to-head.tsx (hrefBase, a string) + app/c/[slug]/game/[fixtureId]/page.tsx"
-  },
-  {
-    "scenario": "TP1",
-    "severity": "medium",
-    "role": "coach",
-    "where": "event_register",
-    "steps": "Two guardians answer for the same child: the first yes, the second no two minutes later; open the register",
-    "expected": "The family's latest answer (no)",
-    "actual": "Whichever row came first (yes)",
-    "fixed": "0283: the register takes the latest answer a child"
-  },
-  {
-    "scenario": "TP1",
-    "severity": "medium",
-    "role": "coach",
-    "where": "game_screen (roster)",
-    "steps": "The same two answers; open the game page's Who's coming",
-    "expected": "The child once, with the latest answer",
-    "actual": "The child twice (yes, no)",
-    "fixed": "0283: one row a child, the latest, and who gave it"
-  },
-  {
-    "scenario": "TP1",
-    "severity": "medium",
-    "role": "parent",
-    "where": "my_rsvps_for_event",
-    "steps": "The first parent opens the game after the second said no",
-    "expected": "The family's current answer (no), and who gave it",
-    "actual": "Only their own yes — a family could disagree without knowing",
-    "fixed": "0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children"
-  },
-  {
-    "scenario": "JF1",
-    "severity": "medium",
-    "role": "coach",
-    "where": "join_requests (notification)",
-    "steps": "Two hundred families ask to join through the coaches' links",
-    "expected": "Each coach told, the way the committee is told of a role request",
-    "actual": "Nobody's phone buzzed; the requests waited until a coach opened Home",
-    "fixed": "0283: join_requests_tell_the_coach (kind join_request)"
-  },
-  {
-    "scenario": "SW1",
-    "severity": "medium",
-    "role": "coach",
-    "where": "schedule_message / request_role / add_match_photos / add_match_video / polls (feature off)",
-    "steps": "The President switches Scheduled messages, Role requests, Game photos, Game video and Polls off; a coach schedules a message, a parent asks for a role",
-    "expected": "Refused: the feature is switched off for this club",
-    "actual": "Allowed — the switch only hid the screens",
-    "fixed": "0285: each function refuses with a sentence; polls by a trigger"
-  },
-  {
-    "scenario": "SW2",
-    "severity": "medium",
-    "role": "coach",
-    "where": "/chat composer (Polls off)",
-    "steps": "Polls switched off; open the squad chat as its coach",
-    "expected": "No Create a poll button",
-    "actual": "The button still shown",
-    "fixed": "app/chat/[channelId]/composer.tsx: behind WhenOn polls"
-  },
-  {
-    "scenario": "AM1",
-    "severity": "medium",
-    "role": "coach",
-    "where": "create_imported_events (undo)",
-    "steps": "A coach imports the wrong draw file; tries to undo it",
-    "expected": "The wrong games removed in one call, like a roster import",
-    "actual": "No undo existed for a fixture import",
-    "fixed": "0285: undo_event_import(p_academy, p_team, p_refs)"
-  },
-  {
-    "scenario": "AM2",
-    "severity": "high",
-    "role": "competition manager",
-    "where": "generate_fixtures_managed (p_replace)",
-    "steps": "Re-publish a division's draw after eight rounds of results",
-    "expected": "Played, moved and called-off games kept once; only unplayed games redrawn; no pair meets more than twice",
-    "actual": "Eight pairs met three times; 64 games where 56 belong — the pair skip looked only at a pinned game in the same round",
-    "fixed": "0285: a pairing the division already has, whichever round, is drawn already"
-  },
-  {
-    "scenario": "AM3",
-    "severity": "high",
-    "role": "club president",
-    "where": "teams (delete)",
-    "steps": "The President deletes a squad with players and games",
-    "expected": "Refused, with End the season offered instead",
-    "actual": "Deleted — 15 players, 52 games and 27 memberships went with it",
-    "fixed": "0285: teams_refuse_delete_with_history; the composite set-null keys named their column"
-  },
-  {
-    "scenario": "MD2",
-    "severity": "high",
-    "role": "parent",
-    "where": "payments.profile_id (erase)",
-    "steps": "A family deletes their data; the route removes the login",
-    "expected": "The money records kept, as the manifest promises",
-    "actual": "payments cascaded away with the login",
-    "fixed": "0285: payments.profile_id set null when the account goes"
-  },
-  {
-    "scenario": "FS1",
-    "severity": "medium",
-    "role": "club president",
-    "where": "storage.objects (attachments read policy)",
-    "steps": "The President opens a squad chat they may read (0278) that has a photo in it",
-    "expected": "The photo opens like the messages",
-    "actual": "A pulsing grey box for ever — the bucket's read rule still asked for a member row",
-    "fixed": "0286: the read rule asks the same helper as the chat (staff_reads_channel)"
-  },
-  {
-    "scenario": "FS2",
-    "severity": "medium",
-    "role": "parent",
-    "where": "/chat composer (HEIC)",
-    "steps": "A coach sends an iPhone HEIC photo; a parent on Android or a computer opens the chat",
-    "expected": "A picture everyone can see, or the sender told what to do",
-    "actual": "The HEIC went up raw and showed as a broken image to the squad",
-    "fixed": "composer, notice composer and the match photos picker refuse a HEIC with the fix (Most Compatible / a screenshot) and accept JPEG, PNG, WebP and GIF so Safari converts on the way"
-  }
+ {
+  "scenario": "S1",
+  "severity": "medium",
+  "role": "competition manager",
+  "where": "generate_fixtures / generate_fixtures_managed",
+  "steps": "Build the draw for an eight-team division; try to draw the second half of the season",
+  "expected": "Rounds 1–14 from one draw, home and away reversed in the second leg",
+  "actual": "One run makes seven rounds; a second run is allowed and labels its games Round 1–7 again, with nobody's home game reversed",
+  "fixed": "0276: generate_fixtures(… p_legs, p_skip_dates)"
+ },
+ {
+  "scenario": "S1",
+  "severity": "medium",
+  "role": "competition manager",
+  "where": "generate_fixtures_managed (p_round_every_days)",
+  "steps": "Draw a season across the NSW autumn school holidays",
+  "expected": "A week the league leaves out (17 April) has no games; later rounds move on a week",
+  "actual": "The generator spaces rounds evenly and cannot leave a week out; the league would move every game of the round by hand",
+  "fixed": "0276: p_skip_dates"
+ },
+ {
+  "scenario": "OFF7a",
+  "severity": "medium",
+  "role": "competition manager",
+  "where": "generate_fixtures_managed (round dates as timestamptz + 'n days')",
+  "steps": "Draw a season whose rounds cross 4 April 2027 (daylight saving ends); compare a division's first kick-off on 27 March and 10 April",
+  "expected": "The same clock time (9 am stays 9 am)",
+  "actual": "Round dates were p_start_at + n days on a timestamptz; in a UTC session (PostgREST) that is n × 24 hours, so every kick-off after the change was an hour earlier and the pitch fit then pushed it to the next free slot. Found by inspection while fixing the draw; the check that would have caught it is OFF7a",
+  "fixed": "0276: round dates worked out in the competition's zone"
+ },
+ {
+  "scenario": [
+   "FV11",
+   "FV5",
+   "FV7"
+  ],
+  "severity": "high",
+  "role": "ground manager",
+  "where": "app_private.apply_reschedule / guard_pitch_booking",
+  "steps": "Move a game onto another field (or ground) by name with reschedule_fixture",
+  "expected": "The game is on that pitch; the run sheet, the fixture and every family's game page say the new field",
+  "actual": "The labels were written and pitch_id stayed on the old pitch, so the booking guard put the old field's name straight back; a move to another ground left venue_id on the old ground while the label said the new one",
+  "fixed": "0276: apply_reschedule resolves the ground and field to the pitch"
+ },
+ {
+  "scenario": [
+   "FV11",
+   "FV5"
+  ],
+  "severity": "high",
+  "role": "parent",
+  "where": "mirror_fixture / game_screen",
+  "steps": "Open the game page as a family after the league moved the game to Field 3",
+  "expected": "\"Harbour Park · Field 3\" on the game page, and a push that the field changed",
+  "actual": "The mirrored event carried only the ground, so no family could see which field, and a field change sent nothing",
+  "fixed": "0276: the field in the mirrored event's venue; a field change is a change families hear"
+ },
+ {
+  "scenario": [
+   "FV9",
+   "WS1",
+   "FV6",
+   "FV10"
+  ],
+  "severity": "high",
+  "role": "referee",
+  "where": "call_off_fixtures / reschedule_fixture",
+  "steps": "Call off a ground, a pitch or a round with referees appointed; move a game",
+  "expected": "Every appointed referee is told their game is off or moved, a text inside 24 hours",
+  "actual": "Every family and coach was told; no referee was",
+  "fixed": "0276: notify_referees_of_change"
+ },
+ {
+  "scenario": "OF4",
+  "severity": "medium",
+  "role": "referee coordinator",
+  "where": "submit_referee_report",
+  "steps": "A referee files a report with abuse in it",
+  "expected": "The coordinator and the discipline officer are told at once",
+  "actual": "The report sat on the appointments screen until someone looked",
+  "fixed": "0276: a report of abuse, an injury or an incident is pushed"
+ },
+ {
+  "scenario": "OF4",
+  "severity": "medium",
+  "role": "referee coordinator",
+  "where": "propose_referee_allocation / referee_unavailable_reason",
+  "steps": "Allocate a Saturday with under-18 referees in the pool",
+  "expected": "An under-18 referee is never put on an U15 or older game",
+  "actual": "The allocator did not consider a referee's age",
+  "fixed": "0276: referee_unavailable_reason"
+ },
+ {
+  "scenario": "OF5",
+  "severity": "medium",
+  "role": "welfare officer",
+  "where": "file_incident_report",
+  "steps": "A coach files an injury from the ground",
+  "expected": "The Welfare officer and the President are told at once",
+  "actual": "The report reached nobody until someone opened the register",
+  "fixed": "0276: incident_report pushes"
+ },
+ {
+  "scenario": "OF3",
+  "severity": "medium",
+  "role": "coach",
+  "where": "submit_match_sheet",
+  "steps": "Submit a sheet of six for a nine-a-side division",
+  "expected": "Refused as short, or flagged",
+  "actual": "Accepted with six players, nothing said",
+  "fixed": "0276: competition_divisions.squad_size_min"
+ },
+ {
+  "scenario": "OFF5a",
+  "severity": "high",
+  "role": "competition manager",
+  "where": "competition_entries / fixtures",
+  "steps": "Withdraw a team after round 10",
+  "expected": "Remaining games become byes, played games stand, opponents' families see the game is off, the entry is marked withdrawn",
+  "actual": "No withdraw action: the league would give each game a bye by hand (set_bye), whose mirror left the opponents' game live, or delete the entry and every played game with it",
+  "fixed": "0276: withdraw_entry; a bye is mirrored as a called-off game"
+ },
+ {
+  "scenario": "R6",
+  "severity": "medium",
+  "role": "competition manager",
+  "where": "create_finals / resolve_source",
+  "steps": "Set up finals for a one-table division; a semi-final is drawn after extra time",
+  "expected": "Semi-finals for the top four and a grand final; the shootout winner goes through",
+  "actual": "A one-table division got a final only; a drawn knockout promoted nobody",
+  "fixed": "0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away)"
+ },
+ {
+  "scenario": "OFF4",
+  "severity": "medium",
+  "role": "league treasurer",
+  "where": "queue_fee_reminders",
+  "steps": "Fifty clubs' entry fees still owed in April",
+  "expected": "The clubs are reminded",
+  "actual": "Nothing chased an entry fee",
+  "fixed": "0276: queue_entry_fee_reminders (every fortnight after 14 days)"
+ },
+ {
+  "scenario": [
+   "SC1",
+   "SC3"
+  ],
+  "severity": "high",
+  "role": "club president",
+  "where": "channel_messages / channel_screen",
+  "steps": "Open a squad chat you are not a member of as the club's owner",
+  "expected": "The club's staff read the club's channels (the screen already makes them a host)",
+  "actual": "\"Nothing here yet. Say hello.\" above a working composer: the message list hid every line from a non-member; a direct chat between two others opened the same way",
+  "fixed": "0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one"
+ },
+ {
+  "scenario": [
+   "SC1",
+   "SC3"
+  ],
+  "severity": "medium",
+  "role": "team manager",
+  "where": "notices_standing / notices_people",
+  "steps": "Open the league's Notices as a team manager (a club role, parent hat)",
+  "expected": "The league's notices, as the person who files the sheet",
+  "actual": "\"Not one of your chats — only its members can open it\"",
+  "fixed": "0278: team managers stand with the staff for a competition's Notices"
+ },
+ {
+  "scenario": "R4",
+  "severity": "medium",
+  "role": "parent",
+  "where": "mirror_fixture (forfeit)",
+  "steps": "A forfeit is approved on Thursday for Saturday's game",
+  "expected": "The families of both squads see the game is off (forfeit) and are told",
+  "actual": "The game stayed on their calendar as if it would be played; nobody was told",
+  "fixed": "0278: a forfeit is mirrored as a called-off game with its reason"
+ },
+ {
+  "scenario": "R5",
+  "severity": "medium",
+  "role": "parent",
+  "where": "competition_ladder (ladder_enabled)",
+  "steps": "Ask for a U9 division's ladder as a family (ladder off in the division rules)",
+  "expected": "Nothing — the division has no ladder",
+  "actual": "Eight rows: the screens hid the tab, the function did not",
+  "fixed": "0278: competition_ladder returns nothing for a division whose ladder is off, except to the league"
+ },
+ {
+  "scenario": "SC6",
+  "severity": "high",
+  "role": "parent, league organiser",
+  "where": "/c/{slug}/game/{fixtureId} (public game page)",
+  "steps": "Open a public game page in Season 5 from the match centre",
+  "expected": "The game, its score and this season's head to head",
+  "actual": "“This page couldn’t load — a server error occurred”: the server page handed the head-to-head card a function, which cannot cross into a client component; the parent's and the organiser's screens logged React error #441",
+  "fixed": "components/head-to-head.tsx (hrefBase, a string) + app/c/[slug]/game/[fixtureId]/page.tsx"
+ },
+ {
+  "scenario": "TP1",
+  "severity": "medium",
+  "role": "coach",
+  "where": "event_register",
+  "steps": "Two guardians answer for the same child: the first yes, the second no two minutes later; open the register",
+  "expected": "The family's latest answer (no)",
+  "actual": "Whichever row came first (yes)",
+  "fixed": "0283: the register takes the latest answer a child"
+ },
+ {
+  "scenario": "TP1",
+  "severity": "medium",
+  "role": "coach",
+  "where": "game_screen (roster)",
+  "steps": "The same two answers; open the game page's Who's coming",
+  "expected": "The child once, with the latest answer",
+  "actual": "The child twice (yes, no)",
+  "fixed": "0283: one row a child, the latest, and who gave it"
+ },
+ {
+  "scenario": "TP1",
+  "severity": "medium",
+  "role": "parent",
+  "where": "my_rsvps_for_event",
+  "steps": "The first parent opens the game after the second said no",
+  "expected": "The family's current answer (no), and who gave it",
+  "actual": "Only their own yes — a family could disagree without knowing",
+  "fixed": "0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children"
+ },
+ {
+  "scenario": "JF1",
+  "severity": "medium",
+  "role": "coach",
+  "where": "join_requests (notification)",
+  "steps": "Two hundred families ask to join through the coaches' links",
+  "expected": "Each coach told, the way the committee is told of a role request",
+  "actual": "Nobody's phone buzzed; the requests waited until a coach opened Home",
+  "fixed": "0283: join_requests_tell_the_coach (kind join_request)"
+ },
+ {
+  "scenario": "SW1",
+  "severity": "medium",
+  "role": "coach",
+  "where": "schedule_message / request_role / add_match_photos / add_match_video / polls (feature off)",
+  "steps": "The President switches Scheduled messages, Role requests, Game photos, Game video and Polls off; a coach schedules a message, a parent asks for a role",
+  "expected": "Refused: the feature is switched off for this club",
+  "actual": "Allowed — the switch only hid the screens",
+  "fixed": "0285: each function refuses with a sentence; polls by a trigger"
+ },
+ {
+  "scenario": "SW2",
+  "severity": "medium",
+  "role": "coach",
+  "where": "/chat composer (Polls off)",
+  "steps": "Polls switched off; open the squad chat as its coach",
+  "expected": "No Create a poll button",
+  "actual": "The button still shown",
+  "fixed": "app/chat/[channelId]/composer.tsx: behind WhenOn polls"
+ },
+ {
+  "scenario": "AM1",
+  "severity": "medium",
+  "role": "coach",
+  "where": "create_imported_events (undo)",
+  "steps": "A coach imports the wrong draw file; tries to undo it",
+  "expected": "The wrong games removed in one call, like a roster import",
+  "actual": "No undo existed for a fixture import",
+  "fixed": "0285: undo_event_import(p_academy, p_team, p_refs)"
+ },
+ {
+  "scenario": "AM2",
+  "severity": "high",
+  "role": "competition manager",
+  "where": "generate_fixtures_managed (p_replace)",
+  "steps": "Re-publish a division's draw after eight rounds of results",
+  "expected": "Played, moved and called-off games kept once; only unplayed games redrawn; no pair meets more than twice",
+  "actual": "Eight pairs met three times; 64 games where 56 belong — the pair skip looked only at a pinned game in the same round",
+  "fixed": "0285: a pairing the division already has, whichever round, is drawn already"
+ },
+ {
+  "scenario": "AM3",
+  "severity": "high",
+  "role": "club president",
+  "where": "teams (delete)",
+  "steps": "The President deletes a squad with players and games",
+  "expected": "Refused, with End the season offered instead",
+  "actual": "Deleted — 15 players, 52 games and 27 memberships went with it",
+  "fixed": "0285: teams_refuse_delete_with_history; the composite set-null keys named their column"
+ },
+ {
+  "scenario": "MD2",
+  "severity": "high",
+  "role": "parent",
+  "where": "payments.profile_id (erase)",
+  "steps": "A family deletes their data; the route removes the login",
+  "expected": "The money records kept, as the manifest promises",
+  "actual": "payments cascaded away with the login",
+  "fixed": "0285: payments.profile_id set null when the account goes"
+ },
+ {
+  "scenario": "FS1",
+  "severity": "medium",
+  "role": "club president",
+  "where": "storage.objects (attachments read policy)",
+  "steps": "The President opens a squad chat they may read (0278) that has a photo in it",
+  "expected": "The photo opens like the messages",
+  "actual": "A pulsing grey box for ever — the bucket's read rule still asked for a member row",
+  "fixed": "0286: the read rule asks the same helper as the chat (staff_reads_channel)"
+ },
+ {
+  "scenario": "FS2",
+  "severity": "medium",
+  "role": "parent",
+  "where": "/chat composer (HEIC)",
+  "steps": "A coach sends an iPhone HEIC photo; a parent on Android or a computer opens the chat",
+  "expected": "A picture everyone can see, or the sender told what to do",
+  "actual": "The HEIC went up raw and showed as a broken image to the squad",
+  "fixed": "composer, notice composer and the match photos picker refuse a HEIC with the fix (Most Compatible / a screenshot) and accept JPEG, PNG, WebP and GIF so Safari converts on the way"
+ },
+ {
+  "scenario": "PY3",
+  "severity": "medium",
+  "role": "treasurer",
+  "where": "POST /api/payments/refund",
+  "steps": "A family withdraws; the Treasurer's Home says \"1 refund to issue\"; the Treasurer presses Issue",
+  "expected": "The refund goes out on Stripe",
+  "actual": "403 \"Only the club can issue a refund\" — the route took owner/admin only; the Treasurer had to fetch the President",
+  "fixed": "0288: i_may_run_club lets the routes ask the policies' question; the refund route accepts whoever runs the club's money"
+ },
+ {
+  "scenario": "PY4",
+  "severity": "medium",
+  "role": "treasurer",
+  "where": "POST /api/payments/entry-fee",
+  "steps": "The club owes the league its entry fee; the Treasurer, who sees it owed, pays it by card",
+  "expected": "Stripe Checkout on the league's account",
+  "actual": "404 — the entry fee row was hidden from the money role (entry_fees_select knew staff, not the Treasurer) and the route took owner/admin only",
+  "fixed": "0288: entry fees are readable by the club's money role; the entry-fee route accepts the Treasurer"
+ }
 ]

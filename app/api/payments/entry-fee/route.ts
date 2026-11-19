@@ -27,10 +27,12 @@ export async function POST(request: Request) {
   if (fee.amount_cents === 0) return NextResponse.json({ error: 'Nothing to pay.' }, { status: 409 })
   if (!fee.club_academy_id) return NextResponse.json({ error: 'This entry is not linked to a club yet.' }, { status: 409 })
 
-  // The payer must be staff of the entering club, not just able to see the fee.
+  // The payer must run the entering club — its owner or an admin, or whoever
+  // runs its money (0288: the Treasurer, who sees what the club owes).
   const { data: role } = await supabase.from('academy_members').select('role').eq('academy_id', fee.club_academy_id).eq('profile_id', auth.user.id).eq('status', 'active').maybeSingle()
-  if (!role || !['owner', 'admin'].includes(role.role)) {
-    return NextResponse.json({ error: "Only the club's owner or admin pays its entry fee." }, { status: 403 })
+  const { data: money } = await supabase.rpc('i_may_run_club', { p_academy: fee.club_academy_id, p_area: 'money' })
+  if (!(role && ['owner', 'admin'].includes(role.role)) && money !== true) {
+    return NextResponse.json({ error: "Only the club's owner, admin or Treasurer pays its entry fee." }, { status: 403 })
   }
 
   const admin = createAdminClient()

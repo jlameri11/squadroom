@@ -10212,6 +10212,10 @@ export type Database = {
       }
       home_layout: { Args: { p_academy?: string }; Returns: Json }
       home_screen: { Args: { p_academy?: string }; Returns: Json }
+      i_may_run_club: {
+        Args: { p_academy: string; p_area: string }
+        Returns: boolean
+      }
       import_league_draw: {
         Args: { p_competition: string; p_rows: Json }
         Returns: Json

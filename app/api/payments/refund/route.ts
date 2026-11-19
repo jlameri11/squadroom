@@ -42,7 +42,10 @@ export async function POST(request: Request) {
     .eq('profile_id', userId)
     .eq('status', 'active')
     .maybeSingle()
-  if (!me || !['owner', 'admin'].includes(me.role)) {
+  // 0288: the owner or an admin — or whoever runs the club's money (the
+  // Treasurer, whose Home said "1 to issue" and could not).
+  const { data: money } = await supabase.rpc('i_may_run_club', { p_academy: refund.academy_id, p_area: 'money' })
+  if (!(me && ['owner', 'admin'].includes(me.role)) && money !== true) {
     return NextResponse.json({ error: 'Only the club can issue a refund' }, { status: 403 })
   }
   if (refund.status !== 'requested') {

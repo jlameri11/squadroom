@@ -52,8 +52,41 @@ Two harness traps on the way: a league's staff pages want a two-step session
 script had started the old build regardless, which is why the first browser
 run saw the old screens. A short run's report had overwritten
 `docs/SIMULATION.md` in the working tree; restored to the full-season one (the
-next full season rewrites it).
+next full season rewrites it). **Payments through Stripe test mode** (19 Nov;
+PY0–PY4 in round 10, `scripts/simulation/scenarios-stripe.mjs`, on its own with
+`step.mjs --plan extra --round 10 --step PY`): stand-in merchant accounts for
+two clubs and the league (Stripe's test identity values, no dashboard, closed
+at the end), `stripe listen --all-snapshot` forwarding platform and
+connected-account events to the app built for the stack, and a signed probe
+proving the server verifies with the listener's secret before a cent moves;
+a family pays a $90 program fee on Stripe Checkout and the webhook marks it
+paid, the receipt queued, the quote at nothing owed; a $120 levy in three
+instalments — a declined test card first and nothing marked paid, then part
+one and part two, the quote and the Treasurer's Who owes following; a
+withdrawal inside the window, the refund issued on Stripe and marked refunded
+by the webhook, the Treasurer's list and Home clearing; a club's $750 entry
+fee paid onto the league's account — 41 checks. Two findings, fixed by
+**0288**: the Treasurer — whose Home said "1 refund to issue" and who saw the
+club's entry fee owed — could do neither, because the refund and entry-fee
+routes took owner/admin only and the entry fee row was hidden from the money
+role; now `i_may_run_club` lets the routes ask the policies' question, both
+routes accept whoever runs the club's money, and entry fees are readable by
+it (test-rls 242–243, **all 243 pass on dev**; PY3 and PY4 read FIXED).
+Harness notes: Stripe Checkout now draws its whole form inside its own frame
+with new field ids (`#cardNumber` is gone — `test-stripe-e2e.mjs`'s selectors
+are stale; the simulation's driver types into the frame by id, name or
+autocomplete and reads the email back, because Link re-draws that box on
+first load); `.env.local`'s STRIPE_WEBHOOK_SECRET (70 characters) is not the
+CLI listener's (38) — by its shape the deployed endpoint's own — so
+`.cache/rebuild-sim.sh` gives the simulation server the listener's from
+`stripe listen --print-secret` and the file is not touched.
 
+- **NEEDS JOEY (19 Nov):** say which endpoint `.env.local`'s
+  STRIPE_WEBHOOK_SECRET belongs to (the deployed site's, by its shape); any
+  local webhook test against `next dev` on :3000 with `stripe listen` needs
+  the CLI's secret exported for that server, or every event is "Bad
+  signature". Setting payments up (`/api/payments/connect`) stays owner/admin
+  only — say if the Treasurer should do that too.
 - **NEEDS JOEY (18 Nov):** `next build` says this Next.js version "is affected
   by a known security vulnerability" and asks for `next upgrade
   --agent=security`; it is a dependency change, so it is yours to say — the
