@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-19 09:42 UTC · 6 rounds played · 28 PASS · 18 FIXED · 3 FAIL · 0 not run · 38 bugs logged (32 fixed) · 12 min so far
+Last run: 2026-11-19 09:43 UTC · 7 rounds played · 29 PASS · 19 FIXED · 3 FAIL · 0 not run · 38 bugs logged (32 fixed) · 13 min so far
 
 ## What this is
 
@@ -59,9 +59,10 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
-| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 6/6 | — | — |
+| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 7/7 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected Amara Hughes in the report, got {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3_ | **FAIL** | 4/8 | #35, #36, #37, #38 | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it — _the referee records a red card (R2): expected allowed, got 22023: that player is not on this team's sheet for this game; a two-game suspension is raised at once: expected 2 games, active, got []; the club is told the player is suspended: expected >0, got 0; the discipline officer's report lists the sending-off: expected Amara Hughes in the report, got {"rules":{"blue_cards":true,"blue_minutes":10,"games_per_red":2,"yellows_per_suspension":3_ | **FAIL** | 6/10 | #35, #36, #37, #38 | — |
+| OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
 
@@ -69,6 +70,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
 
 ### People & messaging
 
@@ -128,7 +130,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reactions, 60 polls, 240 scheduled messages, 20831 RSVPs, 915 referee appointments, 1683 team sheets, 593 results agreed on the sheets, 56 disputes (57 ruled on), 22 late results, 129 cards.
+Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 24328 RSVPs, 1068 referee appointments, 1957 team sheets, 723 results agreed on the sheets, 63 disputes (64 ruled on), 28 late results, 158 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -138,6 +140,40 @@ Over the run: 12 league notices, 72 club messages, 1440 chat lines, 720 reaction
 | 4 | 2027-02-27 | 145 | 76121 | 76121 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7356, fee_overdue 402 |
 | 5 | 2027-03-06 | 150 | 68297 | 67238 | 159 | event_reminder 47660, announcement 11268, message 7358, fee_overdue 402, match_day 298, team_sheet_due 289 |
 | 6 | 2027-03-13 | 145 | 68563 | 66761 | 0 | event_reminder 47766, announcement 11446, message 7584, team_sheet_due 290, match_day 289, entry_fee_owed 255 |
+| 7 | 2027-03-20 | 145 | 70226 | 68539 | 0 | event_reminder 47766, announcement 11205, message 9579, fee_overdue 603, team_sheet_due 290, match_day 289 |
+
+## The peak
+
+Round 7, Saturday 10 am (2027-03-20 10:00 Sat): 2000 parents open the app (Home's six calls; four in ten open their chat; one in ten Fixtures) while 74 games take kick-offs, goals and chat lines, through a pool of 15 — 14466 calls in 42.8 s, 338 calls a second. An open of Home costs 289.9 ms of database time under this load.
+
+| call | n | p50 ms | p95 ms | p99 ms |
+|---|---|---|---|---|
+| channel_screen | 800 | 6.0 | 12.3 | 15.0 |
+| chat: line | 370 | 6.1 | 7.7 | 10.9 |
+| fixtures_screen | 200 | 7.7 | 14.4 | 18.5 |
+| home_competitions | 2000 | 253.3 | 280.8 | 291.6 |
+| home_jobs | 2000 | 13.6 | 21.9 | 28.4 |
+| home_layout | 2000 | 0.4 | 8.1 | 10.5 |
+| home_screen | 2000 | 11.6 | 21.2 | 25.8 |
+| live: goal | 296 | 5.9 | 7.4 | 9.5 |
+| mark_channel_read | 800 | 0.2 | 3.7 | 6.0 |
+| nav_badges | 2000 | 4.8 | 12.0 | 15.4 |
+| needs_you | 2000 | 0.8 | 6.3 | 9.1 |
+
+The league's and the clubs' screens at that moment (Postgres execution time, median of 3):
+
+| as | screen | median ms |
+|---|---|---|
+| league | home_jobs | 3.0 |
+| league | competition_run_sheet | 106.4 ◀ |
+| league | competition_ladder | 0.5 |
+| league | competition_appointments | 39.6 |
+| league | admin_hub | 0.1 |
+| coach | home_jobs | 21.5 |
+| owner (biggest club) | home_jobs | 3.3 |
+| owner (biggest club) | admin_hub | 0.1 |
+| owner (biggest club) | outstanding_fees | 0.2 |
+| stranger | public_competition_entry | 0.1 |
 
 ## Bugs
 
