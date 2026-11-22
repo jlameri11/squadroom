@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 12:10 UTC · 8 rounds played · 34 PASS · 22 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 17 min so far
+Last run: 2026-11-22 12:11 UTC · 9 rounds played · 35 PASS · 25 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 17 min so far
 
 ## What this is
 
@@ -61,7 +61,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 18/18 | — | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 20/20 | — | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -74,6 +74,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
+| OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
 
 ### People & messaging
 
@@ -125,6 +126,14 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | TP1 | Two parents answer differently for the same child: one answer per child, the latest, everywhere the coach looks; each parent sees the family's answer | **FIXED** | 7/7 | — | 0283: the register takes the latest answer a child; 0283: one row a child, the latest, and who gave it; 0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children |
 | TP2 | One person on two devices: an answer given on one phone is on the other after a refresh; a tap on each device leaves one answer, the latest | **FIXED** | 4/4 | — | event-detail.tsx: the answer buttons follow fresh data (content-keyed), an optimistic answer in flight left alone |
 
+### Admin mistakes
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| AM1 | A wrong import undone: a roster import of the wrong file is undone in one tap and nothing else moves; a wrong draw import can be undone the same way | **FIXED** | 10/10 | — | 0285: undo_event_import(p_academy, p_team, p_refs) |
+| AM2 | The draw re-published mid-season: played games, moved games and call-offs survive; only unplayed, unpinned games are redrawn, from today on; no pair meets more than the draw allows | **FIXED** | 7/7 | — | 0285: a pairing the division already has, whichever round, is drawn already |
+| AM3 | A team deleted by mistake: a squad with players, games or money cannot be deleted outright — the club ends its season instead and nothing is lost | **FIXED** | 4/4 | — | 0285: teams_refuse_delete_with_history; the composite set-null keys named their column |
+
 ### Feature switches
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -140,7 +149,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 318 scheduled messages, 27897 RSVPs, 1228 referee appointments, 2231 team sheets, 861 results agreed on the sheets, 65 disputes (66 ruled on), 31 late results, 169 cards.
+Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 358 scheduled messages, 31313 RSVPs, 1383 referee appointments, 2497 team sheets, 987 results agreed on the sheets, 74 disputes (75 ruled on), 36 late results, 190 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -152,6 +161,7 @@ Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reaction
 | 6 | 2027-03-13 | 145 | 68243 | 66515 | 0 | event_reminder 47766, announcement 11446, message 7506, team_sheet_due 290, match_day 289, fee_overdue 201 |
 | 7 | 2027-03-20 | 145 | 70536 | 68797 | 0 | event_reminder 47766, announcement 11205, message 9633, fee_overdue 603, team_sheet_due 290, match_day 289 |
 | 8 | 2027-03-27 | 145 | 68376 | 66751 | 0 | event_reminder 47664, announcement 11886, message 7590, team_sheet_due 290, match_day 289, fee_overdue 201 |
+| 9 | 2027-04-03 | 145 | 79403 | 77342 | 0 | event_reminder 47774, announcement 20719, message 7731, event_changed 1260, fee_overdue 603, team_sheet_due 290 |
 
 ## The peak
 
