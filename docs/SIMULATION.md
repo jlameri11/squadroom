@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 12:15 UTC · 10 rounds played · 38 PASS · 28 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 22 min so far
+Last run: 2026-11-22 12:16 UTC · 11 rounds played · 39 PASS · 30 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 23 min so far
 
 ## What this is
 
@@ -76,6 +76,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 | OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
 | OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **FIXED** | 18/18 | — | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
+| OFF5a | A team withdraws mid-season: fixtures, ladder and opponents handled | **FIXED** | 6/6 | — | 0276: withdraw_entry; a bye is mirrored as a called-off game |
 
 ### People & messaging
 
@@ -152,6 +153,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SW1 | Feature switches off: the President turns every non-core feature off for the club; the switches hold, and a switched-off feature refuses through its functions, not only its screens | **FIXED** | 5/5 | — | 0285: each function refuses with a sentence; polls by a trigger |
 | SW2 | Feature switches off: the composer, the game page, Settings, the Admin hub and Fixtures show nothing of a switched-off feature for that club — and another club still has them | **FIXED** | 15/15 | — | app/chat/[channelId]/composer.tsx: behind WhenOn polls |
 
+### A family's data
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| MD1 | A family downloads their data: the export carries their children, their answers, their messages and their payments, and nothing of anyone else | **PASS** | 7/7 | — | — |
+| MD2 | A family deletes their data mid-season through the real route: their messages become tombstones, their answers and guardian links go, the club keeps the roster record and the money records, the owners are told of a child with no contact, and the person is gone from the club | **FIXED** | 9/9 | — | 0285: payments.profile_id set null when the account goes |
+
 ### League setup
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -160,7 +168,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 398 scheduled messages, 34684 RSVPs, 1538 referee appointments, 2767 team sheets, 1113 results agreed on the sheets, 85 disputes (86 ruled on), 40 late results, 215 cards.
+Over the run: 22 league notices, 132 club messages, 2636 chat lines, 1318 reactions, 110 polls, 438 scheduled messages, 37957 RSVPs, 1683 referee appointments, 3034 team sheets, 1233 results agreed on the sheets, 95 disputes (96 ruled on), 47 late results, 244 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -174,6 +182,7 @@ Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reacti
 | 8 | 2027-03-27 | 145 | 68376 | 66751 | 0 | event_reminder 47664, announcement 11886, message 7590, team_sheet_due 290, match_day 289, fee_overdue 201 |
 | 9 | 2027-04-03 | 145 | 79403 | 77342 | 0 | event_reminder 47774, announcement 20719, message 7731, event_changed 1260, fee_overdue 603, team_sheet_due 290 |
 | 10 | 2027-04-10 | 141 | 68207 | 66476 | 0 | event_reminder 47406, announcement 12159, message 7628, team_sheet_due 283, match_day 282, referee_appointment 155 |
+| 11 | 2027-04-24 | 138 | 100807 | 98142 | 0 | event_reminder 79158, announcement 11786, message 7695, fee_overdue 603, event_cancelled 312, team_sheet_due 275 |
 
 ## The peak
 
