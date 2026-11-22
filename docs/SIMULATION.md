@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 11:29 UTC · 20 rounds played · 43 PASS · 33 FIXED · 1 FAIL · 0 not run · 36 bugs logged (34 fixed) · 32 min
+Last run: 2026-11-22 12:00 UTC · 1 rounds played · 16 PASS · 4 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 6 min so far
 
 ## What this is
 
@@ -27,22 +27,6 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | FV3 | Hours limits: nothing drawn outside a pitch's hours, and a move outside them is refused | **PASS** | 2/2 | — | — |
 | FV2 | A full pitch split into halves, thirds or quarters | **PASS** | 4/4 | — | — |
 | FV4 | Double-booking a pitch is refused | **PASS** | 2/2 | — | — |
-| FV11 | Field map, directions and "Field 3" shown correctly to every family affected | **FIXED** | 7/7 | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
-| FV9 | Ground closures announced Friday night and Saturday 7 am; a whole venue closed | **FIXED** | 11/11 | — | 0276: notify_referees_of_change |
-| FV6 | A whole venue closed | **FIXED** | 1/1 | — | 0276: notify_referees_of_change |
-| FV10 | Partial closure: one pitch only | **FIXED** | 2/2 | — | 0276: notify_referees_of_change |
-| FV5 | A pitch changed on the morning | **FIXED** | 3/3 | — | 0276: apply_reschedule resolves the ground and field to the pitch; 0276: the field in the mirrored event's venue; a field change is a change families hear |
-| FV7 | A game moved to another venue | **FIXED** | 4/4 | — | 0276: apply_reschedule resolves the ground and field to the pitch |
-| FV8 | A late kick-off pushing later games | **PASS** | 3/3 | — | — |
-
-### Weather & safety on the day
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| WS3 | Extreme heat → kick-offs moved earlier / drink breaks noted / a round postponed | **PASS** | 3/3 | — | — |
-| WS1 | Wet-weather washout of a whole round: every game called off, every family, coach and referee told once, no duplicate pushes | **FIXED** | 6/6 | — | 0276: notify_referees_of_change |
-| WS4 | Rescheduled games: a catch-up round, a mid-week reschedule, a double-header | **PASS** | 5/5 | — | — |
-| WS2 | Lightning suspension mid-game → resumed later the same day, and one abandoned | **PASS** | 7/7 | — | — |
 
 ### Results
 
@@ -50,36 +34,20 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | R1 | Win, draw, loss; high scores; 0–0 | **PASS** | 7/7 | — | — |
 | R2 | Matching scores → final; mismatched → dispute → the league rules → the ladder moves only then | **PASS** | 7/7 | — | — |
-| R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
-| R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded | **FIXED** | 11/11 | — | 0278: a forfeit is mirrored as a called-off game with its reason |
-| R5 | Points deduction, ladder ties (goal difference, goals for, head-to-head), hidden scores and no ladder for U9 | **FIXED** | 8/8 | — | 0278: competition_ladder returns nothing for a division whose ladder is off, except to the league |
-| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded | **FIXED** | 6/6 | — | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
+| R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 1/1 | — | — |
 
 ### On-field issues
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
-| OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
-| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
-| OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 22/22 | — | — |
-| OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
-| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 2/2 | — | 0276: round dates worked out in the competition's zone |
-| OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
-| OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
-| OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
-| OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
-| OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
-| OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **FIXED** | 18/18 | — | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
-| OFF5a | A team withdraws mid-season: fixtures, ladder and opponents handled | **FIXED** | 6/6 | — | 0276: withdraw_entry; a bye is mirrored as a called-off game |
-| OFF7c | Games around midnight land on the right day | **PASS** | 5/5 | — | — |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
 
 ### People & messaging
 
@@ -88,16 +56,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM3 | Busy team chats with replies, reactions, photos and polls | **PASS** | 4/4 | — | — |
 | PM5 | Quiet hours and the digest respected | **PASS** | 3/3 | — | — |
 | PM4 | Scheduled messages go at their time, not before | **PASS** | 4/4 | — | — |
-| PM6 | No message sent twice; late messages not sent | **PASS** | 9/9 | — | — |
-| PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
-| PM2 | Club messages to thousands | **PASS** | 6/6 | — | — |
-
-### Past seasons
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 23/23 | — | — |
-| HH1 | Head to head on every match: only the two teams' meetings in the season the game belongs to, a summary and the list; past seasons stay behind the switcher | **PASS** | 7/7 | — | — |
+| PM6 | No message sent twice; late messages not sent | **PASS** | 7/7 | — | — |
+| PM1 | Notices to everyone / club staff only | **PASS** | 4/4 | — | — |
 
 ### Screens
 
@@ -105,73 +65,6 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | SC1 | Screens after the draw: Home, Fixtures, the game page, the ladder, chats and notices as nine people see them | **FIXED** | 105/105 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
 | SC3 | Screens with a result in dispute: no score stands, the league sees the dispute, the ladder waits | **FIXED** | 129/129 | — | 0278: staff_reads_channel — staff read team, age-group, coaches, club-wide and custom chats, never a direct one; 0278: team managers stand with the staff for a competition's Notices |
-| SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 129/129 | — | — |
-| SC4 | Screens after a suspension: the coach and the club see it, the league's discipline page lists it | **PASS** | 130/130 | — | — |
-| SC5 | Screens at the finals: the grand finals, the finished ladders, the champions | **PASS** | 110/110 | — | — |
-| SC6 | Screens in Season 5: the season switcher, last season's page and ladders in full, head to head for this season | **FIXED** | 139/139 | — | components/head-to-head.tsx (hrefBase, a string) + app/c/[slug]/game/[fixtureId]/page.tsx; 0289: a club role on the squad (team manager, coordinator) counts like a membership in my_seasons and season_fixtures |
-
-### Files & storage
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| FS1 | Chat photos through the real storage: a coach posts a photo in the squad chat, is warned who must not be in it, the squad sees it, nobody else can open it | **FIXED** | 10/10 | — | 0286: the read rule asks the same helper as the chat (staff_reads_channel) |
-| FS2 | An iPhone HEIC photo in the chat: either it goes up as a picture everyone can see, or the sender is told at once what to do — never a broken image for the squad | **FIXED** | 2/2 | — | composer, notice composer and the match photos picker refuse a HEIC with the fix (Most Compatible / a screenshot) and accept JPEG, PNG, WebP and GIF so Safari converts on the way |
-| FS3 | A file over the limit: refused on the phone with a sentence, nothing uploaded | **PASS** | 2/2 | — | — |
-| FS4 | A PDF in the chat: the draw as a document, opened by a parent | **PASS** | 2/2 | — | — |
-| FS6 | A registration photo: sent with the request, private to the club until approved, then on the player card for the family and nobody else | **PASS** | 10/10 | — | — |
-| FS5 | Match photos: the coach adds them after the game and is warned who must not be in them; only the squad sees them; a family takes one down at once; the coach puts it back — _taken down, the squad cannot open it any more: expected refused, got 200; a parent cannot put it back: expected refused, got allowed: {"limit":60,"photos":[{"at":"2027-03-13T05:30:00+00:00","by":"Priya Brown","id":"_ | **FAIL** | 8/10 | #35, #36 | — |
-
-### Joining mid-season
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| JF1 | 200+ new families join mid-season through the sign-up flow (coach link → create account → code → team): approved by the coach, each lands in the squad, the chat and the family's Fixtures | **FIXED** | 9/9 | — | 0283: join_requests_tell_the_coach (kind join_request) |
-| JF2 | A family joins through the real screens at 375px: the coach's link, Create account, the code, the join form, waiting, then in after the coach approves | **PASS** | 7/7 | — | — |
-
-### Role requests
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| RR1 | Role requests mid-season (team manager, volunteer, referee): asked from Settings, the committee told and the President's Home counting them, a check needed before approval, approved and declined, the person told | **PASS** | 21/21 | — | — |
-
-### Payments (Stripe test mode)
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| PY0 | Stripe test mode: two clubs and the league set up payments on stand-in accounts, the listener forwards every event to the app, and nothing real can move | **PASS** | 8/8 | — | — |
-| PY1 | A family registers a child for a club program and pays the fee by card on Stripe Checkout; the webhook marks it paid; the quote, the receipt and the family's Payments page agree | **PASS** | 9/9 | — | — |
-| PY2 | A season levy paid in instalments by card: the first card is declined on Stripe's page and nothing is marked paid; the next card pays part one, then part two; the quote and the Treasurer's Who owes follow | **PASS** | 10/10 | — | — |
-| PY3 | The family withdraws from the program inside the full-refund window; the club issues the refund through Stripe; the webhook marks the payment refunded and the Treasurer's list clears | **FIXED** | 9/9 | — | 0288: i_may_run_club lets the routes ask the policies' question; the refund route accepts whoever runs the club's money |
-| PY4 | A club that still owes the league its entry fee pays it by card; the money goes to the league's account; the league and the club both see it paid | **FIXED** | 5/5 | — | 0288: entry fees are readable by the club's money role; the entry-fee route accepts the Treasurer |
-
-### Two devices, two parents
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| TP1 | Two parents answer differently for the same child: one answer per child, the latest, everywhere the coach looks; each parent sees the family's answer | **FIXED** | 7/7 | — | 0283: the register takes the latest answer a child; 0283: one row a child, the latest, and who gave it; 0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children |
-| TP2 | One person on two devices: an answer given on one phone is on the other after a refresh; a tap on each device leaves one answer, the latest | **FIXED** | 4/4 | — | event-detail.tsx: the answer buttons follow fresh data (content-keyed), an optimistic answer in flight left alone |
-
-### Admin mistakes
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| AM1 | A wrong import undone: a roster import of the wrong file is undone in one tap and nothing else moves; a wrong draw import can be undone the same way | **FIXED** | 10/10 | — | 0285: undo_event_import(p_academy, p_team, p_refs) |
-| AM2 | The draw re-published mid-season: played games, moved games and call-offs survive; only unplayed, unpinned games are redrawn, from today on; no pair meets more than the draw allows | **FIXED** | 7/7 | — | 0285: a pairing the division already has, whichever round, is drawn already |
-| AM3 | A team deleted by mistake: a squad with players, games or money cannot be deleted outright — the club ends its season instead and nothing is lost | **FIXED** | 4/4 | — | 0285: teams_refuse_delete_with_history; the composite set-null keys named their column |
-
-### Feature switches
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| SW1 | Feature switches off: the President turns every non-core feature off for the club; the switches hold, and a switched-off feature refuses through its functions, not only its screens | **FIXED** | 5/5 | — | 0285: each function refuses with a sentence; polls by a trigger |
-| SW2 | Feature switches off: the composer, the game page, Settings, the Admin hub and Fixtures show nothing of a switched-off feature for that club — and another club still has them | **FIXED** | 15/15 | — | app/chat/[channelId]/composer.tsx: behind WhenOn polls |
-
-### A family's data
-
-| # | Scenario | Result | Checks | Bugs | Fixed in |
-|---|---|---|---|---|---|
-| MD1 | A family downloads their data: the export carries their children, their answers, their messages and their payments, and nothing of anyone else | **PASS** | 7/7 | — | — |
-| MD2 | A family deletes their data mid-season through the real route: their messages become tombstones, their answers and guardian links go, the club keeps the roster record and the money records, the owners are told of a child with no contact, and the person is gone from the club | **FIXED** | 9/9 | — | 0285: payments.profile_id set null when the account goes |
 
 ### League setup
 
@@ -181,68 +74,16 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 40 league notices, 240 club messages, 4064 chat lines, 2032 reactions, 170 polls, 798 scheduled messages, 62269 RSVPs, 2581 referee appointments, 4988 team sheets, 2104 results agreed on the sheets, 205 disputes (206 ruled on), 86 late results, 463 cards.
+Over the run: 2 league notices, 12 club messages, 240 chat lines, 120 reactions, 10 polls, 40 scheduled messages, 3448 RSVPs, 154 referee appointments, 275 team sheets, 121 results agreed on the sheets, 12 disputes (13 ruled on), 3 late results, 30 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
-| 1 | 2027-02-06 | 145 | 67427 | 66368 | 0 | event_reminder 46510, announcement 12083, message 7530, match_day 289, team_sheet_due 289, entry_fee_owed 271 |
-| 2 | 2027-02-13 | 145 | 66652 | 66652 | 0 | event_reminder 46514, announcement 11675, message 7349, match_day 289, team_sheet_due 289, referee_appointment 153 |
-| 3 | 2027-02-20 | 145 | 77750 | 75655 | 2294 | event_reminder 45100, announcement 19481, message 7361, event_cancelled 2040, event_back_on 2040, team_sheet_due 289 |
-| 4 | 2027-02-27 | 145 | 75875 | 75875 | 7705 | event_reminder 38952, announcement 11267, event_back_on 9077, event_cancelled 7560, message 7356, fee_overdue 402 |
-| 5 | 2027-03-06 | 150 | 68607 | 67468 | 159 | event_reminder 47766, announcement 11268, message 7359, fee_overdue 402, match_day 298, team_sheet_due 289 |
-| 6 | 2027-03-13 | 145 | 68248 | 66524 | 0 | event_reminder 47766, announcement 11446, message 7509, team_sheet_due 290, match_day 289, fee_due 201 |
-| 7 | 2027-03-20 | 145 | 70404 | 68795 | 0 | event_reminder 47766, announcement 11205, message 9504, fee_overdue 603, team_sheet_due 290, match_day 289 |
-| 8 | 2027-03-27 | 145 | 68360 | 66761 | 0 | event_reminder 47664, announcement 11886, message 7564, team_sheet_due 290, match_day 289, fee_overdue 201 |
-| 9 | 2027-04-03 | 145 | 79382 | 77347 | 0 | event_reminder 47774, announcement 20719, message 7703, event_changed 1260, fee_overdue 603, team_sheet_due 290 |
-| 10 | 2027-04-10 | 141 | 68320 | 66485 | 0 | event_reminder 47406, announcement 12159, message 7736, team_sheet_due 283, match_day 282, referee_appointment 144 |
-| 11 | 2027-04-24 | 138 | 100670 | 98161 | 0 | event_reminder 79158, announcement 11786, message 7538, fee_overdue 603, event_cancelled 312, team_sheet_due 275 |
-| 12 | 2027-05-01 | 138 | 67907 | 66156 | 0 | event_reminder 46982, announcement 11581, message 7472, fee_overdue 603, team_sheet_due 275, match_day 274 |
-| 13 | 2027-05-08 | 138 | 75541 | 73835 | 0 | event_reminder 47084, announcement 20141, message 7320, team_sheet_due 275, match_day 274, referee_appointment 149 |
-| 14 | 2027-05-15 | 138 | 67938 | 66115 | 0 | event_reminder 46980, announcement 11581, message 7524, fee_overdue 603, team_sheet_due 275, match_day 274 |
-| 15 | 2027-05-22 | 170 | 60340 | 58269 | 0 | event_reminder 40942, announcement 11343, message 7697, match_day 315, discipline_suspension 20, referee_response 18 |
-| 16 | 2027-05-29 | 8 | 52411 | 50903 | 0 | event_reminder 32228, announcement 11479, message 7806, fee_overdue 603, entry_fee_owed 266, wwcc_expiring 12 |
-| 17 | 2027-06-05 | 4 | 52131 | 50742 | 0 | event_reminder 32228, announcement 12194, message 7695, match_correction_requested 6, referee_appointment 4, referee_response 4 |
-| 18 | 2028-02-05 | 144 | 54305 | 53062 | 0 | event_changed 22714, event_reminder 15376, announcement 12270, entry_fee_owed 1511, message 943, fee_overdue 603 |
-| 19 | 2028-02-12 | 144 | 29345 | 28586 | 0 | event_reminder 15484, announcement 12034, message 943, team_sheet_due 289, match_day 285, referee_appointment 152 |
-| 20 | 2028-02-19 | 144 | 30989 | 30215 | 0 | event_reminder 15484, announcement 11557, entry_fee_owed 1511, message 943, fee_overdue 603, team_sheet_due 289 |
-
-## The peak
-
-Round 7, Saturday 10 am (2027-03-20 10:00 Sat): 2000 parents open the app (Home's six calls; four in ten open their chat; one in ten Fixtures) while 74 games take kick-offs, goals and chat lines, through a pool of 15 — 14466 calls in 43.7 s, 331 calls a second. An open of Home costs 295.6 ms of database time under this load.
-
-| call | n | p50 ms | p95 ms | p99 ms |
-|---|---|---|---|---|
-| channel_screen | 800 | 6.1 | 12.4 | 14.7 |
-| chat: line | 370 | 6.1 | 8.5 | 10.8 |
-| fixtures_screen | 200 | 8.4 | 14.6 | 21.1 |
-| home_competitions | 2000 | 256.9 | 284.9 | 298.0 |
-| home_jobs | 2000 | 14.1 | 22.2 | 27.3 |
-| home_layout | 2000 | 1.1 | 8.4 | 12.0 |
-| home_screen | 2000 | 12.8 | 22.2 | 26.7 |
-| live: goal | 296 | 6.0 | 7.5 | 10.1 |
-| mark_channel_read | 800 | 0.4 | 4.4 | 6.8 |
-| nav_badges | 2000 | 4.7 | 11.9 | 15.6 |
-| needs_you | 2000 | 0.9 | 6.3 | 9.5 |
-
-The league's and the clubs' screens at that moment (Postgres execution time, median of 3):
-
-| as | screen | median ms |
-|---|---|---|
-| league | home_jobs | 3.0 |
-| league | competition_run_sheet | 105.7 ◀ |
-| league | competition_ladder | 0.5 |
-| league | competition_appointments | 39.1 |
-| league | admin_hub | 0.1 |
-| coach | home_jobs | 21.1 |
-| owner (biggest club) | home_jobs | 3.2 |
-| owner (biggest club) | admin_hub | 0.1 |
-| owner (biggest club) | outstanding_fees | 0.2 |
-| stranger | public_competition_entry | 0.1 |
+| 1 | 2027-02-06 | 145 | 67433 | 66374 | 0 | event_reminder 46510, announcement 12083, message 7533, match_day 289, team_sheet_due 289, entry_fee_owed 271 |
 
 ## Bugs
 
-36 logged in `docs/BUGS.md`, 34 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+35 logged in `docs/BUGS.md`, 34 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
-- A withdrawn team and a finished season show on the ladder and the match centre without a label yet (the data is marked; the screens could say "withdrew" and "final").
+- Nothing from this run.
