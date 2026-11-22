@@ -437,7 +437,14 @@ async function realFiles(ctx, S, add, rand) {
     const refused = sq.players[2]
     const guardian = await guardianOf(pool, refused)
     await sql(pool, `insert into public.consent_acceptances (academy_id, document_id, profile_id, player_id, accepted, accepted_at) values ($1, $2, $3, $4, false, now())`, [club, doc, guardian, refused])
-    ctx.files = { club, c, team, coach: sq.coach, channel: sq.channel, parents: sq.parents, refused, refusedName: await playerName(pool, refused), stranger: ids.parent(c === 19 ? 11 : c + 1, 1), president: who.president(c) }
+    // "A parent" means a plain one: a parent who is also the club's owner, an admin or a coach, or holds a
+    // role on the squad, counts as the squad's coach to the photo rules (seed 7 drew one first).
+    const plainParents = (await sql(pool, `select tm.profile_id from public.team_members tm
+       where tm.team_id = $1 and tm.role = 'parent'
+         and not exists (select 1 from public.academy_members am where am.profile_id = tm.profile_id and am.academy_id = $2 and am.role in ('owner', 'admin', 'coach'))
+         and not exists (select 1 from public.club_roles cr where cr.profile_id = tm.profile_id and cr.academy_id = $2)
+       order by tm.created_at`, [team, club])).map((r) => r.profile_id)
+    ctx.files = { club, c, team, coach: sq.coach, channel: sq.channel, parents: plainParents.length ? plainParents : sq.parents, refused, refusedName: await playerName(pool, refused), stranger: ids.parent(c === 19 ? 11 : c + 1, 1), president: who.president(c) }
     note(`club ${c}: ${ctx.files.refusedName} must not be photographed`)
   })
   const sendFile = async (page, file) => {
@@ -597,7 +604,8 @@ async function realFiles(ctx, S, add, rand) {
     const clubOf = program.academy_id
     const cnum = await val(pool, `select n from (select id, row_number() over (order by name) n from public.academies where type <> 'league') x where id = $1`, [clubOf]).catch(() => null)
     await withStack(ctx, 'FS6 registration photo', async ({ db }) => {
-      const fam = await newFamily(`${S.replace(/-/g, '')}${ctx.seed ?? 0}`, 1, ctx.seed ?? 0)
+      // The index names the mobile and the address, so a re-run of the step never reuses one.
+      const fam = await newFamily(`${S.replace(/-/g, '')}${ctx.seed ?? 0}`, 100000 + Math.floor(Math.random() * 800000), ctx.seed ?? 0)
       check(fam.ok, { what: 'a new family makes an account', expected: 'a session', actual: fam.ok ? 'session' : `${fam.step}: ${fam.error}`, role: 'parent (new)', where: '/api/account' })
       if (!fam.ok) return
       const child = { name: `Pia Filer ${S}`, dob: '2017-02-11' }

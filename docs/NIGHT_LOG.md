@@ -121,6 +121,16 @@ name — it now says what is left to the league and why (a person in two
 places, no room on the pitch that day, or something else, which alone is a
 failure) and keeps a one-in-ten guard. **Seed 7 is running.**
 
+**Seed 7 ran to the end** (22 Nov; 43 pass · 33 fixed · 1 fail · 0 not run ·
+2 bugs in 32 minutes). Both were one harness choice, not the product: the
+match-photos scenario's "a parent" was drawn from the squad's parents and
+drew its team manager, who runs the squad as a coach would (0236:
+`is_team_coach` is the coach, the club's staff, or whoever runs the team), so
+the taken-down photo still opened for them and they could put it back — by
+design. The files scenarios now act as a plain parent: no staff seat, no club
+role. Two full seasons in a row (6 and 7) have found nothing new in the
+product; **seed 8 is the confirming run.**
+
 - **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
   14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
   37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5
