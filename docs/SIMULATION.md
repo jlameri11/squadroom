@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 12:21 UTC · 17 rounds played · 43 PASS · 32 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 28 min so far
+Last run: 2026-11-22 12:24 UTC · 18 rounds played · 44 PASS · 33 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 31 min so far
 
 ## What this is
 
@@ -96,7 +96,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
-| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 9/9 | — | — |
+| PS1 | Past seasons are always visitable: nothing deleted, read-only, reachable from the match centre, the competition page, Fixtures and a team's history | **PASS** | 23/23 | — | — |
+| HH1 | Head to head on every match: only the two teams' meetings in the season the game belongs to, a summary and the list; past seasons stay behind the switcher | **PASS** | 7/7 | — | — |
 
 ### Screens
 
@@ -107,6 +108,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | SC2 | Screens on a washout Saturday: every called-off game reads as off to the families, the coach, the league and the referee | **PASS** | 129/129 | — | — |
 | SC4 | Screens after a suspension: the coach and the club see it, the league's discipline page lists it | **PASS** | 130/130 | — | — |
 | SC5 | Screens at the finals: the grand finals, the finished ladders, the champions | **PASS** | 109/109 | — | — |
+| SC6 | Screens in Season 5: the season switcher, last season's page and ladders in full, head to head for this season | **FIXED** | 137/137 | — | components/head-to-head.tsx (hrefBase, a string) + app/c/[slug]/game/[fixtureId]/page.tsx; 0289: a club role on the squad (team manager, coordinator) counts like a membership in my_seasons and season_fixtures |
 
 ### Files & storage
 
@@ -179,7 +181,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reactions, 170 polls, 678 scheduled messages, 51815 RSVPs, 2137 referee appointments, 4154 team sheets, 1757 results agreed on the sheets, 147 disputes (148 ruled on), 59 late results, 364 cards.
+Over the run: 36 league notices, 216 club messages, 4064 chat lines, 2032 reactions, 170 polls, 717 scheduled messages, 55307 RSVPs, 2286 referee appointments, 4426 team sheets, 1888 results agreed on the sheets, 155 disputes (156 ruled on), 64 late results, 395 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -200,6 +202,7 @@ Over the run: 34 league notices, 204 club messages, 4064 chat lines, 2032 reacti
 | 15 | 2027-05-22 | 170 | 60385 | 58290 | 0 | event_reminder 40836, announcement 11344, message 7826, match_day 315, discipline_suspension 30, referee_response 22 |
 | 16 | 2027-05-29 | 8 | 52440 | 50906 | 0 | event_reminder 32228, announcement 11479, message 7837, fee_overdue 603, entry_fee_owed 266, wwcc_expiring 12 |
 | 17 | 2027-06-05 | 4 | 52161 | 50746 | 0 | event_reminder 32228, announcement 12194, message 7723, match_correction_requested 6, referee_appointment 6, referee_response 4 |
+| 18 | 2028-02-05 | 144 | 54318 | 53048 | 0 | event_changed 22721, event_reminder 15376, announcement 12270, entry_fee_owed 1511, message 946, fee_overdue 603 |
 
 ## The peak
 
