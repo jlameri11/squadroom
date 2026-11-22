@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 09:59 UTC · 7 rounds played · 30 PASS · 20 FIXED · 1 FAIL · 0 not run · 35 bugs logged (34 fixed) · 14 min so far
+Last run: 2026-11-22 10:00 UTC · 8 rounds played · 33 PASS · 22 FIXED · 1 FAIL · 0 not run · 35 bugs logged (34 fixed) · 15 min so far
 
 ## What this is
 
@@ -59,9 +59,9 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | OF6 | Wrong team sheet submitted, sheet after lock — only the referee or the league can change it, logged | **PASS** | 6/6 | — | — |
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
-| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 7/7 | — | — |
+| OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 11/11 | — | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 18/18 | — | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -71,6 +71,9 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
 | OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
+| OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
+| OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
+| OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 
 ### People & messaging
 
@@ -79,8 +82,8 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | PM3 | Busy team chats with replies, reactions, photos and polls | **PASS** | 4/4 | — | — |
 | PM5 | Quiet hours and the digest respected | **PASS** | 3/3 | — | — |
 | PM4 | Scheduled messages go at their time, not before | **PASS** | 4/4 | — | — |
-| PM6 | No message sent twice; late messages not sent | **PASS** | 7/7 | — | — |
-| PM1 | Notices to everyone / club staff only | **PASS** | 4/4 | — | — |
+| PM6 | No message sent twice; late messages not sent | **PASS** | 9/9 | — | — |
+| PM1 | Notices to everyone / club staff only | **PASS** | 8/8 | — | — |
 
 ### Screens
 
@@ -122,6 +125,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | TP1 | Two parents answer differently for the same child: one answer per child, the latest, everywhere the coach looks; each parent sees the family's answer | **FIXED** | 7/7 | — | 0283: the register takes the latest answer a child; 0283: one row a child, the latest, and who gave it; 0283: the family's latest answer with by_name; the Saturday view counts children, the manager's tile counts children, a parent's reply count counts children |
 | TP2 | One person on two devices: an answer given on one phone is on the other after a refresh; a tap on each device leaves one answer, the latest | **FIXED** | 4/4 | — | event-detail.tsx: the answer buttons follow fresh data (content-keyed), an optimistic answer in flight left alone |
 
+### Feature switches
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| SW1 | Feature switches off: the President turns every non-core feature off for the club; the switches hold, and a switched-off feature refuses through its functions, not only its screens | **FIXED** | 5/5 | — | 0285: each function refuses with a sentence; polls by a trigger |
+| SW2 | Feature switches off: the composer, the game page, Settings, the Admin hub and Fixtures show nothing of a switched-off feature for that club — and another club still has them | **FIXED** | 15/15 | — | app/chat/[channelId]/composer.tsx: behind WhenOn polls |
+
 ### League setup
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -130,7 +140,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reactions, 70 polls, 280 scheduled messages, 24252 RSVPs, 1080 referee appointments, 1949 team sheets, 715 results agreed on the sheets, 68 disputes (69 ruled on), 31 late results, 161 cards.
+Over the run: 16 league notices, 96 club messages, 1916 chat lines, 958 reactions, 80 polls, 317 scheduled messages, 27743 RSVPs, 1233 referee appointments, 2228 team sheets, 836 results agreed on the sheets, 86 disputes (87 ruled on), 35 late results, 186 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -141,6 +151,7 @@ Over the run: 14 league notices, 84 club messages, 1680 chat lines, 840 reaction
 | 5 | 2027-03-06 | 150 | 68615 | 67502 | 159 | event_reminder 47714, announcement 11268, message 7361, fee_overdue 402, match_day 298, team_sheet_due 289 |
 | 6 | 2027-03-13 | 145 | 68354 | 66526 | 0 | event_reminder 47766, announcement 11446, message 7611, team_sheet_due 290, match_day 289, fee_due 201 |
 | 7 | 2027-03-20 | 145 | 70523 | 68810 | 0 | event_reminder 47766, announcement 11205, message 9606, fee_overdue 603, team_sheet_due 290, match_day 289 |
+| 8 | 2027-03-27 | 145 | 68259 | 66712 | 0 | event_reminder 47716, announcement 11886, message 7433, team_sheet_due 290, match_day 289, fee_overdue 201 |
 
 ## The peak
 
