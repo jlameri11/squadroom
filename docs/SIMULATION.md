@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 10:01 UTC · 9 rounds played · 34 PASS · 25 FIXED · 1 FAIL · 0 not run · 35 bugs logged (34 fixed) · 16 min so far
+Last run: 2026-11-22 10:01 UTC · 10 rounds played · 34 PASS · 26 FIXED · 2 FAIL · 4 not run · 36 bugs logged (34 fixed) · 17 min so far
 
 ## What this is
 
@@ -61,7 +61,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | OF4 | Referee no-show, late decline, club-supplied referee, under-18 referee, referee abused → report | **FIXED** | 17/17 | — | 0276: a report of abuse, an injury or an incident is pushed; 0276: referee_unavailable_reason |
 | OF2 | Suspended or ineligible player on a sheet → refused by name; playing up within the rules, and over the cap → refused | **PASS** | 9/9 | — | — |
 | OF3 | Team short of players (minimum numbers), borrowing players, a team that doesn't turn up | **FIXED** | 3/3 | — | 0276: competition_divisions.squad_size_min |
-| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 20/20 | — | — |
+| OF1 | Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it | **PASS** | 22/22 | — | — |
 | OF5 | Injury during a game → incident report → the welfare officer and the President | **FIXED** | 6/6 | — | 0276: incident_report pushes |
 
 ### Off-field issues
@@ -69,12 +69,13 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | # | Scenario | Result | Checks | Bugs | Fixed in |
 |---|---|---|---|---|---|
 | OFF5b | A club enters late | **PASS** | 5/5 | — | — |
-| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 1/1 | — | 0276: round dates worked out in the competition's zone |
+| OFF7a | Daylight saving: the same kick-off time on the clock after the change | **FIXED** | 2/2 | — | 0276: round dates worked out in the competition's zone |
 | OFF1 | Spectator or parent abuse → ban → the banned person can't RSVP, post or be on a sheet | **PASS** | 9/9 | — | — |
 | OFF3 | A coach's WWCC expires mid-season → flagged and removed from coaching until renewed | **PASS** | 6/6 | — | — |
 | OFF2 | Safeguarding: a coach DMs a child (parent added automatically), a message reported, an under-13 sign-up refused, a 13+ waits for parent approval | **PASS** | 16/16 | — | — |
 | OFF6 | Volunteer roster gaps on Saturday; canteen and field-marshal swaps | **PASS** | 7/7 | — | — |
 | OFF7b | A public-holiday round (Easter Saturday) | **PASS** | 3/3 | — | — |
+| OFF4 | Payments: a failed card, a missed instalment, a refund on withdrawal, a voucher used, an unpaid entry fee chased | **FIXED** | 18/18 | — | 0276: queue_entry_fee_reminders (every fortnight after 14 days) |
 
 ### People & messaging
 
@@ -119,6 +120,16 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 |---|---|---|---|---|---|
 | RR1 | Role requests mid-season (team manager, volunteer, referee): asked from Settings, the committee told and the President's Home counting them, a check needed before approval, approved and declined, the person told | **PASS** | 21/21 | — | — |
 
+### Payments (Stripe test mode)
+
+| # | Scenario | Result | Checks | Bugs | Fixed in |
+|---|---|---|---|---|---|
+| PY0 | Stripe test mode: two clubs and the league set up payments on stand-in accounts, the listener forwards every event to the app, and nothing real can move — _the app verifies events with the listener's signing secret (a signed probe): expected 200 received, got 400 Bad signature — the server's STRIPE_WEBHOOK_SECRET is not the CLI listener's_ | **FAIL** | 2/3 | #36 | — |
+| PY1 | A family registers a child for a club program and pays the fee by card on Stripe Checkout; the webhook marks it paid; the quote, the receipt and the family's Payments page agree | **NOT RUN** | — | — | — |
+| PY2 | A season levy paid in instalments by card: the first card is declined on Stripe's page and nothing is marked paid; the next card pays part one, then part two; the quote and the Treasurer's Who owes follow | **NOT RUN** | — | — | — |
+| PY3 | The family withdraws from the program inside the full-refund window; the club issues the refund through Stripe; the webhook marks the payment refunded and the Treasurer's list clears | **NOT RUN** | — | — | 0288: i_may_run_club lets the routes ask the policies' question; the refund route accepts whoever runs the club's money |
+| PY4 | A club that still owes the league its entry fee pays it by card; the money goes to the league's account; the league and the club both see it paid | **NOT RUN** | — | — | 0288: entry fees are readable by the club's money role; the entry-fee route accepts the Treasurer |
+
 ### Two devices, two parents
 
 | # | Scenario | Result | Checks | Bugs | Fixed in |
@@ -149,7 +160,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reactions, 90 polls, 357 scheduled messages, 31147 RSVPs, 1390 referee appointments, 2501 team sheets, 963 results agreed on the sheets, 98 disputes (99 ruled on), 36 late results, 203 cards.
+Over the run: 20 league notices, 120 club messages, 2396 chat lines, 1198 reactions, 100 polls, 397 scheduled messages, 34509 RSVPs, 1542 referee appointments, 2767 team sheets, 1091 results agreed on the sheets, 107 disputes (108 ruled on), 40 late results, 224 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -162,6 +173,7 @@ Over the run: 18 league notices, 108 club messages, 2156 chat lines, 1078 reacti
 | 7 | 2027-03-20 | 145 | 70523 | 68810 | 0 | event_reminder 47766, announcement 11205, message 9606, fee_overdue 603, team_sheet_due 290, match_day 289 |
 | 8 | 2027-03-27 | 145 | 68259 | 66712 | 0 | event_reminder 47716, announcement 11886, message 7433, team_sheet_due 290, match_day 289, fee_overdue 201 |
 | 9 | 2027-04-03 | 145 | 79317 | 77333 | 0 | event_reminder 47774, announcement 20720, message 7494, event_changed 1416, fee_overdue 603, team_sheet_due 290 |
+| 10 | 2027-04-10 | 141 | 68278 | 66469 | 0 | event_reminder 47406, announcement 12263, message 7604, team_sheet_due 283, match_day 282, referee_appointment 152 |
 
 ## The peak
 
@@ -198,8 +210,8 @@ The league's and the clubs' screens at that moment (Postgres execution time, med
 
 ## Bugs
 
-35 logged in `docs/BUGS.md`, 34 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
+36 logged in `docs/BUGS.md`, 34 marked fixed. The table there carries role, steps, expected, actual and where each was fixed.
 
 ## Needs Joey
 
-- Nothing from this run.
+- Stripe test mode: the app on :3300 does not verify events with the CLI listener's secret (.cache/rebuild-sim.sh exports it from `stripe listen --print-secret`); the Stripe scenarios were skipped.
