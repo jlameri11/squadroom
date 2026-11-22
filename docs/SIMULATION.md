@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 12:18 UTC · 14 rounds played · 41 PASS · 31 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 25 min so far
+Last run: 2026-11-22 12:19 UTC · 15 rounds played · 41 PASS · 32 FIXED · 0 FAIL · 0 not run · 35 bugs logged (34 fixed) · 25 min so far
 
 ## What this is
 
@@ -53,6 +53,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 | R3 | Late result, missing result, a correction after the game, a result entered offline and synced later | **PASS** | 9/9 | — | — |
 | R4 | Forfeit (coach → club → league), walkover, bye, abandoned with the score standing / replayed / awarded | **FIXED** | 11/11 | — | 0278: a forfeit is mirrored as a called-off game with its reason |
 | R5 | Points deduction, ladder ties (goal difference, goals for, head-to-head), hidden scores and no ladder for U9 | **FIXED** | 8/8 | — | 0278: competition_ladder returns nothing for a division whose ladder is off, except to the league |
+| R6 | Finals: eligibility (minimum games), semi-finals, a grand final, extra time and penalties recorded | **FIXED** | 2/2 | — | 0276: create_finals(p_top => 4, p_final_at), rule_on_score(p_pens_home, p_pens_away) |
 
 ### On-field issues
 
@@ -171,7 +172,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 28 league notices, 168 club messages, 3344 chat lines, 1672 reactions, 140 polls, 558 scheduled messages, 47777 RSVPs, 2121 referee appointments, 3813 team sheets, 1602 results agreed on the sheets, 130 disputes (131 ruled on), 54 late results, 326 cards.
+Over the run: 30 league notices, 180 club messages, 3584 chat lines, 1792 reactions, 150 polls, 598 scheduled messages, 51815 RSVPs, 2123 referee appointments, 4138 team sheets, 1746 results agreed on the sheets, 147 disputes (148 ruled on), 59 late results, 364 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -189,6 +190,7 @@ Over the run: 28 league notices, 168 club messages, 3344 chat lines, 1672 reacti
 | 12 | 2027-05-01 | 138 | 68009 | 66151 | 0 | event_reminder 46982, announcement 11581, message 7577, fee_overdue 603, team_sheet_due 275, match_day 274 |
 | 13 | 2027-05-08 | 138 | 75536 | 73804 | 0 | event_reminder 47084, announcement 20141, message 7342, team_sheet_due 275, match_day 274, referee_appointment 143 |
 | 14 | 2027-05-15 | 138 | 67958 | 66109 | 0 | event_reminder 46980, announcement 11581, message 7553, fee_overdue 603, team_sheet_due 275, match_day 274 |
+| 15 | 2027-05-22 | 170 | 60385 | 58290 | 0 | event_reminder 40836, announcement 11344, message 7826, match_day 315, discipline_suspension 30, referee_response 22 |
 
 ## The peak
 
