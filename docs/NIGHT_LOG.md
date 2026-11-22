@@ -110,6 +110,17 @@ which moved every ladder and run-sheet check off its first division — the old
 order (the entries', alphabetical) is back, with a division named before any
 club enters it listed after them.
 
+**Seed 6 ran to the end** (22 Nov; 40 pass · 31 fixed · 2 fail · 4 not run ·
+2 bugs in 27 minutes). Neither was the product's: the simulation server had
+been rebuilt during a network hiccup and come up without the CLI listener's
+webhook secret, so the Stripe group's signed probe said "Bad signature" and
+its four payment scenarios stood down (the rebuild script now retries the
+lookup and refuses to serve without it; the group is green again on its own);
+and the washout's catch-up step still counted two refusals it could not
+name — it now says what is left to the league and why (a person in two
+places, no room on the pitch that day, or something else, which alone is a
+failure) and keeps a one-in-ten guard. **Seed 7 is running.**
+
 - **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
   14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
   37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5
