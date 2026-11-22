@@ -1,6 +1,6 @@
 # SPL Season 4 — the simulation
 
-Last run: 2026-11-22 11:28 UTC · 19 rounds played · 43 PASS · 33 FIXED · 1 FAIL · 0 not run · 36 bugs logged (34 fixed) · 31 min so far
+Last run: 2026-11-22 11:29 UTC · 20 rounds played · 43 PASS · 33 FIXED · 1 FAIL · 0 not run · 36 bugs logged (34 fixed) · 32 min so far
 
 ## What this is
 
@@ -181,7 +181,7 @@ PASS: happened and behaved as expected. FIXED: failed in an earlier run, fixed (
 
 ## The load
 
-Over the run: 38 league notices, 228 club messages, 4064 chat lines, 2032 reactions, 170 polls, 758 scheduled messages, 58776 RSVPs, 2431 referee appointments, 4711 team sheets, 1982 results agreed on the sheets, 189 disputes (190 ruled on), 80 late results, 436 cards.
+Over the run: 40 league notices, 240 club messages, 4064 chat lines, 2032 reactions, 170 polls, 798 scheduled messages, 62269 RSVPs, 2581 referee appointments, 4988 team sheets, 2104 results agreed on the sheets, 205 disputes (206 ruled on), 86 late results, 463 cards.
 
 | Round | Date | Games | Notifications queued | Sent | Texts | By kind |
 |---|---|---|---|---|---|---|
@@ -204,6 +204,7 @@ Over the run: 38 league notices, 228 club messages, 4064 chat lines, 2032 reacti
 | 17 | 2027-06-05 | 4 | 52131 | 50742 | 0 | event_reminder 32228, announcement 12194, message 7695, match_correction_requested 6, referee_appointment 4, referee_response 4 |
 | 18 | 2028-02-05 | 144 | 54305 | 53062 | 0 | event_changed 22714, event_reminder 15376, announcement 12270, entry_fee_owed 1511, message 943, fee_overdue 603 |
 | 19 | 2028-02-12 | 144 | 29345 | 28586 | 0 | event_reminder 15484, announcement 12034, message 943, team_sheet_due 289, match_day 285, referee_appointment 152 |
+| 20 | 2028-02-19 | 144 | 30989 | 30215 | 0 | event_reminder 15484, announcement 11557, entry_fee_owed 1511, message 943, fee_overdue 603, team_sheet_due 289 |
 
 ## The peak
 
