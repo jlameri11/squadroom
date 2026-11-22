@@ -621,28 +621,39 @@ export async function round4(ctx, S, add) {
       const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: sameTimeOn(g), p_venue_label: null, p_field: null })
       if (r.ok) catchup++; else refused.push({ g, error: r.error })
     }
+    // What a refusal is: a person (player, coach or manager) on another game whenever this one
+    // could go, the pitch full for the day, or something else — the first two are the product's
+    // right answers (the league places those by hand), the third would be a bug.
+    const kindOf = (code, msg) => (/ is on /.test(msg ?? '') ? 'person' : (code === '23P01' || /booked|taken|overlap|no free slot|already a game|outside/i.test(msg ?? '')) ? 'pitch' : 'other')
+    const left = { person: 0, pitch: 0, other: 0 }
+    const sample = {}
     for (const { g, error } of refused) {
       let ok = false
+      let last = { code: null, error }
       for (const [start, to] of [['08:00', '12:00'], ['12:00', '17:30']]) {
         let from = start // moved later in the window after a clash (the loop's own binding is constant)
         for (let tries = 0; tries < 4 && !ok; tries++) {
           const slot = await freeSlot(pool, g.pitch_id, '2027-05-22', from, to, g.duration_mins ?? 60, g.id)
-          if (!slot) break
+          if (!slot) { last = { code: null, error: `no free slot on its pitch between ${from} and ${to}` }; break }
           const r = await rpc(pool, who.grounds, 'reschedule_fixture', { p_fixture: g.id, p_starts_at: slot, p_venue_label: null, p_field: null })
           if (r.ok) { ok = true; catchup++; later++ }
-          else if (r.code !== '23P01') break
-          else from = new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(new Date(slot).getTime() + 30 * 60_000))
+          else { last = { code: r.code, error: r.error }; if (r.code !== '23P01') break }
+          if (!ok && r.code === '23P01') from = new Intl.DateTimeFormat('en-GB', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(new Date(slot).getTime() + 30 * 60_000))
         }
         if (ok) break
       }
-      if (!ok) { const k = error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
+      if (!ok) {
+        // The first refusal says why the usual time was out; the last says why the day was.
+        const kind = kindOf(last.code, last.error) === 'other' ? kindOf(null, error) : kindOf(last.code, last.error)
+        left[kind]++
+        sample[kind] = sample[kind] ?? `${String(error).slice(0, 90)} → ${String(last.error).slice(0, 90)}`
+        const k = String(error).replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1
+      }
     }
     if (later) note(`${later} of the catch-up moves went to another time that day — a coach or manager was already on a game, or the pitch was taken, at the usual time`)
-    // A player in two squads (playing up, borrowed) who is on another game whenever this one could go: the
-    // product refuses the double booking, rightly — those are left for the league to place by hand.
-    const clashes = Object.entries(why).filter(([k]) => / is on /.test(k)).reduce((n, [, v]) => n + v, 0)
-    if (clashes) note(`${clashes} could not go to 22 May without a player in two places at once — left for the league to place by hand`)
-    check(catchup + clashes === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times (or later that day)`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
+    if (left.person + left.pitch + left.other) note(`left for the league to place by hand: ${left.person} with a person in two places, ${left.pitch} with no room on the pitch that day, ${left.other} other — ${JSON.stringify(sample)}`)
+    check(left.other === 0 && catchup + left.person + left.pitch === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times (or later that day)`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
+    check(left.person + left.pitch <= Math.ceil(rest.length / 10), { what: 'fewer than one in ten are left to the league to place by hand', expected: `≤ ${Math.ceil(rest.length / 10)}`, actual: `${left.person + left.pitch} left of ${rest.length}`, role: 'ground manager', where: 'reschedule_fixture (catch-up)', severity: 'medium' })
     backOn = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_back_on' and created_at >= $1`, [new Date(clock.now.getTime() - 60_000).toISOString()])
     check(backOn > 0, { what: 'families are told their game is back on, with the new day', expected: '>0', actual: backOn, role: 'parent', where: 'notify_event_change (event_back_on)' })
     ctx.catchupDate = '2027-05-22'
