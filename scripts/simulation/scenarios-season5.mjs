@@ -192,7 +192,10 @@ export async function season5Plan(ctx, add) {
                        and ((g.home_entry_id = f.home_entry_id and g.away_entry_id = f.away_entry_id) or (g.home_entry_id = f.away_entry_id and g.away_entry_id = f.home_entry_id)))
        order by f.starts_at desc limit 1`, [comp4]))[0]
     if (u9) {
-      const h9 = await rpc(pool, await guardianOf(pool, (await squad(pool, u9.home_team)).players[0]), 'head_to_head', { p_fixture: u9.id })
+      // A guardian of the home squad — whichever player has one (seed 5's first player had none); the league's manager failing that.
+      let g9 = null
+      for (const pl of (await squad(pool, u9.home_team)).players) { g9 = await guardianOf(pool, pl); if (g9) break }
+      const h9 = await rpc(pool, g9 ?? who.compManager, 'head_to_head', { p_fixture: u9.id })
       const all9 = h9.data?.meetings ?? []
       check(h9.ok && all9.length >= 1 && all9.every((m) => m.scores_hidden && m.home_score == null), { what: 'a MiniRoos head to head shows the meetings without scores', expected: 'played, no scores', actual: h9.ok ? `${all9.length} meetings, scores ${all9.some((m) => m.home_score != null) ? 'shown' : 'hidden'}` : h9.error, role: 'parent', where: 'head_to_head (scores_public)' })
     }

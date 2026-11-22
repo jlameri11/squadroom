@@ -121,7 +121,8 @@ async function clubOf(pool, academyId) {
 export async function round9(ctx, S, add) {
   const { pool } = ctx
   await disciplineWeek(ctx, 9, S, add)
-  add(`${plusDays(S, -6)} 18:10`, 'OFF7b the Easter Saturday round', async () => {
+  // Monday morning: round 8's switches come back on at 20:00 on the Sunday, and the clock never goes back.
+  add(`${plusDays(S, -5)} 07:30`, 'OFF7b the Easter Saturday round', async () => {
     scenario('OFF7b', 'Off-field issues', 'A public-holiday round (Easter Saturday)')
     const chan = await noticesChannel(pool)
     const n = await say(pool, who.compManager, chan, LEAGUE, 'Round 9 is on Easter Saturday as drawn. Grounds open as normal; Good Friday and Easter Monday have no games.', { audience: 'everyone', is_announcement: true })

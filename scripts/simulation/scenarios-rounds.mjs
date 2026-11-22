@@ -638,7 +638,11 @@ export async function round4(ctx, S, add) {
       if (!ok) { const k = error.replace(/[0-9:–]+/g, '#').slice(0, 80); why[k] = (why[k] ?? 0) + 1 }
     }
     if (later) note(`${later} of the catch-up moves went to another time that day — a coach or manager was already on a game, or the pitch was taken, at the usual time`)
-    check(catchup === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times (or later that day)`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
+    // A player in two squads (playing up, borrowed) who is on another game whenever this one could go: the
+    // product refuses the double booking, rightly — those are left for the league to place by hand.
+    const clashes = Object.entries(why).filter(([k]) => / is on /.test(k)).reduce((n, [, v]) => n + v, 0)
+    if (clashes) note(`${clashes} could not go to 22 May without a player in two places at once — left for the league to place by hand`)
+    check(catchup + clashes === rest.length, { what: `the other ${rest.length} games go to the catch-up round on 22 May at their own times (or later that day)`, expected: rest.length, actual: `${catchup} moved; refused: ${JSON.stringify(why)}`, role: 'ground manager', where: 'reschedule_fixture' })
     backOn = await val(pool, `select count(distinct profile_id)::int from public.notification_queue where kind = 'event_back_on' and created_at >= $1`, [new Date(clock.now.getTime() - 60_000).toISOString()])
     check(backOn > 0, { what: 'families are told their game is back on, with the new day', expected: '>0', actual: backOn, role: 'parent', where: 'notify_event_change (event_back_on)' })
     ctx.catchupDate = '2027-05-22'
@@ -747,15 +751,17 @@ export async function round6(ctx, S, add) {
     const rs = await squad(pool, g.home_team), ys = await squad(pool, h.home_team)
     ctx.discipline.redPlayer = rs.players[0]
     ctx.discipline.yellowPlayer = ys.players[0]
+    // The coaches' own sheets go in now, with the players the cards are for on them — before
+    // Saturday's early kick-offs lock theirs (seed 5 picked 9:15 and 10:30 games).
+    const s1 = await submitSheet(pool, g, 'home', { n: 12, extra: [ctx.discipline.redPlayer] })
+    const s2 = await submitSheet(pool, h, 'home', { n: 12, extra: [ctx.discipline.yellowPlayer] })
+    if (!s1.ok || !s2.ok) note(`discipline sheets: ${s1.error ?? ''} ${s2.error ?? ''}`)
   })
   add(`${S} 12:00`, 'OF1 a red card and the first yellow', async () => {
     scenario('OF1', 'On-field issues', 'Yellow cards accumulating to a suspension; a red card served across rounds; a blue card where the league uses it')
     const d = ctx.discipline
     if (!d) return
-    // The coaches' own sheets, with the players the cards are for on them.
-    const s1 = await submitSheet(pool, d.redGame, 'home', { n: 12, extra: [d.redPlayer] })
-    const s2 = await submitSheet(pool, d.yellowGame, 'home', { n: 12, extra: [d.yellowPlayer] })
-    if (!s1.ok || !s2.ok) note(`discipline sheets: ${s1.error ?? ''} ${s2.error ?? ''}`)
+    // The sheets went in on Friday (the picking step), before the lock.
     d.yellows = 0
     d.redAt = d.redGame.starts_at
     const g = await game(pool, d.redGame.id)

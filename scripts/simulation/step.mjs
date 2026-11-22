@@ -13,6 +13,8 @@
 //   --round  the round the plan is asked for (rounds plans take a round and its Saturday)
 //   --list   print the plan's steps and exit
 import pg from 'pg'
+import { val } from './lib.mjs'
+import { setCompetition } from './world.mjs'
 // Dry: bugs and results print, docs/BUGS.md and the results file are left alone.
 process.env.SIM_DRY ??= '1'
 const { clock, saveResults, scenarios } = await import('./lib.mjs')
@@ -57,6 +59,9 @@ if (plan === 'extra') {
   for (const st of await roundPlan(ctx, round, S)) steps.push(st)
 } else if (plan === 'season5') {
   const { season5Plan } = await import('./scenarios-season5.mjs')
+  // Alone, the Season 5 competition is whatever the database has (the season run sets it when it rolls over).
+  ctx.comp5 = ctx.comp5 ?? (await val(ctx.pool, `select id from public.competitions where season = '2028' order by created_at desc limit 1`))
+  if (ctx.comp5) setCompetition(ctx.comp5)
   await season5Plan(ctx, add)
 } else if (plan === 'league') {
   const { leagueSetup } = await import('./scenarios-extra.mjs')

@@ -336,5 +336,25 @@
   "expected": "Stripe Checkout on the league's account",
   "actual": "404 — the entry fee row was hidden from the money role (entry_fees_select knew staff, not the Treasurer) and the route took owner/admin only",
   "fixed": "0288: entry fees are readable by the club's money role; the entry-fee route accepts the Treasurer"
+ },
+ {
+  "scenario": "TP2",
+  "severity": "medium",
+  "role": "parent",
+  "where": "game page (device 2)",
+  "steps": "One person on two phones: both have the game page open; an answer is tapped on the first; the second is refreshed",
+  "expected": "The second phone shows the answer given on the first",
+  "actual": "The buttons kept the answer the second phone had cached — the page seeded them from the first paint and ignored the fresh data that followed",
+  "fixed": "event-detail.tsx: the answer buttons follow fresh data (content-keyed), an optimistic answer in flight left alone"
+ },
+ {
+  "scenario": "SC6",
+  "severity": "medium",
+  "role": "team manager",
+  "where": "/calendar (season5)",
+  "steps": "A squad's manager — a club role on the squad, no membership row — opens Fixtures in the new season",
+  "expected": "A 2027 chip: the squad's past season",
+  "actual": "No past season at all — my_seasons and season_fixtures asked for staff, a member or a parent",
+  "fixed": "0289: a club role on the squad (team manager, coordinator) counts like a membership in my_seasons and season_fixtures"
  }
 ]

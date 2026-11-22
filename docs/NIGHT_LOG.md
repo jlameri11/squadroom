@@ -82,6 +82,34 @@ CLI listener's (38) — by its shape the deployed endpoint's own — so
 `.cache/rebuild-sim.sh` gives the simulation server the listener's from
 `stripe listen --print-secret` and the file is not touched.
 
+**Seed 5 ran to the end** (19–22 Nov; 40 pass · 30 fixed · 7 fail · 12 bugs
+in 29 minutes, after a first attempt stopped at round 4 on a harness `const`
+in the washout catch-up loop). Of the twelve, two were the product's: **a tap
+made on one phone never showed on the other after a refresh** when the second
+phone had the game page cached — the page seeded its answer buttons from the
+cached first paint and ignored the fresh data that followed (fixed in
+`event-detail.tsx`: the buttons follow fresh data, content-keyed, an
+optimistic answer left alone); and **a squad's manager saw no past season on
+Fixtures** — `my_seasons`/`season_fixtures` (0279) asked "staff, member or a
+parent" and a team manager holds a club role on the squad, not a membership
+(**0289**, test-rls 244, **all 244 pass on dev**). The other ten were the
+harness's: the discipline sheets went in at Saturday noon after 9:15 and
+10:30 kick-offs had locked them (so no card could be recorded and no
+suspension followed — the sheets now go in on Friday with the picked players
+on them); ten catch-up moves refused because a player in two squads would be
+in two places at once (now counted as the product's right answer and left to
+the league); the Easter-round Home check ran on Sunday night, when "this
+weekend" is over (Monday morning now); the refund Home check assumed one
+refund in the club (relative now); the MiniRoos head-to-head check asked as
+a player with no guardian; the public game page's "Head to head" is an
+eyebrow the stylesheet sets in capitals (matched regardless of case); and
+the Season 5 plan could not run alone (the step runner finds the 2028
+competition). A screen check the first attempt flagged nineteen times was
+mine: 0287 had put a league's named divisions first on the competition page,
+which moved every ladder and run-sheet check off its first division — the old
+order (the entries', alphabetical) is back, with a division named before any
+club enters it listed after them.
+
 - **NEEDS JOEY (19 Nov):** say which endpoint `.env.local`'s
   STRIPE_WEBHOOK_SECRET belongs to (the deployed site's, by its shape); any
   local webhook test against `next dev` on :3000 with `stripe listen` needs

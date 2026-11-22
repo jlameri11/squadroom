@@ -468,6 +468,12 @@ async function refund(ctx) {
   const req = (await sql(pool, `select id, status::text, amount_cents, payment_id from public.refunds where registration_id = $1 order by requested_at desc limit 1`, [registrationId]))[0]
   check(Boolean(req) && req.status === 'requested', { what: 'a refund is requested for the Treasurer', expected: 'requested', actual: req ? `${req.status} ${req.amount_cents}` : 'no refunds row', role: 'treasurer', where: 'refunds' })
   if (!req) return
+  const toIssue = async () => {
+    const jobs = await rpc(pool, who.treasurer(2), 'home_jobs', { p_academy: ids.club(2), p_persona: 'treasurer' })
+    const detail = (jobs.data?.jobs ?? []).find((j) => j.id === 'refunds')?.detail ?? ''
+    return Number((/(\d+) to issue/.exec(detail) ?? [])[1] ?? 0)
+  }
+  const before = await toIssue()
   await withStack(ctx, 'PY3 the refund', async ({ db }) => {
     const asTreasurer = await apiAs(db, who.treasurer(2), '/api/payments/refund', { body: { refundId: req.id } })
     let issued = asTreasurer
@@ -485,9 +491,8 @@ async function refund(ctx) {
     const todo = await rpc(pool, who.treasurer(2), 'refunds_to_issue', { p_academy: ids.club(2) })
     const listed = (Array.isArray(todo.data) ? todo.data : []).find((r) => r.id === req.id || r.refund_id === req.id)
     check(todo.ok && listed?.status === 'issued', { what: 'and the Treasurer\'s list shows it issued, nothing left requested for it', expected: 'issued', actual: todo.ok ? (listed ? listed.status : `not in the list (${(todo.data ?? []).length} rows)`) : todo.error, role: 'treasurer', where: 'refunds_to_issue' })
-    const jobs = await rpc(pool, who.treasurer(2), 'home_jobs', { p_academy: ids.club(2), p_persona: 'treasurer' })
-    const detail = (jobs.data?.jobs ?? []).find((j) => j.id === 'refunds')?.detail ?? ''
-    check(!/[1-9]\d* to issue/.test(detail), { what: 'and their Home no longer says a refund is waiting', expected: 'no "to issue"', actual: detail || '(no refunds job)', role: 'treasurer', where: 'home_jobs' })
+    const after = await toIssue()
+    check(after === Math.max(0, before - 1), { what: 'and their Home counts one refund fewer to issue (others may be waiting)', expected: `${Math.max(0, before - 1)} to issue`, actual: `${after} to issue (was ${before})`, role: 'treasurer', where: 'home_jobs' })
     const again = await apiAs(db, who.president(2), '/api/payments/refund', { body: { refundId: req.id } })
     check(again.status === 409, { what: 'issuing it twice is refused', expected: 409, actual: again.status, role: 'president', where: 'POST /api/payments/refund' })
   })

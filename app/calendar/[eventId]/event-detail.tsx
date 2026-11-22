@@ -76,7 +76,20 @@ export function EventDetail({
   /** Our side, for the hero: the club, the squad, the crest. */
   us: { club: string; team: string | null; logo: string | null }
 }) {
+  // The family's answers as this phone last saw them paint first (use-screen's
+  // cache), and the fresh ones follow a moment later: when they do, the
+  // buttons follow too. Without this a tap made on another phone never showed
+  // after a refresh — the first paint won for good (the simulation's
+  // two-devices scenario, seed 5). Content-keyed, because the loader maps a new
+  // array every render; an optimistic answer in flight is left alone since the
+  // prop has not changed.
+  const mineKey = JSON.stringify(mine)
+  const [seenMine, setSeenMine] = useState(mineKey)
   const [answers, setAnswers] = useState(mine)
+  if (mineKey !== seenMine) {
+    setSeenMine(mineKey)
+    setAnswers(mine)
+  }
   const [busy, setBusy] = useState<string | null>(null)
   const [asking, setAsking] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

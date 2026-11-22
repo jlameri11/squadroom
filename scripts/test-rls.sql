@@ -2964,7 +2964,7 @@ begin
     g_parent boolean; g_wwcc boolean; w_officer boolean;
     l_rows int; l_seen int; l_parent int; adult_ok boolean; adult_bad boolean; stream_dup boolean;
     acc jsonb;
-    r178 text; r179 text; r180 text; r181 text; r182 text; r183 text; r242 text; r243 text;
+    r178 text; r179 text; r180 text; r181 text; r182 text; r183 text; r242 text; r243 text; r244 text;
   begin
     begin
       insert into public.staff_clearances (academy_id, profile_id, kind, number, outcome, expires_on, verified_by)
@@ -3041,6 +3041,27 @@ begin
         r243 := case when not w_r and ef_r = 0 then 'PASS' else 'FAIL (money '||w_r||', sees '||ef_r||')' end;
       end;
 
+      -- 244 (0289). A squad's manager who is no member of it (HEAD, a U8 parent,
+      -- made manager of the U12) sees the U12 in that season's fixtures.
+      declare
+        v_s text; v_before boolean; v_after boolean;
+      begin
+        select t.season into v_s from public.teams t where t.id = U12;
+        perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        v_before := exists (select 1 from jsonb_array_elements(coalesce(public.season_fixtures(ACAD_A, v_s)->'teams', '[]'::jsonb)) x where (x->>'id')::uuid = U12);
+        execute 'reset role';
+        -- The owner hands the role out (the claims were HEAD's for the read above).
+        perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+        perform public.grant_club_role(ACAD_A, HEAD, 'team_manager', 'team', null, null, U12);
+        perform set_config('request.jwt.claims', json_build_object('sub',HEAD,'role','authenticated')::text, true);
+        execute 'set local role authenticated';
+        v_after := exists (select 1 from jsonb_array_elements(coalesce(public.season_fixtures(ACAD_A, v_s)->'teams', '[]'::jsonb)) x where (x->>'id')::uuid = U12)
+                   and exists (select 1 from jsonb_array_elements(public.my_seasons(ACAD_A)) y where y->>'season' = v_s);
+        execute 'reset role';
+        r244 := case when not v_before and v_after then 'PASS' when v_before then 'PASS (already a member of the U12 — nothing to prove)' else 'FAIL (manager of the U12 does not see its season)' end;
+      end;
+
       -- 181. Scope: a coordinator of U8 runs the U8 squad, not the U12; the
       -- U12's manager runs the U12 (as a coach would) but may not write a
       -- player's development report.
@@ -3096,6 +3117,7 @@ begin
         r183 := coalesce(r183, 'FAIL (stopped: '||sqlerrm||')');
         r242 := coalesce(r242, 'FAIL (stopped: '||sqlerrm||')');
         r243 := coalesce(r243, 'FAIL (stopped: '||sqlerrm||')');
+        r244 := coalesce(r244, 'FAIL (stopped: '||sqlerrm||')');
       end if;
     end;
     execute 'reset role';
@@ -3107,6 +3129,7 @@ begin
     insert into rls_results values (183, 'streams are one per name per club; adult age groups are teams; an odd age group is refused', r183);
     insert into rls_results values (242, 'the Treasurer reads the club''s entry fees, as many as there are (0288)', r242);
     insert into rls_results values (243, 'the Registrar is not the money role and sees no entry fee (0288)', r243);
+    insert into rls_results values (244, 'a squad''s manager with no membership row sees its season and its fixtures (0289)', r244);
   end;
 
   -- 0237. One membership, many hats. Rolled back. Sam (PARENT) gains a
