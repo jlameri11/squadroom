@@ -110,6 +110,14 @@ which moved every ladder and run-sheet check off its first division — the old
 order (the entries', alphabetical) is back, with a division named before any
 club enters it listed after them.
 
+- **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
+  14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
+  37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5
+  `react-hooks/purity` (a `Date.now()` in render), 5 `no-html-link-for-pages`;
+  the rest of the count is the scripts folder (unused variables, mostly).
+  Neither the build nor the test runs lint, so nothing is blocked; it is a
+  decision: sweep the app files for the new rules (a day), or scope lint to
+  the app and keep the scripts out. Not touched by me.
 - **NEEDS JOEY (19 Nov):** say which endpoint `.env.local`'s
   STRIPE_WEBHOOK_SECRET belongs to (the deployed site's, by its shape); any
   local webhook test against `next dev` on :3000 with `stripe listen` needs
