@@ -121,8 +121,14 @@ try {
     try {
       await page.waitForSelector('[data-captain-request]', { timeout: 30000 })
       ok('the request reads "captain\'s team · 8 players · split the fee"')
+      // Accept needs a division picked; the captain's request may not name one.
+      await page.$$eval('li select', (sels) => {
+        for (const sel of sels) if (!sel.value && sel.options.length > 1) { sel.value = sel.options[1].value; sel.dispatchEvent(new Event('change', { bubbles: true })) }
+      }).catch(() => null)
       const accept = await page.waitForSelector('xpath/.//button[normalize-space()="Accept"]', { timeout: 15000 })
-      await accept.click()
+      // Centre it first: puppeteer's click scrolls a low element to the bottom edge of a
+      // 375px viewport — under the fixed tab bar — and taps the Team tab instead.
+      await accept.evaluate((el) => { el.scrollIntoView({ block: 'center' }); el.click() })
       await page.waitForSelector('[data-captain-team]', { timeout: 20000 })
       code = await page.$eval('[data-captain-team]', (el) => el.getAttribute('data-captain-team'))
       ;/^[A-Z2-9]{6}$/.test(code ?? '') ? ok(`accepted — the code ${code}, with a link to copy`) : bad(`code: ${code}`)

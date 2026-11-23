@@ -176,16 +176,23 @@ try {
 
   head('one-tap switch — the owner who also runs the league')
   {
-    const cookie = await cookieFor(OWNER)
+    // Since 16 Nov 2026 nobody in the demo is in two organisations (Joey owns
+    // NRIFA only; the organiser owns the SPL), so the switcher's state is made
+    // here: the organiser is given a throwaway academy for the length of this
+    // check — two-step-free, or it walls their every other session — and it
+    // goes at the end.
+    const { data: ROLENAV } = await admin.from('academies').insert({ name: 'ROLENAV Academy', slug: 'rolenav-academy', type: 'academy', two_step_required: false }).select('id').single()
+    if (ROLENAV) await admin.from('academy_members').insert({ academy_id: ROLENAV.id, profile_id: LEAGUE_OWNER, role: 'owner', status: 'active' })
+    const cookie = await cookieFor(LEAGUE_OWNER)
     const page = await browser.newPage()
     await page.setViewport({ width: 375, height: 812, deviceScaleFactor: 1 })
     await page.setCookie(cookie)
-    // Start at NRIFA. The script runs on every new document, so it is
-    // removed before the tap — otherwise it would put NRIFA back on reload
-    // and the test would be testing itself.
+    // Start at the throwaway academy. The script runs on every new document,
+    // so it is removed before the tap — otherwise it would put the academy
+    // back on reload and the test would be testing itself.
     const start = await page.evaluateOnNewDocument((org) => {
       try { localStorage.setItem('squadroom.org', org) } catch {}
-    }, NRIFA)
+    }, ROLENAV?.id ?? NRIFA)
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle2', timeout: 60000 })
     await page.waitForSelector(`[data-switch="${SPL}"]`, { timeout: 45000 }).catch(() => null)
     const chips = await page.$$eval('[data-switch]', (els) => els.map((e) => e.textContent.trim()))
@@ -196,9 +203,13 @@ try {
     const persona = await page.$eval('[data-persona]', (e) => e.getAttribute('data-persona')).catch(() => null)
     persona === 'league' ? ok('one tap, and Home is the league organiser\'s') : bad(`after the tap Home is ${persona}`)
     await page.close()
+    if (ROLENAV) { await admin.from('academy_members').delete().eq('academy_id', ROLENAV.id); await admin.from('academies').delete().eq('id', ROLENAV.id) }
   }
 } finally {
   await browser.close()
+  // Whatever happened above, no throwaway stays.
+  const { data: left } = await admin.from('academies').select('id').eq('slug', 'rolenav-academy')
+  for (const a of left ?? []) { await admin.from('academy_members').delete().eq('academy_id', a.id); await admin.from('academies').delete().eq('id', a.id) }
 }
 
 console.log(process.exitCode ? '\n\x1b[31mA ROLE CANNOT REACH ITS JOBS\x1b[0m\n' : '\n\x1b[32mall four reach their jobs in two taps\x1b[0m\n')
