@@ -1263,7 +1263,8 @@ begin
     select s.going, s.maybe, s.going + s.maybe + s.out_count + s.no_reply into v_going, v_maybe, v_total
       from public.event_rsvp_summary(v_ev114) s;
     begin
-      v_grid := public.availability_grid('00000000-0000-0000-0000-0000000d0008', 4, 0);
+      -- A wide window: other suites' events can sit before the probe's (22 Nov 2026: a full run left several).
+      v_grid := public.availability_grid('00000000-0000-0000-0000-0000000d0008', 50, 0);
     exception when others then
       v_grid := jsonb_build_object('refused', sqlerrm);
     end;
@@ -5494,6 +5495,23 @@ begin
   execute 'reset role';
   insert into rls_results values (238,'with Scheduled messages off, scheduling one is refused (0285)', case when b then 'PASS' else 'FAIL' end);
   insert into rls_results values (239,'a squad with players on it cannot be deleted (0285)', case when b2 then 'PASS' else 'FAIL' end);
+  -- 245 (0290). The service role — a script, an operator — may delete a squad with history; a person may not (239).
+  declare
+    v_t uuid; ok_svc boolean := false;
+  begin
+    insert into public.teams (academy_id, name, age_group, season) values (ACAD_A, 'RLS 245 squad', 'U10', '2099') returning id into v_t;
+    insert into public.team_members (academy_id, team_id, profile_id, role) values (ACAD_A, v_t, PARENT, 'parent');
+    perform set_config('request.jwt.claims', json_build_object('role','service_role')::text, true);
+    begin
+      delete from public.teams where id = v_t;
+      ok_svc := not exists (select 1 from public.teams where id = v_t);
+    exception when others then ok_svc := false;
+    end;
+    perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+    delete from public.team_members where team_id = v_t;
+    delete from public.teams where id = v_t;
+    insert into rls_results values (245,'the service role (a script) may delete a squad with members on it; a person still may not (0290)', case when ok_svc then 'PASS' else 'FAIL' end);
+  end;
 
   -- 236–237 (0284): the club's PlayFootball import is the registrations
   -- people's to read, not a parent's; a family claims their child only with

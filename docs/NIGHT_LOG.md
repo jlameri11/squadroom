@@ -148,6 +148,31 @@ it back for a look, `season.mjs --rebuild --seed N` plays it again. The full
 dev suite (`npm run test:all`) was started after the last season, with no
 simulation browsers running; its result is the next line.
 
+**The full dev suite after the campaign** (`npm run test:all`, 23 Nov; 178
+suites, 3,707 assertions, 45 not passing on the first run). Two causes, neither
+a regression in what families or clubs do. (1) **0285 had made a squad with
+history undeletable, for people** — right in the app, but 39 suites tidy up by
+deleting their throwaway squads with the service key and were each leaving one
+behind, which the demo guard then flagged for every suite after. **0290**: the
+service role (a script, an operator; no route in the app) may delete a squad;
+a person still may not (test-rls 245). (2) **The ownership fix of 16 Nov moved
+the SPL from Joey's account to the League organiser's**, and some twenty
+league suites still acted on the SPL as Joey, so every organiser action in
+them was refused. They now act as `organiser@squadroom-demo.test` — wholesale
+where every owner action was the league's, split where club-side actions stay
+NRIFA's (discipline, sheet rules, blue cards, match sheets) — and the
+organisations suite, whose premise was one person owning both, now founds a
+throwaway academy for the organiser and removes it (a new organisation asks
+its staff for two-step sign-in, so the throwaway is made two-step-free at
+once, or it walls the organiser's every other browser session — which is
+how two unrelated suites failed on "ORGTEST Academy — your six-digit code").
+Three suites had drifted from the product for other reasons: the circular
+suite expected the pre-PlayFootball-first refusal (an unconfirmed child is let
+in as pending now), draw-and-ops asserted a `draw_quality` shape three
+migrations old, and RLS check 114 wanted its probe event inside the grid's
+first four (fifty now). The league suites are green one by one; the full run
+is next, and its line follows here.
+
 - **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
   14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
   37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5

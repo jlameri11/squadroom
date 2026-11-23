@@ -23,6 +23,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
@@ -83,7 +84,7 @@ const { data: mc } = await admin.from('team_members').select('role').eq('team_id
 if (!mc) await admin.from('team_members').insert({ academy_id: NRIFA, team_id: U8, profile_id: MARCUS, role: 'coach' })
 
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -99,7 +100,7 @@ const nrifa8 = entries.find((e) => e.display_name === 'NRIFA U8')
 const visitor8 = entries.find((e) => e.display_name === `${TAG} U8`)
 await admin.from('competition_divisions').insert({ competition_id: comp.id, division: 'Tools', rank: 1, forfeit_score: 3, born_after: '2017-01-01', born_before: '2018-12-31' })
 
-const owner = await signInEmail(await emailOf(OWNER))
+const owner = await signInEmail(await emailOf(LEAGUE_OWNER)) // the league's owner
 const marcus = await signInEmail(await emailOf(MARCUS))
 const vera = await signInEmail(VISITOR_EMAIL)
 const parent = await signInEmail(await emailOf(PARENT))
@@ -157,7 +158,7 @@ head('3. L-25: a referee of the right grade takes an open game')
   error ? bad(`self-appoint: ${error.message}`) : ok('Rita takes it')
   const { data: ap } = await admin.from('referee_appointments').select('status, offered_by').eq('id', apId).single()
   ap?.status === 'accepted' && ap.offered_by === null ? ok('accepted at once, nobody offered it') : bad(JSON.stringify(ap))
-  const told = await pushes(OWNER, 'referee_response')
+  const told = await pushes(LEAGUE_OWNER, 'referee_response')
   told.some((t) => /took/.test(t.title)) ? ok(`the coordinator is told: "${told[told.length - 1].title}"`) : bad(JSON.stringify(told))
   const { error: again } = await rita.rpc('self_appoint', { p_fixture: open })
   again?.code === '23505' ? ok('a second taker is refused') : bad(again ? again.message : 'taken twice')
@@ -177,7 +178,7 @@ head('4. L-25: a club puts up its own referee inside the window')
   error ? bad(`allocate: ${error.message}`) : ok('Vera puts up Uncle Bob')
   const { data: ap } = await admin.from('referee_appointments').select('status, fee_cents, referees(full_name, allocated_by_club)').eq('id', apId).single()
   ap?.status === 'accepted' && ap.fee_cents === 0 && ap.referees?.allocated_by_club === club.id ? ok('accepted, unpaid by the league, marked as the club\'s') : bad(JSON.stringify(ap))
-  const told = await pushes(OWNER, 'referee_response')
+  const told = await pushes(LEAGUE_OWNER, 'referee_response')
   told.some((t) => /put up Uncle Bob/.test(t.title)) ? ok(`the coordinator is told: "${told[told.length - 1].title}"`) : bad(JSON.stringify(told))
   const { data: sheet } = await marcus.rpc('competition_run_sheet', { p_competition: comp.id, p_division: 'Tools' })
   sheet?.find((f) => f.fixture_id === near)?.referees === 'Uncle Bob' ? ok('and Uncle Bob is on the run sheet') : bad(JSON.stringify(sheet?.find((f) => f.fixture_id === near)))
@@ -204,7 +205,7 @@ head('6. L-27: the club nominates; the squad locks; the league sets the division
   error ? bad(`nominate: ${error.message}`) : ok('Vera nominates Division 2 with a comment')
   const { data: e } = await admin.from('competition_entries').select('proposed_division, nomination_note, squad_locked_at, division').eq('id', visitor8.id).single()
   e?.proposed_division === 'Division 2' && e.squad_locked_at && e.division === 'Tools' ? ok('proposed, locked, still in the drawn division until the league says') : bad(JSON.stringify(e))
-  const told = await pushes(OWNER, 'nomination')
+  const told = await pushes(LEAGUE_OWNER, 'nomination')
   told.some((t) => /nominated for Division 2/.test(t.title)) ? ok(`the league is told: "${told[told.length - 1].title}"`) : bad(JSON.stringify(told))
   const { data: newKid } = await admin.from('players').insert({ academy_id: club.id, team_id: vteam.id, full_name: `Visitor Late ${TAG}`, dob: '2018-07-01' }).select('id').single()
   const { error: locked } = await vera.rpc('seed_entry_squad', { p_entry: visitor8.id })

@@ -22,6 +22,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
@@ -90,7 +91,7 @@ const { data: mc } = await admin.from('team_members').select('role').eq('team_id
 if (!mc) await admin.from('team_members').insert({ academy_id: NRIFA, team_id: U8, profile_id: MARCUS, role: 'coach' })
 
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -104,7 +105,7 @@ const [nrifa8, visitor8] = entries
 await admin.from('competition_divisions').insert({ competition_id: comp.id, division: 'Chain', rank: 1, forfeit_score: 3, sheet_lock_mins: 30 })
 await admin.from('competition_discipline_rules').upsert({ competition_id: comp.id, yellows_per_suspension: 3, games_per_yellow_suspension: 1, games_per_red: 2 }, { onConflict: 'competition_id' })
 
-const owner = await signInEmail(await emailOf(OWNER))
+const owner = await signInEmail(await emailOf(LEAGUE_OWNER)) // the league's owner
 const marcus = await signInEmail(await emailOf(MARCUS))
 const vera = await signInEmail(VISITOR_EMAIL)
 const carl = await signInEmail(COACH_EMAIL)
@@ -183,7 +184,7 @@ head('2. L-22: a forfeit is asked for by the coach, approved by the club, decide
   c ? bad(`club approves: ${c.message}`) : ok('the club approves')
   const { data: r2 } = await admin.from('forfeit_requests').select('status').eq('id', req).single()
   r2?.status === 'club_approved' ? ok('now it waits for the league') : bad(`status ${r2?.status}`)
-  const l1 = await pushes(OWNER, 'forfeit_request')
+  const l1 = await pushes(LEAGUE_OWNER, 'forfeit_request')
   l1.some((p) => /ask to forfeit/.test(p.title)) ? ok(`the league is told: "${l1[l1.length - 1].title}"`) : bad(JSON.stringify(l1))
   const { data: ops } = await owner.rpc('match_day_ops', { p_competition: comp.id })
   ops?.forfeits?.some((f) => f.id === req && f.status === 'club_approved') ? ok('and sees it on the match-day list') : bad(JSON.stringify(ops?.forfeits))

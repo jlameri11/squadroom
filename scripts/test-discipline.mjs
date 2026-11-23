@@ -21,6 +21,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const TAG = 'DISCTEST'
@@ -53,7 +54,7 @@ const { data: vkids } = await admin.from('players').insert(
   Array.from({ length: 9 }, (_, i) => ({ academy_id: club.id, team_id: vteam.id, full_name: `Visitor ${i + 1} ${TAG}`, dob: '2018-01-01' }))
 ).select('id')
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -72,6 +73,7 @@ for (let r = 1; r <= 4; r++) {
 }
 
 const owner = await signInEmail(await emailOf(OWNER))
+const league = await signInEmail(await emailOf(LEAGUE_OWNER)) // the league's owner: the organiser's calls
 const vera = await signInEmail(VISITOR_EMAIL)
 const parent = await signInEmail(await emailOf(PARENT))
 if (!owner || !vera || !parent) {
@@ -103,11 +105,11 @@ head('1. The rules, by the organiser; a red on the sheet is a suspension')
 {
   const { error: pErr } = await parent.from('competition_discipline_rules').upsert({ competition_id: comp.id, games_per_red: 2 }, { onConflict: 'competition_id' })
   pErr ? ok('a parent cannot set the rules') : bad('a parent set discipline rules')
-  const { error } = await owner.from('competition_discipline_rules').upsert({ competition_id: comp.id, yellows_per_suspension: 3, games_per_yellow_suspension: 1, games_per_red: 2 }, { onConflict: 'competition_id' })
+  const { error } = await league.from('competition_discipline_rules').upsert({ competition_id: comp.id, yellows_per_suspension: 3, games_per_yellow_suspension: 1, games_per_red: 2 }, { onConflict: 'competition_id' })
   error ? bad(`rules: ${error.message}`) : ok('3 yellows → 1 game; a red → 2 games')
   const e = await submitBoth(fx[0], H.slice(0, 11), V)
   e ? bad(`round 1 sheets: ${e.message}`) : ok('round 1 sheets in')
-  const { error: red } = await owner.rpc('record_match_event', { p_fixture: fx[0], p_entry: home.id, p_kind: 'red', p_player: hot, p_minute: 70 })
+  const { error: red } = await league.rpc('record_match_event', { p_fixture: fx[0], p_entry: home.id, p_kind: 'red', p_player: hot, p_minute: 70 })
   red ? bad(`red card: ${red.message}`) : ok(`${hotName} sent off in the 70th`)
   const { data: s } = await admin.from('suspensions').select('reason, games, served, status').eq('player_id', hot).eq('competition_id', comp.id).maybeSingle()
   s?.reason === 'red card' && s?.games === 2 && s?.status === 'active' ? ok('a 2-game suspension, automatically') : bad(JSON.stringify(s))
@@ -144,18 +146,18 @@ head('4. Three yellows add up; the organiser overturns with a reason')
 {
   const booked = V[0]
   for (const [f, minute] of [[fx[0], 10], [fx[1], 20], [fx[3], 30]]) {
-    const { error } = await owner.rpc('record_match_event', { p_fixture: f, p_entry: away.id, p_kind: 'yellow', p_player: booked, p_minute: minute })
+    const { error } = await league.rpc('record_match_event', { p_fixture: f, p_entry: away.id, p_kind: 'yellow', p_player: booked, p_minute: minute })
     if (error) bad(`yellow at ${minute}: ${error.message}`)
   }
   const { data: s } = await admin.from('suspensions').select('id, reason, games, status').eq('player_id', booked).eq('competition_id', comp.id).maybeSingle()
   s?.reason === '3 yellow cards' && s?.games === 1 ? ok('the third yellow is a 1-game suspension') : bad(JSON.stringify(s))
-  const { error: noNote } = await owner.rpc('overturn_suspension', { p_suspension: s.id, p_note: '' })
+  const { error: noNote } = await league.rpc('overturn_suspension', { p_suspension: s.id, p_note: '' })
   noNote ? ok('overturning without a reason is refused') : bad('overturned with no reason')
   const { error: vErr } = await vera.rpc('overturn_suspension', { p_suspension: s.id, p_note: 'please' })
   vErr?.code === '42501' ? ok('the club cannot overturn its own player\'s') : bad('a club overturned a suspension')
   const { error: appeal } = await vera.rpc('note_appeal', { p_suspension: s.id, p_note: 'Second yellow was mistaken identity' })
   appeal ? bad(`appeal: ${appeal.message}`) : ok('but can note an appeal')
-  const { error: ov } = await owner.rpc('overturn_suspension', { p_suspension: s.id, p_note: 'Appeal upheld — referee confirms mistaken identity' })
+  const { error: ov } = await league.rpc('overturn_suspension', { p_suspension: s.id, p_note: 'Appeal upheld — referee confirms mistaken identity' })
   ov ? bad(`overturn: ${ov.message}`) : ok('the organiser overturns it')
   const { data: after } = await admin.from('suspensions').select('status, note, appeal_note').eq('id', s.id).single()
   after?.status === 'overturned' && /mistaken/.test(after?.appeal_note ?? '') && /upheld/.test(after?.note ?? '') ? ok('overturned, with both notes kept') : bad(JSON.stringify(after))
@@ -163,7 +165,7 @@ head('4. Three yellows add up; the organiser overturns with a reason')
 
 head('5. The organiser\'s own suspension, and the report')
 {
-  const { data: id, error } = await owner.rpc('add_suspension', { p_competition: comp.id, p_player: H[5], p_games: 3, p_reason: 'tribunal — abuse of a referee', p_note: 'Hearing 29 Oct' })
+  const { data: id, error } = await league.rpc('add_suspension', { p_competition: comp.id, p_player: H[5], p_games: 3, p_reason: 'tribunal — abuse of a referee', p_note: 'Hearing 29 Oct' })
   error ? bad(`add: ${error.message}`) : ok('a 3-game tribunal suspension')
   const { error: pErr } = await parent.rpc('add_suspension', { p_competition: comp.id, p_player: H[6], p_games: 1, p_reason: 'x' })
   pErr?.code === '42501' ? ok('a parent cannot') : bad('a parent suspended somebody')

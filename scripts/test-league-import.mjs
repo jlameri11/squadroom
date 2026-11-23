@@ -21,6 +21,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const TAG = 'LIMPORT'
 
@@ -33,13 +34,13 @@ async function cleanup() {
 }
 await cleanup()
 
-const owner = await signInEmail((await admin.auth.admin.getUserById(OWNER)).data.user.email)
+const owner = await signInEmail((await admin.auth.admin.getUserById(LEAGUE_OWNER)).data.user.email) // the league's owner
 const parent = await signInEmail((await admin.auth.admin.getUserById(PARENT)).data.user.email)
 if (!owner || !parent) {
   console.log("  could not sign in — the project's auth rate limit, not a failure")
   process.exit(2)
 }
-const { data: comp } = await admin.from('competitions').insert({ organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER }).select('id').single()
+const { data: comp } = await admin.from('competitions').insert({ organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER }).select('id').single()
 await admin.from('competition_clubs').insert({ competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() })
 
 const rows = [

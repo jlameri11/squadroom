@@ -22,7 +22,7 @@ const U8 = '00000000-0000-0000-0000-0000000d0008'
 const TAG = 'PITCHES'
 const sydneyDay = (d) => d.toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' })
 
-const owner = await signInClient(admin, 'joeylameri@outlook.com')         // owns NRIFA and the SPL
+const owner = await signInClient(admin, 'organiser@squadroom-demo.test')  // the League organiser owns the SPL (16 Nov 2026); Joey owns NRIFA only
 const parent = await signInClient(admin, 'p61400000011@squadroom.invalid') // U8 parent
 const ravens = await signInClient(admin, 'p61400000091@squadroom.invalid') // another club's owner
 if (!owner || !parent || !ravens) {

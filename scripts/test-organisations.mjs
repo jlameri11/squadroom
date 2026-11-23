@@ -58,23 +58,51 @@ async function sess(email) {
   }
 }
 
-// Joey owns NRIFA and Sydney Premier League; Sam is a parent at NRIFA only.
-const joey = await sess('joeylameri@outlook.com')
+// Since 16 Nov 2026 nobody in the demo owns two organisations (Joey owns
+// NRIFA only; the League organiser owns the SPL), so the state this suite is
+// about — one person, several organisations — is made here and removed at
+// the end: the organiser founds a throwaway academy and so sits in both the
+// league and an academy. Sam is a parent at NRIFA only.
+const org = await sess('organiser@squadroom-demo.test')
 const sam = await sess('p61400000011@squadroom.invalid')
+
+const TAG = 'ORGTEST'
+async function cleanup() {
+  const { data: olds } = await admin.from('academies').select('id').like('name', `${TAG}%`)
+  for (const a of olds ?? []) {
+    await admin.from('academy_members').delete().eq('academy_id', a.id)
+    const { error } = await admin.from('academies').delete().eq('id', a.id)
+    if (error) console.log(`  could not remove ${TAG} academy ${a.id}: ${error.message}`)
+  }
+  const { data: left } = await admin.from('academies').select('id').like('name', `${TAG}%`)
+  if ((left ?? []).length) { bad(`${(left ?? []).length} ${TAG} academies left behind`) }
+}
+await cleanup()
+process.on('uncaughtException', async (e) => { console.log(`  crashed: ${e.message}`); await cleanup(); process.exit(1) })
+process.on('unhandledRejection', async (e) => { console.log(`  crashed: ${e?.message ?? e}`); await cleanup(); process.exit(1) })
 
 // Guard, so a failure below is about 0080 and not about the fixture.
 const { data: mine } = await admin
   .from('academy_members')
-  .select('academy_id')
-  .eq('profile_id', joey.id)
+  .select('academy_id, role')
+  .eq('profile_id', org.id)
   .eq('status', 'active')
-if (!(mine ?? []).some((m) => m.academy_id === SPL)) {
-  bad('Joey does not own the league — run scripts/seed-league.mjs first')
+if (!(mine ?? []).some((m) => m.academy_id === SPL && m.role === 'owner')) {
+  bad('the organiser does not own the league — run scripts/demo-spl-ownership.mjs first')
   process.exit(1)
 }
+const { data: ACAD, error: foundErr } = await org.client.rpc('create_academy', { p_name: `${TAG} Academy`, p_type: 'academy' })
+if (foundErr || !ACAD) {
+  bad(`could not found the throwaway academy: ${foundErr?.message}`)
+  process.exit(1)
+}
+// A new organisation asks its staff for two-step sign-in (0231); the demo's do not, and a
+// throwaway must not put a wall in front of the organiser's other sessions while it exists.
+await admin.from('academies').update({ two_step_required: false }).eq('id', ACAD)
+
 
 head('1. my_organisations lists every organisation, with what you are in it')
-const { data: orgs, error: orgError } = await joey.client.rpc('my_organisations')
+const { data: orgs, error: orgError } = await org.client.rpc('my_organisations')
 if (orgError?.code === 'PGRST202') {
   bad('0080 is not applied — my_organisations does not exist yet')
   process.exit(1)
@@ -88,7 +116,7 @@ const league = orgs.find((o) => o.id === SPL)
 league?.type === 'league' && league?.role === 'owner'
   ? ok(`"${league.name}" — type ${league.type}, role ${league.role}`)
   : bad(`league row wrong: ${JSON.stringify(league)}`)
-orgs.find((o) => o.id === NRIFA)?.type === 'academy'
+orgs.find((o) => o.id === ACAD)?.type === 'academy'
   ? ok('and the academy, typed as one')
   : bad('the academy is missing or mistyped')
 
@@ -103,7 +131,7 @@ for (const [fn, args] of [
   ['fixtures_screen', { p_days: 60 }],
   ['nav_badges', {}],
 ]) {
-  const { data: asLeague, error } = await joey.client.rpc(fn, { ...args, p_academy: SPL })
+  const { data: asLeague, error } = await org.client.rpc(fn, { ...args, p_academy: SPL })
   if (error) {
     bad(`${fn}: ${error.message}`)
     continue
@@ -112,10 +140,10 @@ for (const [fn, args] of [
   served === SPL ? ok(`${fn} served the league`) : bad(`${fn} served ${served}, not the league`)
 }
 
-const { data: asAcademy } = await joey.client.rpc('home_screen', { p_academy: NRIFA })
-asAcademy?.academy?.id === NRIFA
+const { data: asAcademy } = await org.client.rpc('home_screen', { p_academy: ACAD })
+asAcademy?.academy?.id === ACAD
   ? ok('and the academy when asked for the academy')
-  : bad(`home_screen served ${asAcademy?.academy?.id} when asked for NRIFA`)
+  : bad(`home_screen served ${asAcademy?.academy?.id} when asked for the academy`)
 
 head('4. Asking for an organisation you are not in gives you your own')
 // The security assertion. A passed id is a preference, never a grant — so a
@@ -142,7 +170,7 @@ body.includes(RAVENS) || body.includes(ravens.name)
   : ok('and nothing of theirs is anywhere in the payload')
 
 head('5. A made-up id is harmless')
-const { data: nonsense, error: nonsenseError } = await joey.client.rpc('home_screen', {
+const { data: nonsense, error: nonsenseError } = await org.client.rpc('home_screen', {
   p_academy: '00000000-0000-0000-0000-00000000dead',
 })
 nonsenseError
@@ -152,7 +180,7 @@ nonsenseError
     : bad('returned nothing at all')
 
 head('6. nav_badges says how many organisations, so the switcher knows')
-const { data: joeyBadges } = await joey.client.rpc('nav_badges', { p_academy: SPL })
+const { data: joeyBadges } = await org.client.rpc('nav_badges', { p_academy: SPL })
 const { data: samBadges } = await sam.client.rpc('nav_badges', {})
 joeyBadges?.org_count >= 2 ? ok(`org_count ${joeyBadges.org_count} — switcher shown`) : bad(`org_count ${joeyBadges?.org_count}`)
 samBadges?.org_count === 1 ? ok('org_count 1 — switcher hidden') : bad(`org_count ${samBadges?.org_count} for a single-club parent`)
@@ -174,3 +202,5 @@ console.log(
     : '\n\x1b[32mORGANISATION RULES HOLD\x1b[0m\n'
 )
 process.exit(process.exitCode ?? 0)
+
+await cleanup()

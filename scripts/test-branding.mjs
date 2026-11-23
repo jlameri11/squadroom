@@ -106,6 +106,9 @@ const [joey, marcus, sam, priya] = [
   await signInBoth(admin, 'p61400000012@squadroom.invalid'),
 ]
 if (!joey || !marcus || !sam || !priya) { console.log("  could not sign in — the project's auth rate limit, not a failure"); process.exit(2) }
+// The League organiser owns the SPL (16 Nov 2026): switching to the league is theirs, not Joey's.
+const organiser = await signInBoth(admin, 'organiser@squadroom-demo.test')
+if (!organiser) { console.log("  could not sign in as the organiser — the project's auth rate limit, not a failure"); process.exit(2) }
 const as = (s) => s.client
 const { data: before } = await admin.from('academies').select('*').eq('id', NRIFA).single()
 const has0209 = Object.prototype.hasOwnProperty.call(before, 'secondary_colour')
@@ -232,7 +235,7 @@ try {
 
   // The organisation switch takes the colours with it.
   {
-    const { context, page } = await open(joey, SPL)
+    const { context, page } = await open(organiser, SPL)
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle2', timeout: 60000 })
     await clubSet(page)
     await page.waitForFunction((c) => getComputedStyle(document.documentElement).getPropertyValue('--bar').trim().toLowerCase() === c, { timeout: 15000 }, spl.primary_colour.toLowerCase()).catch(() => null)

@@ -74,24 +74,27 @@ head('1. The switch is per program, and the public form sees it')
   still.requires_official_rego ? ok('a parent cannot switch it off') : bad(`a parent switched it off (${error?.message ?? 'no error'})`)
 }
 
-head('2. The database refuses an approved registration for an unconfirmed child')
+head('2. An approved registration for an unconfirmed child is let in as PlayFootball pending (0284); the team sheet is the gate')
 let kid
 {
+  // PlayFootball first (Joey, 16 Nov 2026): the club no longer refuses the child — they are let in as
+  // "PlayFootball pending" and cannot be named on a sheet until the next import confirms them.
   const { data: p } = await admin.from('players').insert({ academy_id: NRIFA, full_name: `Unconfirmed Kid ${TAG}`, dob: '2017-03-03' }).select('id').single()
   kid = p.id
   const { error } = await admin.from('program_registrations').insert({ academy_id: NRIFA, program_id: strict.id, player_id: kid, status: 'approved', submitted_by: OWNER })
-  error?.code === '23514' ? ok(`refused: "${error.message}"`) : bad(`approved an unconfirmed child: ${error?.message ?? 'no error'}`)
+  error ? bad(`an unconfirmed child was refused: ${error.message}`) : ok('an unconfirmed child is let in')
+  const { data: after } = await admin.from('players').select('official_status').eq('id', kid).single()
+  after?.official_status === 'pending' ? ok('as PlayFootball pending') : bad(`official_status after approval: ${after?.official_status}`)
   const { error: campOk } = await admin.from('program_registrations').insert({ academy_id: NRIFA, program_id: loose.id, player_id: kid, status: 'approved', submitted_by: OWNER })
   campOk ? bad(`the camp refused too: ${campOk.message}`) : ok('the camp accepts the same child — no switch, no gate')
-  await admin.from('players').update({ official_status: 'registered' }).eq('id', kid)
-  const { error: now } = await admin.from('program_registrations').insert({ academy_id: NRIFA, program_id: strict.id, player_id: kid, status: 'approved', submitted_by: OWNER })
-  now ? bad(`still refused after registration: ${now.message}`) : ok('once registered in PlayFootball, the squad accepts them')
-  const { error: pending } = await admin.from('program_registrations').insert({ academy_id: NRIFA, program_id: strict.id, player_id: kid, status: 'pending', submitted_by: OWNER })
-  // A second row for the same program and player is a conflict, not a gate check — so use a fresh child.
+  // A child already registered in PlayFootball goes straight in, nothing pending.
+  const { data: p3 } = await admin.from('players').insert({ academy_id: NRIFA, full_name: `Registered Kid ${TAG}`, dob: '2017-05-05', official_status: 'registered' }).select('id').single()
+  const { error: now } = await admin.from('program_registrations').insert({ academy_id: NRIFA, program_id: strict.id, player_id: p3.id, status: 'approved', submitted_by: OWNER })
+  const { data: still } = await admin.from('players').select('official_status').eq('id', p3.id).single()
+  now ? bad(`a registered child was refused: ${now.message}`) : still?.official_status === 'registered' ? ok('a child registered in PlayFootball goes straight in, nothing pending') : bad(`a registered child became ${still?.official_status}`)
   const { data: p2 } = await admin.from('players').insert({ academy_id: NRIFA, full_name: `Pending Kid ${TAG}`, dob: '2017-04-04' }).select('id').single()
   const { error: pend2 } = await admin.from('program_registrations').insert({ academy_id: NRIFA, program_id: strict.id, player_id: p2.id, status: 'pending', submitted_by: OWNER })
-  pend2 ? bad(`a pending registration was refused: ${pend2.message}`) : ok('a pending registration is fine — the gate is on approval only')
-  void pending
+  pend2 ? bad(`a pending registration was refused: ${pend2.message}`) : ok('a pending registration is fine — nothing is decided until approval')
 }
 
 head('3. A family registers with their FFA number; the club confirms; the route accepts')

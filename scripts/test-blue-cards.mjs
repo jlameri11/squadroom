@@ -32,6 +32,7 @@ if (SHOTS) mkdirSync('.shots', { recursive: true })
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const TAG = 'BLUETEST'
 const VISITOR_EMAIL = 'bluetest-owner@squadroom.invalid'
@@ -62,7 +63,7 @@ const { data: vkids } = await admin.from('players').insert(
   Array.from({ length: 9 }, (_, i) => ({ academy_id: club.id, team_id: vteam.id, full_name: `Visitor ${i + 1} ${TAG}`, dob: '2018-01-01' }))
 ).select('id')
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -76,6 +77,7 @@ const [home, away] = entries
 const { data: fx } = await admin.from('fixtures').insert({ competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: home.id, away_entry_id: away.id, starts_at: new Date(Date.now() + 864e5).toISOString(), status: 'scheduled', stage: 'group' }).select('id').single()
 
 const owner = await signInClient(admin, await emailOf(OWNER))
+const league = await signInClient(admin, await emailOf(LEAGUE_OWNER)) // the league's owner: the organiser's calls
 const vera = await signInClient(admin, VISITOR_EMAIL)
 if (!owner || !vera) {
   console.log("  could not sign in — the project's auth rate limit, not a failure")
@@ -94,7 +96,7 @@ const binned = H[0]
 const { data: binnedRow } = await admin.from('players').select('full_name').eq('id', binned).single()
 
 // The owner's session, for the browser.
-const { data: ownerSession } = await owner.auth.getSession()
+const { data: ownerSession } = await league.auth.getSession() // the browser is the league's owner: the rules editor and the sheet are the organiser's screens
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
 async function open(path, scheme = 'light') {
   const context = await browser.createBrowserContext()
@@ -112,7 +114,7 @@ const kinds = (page) => page.$$eval('[data-event-kind] option', (os) => os.map((
 try {
   head('1. Not this league\'s: refused, and not on the sheet')
   {
-    const { error } = await owner.rpc('record_match_event', { p_fixture: fx.id, p_entry: home.id, p_kind: 'blue', p_player: binned, p_minute: 23 })
+    const { error } = await league.rpc('record_match_event', { p_fixture: fx.id, p_entry: home.id, p_kind: 'blue', p_player: binned, p_minute: 23 })
     error && /does not use blue cards/.test(error.message) ? ok(`a blue is refused: "${error.message}"`) : bad(`blue while off: ${error?.message ?? 'recorded'}`)
     const { page, context } = await open(`/competitions/${comp.id}/match/${fx.id}`)
     await page.waitForSelector('[data-event-kind]', { timeout: 30000 }).catch(() => {})
@@ -145,7 +147,7 @@ try {
 
   head('3. On the sheet: Blue with the minute, and "back 33\'"')
   {
-    const { error: noMinute } = await owner.rpc('record_match_event', { p_fixture: fx.id, p_entry: home.id, p_kind: 'blue', p_player: binned })
+    const { error: noMinute } = await league.rpc('record_match_event', { p_fixture: fx.id, p_entry: home.id, p_kind: 'blue', p_player: binned })
     noMinute && /needs the minute/.test(noMinute.message) ? ok('without a minute the database refuses') : bad(`blue without a minute: ${noMinute?.message ?? 'recorded'}`)
     const { page, context } = await open(`/competitions/${comp.id}/match/${fx.id}`)
     try {
@@ -168,7 +170,7 @@ try {
       bad(`the sheet: ${String(e.message).slice(0, 100)}`)
     }
     await context.close()
-    const { data: report } = await owner.rpc('discipline_report', { p_competition: comp.id })
+    const { data: report } = await league.rpc('discipline_report', { p_competition: comp.id })
     const row = (report?.players ?? []).find((p) => p.player_id === binned)
     row?.blues === 1 && report?.rules?.blue_cards === true ? ok('the report: one blue against them, the rule carried') : bad(`report: ${JSON.stringify(row)} rules ${JSON.stringify(report?.rules)}`)
     const { page: dark, context: c2 } = await open(`/competitions/${comp.id}/match/${fx.id}`, 'dark')
@@ -180,16 +182,16 @@ try {
 
   head('4. The organiser\'s switch off: gone from the sheet, refused again')
   {
-    const { error } = await owner.rpc('set_feature', { p_academy: SPL, p_feature: 'blue_cards', p_enabled: false })
+    const { error } = await league.rpc('set_feature', { p_academy: SPL, p_feature: 'blue_cards', p_enabled: false })
     error ? bad(`switch off: ${error.message}`) : ok('the SPL turns blue cards off in Settings → Features')
-    const { error: again } = await owner.rpc('record_match_event', { p_fixture: fx.id, p_entry: home.id, p_kind: 'blue', p_player: binned, p_minute: 40 })
+    const { error: again } = await league.rpc('record_match_event', { p_fixture: fx.id, p_entry: home.id, p_kind: 'blue', p_player: binned, p_minute: 40 })
     again && /does not use blue cards/.test(again.message) ? ok('a blue is refused again') : bad(`blue with the switch off: ${again?.message ?? 'recorded'}`)
     const { page, context } = await open(`/competitions/${comp.id}/match/${fx.id}`)
     await page.waitForSelector('[data-event-kind]', { timeout: 30000 }).catch(() => {})
     const ks = await kinds(page).catch(() => [])
     ks.length > 0 && !ks.includes('blue') ? ok('and Blue is gone from the sheet') : bad(`kinds with the switch off: ${JSON.stringify(ks)}`)
     await context.close()
-    await owner.rpc('set_feature', { p_academy: SPL, p_feature: 'blue_cards', p_enabled: true })
+    await league.rpc('set_feature', { p_academy: SPL, p_feature: 'blue_cards', p_enabled: true })
   }
 } catch (e) {
   bad(`threw: ${e.message}`)

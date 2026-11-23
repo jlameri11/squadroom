@@ -21,19 +21,21 @@ const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 
-const ownerS = await signInBoth(admin, 'joeylameri@outlook.com')   // owns NRIFA and the SPL
+const ownerS = await signInBoth(admin, 'joeylameri@outlook.com')   // owns NRIFA (only, since 16 Nov 2026)
+const leagueS = await signInBoth(admin, 'organiser@squadroom-demo.test') // owns the SPL
 const parent = await signInClient(admin, 'p61400000011@squadroom.invalid')
 const ravens = await signInClient(admin, 'p61400000091@squadroom.invalid')
-if (!ownerS || !parent || !ravens) {
+if (!ownerS || !leagueS || !parent || !ravens) {
   console.log("  could not sign in — the project's auth rate limit, not a failure")
   process.exit(2)
 }
 const owner = ownerS.client
+const league = leagueS?.client
 await admin.from('academy_sponsors').delete().like('name', 'TEST::%')
 await admin.from('events').delete().like('title', 'TEST:: sponsor%')
 
 head('1. The club keeps its list')
-const { data: s1, error: ie } = await owner.from('academy_sponsors').insert({ academy_id: SPL, name: 'TEST:: Ryde Physio', url: 'https://rydephysio.example', tagline: 'Keeping the SPL on its feet' }).select('id').single()
+const { data: s1, error: ie } = await league.from('academy_sponsors').insert({ academy_id: SPL, name: 'TEST:: Ryde Physio', url: 'https://rydephysio.example', tagline: 'Keeping the SPL on its feet' }).select('id').single()
 if (ie) { bad(`insert: ${ie.message}`); process.exit(1) }
 ok('the league owner adds a sponsor')
 const { data: s2 } = await owner.from('academy_sponsors').insert({ academy_id: NRIFA, name: 'TEST:: Café Nine', slots: ['cards'] }).select('id').single()
@@ -57,17 +59,17 @@ se ? bad(`public_sponsors: ${se.message}`) : strip.some((s) => s.name === 'TEST:
 !strip?.some((s) => s.name === 'TEST:: Café Nine') ? ok('a cards-only sponsor is not on the strip (and NRIFA is not the organiser anyway)') : bad('a cards-only sponsor leaked onto the strip')
 const { data: none } = await anon.rpc('public_sponsors', { p_slug: 'no-such-competition' })
 Array.isArray(none) && none.length === 0 ? ok('an unknown slug: an empty list, not an error') : bad(`unknown slug: ${JSON.stringify(none)}`)
-await owner.from('academy_sponsors').update({ active: false }).eq('id', s1.id)
+await league.from('academy_sponsors').update({ active: false }).eq('id', s1.id) // the SPL's sponsor: the league's to pause
 const { data: paused } = await anon.rpc('public_sponsors', { p_slug: comp.public_slug })
 !paused.some((s) => s.id === s1.id) ? ok('a paused sponsor disappears from the strip') : bad('a paused sponsor is still shown')
-await owner.from('academy_sponsors').update({ active: true }).eq('id', s1.id)
+await league.from('academy_sponsors').update({ active: true }).eq('id', s1.id)
 
 head('3. Views are counted by the server, not the browser')
 const BASE = await resolveBaseUrl()
 const seen = await fetch(`${BASE}/api/sponsor-seen`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slug: comp.public_slug }) })
 const seenBody = seen.ok ? await seen.json() : null
 seen.status === 200 && seenBody?.counted >= 1 ? ok(`the public page tells the server it showed the strip: ${seenBody.counted} sponsor(s) counted`) : bad(`seen: ${seen.status} ${JSON.stringify(seenBody)}`)
-const { data: views } = await owner.from('sponsor_impressions').select('views').eq('sponsor_id', s1.id)
+const { data: views } = await league.from('sponsor_impressions').select('views').eq('sponsor_id', s1.id)
 views?.[0]?.views >= 1 ? ok(`the league owner sees ${views[0].views} view(s) today`) : bad(`views: ${JSON.stringify(views)}`)
 const { error: ce } = await anon.rpc('count_sponsor_views', { p_slug: comp.public_slug })
 ce ? ok('a browser cannot call the counter itself') : bad('anon called count_sponsor_views')

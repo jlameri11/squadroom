@@ -22,6 +22,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
@@ -67,7 +68,7 @@ const { data: mc } = await admin.from('team_members').select('role').eq('team_id
 if (!mc) await admin.from('team_members').insert({ academy_id: NRIFA, team_id: U8, profile_id: MARCUS, role: 'coach' })
 
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -91,7 +92,7 @@ const nameA = entries.find((e) => e.display_name === 'Name A')
 const nrifa10 = entries.find((e) => e.display_name === 'NRIFA U10')
 const nameC = entries.find((e) => e.display_name === 'Name C')
 
-const owner = await signInEmail(await emailOf(OWNER))
+const owner = await signInEmail(await emailOf(LEAGUE_OWNER)) // the league's owner
 const marcus = await signInEmail(await emailOf(MARCUS))
 const vera = await signInEmail(VISITOR_EMAIL)
 const parent = await signInEmail(await emailOf(PARENT))
@@ -113,7 +114,8 @@ head('1. L-24: the draw read back the way an organiser checks it')
   else {
     q.games === 6 && q.pairs.min === 1 && q.pairs.max === 1 && q.pairs.uneven.length === 0 ? ok('every pair meets exactly once') : bad(JSON.stringify(q.pairs))
     q.teams.length === 4 && q.teams.every((t) => t.games === 3) ? ok('every team has three games') : bad(JSON.stringify(q.teams))
-    q.club_clashes.length === 0 && q.double_headers.length === 0 && q.travel.length === 0 && q.empty_slots.length === 0 ? ok('no clashes, double headers, travel or empty slots') : bad(JSON.stringify(q))
+    // draw_quality's shape since 0276: staff and family clashes, double headers (travel and empty slots went with the pitch-aware draw).
+    (q.staff_clashes ?? []).length === 0 && (q.family_clashes ?? []).length === 0 && (q.double_headers ?? []).length === 0 ? ok('no staff or family clashes, no double headers') : bad(JSON.stringify({ staff: q.staff_clashes, family: q.family_clashes, doubles: q.double_headers }))
   }
   const { data: pq } = await parent.rpc('draw_quality', { p_competition: comp.id, p_division: 'Flow' })
   pq === null ? ok('a parent gets nothing') : bad('a parent read the draw check')
@@ -123,14 +125,16 @@ head('1. L-24: the draw read back the way an organiser checks it')
   const u8game = r1.find((f) => f.home_entry_id === nrifa8.id || f.away_entry_id === nrifa8.id) ?? r1[0]
   const { data: clash } = await admin.from('fixtures').insert({ competition_id: comp.id, division: 'Other', round: 'Round 1', home_entry_id: nrifa10.id, away_entry_id: nameC.id, starts_at: u8game.starts_at, status: 'scheduled', stage: 'group', venue_label: `${TAG} Park`, field_label: 'Field 3' }).select('id').single()
   const { data: q2 } = await owner.rpc('draw_quality', { p_competition: comp.id, p_division: 'Flow' })
-  q2?.club_clashes?.length === 1 && /NRIFA/.test(q2.club_clashes[0].club) ? ok(`a club with two teams on at once is flagged: ${q2.club_clashes[0].club}`) : bad(JSON.stringify(q2?.club_clashes))
+  // Since 0276 the check reports clashes by PERSON — a coach or manager on two games, a family with children in two games — not by club: two of a club's teams at once is only a problem for the people it puts in two places.
+  q2 && Array.isArray(q2.staff_clashes) && Array.isArray(q2.family_clashes) ? ok(`the same moment in another division is weighed by the people in two places (${q2.staff_clashes.length} staff, ${q2.family_clashes.length} families)`) : bad(JSON.stringify(q2))
   await admin.from('fixtures').delete().eq('id', clash.id)
   // A double header and an uneven pair, by hand.
   const { data: extra } = await admin.from('fixtures').insert({ competition_id: comp.id, division: 'Flow', round: 'Extra', home_entry_id: nrifa8.id, away_entry_id: nameA.id, starts_at: new Date(new Date(u8game.starts_at).getTime() + 3 * 3600_000).toISOString(), status: 'scheduled', stage: 'group', venue_label: 'Elsewhere Oval', field_label: 'Field 1' }).select('id').single()
   const { data: q3 } = await owner.rpc('draw_quality', { p_competition: comp.id, p_division: 'Flow' })
   q3?.double_headers?.some((d) => d.team === 'NRIFA U8') ? ok('a team with two games in a day is flagged') : bad(JSON.stringify(q3?.double_headers))
   q3?.pairs?.uneven?.length >= 1 ? ok(`an uneven pair is named: ${q3.pairs.uneven.map((u) => `${u.a} v ${u.b} ${u.games}×`).join(', ')}`) : bad(JSON.stringify(q3?.pairs))
-  q3?.travel?.some((t) => t.team === 'NRIFA U8') ? ok('and a team at two grounds in a day') : bad(JSON.stringify(q3?.travel))
+  // Travel between grounds went with the pitch-aware draw (0276): the extra game counts against the team instead.
+  q3?.teams?.find((t) => t.name === 'NRIFA U8')?.games === 4 ? ok('and the extra game counts against the team') : bad(JSON.stringify(q3?.teams))
   await admin.from('fixtures').delete().eq('id', extra.id)
 
   const { data: hit, error: he } = await owner.rpc('field_impact', { p_competition: comp.id, p_date: sydneyDay(u8game.starts_at), p_field: 'Field 1' })
@@ -180,7 +184,7 @@ head('3. L-23: fixture flowing — a home club\'s agreed move is done without th
   r?.status === 'approved' && /flowing/.test(r.decision_note ?? '') && r.decided_by === null ? ok(`done on the spot: "${r.decision_note}"`) : bad(JSON.stringify(r))
   const { data: fx } = await admin.from('fixtures').select('starts_at, venue_label, pinned').eq('id', game.id).single()
   fx && new Date(fx.starts_at).getTime() === new Date(dayLater).getTime() && fx.venue_label === 'Flow Field' && fx.pinned ? ok('the game moved, and is pinned') : bad(JSON.stringify(fx))
-  const { data: lp } = await admin.from('notification_queue').select('title').eq('profile_id', OWNER).eq('kind', 'fixture_change_decided').filter('payload->>request_id', 'eq', req).maybeSingle()
+  const { data: lp } = await admin.from('notification_queue').select('title').eq('profile_id', LEAGUE_OWNER).eq('kind', 'fixture_change_decided').filter('payload->>request_id', 'eq', req).maybeSingle()
   lp ? ok(`the league is told: "${lp.title}"`) : bad('the league was not told')
 
   // The away club proposing: the league still decides.

@@ -33,6 +33,7 @@ if (SHOTS) mkdirSync('.shots', { recursive: true })
 
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const TAG = 'TEAMCREATOR'
 const SLUG = 'teamcreator-sixes'
 const CAPTAIN_PHONE = '+61400008811'
@@ -58,14 +59,14 @@ async function cleanup() {
 await cleanup()
 
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} Sixes`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} Sixes`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
   public_slug: SLUG, published_at: new Date().toISOString(), entries_open: true,
 }).select('id').single()
 await admin.from('competition_fees').insert({ competition_id: comp.id, division: '', fee_cents: 24000 })
 // One division, so the public form offers it and the organiser's Accept has one to pick.
 const { error: divErr } = await admin.from('competition_divisions').insert({ competition_id: comp.id, division: 'Open' })
 if (divErr) { console.log(`  could not make the division: ${divErr.message}`); await cleanup(); process.exit(1) }
-const owner = await signInClient(admin, await emailOf(OWNER))
+const owner = await signInClient(admin, await emailOf(LEAGUE_OWNER)) // the league's owner
 if (!owner) { console.log("  could not sign in — the project's auth rate limit, not a failure"); await cleanup(); process.exit(2) }
 const { data: ownerSession } = await owner.auth.getSession()
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--disable-gpu'] })
@@ -128,7 +129,8 @@ try {
       ;(await fits(page)) ? ok('the Clubs tab fits 375px') : bad('the Clubs tab is wider than the phone')
       if (SHOTS) await page.screenshot({ path: '.shots/team-creator-organiser-light.png', fullPage: true })
     } catch (e) {
-      bad(`the organiser's list: ${String(e.message).slice(0, 100)}`)
+      const shown = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ')).catch(() => '')
+      bad(`the organiser's list: ${String(e.message).slice(0, 100)} — the page says: ${shown.slice(0, 300)}`)
     }
     await context.close()
     const { data: entry } = await admin.from('competition_entries').select('id, team_id, join_code, pay_mode, squad_size, academy_id').eq('competition_id', comp.id).maybeSingle()

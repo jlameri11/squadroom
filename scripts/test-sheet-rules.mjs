@@ -25,6 +25,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
@@ -88,7 +89,7 @@ if (!mc) await admin.from('team_members').insert({ academy_id: NRIFA, team_id: U
 
 // ---- the competition, run by the SPL, two divisions ----
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -108,6 +109,7 @@ const [nrifa8, visitor8, nrifa10] = entries
 const marcus = await signInEmail(await emailOf(MARCUS))
 const vera = await signInEmail(VISITOR_EMAIL)
 const owner = await signInEmail(await emailOf(OWNER))
+const league = await signInEmail(await emailOf(LEAGUE_OWNER)) // the league's owner: the organiser's calls
 const parent = await signInEmail(await emailOf(PARENT))
 const ref = await signInEmail(REF_EMAIL)
 if (!marcus || !vera || !owner || !parent || !ref) {
@@ -118,12 +120,12 @@ if (!marcus || !vera || !owner || !parent || !ref) {
 
 head('1. The rules are per division: lock, finals games, borrowing cap')
 {
-  const { error } = await owner.from('competition_divisions').upsert([
+  const { error } = await league.from('competition_divisions').upsert([
     { competition_id: comp.id, division: 'U8 Test', rank: 1, squad_size_max: 12, allow_playing_up: true, sheet_lock_mins: 30, finals_min_games: 2, borrow_cap: null },
     { competition_id: comp.id, division: 'U10 Test', rank: 2, squad_size_max: null, allow_playing_up: true, sheet_lock_mins: 15, finals_min_games: null, borrow_cap: 1 },
   ], { onConflict: 'competition_id,division' })
   error ? bad(`rules: ${error.message}`) : ok('U8 locks at T-30 and needs 2 games for a final; U10 locks at T-15 and caps playing up at 1')
-  const { error: e2 } = await owner.from('competition_divisions').update({ sheet_lock_mins: 500 }).eq('competition_id', comp.id).eq('division', 'U8 Test')
+  const { error: e2 } = await league.from('competition_divisions').update({ sheet_lock_mins: 500 }).eq('competition_id', comp.id).eq('division', 'U8 Test')
   e2 ? ok('a lock of 500 minutes is refused') : bad('a silly lock was saved')
 }
 
@@ -141,14 +143,14 @@ const mkFixture = async (division, home, away, at, extra = {}) =>
   (await admin.from('fixtures').insert({ competition_id: comp.id, division, round: 'Round 1', home_entry_id: home, away_entry_id: away, starts_at: at, status: 'scheduled', stage: 'group', ...extra }).select('id').single()).data.id
 
 // A referee in the league's pool, appointed to the game that kicks off soon.
-const { data: refId, error: refErr } = await owner.rpc('add_referee', { p_competition: comp.id, p_full_name: `${TAG} Rita`, p_phone: '+61400000777', p_grade: 'Level 3', p_profile: REF })
+const { data: refId, error: refErr } = await league.rpc('add_referee', { p_competition: comp.id, p_full_name: `${TAG} Rita`, p_phone: '+61400000777', p_grade: 'Level 3', p_profile: REF })
 if (refErr) bad(`add_referee: ${refErr.message}`)
 
 head('2. L-17: the sheet locks thirty minutes before kick-off')
 const soon = await mkFixture('U8 Test', nrifa8.id, visitor8.id, mins(10))
 const later = await mkFixture('U8 Test', nrifa8.id, visitor8.id, mins(120))
 {
-  const { data: ap, error: apErr } = await owner.rpc('appoint_referee', { p_fixture: soon, p_referee: refId, p_role: 'referee' })
+  const { data: ap, error: apErr } = await league.rpc('appoint_referee', { p_fixture: soon, p_referee: refId, p_role: 'referee' })
   if (apErr) bad(`appoint: ${apErr.message}`)
   const { error: acc } = await ref.rpc('respond_appointment', { p_appointment: ap, p_accept: true })
   acc ? bad(`accept: ${acc.message}`) : ok('Rita is appointed to the game in ten minutes and has accepted')
@@ -159,7 +161,7 @@ const later = await mkFixture('U8 Test', nrifa8.id, visitor8.id, mins(120))
   error && /locked at .*30 minutes before kick-off/.test(error.message) ? ok(`Marcus is refused: "${error.message}"`) : bad(error ? error.message : 'a manager changed a locked sheet')
   const { error: r } = await ref.rpc('submit_match_sheet', { p_fixture: soon, p_entry: nrifa8.id, p_players: eleven })
   r ? bad(`the referee: ${r.message}`) : ok('the referee can put the sheet in after the lock')
-  const { error: o } = await owner.rpc('submit_match_sheet', { p_fixture: soon, p_entry: visitor8.id, p_players: vrows })
+  const { error: o } = await league.rpc('submit_match_sheet', { p_fixture: soon, p_entry: visitor8.id, p_players: vrows }) // the league changes a sheet after the lock
   o ? bad(`the league: ${o.message}`) : ok('and so can the league')
   const { data: log } = await admin.from('match_sheet_log').select('action, detail').eq('fixture_id', soon).eq('action', 'sheet_changed_after_lock')
   log?.length === 2 && log.every((l) => l.detail.after_lock && l.detail.by_official) ? ok('both are in the record as changed after the lock, by an official') : bad(JSON.stringify(log))
@@ -173,7 +175,7 @@ const later = await mkFixture('U8 Test', nrifa8.id, visitor8.id, mins(120))
 
 head('3. L-19: editable until ended; after that, corrections go to the league')
 {
-  const { data: ap2 } = await owner.rpc('appoint_referee', { p_fixture: later, p_referee: refId, p_role: 'referee' })
+  const { data: ap2 } = await league.rpc('appoint_referee', { p_fixture: later, p_referee: refId, p_role: 'referee' })
   await ref.rpc('respond_appointment', { p_appointment: ap2, p_accept: true })
   const { error: early } = await ref.rpc('end_match', { p_fixture: later })
   early && /not kicked off/.test(early.message) ? ok('a game that has not kicked off cannot be ended') : bad(early ? early.message : 'ended before kick-off')
@@ -199,17 +201,17 @@ head('3. L-19: editable until ended; after that, corrections go to the league')
   const { error: dup } = await marcus.rpc('request_match_correction', { p_fixture: later, p_kind: 'score', p_detail: 'again', p_home: 1, p_away: 0 })
   dup?.code === '23505' ? ok('a second open score correction is refused') : bad(dup ? dup.message : 'two open corrections')
   const { data: pushes } = await admin.from('notification_queue').select('profile_id, kind, url').eq('kind', 'match_correction_requested').filter('payload->>correction_id', 'eq', corr)
-  pushes?.some((p) => p.profile_id === OWNER) && pushes[0].url.endsWith(`/match/${later}`) ? ok('the league is pushed, straight to the match') : bad(JSON.stringify(pushes))
+  pushes?.some((p) => p.profile_id === LEAGUE_OWNER) && pushes[0].url.endsWith(`/match/${later}`) ? ok('the league is pushed, straight to the match') : bad(JSON.stringify(pushes))
   const { data: pc } = await parent.rpc('match_corrections_view', { p_competition: comp.id })
   const parentSees = pc ?? []
   parentSees.length === 0 ? ok('a parent sees no corrections') : bad('a parent read the corrections')
-  const { data: lc } = await owner.rpc('match_corrections_view', { p_competition: comp.id })
+  const { data: lc } = await league.rpc('match_corrections_view', { p_competition: comp.id })
   lc?.length === 1 && lc[0].status === 'open' && lc[0].home === 'NRIFA U8' ? ok('the league sees it open, with the game named') : bad(JSON.stringify(lc))
   const { data: vc } = await vera.rpc('match_corrections_view', { p_competition: comp.id })
   vc?.length === 1 ? ok('the other club in the game sees it too') : bad(`Vera sees ${vc?.length}`)
   const { error: pd } = await parent.rpc('decide_match_correction', { p_correction: corr, p_apply: true })
   pd?.code === '42501' ? ok('a parent cannot decide it') : bad('a parent decided a correction')
-  const { error: dd } = await owner.rpc('decide_match_correction', { p_correction: corr, p_apply: true, p_note: 'referee report agrees' })
+  const { error: dd } = await league.rpc('decide_match_correction', { p_correction: corr, p_apply: true, p_note: 'referee report agrees' })
   dd ? bad(`decide: ${dd.message}`) : ok('the league applies it')
   const { data: fx } = await admin.from('fixtures').select('status, home_score, away_score, ended_at').eq('id', later).single()
   fx?.status === 'final' && fx?.home_score === 1 && fx?.away_score === 0 && fx?.ended_at ? ok('the game is final 1–0 and still ended') : bad(JSON.stringify(fx))
@@ -220,12 +222,12 @@ head('3. L-19: editable until ended; after that, corrections go to the league')
   const wanted = ['match_ended', 'correction_requested', 'score_corrected', 'correction_applied']
   wanted.every((a) => acts.includes(a)) ? ok(`all of it is in the record: ${acts.join(', ')}`) : bad(acts.join(', '))
 
-  const { error: ro } = await owner.rpc('reopen_match', { p_fixture: later, p_note: 'a card was missed' })
+  const { error: ro } = await league.rpc('reopen_match', { p_fixture: later, p_note: 'a card was missed' })
   ro ? bad(`reopen: ${ro.message}`) : ok('the league reopens it, with a reason')
   const { data: ev2 } = await admin.from('fixtures').select('status').eq('id', later).single()
-  const { error: ce2 } = await owner.rpc('record_match_event', { p_fixture: later, p_entry: nrifa8.id, p_kind: 'yellow', p_player: u8ids[2], p_minute: 60 })
+  const { error: ce2 } = await league.rpc('record_match_event', { p_fixture: later, p_entry: nrifa8.id, p_kind: 'yellow', p_player: u8ids[2], p_minute: 60 })
   ce2 && ev2?.status === 'final' ? ok(`a final game stays closed to events even when reopened (${ce2.message.slice(0, 40)})`) : ce2 ? bad(`card after reopening: ${ce2.message}`) : ok('a missed card is recorded once reopened')
-  const { data: ended2, error: e2 } = await owner.rpc('end_match', { p_fixture: later })
+  const { data: ended2, error: e2 } = await league.rpc('end_match', { p_fixture: later })
   e2 ? bad(`end again: ${e2.message}`) : ok(`and ended again at ${new Date(ended2).toLocaleTimeString('en-AU')}`)
 }
 

@@ -24,6 +24,7 @@ const head = (m) => console.log(`\n${m}`)
 const RAVENS = '00000000-0000-0000-0000-0000000a0002'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const RAVENS_OWNER = '00000000-0000-0000-0000-0000000000c1'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const TAG = 'LENTRY'
@@ -38,7 +39,7 @@ async function cleanup() {
 }
 await cleanup()
 
-const owner = await signInEmail((await admin.auth.admin.getUserById(OWNER)).data.user.email)
+const owner = await signInEmail((await admin.auth.admin.getUserById(LEAGUE_OWNER)).data.user.email) // the league's owner
 const ravens = await signInEmail((await admin.auth.admin.getUserById(RAVENS_OWNER)).data.user.email)
 const parent = await signInEmail((await admin.auth.admin.getUserById(PARENT)).data.user.email)
 if (!owner || !ravens || !parent) {
@@ -47,7 +48,7 @@ if (!owner || !ravens || !parent) {
 }
 const BASE = await resolveBaseUrl({ quiet: true })
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} Cup`, type: 'tournament', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} Cup`, type: 'tournament', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
   public_slug: SLUG, published_at: new Date().toISOString(),
 }).select('id').single()
 await admin.from('competition_divisions').insert([{ competition_id: comp.id, division: 'U10', allow_playing_up: true }, { competition_id: comp.id, division: 'U12', allow_playing_up: true }])

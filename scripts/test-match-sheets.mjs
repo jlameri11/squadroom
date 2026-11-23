@@ -25,6 +25,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const U8 = '00000000-0000-0000-0000-0000000d0008'
@@ -90,7 +91,7 @@ if (!mc) {
 
 // ---- the competition, run by the SPL, two divisions ----
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -132,6 +133,7 @@ const f3 = await mkFixture('Round 3')
 const marcus = await signInEmail(await emailOf(MARCUS))
 const vera = await signInEmail(VISITOR_EMAIL)
 const owner = await signInEmail(await emailOf(OWNER))
+const league = await signInEmail(await emailOf(LEAGUE_OWNER)) // the league's owner: the organiser's calls
 const parent = await signInEmail(await emailOf(PARENT))
 if (!marcus || !vera || !owner || !parent) {
   console.log("  could not sign in — the project's auth rate limit, not a failure")
@@ -228,7 +230,7 @@ head('6. The scores disagree → disputed; nothing moves until the organiser rul
   pErr?.code === '42501' ? ok('a parent cannot rule') : bad('a parent ruled on a score')
   const { error: mErr } = await marcus.rpc('rule_on_score', { p_fixture: f2, p_home: 9, p_away: 0 })
   mErr?.code === '42501' ? ok('nor can a club manager') : bad('a manager ruled on a score')
-  const { error: oErr } = await owner.rpc('rule_on_score', { p_fixture: f2, p_home: 3, p_away: 4, p_note: 'Referee report says 3–4' })
+  const { error: oErr } = await league.rpc('rule_on_score', { p_fixture: f2, p_home: 3, p_away: 4, p_note: 'Referee report says 3–4' })
   oErr ? bad(`ruling: ${oErr.message}`) : ok('the organiser rules 3–4')
   const { data: after } = await admin.from('fixtures').select('status, home_score, away_score, score_disputed, notes').eq('id', f2).single()
   after?.status === 'final' && after?.away_score === 4 && !after?.score_disputed && /Referee/.test(after?.notes ?? '') ? ok('final 3–4, dispute cleared, reason kept') : bad(JSON.stringify(after))

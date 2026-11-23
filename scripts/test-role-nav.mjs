@@ -29,7 +29,8 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const RAVENS = '00000000-0000-0000-0000-0000000a0002'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
-const OWNER = '00000000-0000-0000-0000-0000000000a1'   // owns NRIFA and the SPL
+const OWNER = '00000000-0000-0000-0000-0000000000a1'   // owns NRIFA (and, since 16 Nov 2026, NRIFA only)
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test owns the SPL
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'  // U8 coach
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const RAVENS_OWNER = '00000000-0000-0000-0000-0000000000c1'
@@ -69,7 +70,7 @@ const ROLES = [
     hidden: [],
   },
   {
-    persona: 'league', profile: OWNER, org: SPL, heading: 'Run the league',
+    persona: 'league', profile: LEAGUE_OWNER, org: SPL, heading: 'Run the league',
     jobs: {
       draw: { landing: /^\/competitions\/[^/]+\?tab=run/, control: { text: /run sheet/i }, second: 'the run sheet with its call-off and postpone controls' },
       referees: { landing: /^\/competitions\/[^/]+\?tab=referees/, control: { text: /referee|appoint|pool/i }, second: 'the appointments' },

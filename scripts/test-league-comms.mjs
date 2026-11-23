@@ -22,6 +22,7 @@ const head = (m) => console.log(`\n${m}`)
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const MARCUS = '00000000-0000-0000-0000-0000000000a2'
 const PARENT = '00000000-0000-0000-0000-0000000000b1'
 const TAG = 'COMMSTEST'
@@ -34,7 +35,7 @@ async function signIn(profileId) {
   const { data } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: 'email' })
   return data?.session ? client : null
 }
-const owner = await signIn(OWNER)
+const owner = await signIn(LEAGUE_OWNER) // the league's owner
 const marcus = await signIn(MARCUS)
 const parent = await signIn(PARENT)
 if (!owner || !marcus || !parent) {
@@ -50,7 +51,7 @@ async function cleanup() {
 await cleanup()
 
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} League`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert({ competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() })
 // NRIFA's U8 entered, so Sam is a family IN the competition — the hard case.

@@ -32,6 +32,7 @@ if (SHOTS) mkdirSync('.shots', { recursive: true })
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const SPL = '00000000-0000-0000-0000-0000000a0003'
 const OWNER = '00000000-0000-0000-0000-0000000000a1'
+const LEAGUE_OWNER = '3ec941d6-6d58-456e-99c6-b7898c0dfc10' // organiser@squadroom-demo.test — owns the SPL since the ownership fix of 16 Nov 2026 (docs/DEMO.md)
 const U8 = '00000000-0000-0000-0000-0000000d0008'
 const OUTSIDER = '00000000-0000-0000-0000-0000000000c2' // another club's member
 const TAG = 'LADDERTEST'
@@ -57,7 +58,7 @@ await admin.from('profiles').upsert({ id: VISITOR, full_name: 'Val Visitor' })
 const { data: club } = await admin.from('academies').insert({ two_step_required: false, name: `${TAG} FC`, slug: 'laddertest-fc', type: 'academy', primary_colour: '#333333' }).select('id').single()
 await admin.from('academy_members').insert({ academy_id: club.id, profile_id: VISITOR, role: 'owner', status: 'active' })
 const { data: comp } = await admin.from('competitions').insert({
-  organiser_id: SPL, name: `${TAG} Cup`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: OWNER,
+  organiser_id: SPL, name: `${TAG} Cup`, type: 'season', season: '2026', status: 'active', mode: 'managed', visibility: 'participants', created_by: LEAGUE_OWNER,
 }).select('id').single()
 await admin.from('competition_clubs').insert([
   { competition_id: comp.id, academy_id: NRIFA, status: 'active', joined_at: new Date().toISOString() },
@@ -73,9 +74,9 @@ await admin.from('fixtures').insert([
   { competition_id: comp.id, division: 'U8', round: 'Round 1', home_entry_id: home.id, away_entry_id: away.id, starts_at: ago(14), status: 'final', stage: 'group', home_score: 3, away_score: 1 },
   { competition_id: comp.id, division: 'U8', round: 'Round 2', home_entry_id: away.id, away_entry_id: home.id, starts_at: ago(7), status: 'forfeit', stage: 'group', home_score: 3, away_score: 0 },
 ])
-await admin.from('ladder_adjustments').insert({ competition_id: comp.id, division: 'U8', entry_id: home.id, points: -3, reason: `${TAG}: an ineligible player in Round 1`, made_by: OWNER })
+await admin.from('ladder_adjustments').insert({ competition_id: comp.id, division: 'U8', entry_id: home.id, points: -3, reason: `${TAG}: an ineligible player in Round 1`, made_by: LEAGUE_OWNER })
 
-const owner = await signInClient(admin, await emailOf(OWNER))
+const owner = await signInClient(admin, await emailOf(LEAGUE_OWNER)) // the league's owner
 const vera = await signInClient(admin, VISITOR_EMAIL)
 const outsider = await signInClient(admin, await emailOf(OUTSIDER))
 if (!owner || !vera || !outsider) {
