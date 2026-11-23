@@ -356,5 +356,15 @@
   "expected": "A 2027 chip: the squad's past season",
   "actual": "No past season at all — my_seasons and season_fixtures asked for staff, a member or a parent",
   "fixed": "0289: a club role on the squad (team manager, coordinator) counts like a membership in my_seasons and season_fixtures"
+ },
+ {
+  "scenario": "FS6",
+  "severity": "high",
+  "role": "parent (new)",
+  "where": "/api/account",
+  "steps": "FS6 a new family makes an account — on a re-run of the step against a database that already had that family",
+  "expected": "a session",
+  "actual": "\"This email already has an account\" — the step derived the address from the date and seed alone",
+  "fixed": "harness: the family's address and mobile come from a random index each run; a season never saw it"
  }
 ]

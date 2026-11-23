@@ -131,6 +131,23 @@ design. The files scenarios now act as a plain parent: no staff seat, no club
 role. Two full seasons in a row (6 and 7) have found nothing new in the
 product; **seed 8 is the confirming run.**
 
+**Seed 8 ran clean — the simulation campaign is closed** (22 Nov, 12:26 UTC;
+**44 pass · 33 fixed · 0 fail · 0 not run · 0 bugs** in 33 minutes). Six full
+seasons since the 16 Nov groups were added (seeds 3–8, two seasons each,
+20 rounds, the finals, the rollover, Season 5's first three rounds, the real
+app opened in a browser at six moments as nine people, 200 families joining,
+files through storage, Stripe test mode, a brand-new league set up in a
+modelled 16 minutes): the ledger holds 35 rows, every one fixed or shown to be
+the harness's; the last two seasons found nothing new in the product and the
+last found nothing at all. `docs/SIMULATION.md` is seed 8's report. Nothing
+simulated was ever on dev — the only row on dev that answers to the
+simulation's names is the stray "spl season 4" of 16 Nov, created by no
+account (above). The simulated league lives in the local embedded Postgres
+(`.local-db/`, gitignored), stopped now; `scripts/local-db/serve.mjs` brings
+it back for a look, `season.mjs --rebuild --seed N` plays it again. The full
+dev suite (`npm run test:all`) was started after the last season, with no
+simulation browsers running; its result is the next line.
+
 - **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
   14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
   37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5
