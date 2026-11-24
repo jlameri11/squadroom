@@ -105,7 +105,7 @@ assigning a squad leaves a family approved and still seeing nothing.
 
 ### 7. Run a competition — **Competitions**
 - **Spring Gala Day** — 45 games, 6 fields, one day, live ladders in three divisions.
-- **SPL Season 3** — 90 games, 10 Sunday rounds, three divisions, mid-season.
+- **SPL Season 4** — 90 games, 10 Sunday rounds from 29 Nov 2026, three divisions (U8s, U10s, U12s Championship), the same eighteen teams, published at `/c/spl-season-4`. Season 3 finished on 20 Nov and stays readable as last season (the season switcher, Fixtures' past seasons, head to head). `scripts/demo-spl-season-4.mjs` made it from Season 3 as the organiser would, and is safe to run again.
 - **U7s Come & Try** — six teams, **no draw yet**. Open it and press *Build the
   draw*. Choose **One day** or **A round a week**.
 

@@ -193,12 +193,10 @@ is next, and its line follows here.
   Neither the build nor the test runs lint, so nothing is blocked; it is a
   decision: sweep the app files for the new rules (a day), or scope lint to
   the app and keep the scripts out. Not touched by me.
-- **NEEDS JOEY (19 Nov):** say which endpoint `.env.local`'s
-  STRIPE_WEBHOOK_SECRET belongs to (the deployed site's, by its shape); any
-  local webhook test against `next dev` on :3000 with `stripe listen` needs
-  the CLI's secret exported for that server, or every event is "Bad
-  signature". Setting payments up (`/api/payments/connect`) stays owner/admin
-  only — say if the Treasurer should do that too.
+- **Decided (Joey, 24 Nov):** `.env.local`'s STRIPE_WEBHOOK_SECRET is the
+  deployed site's; the Stripe CLI's secret is for local tests only, given to
+  the server under test through its environment (CLAUDE.md). Setting
+  payments up (`/api/payments/connect`) stays owner/admin only.
 - **NEEDS JOEY (18 Nov):** `next build` says this Next.js version "is affected
   by a known security vulnerability" and asks for `next upgrade
   --agent=security`; it is a dependency change, so it is yours to say — the

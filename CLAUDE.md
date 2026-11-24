@@ -585,10 +585,12 @@ one and is meant to reach hundreds of academies.
     - Stripe Checkout now draws its whole form inside its own frame with its
       own field ids (`#payment-numberInput` …); the driver there is current,
       `test-stripe-e2e.mjs`'s `#cardNumber` selectors are not.
-    - `.env.local`'s STRIPE_WEBHOOK_SECRET is the deployed endpoint's, not the
-      CLI listener's: a local server tested with `stripe listen` must be
-      given the listener's secret through its environment (the rebuild
-      script for :3300 does); never edit the file for it.
+    - `.env.local`'s STRIPE_WEBHOOK_SECRET is the deployed site's endpoint
+      secret (Joey, 24 Nov 2026) — it is what `deploy.mjs --sync-env` gives
+      Netlify. Local webhook tests use the Stripe CLI's secret and only that:
+      give the server under test `STRIPE_WEBHOOK_SECRET=$(stripe listen
+      --print-secret)` in its environment (the simulation's rebuild script
+      does); never put the CLI's secret in the file.
     - The Treasurer (the money role, 0236) issues refunds and pays entry fees
       since 0288 — a route that checks `academy_members.role` alone shuts out
       the club roles; ask `i_may_run_club(academy, area)` as the policies do.
