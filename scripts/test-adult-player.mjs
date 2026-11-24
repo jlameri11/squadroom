@@ -57,6 +57,9 @@ let adultProfile = null
 let programId = null
 let feeId = null
 async function tidy() {
+  // An earlier run's squad and game, by name — their ids are gone with that process (0290 lets the service role delete a squad with history).
+  await admin.from('events').delete().eq('academy_id', NRIFA).like('title', 'TEST:: adult player%')
+  await admin.from('teams').delete().eq('academy_id', NRIFA).like('name', 'TEST:: adult player%')
   if (adultProfile) {
     await admin.from('players').delete().eq('profile_id', adultProfile)
     await admin.auth.admin.deleteUser(adultProfile).catch(() => null)

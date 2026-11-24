@@ -73,8 +73,10 @@ const T = { u8red: team['U8 Red'], u10blue: team['U10 Blue'], u12red: team['U12 
 T.u10other = (teamRows ?? []).find((t) => t.age_group === 'U10' && t.name !== 'U10 Blue')?.id
 T.u12other = (teamRows ?? []).find((t) => t.age_group === 'U12' && t.name !== 'U12 Red')?.id
 T.u9 = (teamRows ?? []).find((t) => t.age_group === 'U9')?.id
-const lastGame = async (teamId) => (await admin.from('events').select('id, our_score, their_score').eq('team_id', teamId).eq('type', 'match').lt('starts_at', new Date().toISOString()).order('starts_at', { ascending: false }).limit(1).maybeSingle()).data
-const G = { u8: await lastGame(T.u8red), u13: await lastGame(T.u13black), u10: await lastGame(T.u10blue) }
+// The last played game — and, when asked, the last one with a stored result (the seed only scores some of them).
+const lastGame = async (teamId, scored = false) => { let q = admin.from('events').select('id, our_score, their_score').eq('team_id', teamId).eq('type', 'match').lt('starts_at', new Date().toISOString()); if (scored) q = q.not('our_score', 'is', null); return (await q.order('starts_at', { ascending: false }).limit(1).maybeSingle()).data }
+// Only the U13 game is read for a stored result; the U10 game is an event to act on.
+const G = { u8: await lastGame(T.u8red), u13: await lastGame(T.u13black, true), u10: await lastGame(T.u10blue) }
 const { data: amara } = await admin.from('players').select('id').eq('academy_id', IW).eq('team_id', T.u8red).eq('full_name', 'Amara Okoro').maybeSingle()
 const { data: u10kid } = await admin.from('players').select('id').eq('academy_id', IW).eq('team_id', T.u10blue).limit(1).maybeSingle()
 const { data: u12otherKid } = await admin.from('players').select('id, preferred_name').eq('academy_id', IW).eq('team_id', T.u12other).limit(1).maybeSingle()

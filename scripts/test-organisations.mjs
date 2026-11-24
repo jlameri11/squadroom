@@ -201,6 +201,6 @@ console.log(
     ? '\n\x1b[31mORGANISATION RULES BROKEN\x1b[0m\n'
     : '\n\x1b[32mORGANISATION RULES HOLD\x1b[0m\n'
 )
-process.exit(process.exitCode ?? 0)
-
+// The throwaway goes before the process does.
 await cleanup()
+process.exit(process.exitCode ?? 0)

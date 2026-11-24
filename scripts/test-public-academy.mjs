@@ -41,11 +41,15 @@ const { data: form } = await anon.rpc('public_programs', { p_slug: 'nrifa' })
 JSON.stringify(door?.programs) === JSON.stringify(form?.programs)
   ? ok('same programs, same order, same words — one function, not two')
   : bad('the front door and the form describe the programs differently')
+// Open, and open NOW: a program past its closing day (or before its opening day) is not on the door.
+const today = new Date().toISOString()
 const { count: open } = await admin
   .from('programs')
   .select('*', { count: 'exact', head: true })
   .eq('academy_id', NRIFA)
   .eq('status', 'open')
+  .or(`closes_at.is.null,closes_at.gt.${today}`)
+  .or(`opens_at.is.null,opens_at.lte.${today}`)
 door?.programs.length === open
   ? ok(`and only OPEN programs: ${open}`)
   : bad(`${door?.programs.length} listed, ${open} open — a draft is showing`)

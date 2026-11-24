@@ -130,19 +130,23 @@ let reqId
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
     body: JSON.stringify({ requestId: reqId, decision: 'approve' }),
   })
-  const blocked = await approve(cookieFor(owner.session))
-  const body = await blocked.json().catch(() => ({}))
-  blocked.status === 409 && /PlayFootball/.test(body.error ?? '') ? ok(`Accept is refused: "${body.error}"`) : bad(`approve before confirm: ${blocked.status} ${JSON.stringify(body)}`)
+  // PlayFootball first (0284): Accept is not refused — the child is let in as PlayFootball pending,
+  // and the team sheet is the gate until the club's next import (or the club's tick) confirms them.
+  const first = await approve(cookieFor(owner.session))
+  const body = await first.json().catch(() => ({}))
+  first.ok ? ok('Accept lets the child in') : bad(`approve before confirm: ${first.status} ${JSON.stringify(body)}`)
+  const { data: pending } = await admin.from('players').select('official_status').like('full_name', `Riley Form ${TAG}`).maybeSingle()
+  pending?.official_status === 'pending' ? ok('as PlayFootball pending') : bad(`official_status after Accept: ${pending?.official_status}`)
 
   const { error: notParent } = await parent.client.rpc('confirm_official_rego', { p_request: reqId, p_confirmed: true })
   notParent?.code === '42501' ? ok('a parent cannot confirm it') : bad(`a parent confirmed: ${notParent?.message ?? 'no error'}`)
   const { error: c } = await owner.client.rpc('confirm_official_rego', { p_request: reqId, p_confirmed: true })
   c ? bad(`confirm: ${c.message}`) : ok('the owner ticks "I checked PlayFootball — registered"')
 
-  const accepted = await approve(cookieFor(owner.session))
-  accepted.ok ? ok('Accept goes through') : bad(`approve after confirm: ${accepted.status} ${await accepted.text()}`)
+  const again = await approve(cookieFor(owner.session))
+  again.status === 409 ? ok('a second Accept is "Already decided"') : bad(`a second Accept: ${again.status} ${await again.text()}`)
   const { data: pl } = await admin.from('players').select('official_status, ff_number, fifa_id').like('full_name', `Riley Form ${TAG}`).maybeSingle()
-  pl?.official_status === 'registered' && pl.ff_number === '12345678' ? ok('the roster row is registered with the FFA number on it') : bad(JSON.stringify(pl))
+  pl?.official_status === 'registered' && pl.ff_number === '12345678' ? ok('the roster row is registered now, with the FFA number on it') : bad(JSON.stringify(pl))
 }
 
 head('4. The club\'s PlayFootball export ticks statuses off')

@@ -210,7 +210,8 @@ try {
     await shot(page, 'accept-number-light')
     await tap(await page.$('[data-accept]'))
     const kid3 = await until(async () => { const { data } = await admin.from('players').select('id').eq('academy_id', NRIFA).eq('full_name', THREE).maybeSingle(); return data ?? null })
-    const { data: num3 } = kid3 ? await admin.from('squad_numbers').select('number').eq('player_id', kid3.id).maybeSingle() : { data: null }
+    // The route writes the roster row first and the number last: wait for the number too, not just the child.
+    const num3 = kid3 ? await until(async () => { const { data } = await admin.from('squad_numbers').select('number').eq('player_id', kid3.id).maybeSingle(); return data ?? null }, 10000, 300) : null
     kid3 && num3?.number === 8 ? ok('accepted from the queue with number 8') : bad(`from the queue: kid ${Boolean(kid3)} number ${JSON.stringify(num3)}`)
     await context.close()
   }

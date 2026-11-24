@@ -173,6 +173,18 @@ migrations old, and RLS check 114 wanted its probe event inside the grid's
 first four (fifty now). The league suites are green one by one; the full run
 is next, and its line follows here.
 
+- **NEEDS JOEY (24 Nov): the demo league's draw has run out.** SPL Season 3's
+  last game was 20 Nov 2026; `refresh-demo` puts NRIFA's trainings and
+  friendlies back around today but, by design, leaves fixtures where they are,
+  so there is no upcoming U8 competition game in the demo — `test-game-page`
+  and `test-edit-occurrence` need one and stand down until there is. The
+  honest fix is the demo's next season (the rollover the simulation plays:
+  `start_next_season`, then a draw from today), which is a demo-content
+  decision: say the word and I seed SPL Season 4 for the demo. Two smaller
+  notes from the same run: `refresh-demo`'s step that gives phone-joined demo
+  accounts addresses answered "Bad Request" (the accounts already have them —
+  the step should skip quietly); and the stray "spl season 4" on dev (16 Nov,
+  no account) is still there, left as found.
 - **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
   14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
   37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5
