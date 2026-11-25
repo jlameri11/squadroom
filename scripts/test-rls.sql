@@ -1287,7 +1287,7 @@ begin
     v_all uuid; v_staff uuid; v_gmsg uuid;
     s_all int; s_staff int; m_all int; m_staff int; o_all int; o_staff int; rc_staff int; o_gala int; p_gala int;
   begin
-    select id into v_spl from public.competitions where name = 'SPL Season 3' limit 1;
+    select id into v_spl from public.competitions where name = 'SPL Season 4' limit 1;
     select id into v_gala from public.competitions where name = 'Spring Gala Day' limit 1;
     select id, academy_id into v_nch, v_norg from public.channels where type = 'notices' and competition_id = v_spl;
     select id, academy_id into v_gch, v_gorg from public.channels where type = 'notices' and competition_id = v_gala;
@@ -2833,7 +2833,7 @@ begin
     begin
       select cc.competition_id, c.organiser_id into v_c, v_org
         from public.competition_clubs cc join public.competitions c on c.id = cc.competition_id
-       where cc.academy_id = ACAD_A and cc.status = 'active' order by c.created_at limit 1;
+       where cc.academy_id = ACAD_A and cc.status = 'active' order by (c.status = 'ended'), c.created_at limit 1; -- the live season, not a finished one
       if v_c is null then raise exception 'no competition with NRIFA entered to probe'; end if;
       select am.profile_id into v_league from public.academy_members am
        where am.academy_id = v_org and am.status = 'active' and am.role = 'owner' and am.profile_id <> COACH order by am.profile_id limit 1;
@@ -3660,7 +3660,7 @@ begin
       execute 'reset role';
       select jsonb_array_length(o->'competitions') into v_spl_comps from jsonb_array_elements(v_orgs) o where (o->>'id')::uuid = SPL;
       r200 := case when jsonb_array_length(v_over->'competitions') >= 1
-                    and exists (select 1 from jsonb_array_elements(v_over->'competitions') c where c->>'name' = 'SPL Season 3' and (c->>'clubs')::int >= 1)
+                    and exists (select 1 from jsonb_array_elements(v_over->'competitions') c where c->>'name' in ('SPL Season 3', 'SPL Season 4') and (c->>'clubs')::int >= 1)
                     and v_club_over is null and coalesce(v_spl_comps, 0) >= 1 then 'PASS'
                    else 'FAIL (overview '||coalesce(left(v_over::text, 120),'null')||'; a parent gets '||coalesce(v_club_over::text,'null')||'; switcher lists '||coalesce(v_spl_comps::text,'none')||' under the SPL)' end;
     exception when others then
@@ -3972,7 +3972,7 @@ begin
       v_queued := public.queue_duty_reminders(((v_sat - 1)::timestamp + time '18:00') at time zone v_tz);
       v_again := public.queue_duty_reminders(((v_sat - 1)::timestamp + time '19:00') at time zone v_tz);
       r205 := case when v_day = v_day2 and v_job is not null and jsonb_array_length(v_helpers->'ground'->'jobs') = 5
-                    and (v_rostered->>'assigned')::int = 2 and jsonb_array_length(v_duties->'duties') = 2
+                    and (v_rostered->>'assigned')::int = 2 * (v_rostered->>'games')::int and (v_rostered->>'games')::int >= 1 and jsonb_array_length(v_duties->'duties') = 2
                     and (v_duties->'duties'->0->>'player_id') <> (v_duties->'duties'->1->>'player_id')
                     and (select x->>'requested_swap_at' from jsonb_array_elements(coalesce(v_swap->'duties', '[]'::jsonb)) x where x->>'id' = v_duties->'duties'->0->>'id') is not null and v_msgs = 1
                     and jsonb_array_length(v_gaps->'ground_days') >= 1 and (v_gaps->'ground_days'->0->>'open')::int = 9
@@ -5511,6 +5511,33 @@ begin
     delete from public.team_members where team_id = v_t;
     delete from public.teams where id = v_t;
     insert into rls_results values (245,'the service role (a script) may delete a squad with members on it; a person still may not (0290)', case when ok_svc then 'PASS' else 'FAIL' end);
+  end;
+  -- 246 (0291). An answer to a called-off game is refused; the same game put back on takes it.
+  declare
+    v_e uuid; v_kid uuid; off_refused boolean := false; on_ok boolean := false;
+  begin
+    select pg.player_id into v_kid from public.player_guardians pg join public.players pl on pl.id = pg.player_id and pl.team_id = '00000000-0000-0000-0000-0000000d0008' where pg.profile_id = PARENT limit 1;
+    insert into public.events (academy_id, team_id, type, title, starts_at, ends_at, cancelled_at, cancellation_reason)
+      values (ACAD_A, '00000000-0000-0000-0000-0000000d0008', 'match', 'rls probe 246', now() + interval '4 days', now() + interval '4 days 1 hour', now(), 'wet_weather') returning id into v_e;
+    perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    begin
+      insert into public.event_rsvps (academy_id, event_id, profile_id, player_id, status) values (ACAD_A, v_e, PARENT, v_kid, 'yes');
+    exception when others then off_refused := true;
+    end;
+    execute 'reset role';
+    update public.events set cancelled_at = null, cancellation_reason = null where id = v_e;
+    execute 'set local role authenticated';
+    begin
+      insert into public.event_rsvps (academy_id, event_id, profile_id, player_id, status) values (ACAD_A, v_e, PARENT, v_kid, 'yes');
+      on_ok := true;
+    exception when others then on_ok := false;
+    end;
+    execute 'reset role';
+    delete from public.events where id = v_e;
+    -- The claims go back to the owner's, as the checks after this expect.
+    perform set_config('request.jwt.claims', json_build_object('sub',COACH,'role','authenticated')::text, true);
+    insert into rls_results values (246,'an answer to a called-off game is refused; back on, it is taken (0291)', case when off_refused and on_ok then 'PASS' else 'FAIL (off refused '||off_refused||', on taken '||on_ok||')' end);
   end;
 
   -- 236–237 (0284): the club's PlayFootball import is the registrations
