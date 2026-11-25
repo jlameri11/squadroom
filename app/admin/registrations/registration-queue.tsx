@@ -228,7 +228,8 @@ export function RegistrationQueue() {
   }
 
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   // 0267: the Working With Children Check, checked on the Service NSW

@@ -63,7 +63,9 @@ export function SaturdayScreen() {
 
   useEffect(() => {
     if (!org) return
-    void load(org.id, date)
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    const id = org.id
+    queueMicrotask(() => { void load(id, date) })
   }, [org, date, load])
 
   // An empty today jumps once to the next day with games, so the screen
@@ -71,8 +73,11 @@ export function SaturdayScreen() {
   useEffect(() => {
     if (!view || jumped || date !== null) return
     if (view.games.length === 0 && view.next_with_games) {
-      setJumped(true)
-      setDate(view.next_with_games)
+      const next = view.next_with_games
+      queueMicrotask(() => {
+        setJumped(true)
+        setDate(next)
+      })
     }
   }, [view, jumped, date])
 

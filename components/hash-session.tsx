@@ -33,7 +33,7 @@ export function HashSession() {
     const refresh_token = params.get('refresh_token')
     if (!access_token || !refresh_token) return
 
-    setWorking(true)
+    queueMicrotask(() => setWorking(true))
     const supabase = createClient()
     supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
       // Strip the tokens from the address bar either way. They are

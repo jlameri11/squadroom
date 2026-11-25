@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 
 export type CaptainTeam = {
@@ -72,7 +73,7 @@ export function JoinTeamForm({ slug, code, team }: { slug: string; code: string;
             <p className="mt-3 text-ink-2">
               To see the squad and the draw, sign in{joined.email ? ` with ${joined.email}` : ' with your mobile'} — a link comes by {joined.email ? 'email' : 'text'}, no password.
             </p>
-            <a href="/signin" className="mt-4 block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold text-brand-ink" style={{ background: 'var(--brand)' }}>Sign in</a>
+            <Link href="/signin" className="mt-4 block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold text-brand-ink" style={{ background: 'var(--brand)' }}>Sign in</Link>
           </div>
         </div>
       ) : !team.open ? (

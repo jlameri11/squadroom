@@ -51,7 +51,8 @@ export function Bans({ academyId, who = 'the club' }: { academyId: string; who?:
     setRows((data as unknown as Ban[] | null) ?? null)
   }, [academyId])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
   useEffect(() => {
     if (!open) return

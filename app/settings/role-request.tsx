@@ -50,14 +50,17 @@ export function RequestARole() {
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
 
-  useEffect(() => setOrgId(getOrg()), [])
+  useEffect(() => {
+    queueMicrotask(() => setOrgId(getOrg()))
+  }, [])
   const load = useCallback(async () => {
     if (!org) return
     const { data } = await createClient().rpc('my_role_requests', { p_academy: org })
     setMine(((data as unknown as Mine[] | null) ?? []))
   }, [org])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
   useEffect(() => {
     if (!open || !org) return

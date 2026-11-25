@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -143,9 +144,9 @@ export function AcademySettings({
       <section data-features-link>
         <h2 className="font-semibold">Features</h2>
         <p className="mt-1 text-sm text-ink-2">Every feature that is not core, with a switch. Off means it appears nowhere.</p>
-        <a href="/settings/features" className="mt-2 inline-block rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }} data-features-open>
+        <Link href="/settings/features" className="mt-2 inline-block rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: 'var(--brand)', color: 'var(--brand-text)' }} data-features-open>
           Features
-        </a>
+        </Link>
       </section>
 
       {clubMode !== undefined && (

@@ -16,16 +16,17 @@ const eslintConfig = defineConfig([
     // problems, all of them in bundled chunks and vendored Deno typings, and
     // the dozen that are actually ours are invisible underneath.
     ".next-test/**",
+    ".next-sim/**",
     ".netlify/**",
+    // Lint is the app's (Joey, 24 Nov 2026): the test suites, seeds and
+    // simulation under scripts/ are tooling, written in their own idiom
+    // (`cond ? ok('…') : bad('…')`), and are not linted.
+    "scripts/**",
+    "supabase/**",
+    ".cache/**",
+    ".shots/**",
+    ".local-db/**",
   ]),
-  {
-    // The test scripts assert with `cond ? ok('…') : bad('…')`, one line per
-    // check, which the linter reads as an unused expression — 900 times.
-    // That is the idiom, not a mistake, and under 900 copies of it the
-    // twenty real errors in app/ were invisible.
-    files: ["scripts/**/*.mjs", "scripts/**/*.ts"],
-    rules: { "@typescript-eslint/no-unused-expressions": "off" },
-  },
 ]);
 
 export default eslintConfig;

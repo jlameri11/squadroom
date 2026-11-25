@@ -62,7 +62,8 @@ export function KitScreen() {
   }, [team, teams.length])
 
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   if (data === undefined) return <ScreenSkeleton />

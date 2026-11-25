@@ -223,9 +223,12 @@ function HomeScreen({
     { p_academy: getOrg() ?? undefined },
     { revalidateKey: editing }
   )
-  useEffect(() => {
-    if (layoutData) setLayoutState(layoutData)
-  }, [layoutData])
+  // A fresh layout from the screen seeds the editable one (adjusted during render, keyed by identity — not in an effect).
+  const [seenLayout, setSeenLayout] = useState(layoutData)
+  if (layoutData && layoutData !== seenLayout) {
+    setSeenLayout(layoutData)
+    setLayoutState(layoutData)
+  }
 
   // The Channels list is gone from Home (Joey, 4 Nov 2026): the Chat tab is
   // one tap away and carries the same list with the same counts, and a parent
@@ -255,7 +258,7 @@ function HomeScreen({
               </Link>
             </div>
 
-            <ChildChips children={childList} selected={onlyChild} onSelect={setOnlyChild} />
+            <ChildChips items={childList} selected={onlyChild} onSelect={setOnlyChild} />
 
             {shownEvents.length === 0 ? (
               <p className="card p-6 text-center text-sm text-ink-3">

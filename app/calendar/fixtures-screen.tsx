@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { WhenOn } from '@/components/when-on'
 import { useSearchParams } from 'next/navigation'
@@ -150,21 +151,21 @@ export function FixturesScreen() {
                 >
                   Add weekly training
                 </button>
-                <a
+                <Link
                   href="/admin/import"
                   className="text-sm underline underline-offset-4"
                   style={{ color: 'var(--brand-text)' }}
                 >
                   Import a draw
-                </a>
+                </Link>
                 <WhenOn feature="scan">
-                  <a
+                  <Link
                     href="/scan"
                     className="text-sm underline underline-offset-4"
                     style={{ color: 'var(--brand-text)' }}
                   >
                     From a screenshot
-                  </a>
+                  </Link>
                 </WhenOn>
                 {/* Wet weather does not arrive one fixture at a time. */}
                 <button

@@ -112,7 +112,7 @@ export function EventDetail({
   useEffect(() => {
     if (decided.current || !game) return
     decided.current = true
-    if (game.live?.kicked_off || game.final) setTab('sheet')
+    if (game.live?.kicked_off || game.final) queueMicrotask(() => setTab('sheet'))
   }, [game])
   const choose = (t: Tab) => {
     decided.current = true
@@ -518,12 +518,14 @@ function CallItOff({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const cancelled = Boolean(event.cancelled_at)
+  // The clock, read once when the panel opens (a render stays pure).
+  const [now] = useState(() => Date.now())
 
   // Inside 24 hours the notification escalates to SMS, and a coach should
   // know that before pressing rather than after the bill.
   const soon =
-    new Date(event.starts_at).getTime() - Date.now() < 24 * 3600 * 1000 &&
-    new Date(event.starts_at).getTime() > Date.now() - 3 * 3600 * 1000
+    new Date(event.starts_at).getTime() - now < 24 * 3600 * 1000 &&
+    new Date(event.starts_at).getTime() > now - 3 * 3600 * 1000
 
   async function set(cancel: boolean) {
     setBusy(true)

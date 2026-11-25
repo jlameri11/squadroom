@@ -220,7 +220,10 @@ try {
     const tabs = await page.$$eval('[data-tab]', (ts) => ts.map((t) => t.getAttribute('data-tab')))
     tabs.join(',') === 'preview,sheet,ladder' ? ok('Preview | Match sheet | Ladder') : bad(`competition tabs ${tabs.join(',')}`)
     const form = await page.$$eval('[data-form-side]', (rows) => rows.map((r) => ({ side: r.getAttribute('data-form-side'), n: r.querySelectorAll('[data-form]').length })))
-    form.length === 2 && form.every((f) => f.n >= 1 && f.n <= 5) ? ok(`both sides' last five: ${form.map((f) => `${f.side} ${f.n}`).join(', ')}`) : bad(`form ${JSON.stringify(form)}`)
+    // Form is this season's (Joey, 15 Nov): before the first round there is none to show.
+    const { count: played } = await admin.from('fixtures').select('*', { count: 'exact', head: true }).eq('competition_id', compGame.competition_id).in('status', ['final', 'forfeit'])
+    if (!played) form.length === 2 && form.every((f) => f.n === 0) ? ok('no form yet — the season has not had a round') : bad(`form before the first round ${JSON.stringify(form)}`)
+    else form.length === 2 && form.every((f) => f.n >= 1 && f.n <= 5) ? ok(`both sides' last five: ${form.map((f) => `${f.side} ${f.n}`).join(', ')}`) : bad(`form ${JSON.stringify(form)}`)
     const mini = await page.$$eval('[data-mini-ladder] [data-ladder-row]', (rows) => rows.map((r) => r.getAttribute('data-ladder-row')))
     mini.length === 2 && mini.includes('ours') && mini.includes('theirs') ? ok('the mini ladder is the two sides\' rows and nothing else') : bad(`mini ladder rows ${JSON.stringify(mini)}`)
     // Clicked where a thumb would: scrolled clear of the tab bar first.

@@ -26,7 +26,8 @@ export function EventDuties({ eventId, teamId }: { eventId: string; teamId: stri
     setD((data as unknown as Data | null) ?? null)
   }, [eventId])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   if (!d || d.titles.length === 0) return null

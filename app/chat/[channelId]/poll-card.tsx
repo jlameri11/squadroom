@@ -43,7 +43,10 @@ export function PollCard({ poll, isHost }: { poll: CardPoll; isHost: boolean }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poll.id, isHost])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
+  }, [load])
 
   async function vote(optionId: string, playerId: string | null, note?: string | null) {
     setBusy(playerId ?? 'me')

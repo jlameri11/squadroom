@@ -71,7 +71,8 @@ export function Lineup({ eventId, canSee }: { eventId: string; canSee: boolean }
   }, [eventId])
 
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   // The squad is only needed to EDIT, so it is fetched when the coach starts

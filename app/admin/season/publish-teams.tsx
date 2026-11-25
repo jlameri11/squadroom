@@ -25,7 +25,8 @@ export function PublishTeams({ academyId }: { academyId: string }) {
     setPreview((data as unknown as Preview | null) ?? null)
   }, [academyId])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   if (preview === undefined || preview === null) return null

@@ -15,6 +15,9 @@ const QUICK = ['👍', '❤️', '✅', '❌', '❓', '😂']
 const HEIC_WORDS = (name: string) => `${name} is an iPhone HEIC photo, which Android phones and computers can’t show. On the iPhone: Settings → Camera → Formats → Most Compatible — or send a screenshot of it.`
 const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name)
 
+/** Games from three hours back: one just played can still be shared. */
+const recently = () => new Date(Date.now() - 3 * 3600_000).toISOString()
+
 export function Composer({
   channelId, academyId, teamId, myId, canPost, isHost, archived, postingMode,
   replyTo, onCancelReply, lastMessageId, addOptimistic, replaceOptimistic, onScheduled, onTyping,
@@ -134,7 +137,7 @@ export function Composer({
     let q = supabase
       .from('events')
       .select('id, title, starts_at, type')
-      .gte('starts_at', new Date(Date.now() - 3 * 3600_000).toISOString())
+      .gte('starts_at', recently())
       .is('cancelled_at', null)
       .order('starts_at')
       .limit(10)

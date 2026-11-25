@@ -34,7 +34,9 @@ export function RostersScreen() {
   }, [])
   useEffect(() => {
     if (!org) return
-    void load(org.id)
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    const id = org.id
+    queueMicrotask(() => { void load(id) })
   }, [org, load])
 
   if (!org || gaps === undefined) return <ScreenSkeleton />

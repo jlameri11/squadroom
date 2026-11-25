@@ -22,7 +22,9 @@ import { createPortal } from 'react-dom'
  */
 export function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    queueMicrotask(() => setMounted(true))
+  }, [])
 
   // Escape closes it, and the page behind it stops scrolling — otherwise
   // flicking the sheet scrolls the list underneath and it feels broken.

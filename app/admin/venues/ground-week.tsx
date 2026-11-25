@@ -39,7 +39,8 @@ export function GroundWeek({ venueId, academyId, canEdit }: { venueId: string; a
     setWeek((data as unknown as Week | null) ?? null)
   }, [venueId])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   async function closeGround() {

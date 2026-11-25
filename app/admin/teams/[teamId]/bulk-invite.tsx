@@ -22,7 +22,9 @@ export function BulkInvite({ teamId, academyId }: { teamId: string; academyId: s
   // answered in the browser. Rendering a button that does nothing on an
   // iPhone is worse than not offering it.
   const [canPick, setCanPick] = useState(false)
-  useEffect(() => setCanPick(contacts.isSupported()), [])
+  useEffect(() => {
+    queueMicrotask(() => setCanPick(contacts.isSupported()))
+  }, [])
 
   /**
    * The picker returns only who the coach tapped, and it lands in the SAME

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 export type FeedEvent = {
   event_id: string
   title: string
@@ -25,7 +26,7 @@ export type FeedEvent = {
  * navigation, no account, nothing to tap that asks them to sign in.
  */
 export function MyGames({ events }: { events: FeedEvent[] }) {
-  const now = Date.now()
+  const [now] = useState(() => Date.now())
   // calendar_feed_events orders by id, not by time — it uses DISTINCT ON to
   // dedupe, and that fixes the ordering. Taking its first row gave whichever
   // game happened to have the lowest id, which is not "next".

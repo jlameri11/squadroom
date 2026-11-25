@@ -185,14 +185,15 @@ is next, and its line follows here.
   accounts addresses answered "Bad Request" (the accounts already have them —
   the step should skip quietly); and the stray "spl season 4" on dev (16 Nov,
   no account) is still there, left as found.
-- **NEEDS JOEY (22 Nov): lint.** `npm run lint` reports 2,080 errors and
-  14,762 warnings. The app itself (app/, components/, lib/) has 45 errors in
-  37 files — 33 are the new React Hooks rule `set-state-in-effect`, 5
-  `react-hooks/purity` (a `Date.now()` in render), 5 `no-html-link-for-pages`;
-  the rest of the count is the scripts folder (unused variables, mostly).
-  Neither the build nor the test runs lint, so nothing is blocked; it is a
-  decision: sweep the app files for the new rules (a day), or scope lint to
-  the app and keep the scripts out. Not touched by me.
+- **Lint, decided and done (Joey, 24 Nov):** the 45 errors in app/,
+  components/ and lib/ are fixed — 33 `set-state-in-effect` sites now start
+  their load or read the phone on the next microtask (a callback, which is
+  what the rule wants; the timing is the same), Home seeds its editable layout
+  during render keyed by identity, four clocks are read once lazily and one
+  through a helper, five page links are `<Link>`, ChildChips takes `items`,
+  the in-view hook writes its latest callback in an effect — and lint is the
+  app's: scripts/, supabase/ and the caches are ignored. `npm run lint`: 0
+  errors, 19 warnings (unused names), types clean.
 - **Decided (Joey, 24 Nov):** `.env.local`'s STRIPE_WEBHOOK_SECRET is the
   deployed site's; the Stripe CLI's secret is for local tests only, given to
   the server under test through its environment (CLAUDE.md). Setting

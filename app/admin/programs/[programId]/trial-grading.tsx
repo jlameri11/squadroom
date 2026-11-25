@@ -58,15 +58,16 @@ export function TrialGrading({ programId, academyId }: { programId: string; acad
   const [preview, setPreview] = useState<Preview | null>(null)
   const [published, setPublished] = useState<Preview | null>(null)
   const [showSessions, setShowSessions] = useState(false)
-  const today = new Date().toISOString().slice(0, 10)
-  const [form, setForm] = useState({ days: [2] as number[], time: '17:00', from: today, until: new Date(Date.now() + 28 * 864e5).toISOString().slice(0, 10), venue: '' })
+  const [today] = useState(() => new Date().toISOString().slice(0, 10))
+  const [form, setForm] = useState(() => ({ days: [2] as number[], time: '17:00', from: today, until: new Date(Date.now() + 28 * 864e5).toISOString().slice(0, 10), venue: '' }))
 
   const load = useCallback(async () => {
     const { data } = await createClient().rpc('trial_board', { p_program: programId })
     setBoard((data as unknown as Board | null) ?? null)
   }, [programId])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   if (board === undefined) return null

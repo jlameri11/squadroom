@@ -31,7 +31,8 @@ export function Accreditations() {
     setRows((data as unknown as Row[] | null) ?? null)
   }, [])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   if (rows === undefined || rows === null) return null

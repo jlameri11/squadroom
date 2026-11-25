@@ -42,15 +42,15 @@ export function childColour(id: string) {
  * for checking one thing.
  */
 export function ChildChips({
-  children,
+  items,
   selected,
   onSelect,
 }: {
-  children: Child[]
+  items: Child[]
   selected: string | null
   onSelect: (id: string | null) => void
 }) {
-  if (children.length < 2) return null
+  if (items.length < 2) return null
 
   return (
     <div
@@ -63,7 +63,7 @@ export function ChildChips({
       aria-label="Show one child"
     >
       <Chip label="Everyone" on={selected === null} onClick={() => onSelect(null)} />
-      {children.map((c) => (
+      {items.map((c) => (
         <Chip
           key={c.id}
           label={c.short_name}

@@ -12,7 +12,9 @@ import { useEffect, useRef } from 'react'
 export function useInViewOnce<T extends HTMLElement>(onSeen: () => void, delayMs = 600) {
   const ref = useRef<T>(null)
   const latest = useRef(onSeen)
-  latest.current = onSeen
+  useEffect(() => {
+    latest.current = onSeen
+  })
   useEffect(() => {
     const el = ref.current
     if (!el || typeof IntersectionObserver === 'undefined') return

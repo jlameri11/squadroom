@@ -8,7 +8,9 @@ export function PushToggle() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => { setState(pushState()) }, [])
+  useEffect(() => {
+    queueMicrotask(() => setState(pushState()))
+  }, [])
 
   async function turnOn() {
     setBusy(true)

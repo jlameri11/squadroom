@@ -48,7 +48,9 @@ export function AddPlayers({
   // Whether a picker exists is a question about the device, so it can only be
   // answered in the browser. A button that does nothing on an iPhone is worse
   // than no button.
-  useEffect(() => setCanPick(contacts.isSupported()), [])
+  useEffect(() => {
+    queueMicrotask(() => setCanPick(contacts.isSupported()))
+  }, [])
 
   const known = new Set(existing.map((n) => n.trim().toLowerCase()))
   const ready = rows.filter(

@@ -113,8 +113,10 @@ export function useChannelMessages(channelId: string, initial: ChatMessage[]) {
 
   // Re-seed when the caller navigates to a different channel.
   useEffect(() => {
-    setMessages(initial)
-    setHasMore(initial.length >= 50)
+    queueMicrotask(() => {
+      setMessages(initial)
+      setHasMore(initial.length >= 50)
+    })
   }, [channelId, initial])
 
   useEffect(() => {

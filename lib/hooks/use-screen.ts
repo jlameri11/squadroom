@@ -153,7 +153,7 @@ export function useScreen<T>(
     // Show whatever we had for this screen immediately, even if this is a
     // different instance of the component than the one that fetched it.
     const cached = cache.get(key)
-    if (cached !== undefined) setData(cached as T)
+    if (cached !== undefined) queueMicrotask(() => { if (live) setData(cached as T) })
     else {
       // Nothing in memory. Ask the disk, but never let the answer overwrite
       // a network reply that has already landed.

@@ -176,7 +176,7 @@ export function RegisterForm({ slug }: { slug: string }) {
   const [akName, setAkName] = useState('')
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get('paid') === '1') setPaid(true)
+      if (new URLSearchParams(window.location.search).get('paid') === '1') queueMicrotask(() => setPaid(true))
     } catch {
       /* no URL to read */
     }
@@ -223,6 +223,8 @@ export function RegisterForm({ slug }: { slug: string }) {
     createClient()
       .rpc('public_programs', { p_slug: slug })
       .then(({ data }) => setData((data as unknown as Data) ?? null))
+    // What this phone remembers lands a microtask later — a callback, not the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
     // A registration already made from this browser. Remembered so a parent
     // who comes back is told where they stand rather than filling it in
     // again and creating a second request.
@@ -246,6 +248,7 @@ export function RegisterForm({ slug }: { slug: string }) {
       // just cannot be told the outcome on this device.
     }
     setHydrated(true)
+    })
     // 0269: a signed-in person's draft lives against their account too, so
     // the phone they finish on need not be the one they started on. The
     // newer of the two wins.

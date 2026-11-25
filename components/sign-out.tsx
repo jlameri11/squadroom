@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { setOrg } from '@/lib/org'
@@ -111,9 +112,9 @@ export function SignOut({ variant = 'row' }: { variant?: 'row' | 'button' }) {
       */}
       <p className="mb-2 text-xs text-ink-3">
         Make sure you&apos;ve set a password in{' '}
-        <a href="/settings" className="underline underline-offset-2">
+        <Link href="/settings" className="underline underline-offset-2">
           Your details
-        </a>
+        </Link>
         , or you&apos;ll need another emailed link to get back in.
       </p>
       <div className="flex gap-2">

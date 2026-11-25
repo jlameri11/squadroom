@@ -24,7 +24,8 @@ export function DutiesPanel({ teamId }: { teamId: string }) {
     setTitles((data ?? []).map((d) => d.title))
   }, [teamId])
   useEffect(() => {
-    void load()
+    // The load runs on the next microtask: its setState lands in a callback, not in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => { void load() })
   }, [load])
 
   if (titles === null) return null

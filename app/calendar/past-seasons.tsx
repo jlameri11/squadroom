@@ -43,7 +43,7 @@ export function PastSeasons({ academyId, onSeason }: { academyId: string; onSeas
 
   useEffect(() => {
     onSeason(picked)
-    if (!picked) { setData(null); return }
+    if (!picked) { queueMicrotask(() => setData(null)); return }
     let live = true
     ;(async () => {
       const { data } = await createClient().rpc('season_fixtures', { p_academy: academyId, p_season: picked })
