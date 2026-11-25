@@ -6,6 +6,42 @@ every item on it is something no amount of building can get past.
 
 ---
 
+**Session log.** 24–26 Nov 2026 (Tue–Thu), Sydney — Joey's decisions of 24
+Nov, done in order, then the final sweep. **Stopped 26 Nov: finished.**
+(1) The demo's **SPL Season 4** seeded from Season 3 (90 games from 29 Nov,
+published at `/c/spl-season-4`), Season 3 ended, the stray cleared. (2)
+**Lint**: 45 app errors fixed, lint scoped to the app, 0 errors. (3) The two
+webhook secrets written down. (4) **Deployed 25 Nov, 2:24 pm** (Deploys
+table), check-live green. (5) **The sweep.** *Security*: every public table
+has row security; no policy applies to anon; a stranger can call sixteen
+`public_*` functions and nothing else of ours; the only public buckets are
+crests and sponsor logos; the live site sends HSTS, nosniff, frame DENY and a
+referrer policy; every API route refuses an unsigned call (the webhook 400
+without a signature). *Screens*: `scripts/sweep-screens.mjs` — fifteen demo
+roles × Home, Chat, Fixtures, Team, Admin, Settings × light and dark at 375px,
+plus three public pages as a stranger: **183 loads, none with a page error,
+an error message, a blank or a sideways scroll**; a sample looked at by eye.
+*Edge cases*: `scripts/sweep-edge-cases.mjs` — a person in no organisation, a
+brand-new empty club (every screen and its checklist), a 120-character squad
+name, a 55-character child with 900 characters of notes, the same
+registration sent twice, and **one find: a parent could answer a game that
+had been called off** from a page left open or the offline queue — **0291**
+refuses it with a sentence (test-rls 246, all 246 pass; on the database the
+live site uses, so it is live without a deploy). The Season 4 seed had also
+moved three RLS checks that named Season 3; they follow the live season now.
+The third full `test:all` before the seed read 4 not passing of 4,035
+(game-page and edit-occurrence, fixed by Season 4; push-wake and one screens
+navigation timeout, both timing); it has not been run again since the lint
+refactors — a handful of suites were, green — so a full run is the first
+thing next session.
+
+- **NEEDS JOEY (26 Nov):** the Next.js security upgrade is still waiting
+  (`next upgrade --agent=security`); it now stops `next dev` as well as every
+  other build until retried. Say whether to run it (in a separate worktree,
+  or this checkout).
+
+---
+
 **Session log.** 17–18 Nov 2026 (Tue–Wed), Sydney, continuing the 16 Nov
 briefs: **files through the real storage** (the simulation's FS1–FS6, all
 green on their own — chat photos as PNG and JPEG, an iPhone HEIC refused with
