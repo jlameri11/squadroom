@@ -5081,16 +5081,17 @@ begin
     begin
       select slug into v_slug from public.academies where id = ACAD_A;
       v_id := public.public_programs(v_slug)->'academy'->>'id';
-      insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, COACH, '{"childName":"RLS Coach Kid"}');
+      -- The other person is the demo coach, never the owner's real account (which may hold a real draft).
+      insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, MARCUS, '{"childName":"RLS Coach Kid"}');
       insert into public.registration_drafts (academy_id, code, draft) values (ACAD_A, 'RLS-CODE', '{"childName":"RLS Code Kid"}');
       perform set_config('request.jwt.claims', json_build_object('sub',PARENT,'role','authenticated')::text, true);
       execute 'set local role authenticated';
       insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, PARENT, '{"childName":"RLS Parent Kid"}');
       select count(*) into v_own from public.registration_drafts d where d.profile_id = PARENT and d.draft->>'childName' = 'RLS Parent Kid';
-      select count(*) into v_theirs from public.registration_drafts d where d.profile_id = COACH;
+      select count(*) into v_theirs from public.registration_drafts d where d.profile_id = MARCUS;
       select count(*) into v_code_rows from public.registration_drafts d where d.code is not null;
       begin
-        insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, COACH, '{"childName":"forged"}');
+        insert into public.registration_drafts (academy_id, profile_id, draft) values (ACAD_A, MARCUS, '{"childName":"forged"}');
         v_forged := 'allowed';
       exception when others then v_forged := sqlstate; end;
       execute 'reset role';
