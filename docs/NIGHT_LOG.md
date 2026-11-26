@@ -35,10 +35,27 @@ navigation timeout, both timing); it has not been run again since the lint
 refactors — a handful of suites were, green — so a full run is the first
 thing next session.
 
-- **NEEDS JOEY (26 Nov):** the Next.js security upgrade is still waiting
-  (`next upgrade --agent=security`); it now stops `next dev` as well as every
-  other build until retried. Say whether to run it (in a separate worktree,
-  or this checkout).
+- **26 Nov, later — the Next.js security upgrade, at Joey's word.** Done in
+  a separate worktree and merged: **next 16.4.3 → 16.4.6** (a patch bump,
+  package.json and the lockfile only; seven moderate advisories fixed in
+  16.4.5; the build nudge is gone). Three independent reviews (breaking
+  changes, the advisories, the diff) all said safe; types, lint and a
+  production build pass. The full suite on it read 9 not passing of 4,017 —
+  none the upgrade's: four suites still named Season 3, four pass alone
+  (load), and **one was a real regression of the 24 Nov lint fix, LIVE since
+  the 25 Nov deploy: Home showed only its two default sections whenever its
+  layout was already cached** (the seeding compared against itself). Fixed.
+  Also **0292**: a new season keeps who runs it (`new_season_from` dropped
+  the league's name, so Season 4 read as run by nobody to the entered clubs;
+  on the database, so live). RLS 246/246.
+- **NEEDS JOEY (26 Nov): a deploy.** The upgrade and the Home fix are
+  committed and pushed but **not deployed** — I did not have your word for a
+  second deploy. Both are worth one: say so and it is `npm run deploy:prod`.
+  The full suite should run once more first; `embedded-postgres` (opt-in, for
+  the simulation) was removed by `npm ci` and needs
+  `npm i --no-save embedded-postgres@17.11.0-beta.19` before the next season
+  run. The upgrade command also asked for a telemetry report to Vercel and a
+  config flag; neither was done.
 
 ---
 
