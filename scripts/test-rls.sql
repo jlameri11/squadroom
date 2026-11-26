@@ -5577,6 +5577,22 @@ begin
   execute 'reset role';
   insert into rls_results values (235,'a President who is not an owner reads the setup checklist; a parent still does not (0282)', case when b and b2 then 'PASS' else 'FAIL' end);
 
+  -- 247–249 (0293, the security pass): what the advisors warned about stays closed.
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname in ('public','app_private') and p.prokind = 'f'
+     and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+     and (p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'));
+  insert into rls_results values (247,'every function of ours has a fixed search_path (0293)', case when n = 0 then 'PASS' else 'FAIL: '||n||' without' end);
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname in ('public','app_private') and p.prokind = 'f' and p.prorettype = 'trigger'::regtype
+     and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+     and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute'));
+  insert into rls_results values (248,'no trigger function can be called by name through the API (0293)', case when n = 0 then 'PASS' else 'FAIL: '||n||' callable' end);
+  select count(*) into n from pg_class c join pg_namespace ns on ns.oid = c.relnamespace
+   where ns.nspname = 'public' and c.relkind = 'r'
+     and (not c.relrowsecurity or not exists (select 1 from pg_policy where polrelid = c.oid));
+  insert into rls_results values (249,'every table has RLS on and says who may touch it, even if nobody (0293)', case when n = 0 then 'PASS' else 'FAIL: '||n||' tables' end);
+
   if v_lent_spl then
     delete from public.academy_members where academy_id = '00000000-0000-0000-0000-0000000a0003' and profile_id = COACH;
   end if;

@@ -14,7 +14,7 @@
 // people in through generateLink/verifyOtp, and Supabase rate-limits auth per
 // project — running two dozen suites back to back exhausts it and the
 // failures that follow are about the rate limit, not the product.
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { difference, snapshot } from './_demo-snapshot.mjs'
@@ -64,6 +64,18 @@ function run(file) {
 // reporting a failure is wrong.
 const RETRIES = Number(process.env.TEST_RETRIES ?? 2)
 const RETRY_WAIT_MS = Number(process.env.TEST_RETRY_WAIT_MS ?? 60_000)
+
+// The auth limits (security pass, 26 Nov 2026): this project is also what the
+// live site signs people in against, so the raised ceiling a run of more than
+// a few suites needs is on only while the run is, and Supabase's defaults go
+// back when it ends — finished, failed or interrupted. AUTH_LIMITS=0 leaves
+// them alone.
+const limits = (flag) => spawnSync('node', ['--env-file=.env.local', 'scripts/configure-auth-limits.mjs', ...(flag ? [flag] : [])], { stdio: 'ignore' }).status === 0
+const raise = process.env.AUTH_LIMITS !== '0' && (only.length === 0 || only.length > 5)
+if (raise) console.log(dim(limits() ? '  auth limits raised for the run' : '  could not raise the auth limits (the run may be rate limited)'))
+let lowered = false
+const lower = () => { if (raise && !lowered) { lowered = true; console.log(dim(limits('--strict') ? '  auth limits back to strict' : red('  COULD NOT put the auth limits back — run: node --env-file=.env.local scripts/configure-auth-limits.mjs --strict'))) } }
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { lower(); process.exit(130) })
 
 const results = []
 // The demo between suites (5 Nov 2026): a suite that passes its own checks
@@ -174,4 +186,5 @@ if (limited.length) {
   )
 }
 console.log('')
+lower()
 process.exit(bad.length ? 1 : 0)

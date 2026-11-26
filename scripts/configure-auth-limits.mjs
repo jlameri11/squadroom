@@ -1,18 +1,24 @@
-// Run: node --env-file=.env.local scripts/configure-auth-limits.mjs [--show]
+// Run: node --env-file=.env.local scripts/configure-auth-limits.mjs [--show|--strict]
 //
-// Raise squadroom-dev's auth rate limits so the whole test suite can run at
-// any hour.
+// squadroom-dev's auth rate limits: raised for a full test run, strict the
+// rest of the time.
 //
 // Every suite signs its people in with generateLink + verifyOtp. Supabase's
 // defaults allow 30 token verifications and 30 OTP requests per five minutes
 // — fine for a club, and about one third of a full `npm run test:all`, which
-// is how 34 suites came to "fail" in one night (NIGHT_LOG, 29 Oct). The
-// limits below are for the DEV project only: this script goes through
-// `endpoint()`, so it cannot be aimed anywhere else, and production will be
-// a different project with the defaults.
+// is how 34 suites came to "fail" in one night (NIGHT_LOG, 29 Oct). So a full
+// run raises the ceiling.
 //
-// `scripts/_auth.mjs` cuts the number of sign-ins as well; this is the
-// backstop for a run that is still too much.
+// The security pass (26 Nov 2026) found the raised numbers had been LEFT on,
+// and that this project is also what the live site signs people in against:
+// 1,000 password or code guesses per five minutes from one address. So:
+//   (no flag)  raise, for a full run — `scripts/test-all.mjs` does this itself
+//   --strict   Supabase's defaults — `test-all.mjs` puts them back when it ends,
+//              however it ends; run this by hand if a run was killed outright
+//   --show     print, change nothing
+// This script goes through `endpoint()`, so it cannot be aimed anywhere else.
+//
+// `scripts/_auth.mjs` cuts the number of sign-ins as well.
 import { endpoint, confirmProject } from './_project.mjs'
 
 const token = process.env.SUPABASE_ACCESS_TOKEN
@@ -23,10 +29,11 @@ if (!token) {
 await confirmProject(token)
 const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 
+const strict = process.argv.includes('--strict')
 const WANT = {
-  rate_limit_verify: 1000,
-  rate_limit_otp: 1000,
-  rate_limit_token_refresh: 1000,
+  rate_limit_verify: strict ? 30 : 1000,
+  rate_limit_otp: strict ? 30 : 1000,
+  rate_limit_token_refresh: strict ? 150 : 1000,
   // The sign-up brief (12 Nov 2026): a password is at least 8. The routes
   // and screens hold the rule too; this stops a direct call to Supabase
   // setting a shorter one. Production's setting is Joey's (NEEDS JOEY).
