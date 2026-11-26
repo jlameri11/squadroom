@@ -43,7 +43,7 @@ if (!league || !ravens || !sam || !marcus) {
   console.log("  could not sign in — the project's auth rate limit, not a failure")
   process.exit(2)
 }
-const { data: spl } = await admin.from('competitions').select('id, name').eq('name', 'SPL Season 3').single()
+const { data: spl } = await admin.from('competitions').select('id, name').eq('name', 'SPL Season 4').single()
 const { data: ch, error: noCh } = await admin.from('channels').select('id, name, type').eq('type', 'clubs').eq('competition_id', spl.id).maybeSingle()
 if (noCh || !ch) {
   note('waiting for 0235 on squadroom-dev — test-rls 174–177 prove it locally meanwhile')

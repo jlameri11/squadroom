@@ -224,7 +224,9 @@ function HomeScreen({
     { revalidateKey: editing }
   )
   // A fresh layout from the screen seeds the editable one (adjusted during render, keyed by identity — not in an effect).
-  const [seenLayout, setSeenLayout] = useState(layoutData)
+  // Starts at null, NOT at layoutData: a layout already cached at the first render must seed too
+  // (it did not, 24–26 Nov: Home showed only the default sections whenever the cache was warm).
+  const [seenLayout, setSeenLayout] = useState<typeof layoutData>(null)
   if (layoutData && layoutData !== seenLayout) {
     setSeenLayout(layoutData)
     setLayoutState(layoutData)

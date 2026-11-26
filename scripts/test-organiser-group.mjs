@@ -38,12 +38,12 @@ const LEAGUE_OWNER = '00000000-0000-0000-0000-0000000000e1'
 const AAA_SLUG = 'organiser-group-aaa'
 
 // The facts, from the demo.
-const { data: spl } = await admin.from('competitions').select('id, name, organiser').eq('name', 'SPL Season 3').maybeSingle()
+const { data: spl } = await admin.from('competitions').select('id, name, organiser').eq('name', 'SPL Season 4').maybeSingle()
 const { data: splOrg } = await admin.from('academies').select('name').eq('id', SPL_ORG).single()
 const { data: noticesRoom } = await admin.from('channels').select('id').eq('competition_id', spl?.id ?? '').eq('type', 'notices').maybeSingle()
 const { data: pub } = await admin.from('competitions').select('public_slug, organiser_id, academies!organiser_id(name)').not('public_slug', 'is', null).limit(1).maybeSingle()
 const pubOrganiser = (Array.isArray(pub?.academies) ? pub.academies[0] : pub?.academies)?.name ?? null
-if (!spl) { bad('no SPL Season 3 in the demo'); process.exit(1) }
+if (!spl) { bad('no SPL Season 4 in the demo'); process.exit(1) }
 
 const league = await signInBoth(admin, 'p61400000301@squadroom.invalid') // the SPL's owner
 const sam = await signInBoth(admin, 'p61400000011@squadroom.invalid') // a parent at NRIFA, which is in the SPL
@@ -57,7 +57,7 @@ head('1. The group sees everything it runs, and only its staff do')
   const { data: orgs, error } = await league.client.rpc('my_organisations_with_competitions')
   const mine = (orgs ?? []).find((o) => o.id === SPL_ORG)
   const under = (mine?.competitions ?? []).map((c) => c.name)
-  !error && under.includes('SPL Season 3')
+  !error && under.includes('SPL Season 4')
     ? ok(`the switcher's list puts ${under.length} competition(s) under ${mine.name}: ${under.join(', ')}`)
     : bad(`switcher list: ${error?.message ?? JSON.stringify(orgs).slice(0, 200)}`)
 
@@ -67,14 +67,14 @@ head('1. The group sees everything it runs, and only its staff do')
     ? ok(`the overview is ${over.group.name}'s: ${over.competitions.length} competition(s)`)
     : bad(`overview: ${e2?.message ?? JSON.stringify(over).slice(0, 200)}`)
   row && ['clubs', 'teams', 'weekend', 'unfilled', 'disputed', 'missing_sheets'].every((k) => typeof row[k] === 'number')
-    ? ok(`SPL Season 3: ${row.clubs} clubs, ${row.teams} teams, ${row.weekend} this weekend, ${row.unfilled} without a referee, ${row.disputed} disputed, ${row.missing_sheets} sheets missing`)
+    ? ok(`SPL Season 4: ${row.clubs} clubs, ${row.teams} teams, ${row.weekend} this weekend, ${row.unfilled} without a referee, ${row.disputed} disputed, ${row.missing_sheets} sheets missing`)
     : bad(`the row's numbers: ${JSON.stringify(row)}`)
   row && row.clubs >= 1 && row.teams >= 1 ? ok('with the clubs and teams entered counted') : bad(`clubs ${row?.clubs}, teams ${row?.teams}`)
 
   // Rights on all of them: the group's owner runs the competition itself.
   const { data: access } = await league.client.rpc('my_competition_access', { p_competition: spl.id })
   const areas = access?.areas ?? []
-  areas.includes('competition') ? ok("the group's owner runs SPL Season 3 (my_competition_access)") : bad(`areas: ${JSON.stringify(access)}`)
+  areas.includes('competition') ? ok("the group's owner runs SPL Season 4 (my_competition_access)") : bad(`areas: ${JSON.stringify(access)}`)
 
   // A parent: no overview, and nothing under their club in the switcher.
   const { data: parentOver } = await sam.client.rpc('group_overview', { p_academy: SPL_ORG })
@@ -132,7 +132,7 @@ try {
   {
     const { context, page } = await open(league, '/competitions', SPL_ORG, '[data-group-overview]')
     const card = await page.$eval('[data-group-overview]', (e) => e.innerText.replace(/\s+/g, ' ')).catch(() => '')
-    card.includes('SPL Season 3') ? ok('the overview names SPL Season 3') : bad(`overview: ${card.slice(0, 200) || 'missing'}`)
+    card.includes('SPL Season 4') ? ok('the overview names SPL Season 4') : bad(`overview: ${card.slice(0, 200) || 'missing'}`)
     ;/\d+ clubs? · \d+ teams? · \d+ this weekend/.test(card) ? ok('with its clubs, teams and this weekend\'s games') : bad(`numbers: ${card.slice(0, 200)}`)
     const cardIsLink = await page.$('[data-group-overview] a[href^="/competitions/"]')
     cardIsLink ? ok('each row opens the competition') : bad('no link in the overview')
@@ -149,7 +149,7 @@ try {
       await btn.click()
       await page.waitForSelector(`[data-org-competitions="${SPL_ORG}"]`, { timeout: 15000 }).catch(() => null)
       const under = await page.$eval(`[data-org-competitions="${SPL_ORG}"]`, (e) => e.innerText.replace(/\s+/g, ' ')).catch(() => '')
-      under.includes('SPL Season 3') ? ok(`under ${splOrg.name}: ${under}`) : bad(`nothing under the SPL: ${under || 'missing'}`)
+      under.includes('SPL Season 4') ? ok(`under ${splOrg.name}: ${under}`) : bad(`nothing under the SPL: ${under || 'missing'}`)
       const underAaa = await page.$(`[data-org-competitions="${aaa.id}"]`)
       !underAaa ? ok('an organisation that runs nothing has nothing underneath') : bad('the empty organisation shows a list')
       await shots(page, 'switcher')
@@ -175,7 +175,7 @@ try {
     const sub = await page.$eval('[data-channel-kind="notices"]', (e) => e.textContent.trim()).catch(() => '')
     sub.startsWith(`Run by ${splOrg.name}`) ? ok(`the Notices room: "${sub}"`) : bad(`Notices room: "${sub || 'missing'}"`)
     await context.close()
-  } else note('no Notices room for SPL Season 3 on this database')
+  } else note('no Notices room for SPL Season 4 on this database')
   if (pub?.public_slug) {
     const { context, page } = await open(null, `/c/${pub.public_slug}`, null, '.eyebrow')
     const eyebrows = await page.$$eval('.eyebrow', (es) => es.map((e) => e.textContent.replace(/\s+/g, ' ').trim()))
@@ -193,7 +193,7 @@ try {
     const over = await page.$('[data-group-overview]')
     !over ? ok('no overview for a parent') : bad('a parent sees the overview')
     const links = await page.$$eval('a[href^="/competitions/"]', (as) => as.map((a) => a.textContent?.replace(/\s+/g, ' ').trim() ?? ''))
-    const row = links.find((t) => t.includes('SPL Season 3'))
+    const row = links.find((t) => t.includes('SPL Season 4'))
     row && row.includes(`run by ${splOrg.name}`) ? ok(`their row says: ${row}`) : bad(`row: ${row ?? 'missing'} (expected "run by ${splOrg.name}")`)
     await context.close()
   }

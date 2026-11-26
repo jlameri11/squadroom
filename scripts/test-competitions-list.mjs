@@ -38,12 +38,12 @@ head('1. The query the screens make answers, with the organiser beside each comp
 {
   const { data, error } = await sam.client.from('competitions').select('id, name, season, status, academies!organiser_id(name)').neq('status', 'ended').limit(10)
   !error && (data ?? []).length >= 1 ? ok(`a parent reads ${data.length} competition(s), each with its league`) : bad(`parent: ${error?.message ?? 'no rows'}`)
-  const spl = (data ?? []).find((c) => c.name === 'SPL Season 3')
-  spl ? ok('SPL Season 3 is among them') : bad(`SPL Season 3 missing from ${JSON.stringify((data ?? []).map((c) => c.name))}`)
+  const spl = (data ?? []).find((c) => c.name === 'SPL Season 4')
+  spl ? ok('SPL Season 4 is among them') : bad(`SPL Season 4 missing from ${JSON.stringify((data ?? []).map((c) => c.name))}`)
   // The league's own row is withheld from another club's parent by policy
   // (the organiser's people are not the competition's); the competition's
   // own `organiser` text names it for them. Either is the league's name.
-  const { data: named } = await sam.client.from('competitions').select('organiser, academies!organiser_id(name)').eq('name', 'SPL Season 3').maybeSingle()
+  const { data: named } = await sam.client.from('competitions').select('organiser, academies!organiser_id(name)').eq('name', 'SPL Season 4').maybeSingle()
   const rel = Array.isArray(named?.academies) ? named.academies[0] : named?.academies
   leagueName = rel?.name ?? named?.organiser ?? null
   leagueName ? ok(`a parent sees it is run by "${leagueName}"`) : console.log('  \x1b[2m… the league\'s row is withheld from a parent and the competition carries no organiser text — the list shows the competition alone\x1b[0m')
@@ -67,10 +67,10 @@ try {
   {
     const { context, page } = await open(sam, '/competitions', NRIFA, 'a[href^="/competitions/"]')
     const links = await page.$$eval('a[href^="/competitions/"]', (as) => as.map((a) => a.textContent?.replace(/\s+/g, ' ').trim() ?? ''))
-    const spl = links.find((t) => t.includes('SPL Season 3'))
+    const spl = links.find((t) => t.includes('SPL Season 4'))
     links.length >= 1 ? ok(`${links.length} competition row(s) for a parent whose club is entered`) : bad('an empty competitions list')
     const named = spl && (!leagueName || spl.includes(leagueName))
-    named ? ok(leagueName ? `SPL Season 3, run by ${leagueName}` : 'SPL Season 3 is listed') : bad(`SPL row: ${spl ?? 'missing'} (expected "${leagueName}")`)
+    named ? ok(leagueName ? `SPL Season 4, run by ${leagueName}` : 'SPL Season 4 is listed') : bad(`SPL row: ${spl ?? 'missing'} (expected "${leagueName}")`)
     const fits = await page.evaluate(() => document.scrollingElement.scrollWidth <= window.innerWidth + 1)
     fits ? ok('fits 375px') : bad('wider than the phone')
     await context.close()
@@ -80,7 +80,7 @@ try {
   {
     const { context, page } = await open(league, '/', SPL_ORG, '[data-home-competitions]')
     const card = await page.$eval('[data-home-competitions]', (e) => e.innerText.replace(/\s+/g, ' ')).catch(() => '')
-    card.includes('SPL Season 3') ? ok('the card names SPL Season 3') : bad(`card: ${card.slice(0, 160) || 'missing'} — ${await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 160))}`)
+    card.includes('SPL Season 4') ? ok('the card names SPL Season 4') : bad(`card: ${card.slice(0, 160) || 'missing'} — ${await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ').slice(0, 160))}`)
     ;/Sydney Premier League/.test(card) ? ok('and who runs it') : bad(`no organiser in: ${card.slice(0, 160)}`)
     await context.close()
   }

@@ -32,3 +32,4 @@ next-env.d.ts
 
 # The simulation's build of the app, served on :3300 (scripts/simulation/stack.mjs)
 .next-sim/
+.claude/worktrees/

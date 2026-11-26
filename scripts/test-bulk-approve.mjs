@@ -156,8 +156,17 @@ const clickText = async (selector, text) => {
 }
 const tickAll = async (prefix) => {
   const boxes = await page.$$(`input[type=checkbox][aria-label^="Select ${prefix}"]`)
-  for (const b of boxes) await b.click()
+  // Centre each box first: puppeteer's click scrolls a low one under the fixed tab bar and taps a tab instead.
+  for (const b of boxes) await b.evaluate((el) => { el.scrollIntoView({ block: 'center' }); el.click() })
   return boxes.length
+}
+
+// The list can re-draw once its fresh data lands: wait for the picker, and try again if the node was replaced under the tap.
+async function pickSquad(teamId) {
+  const sel = 'select[aria-label="Squad for everyone selected"]'
+  for (let i = 0; i < 4; i++) {
+    try { await page.waitForSelector(sel, { timeout: 8000 }); await page.select(sel, teamId); return } catch (e) { if (i === 3) throw e; await sleep(500) }
+  }
 }
 
 head(`1. The public queue: three of ${TAG} accepted into ${team.name} in one go`)
@@ -168,7 +177,7 @@ try {
   await sleep(300)
   const ticked = await tickAll(`${TAG} Child`)
   ticked === 3 ? ok('three boxes ticked') : bad(`${ticked} boxes found for ${TAG}`)
-  await page.select('select[aria-label="Squad for everyone selected"]', team.id)
+  await pickSquad(team.id)
   ;(await clickText('button', 'Accept 3')) ? ok('"Accept 3" tapped') : bad('no "Accept 3" button')
   // Three sequential route calls, each making an account.
   for (let i = 0; i < 40; i++) {
@@ -209,7 +218,7 @@ try {
   await sleep(300)
   const ticked = await tickAll(`${TAG} Kid`)
   ticked === 3 ? ok('three boxes ticked') : bad(`${ticked} boxes found`)
-  await page.select('select[aria-label="Squad for everyone selected"]', team.id)
+  await pickSquad(team.id)
   ;(await clickText('button', 'In — 3')) ? ok('"In — 3" tapped') : bad('no "In — 3" button')
   for (let i = 0; i < 30; i++) {
     await sleep(400)
@@ -227,7 +236,8 @@ try {
     ? ok(`and all three in ${team.name}`)
     : bad('a child was approved without the squad')
 } catch (e) {
-  bad(`program queue: ${e.message.slice(0, 100)}`)
+  const shown = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ')).catch(() => '')
+  bad(`program queue: ${e.message.slice(0, 100)} — the page says: ${shown.slice(0, 500)}`)
 }
 
 await browser.close()

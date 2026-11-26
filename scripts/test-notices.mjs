@@ -32,7 +32,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const NRIFA = '00000000-0000-0000-0000-0000000a0001'
 const TAG = 'TEST:: notices'
 
-const { data: spl } = await admin.from('competitions').select('id, name, organiser_id').eq('name', 'SPL Season 3').single()
+const { data: spl } = await admin.from('competitions').select('id, name, organiser_id').eq('name', 'SPL Season 4').single()
 const { error: no0213 } = await admin.from('channels').select('competition_id').limit(1)
 const has0213 = !no0213
 
